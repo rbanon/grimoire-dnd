@@ -1,0 +1,13 @@
+node_modules
+dist
+.env
+.env.local
+*.local
+.DS_Store
+Thumbs.db
+src/auto-imports.d.ts
+src/components.d.ts
+ROADMAP.local.md
+.claude/
+.agents/
+supabase/.temp/

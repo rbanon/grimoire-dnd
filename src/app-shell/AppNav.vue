@@ -1,0 +1,142 @@
+<template>
+  <header class="sticky top-0 z-40 border-b border-shadow/80 bg-abyss/90 backdrop-blur-md">
+    <!-- Subtle gold top border line -->
+    <div class="h-px bg-gradient-to-r from-transparent via-gold-dim/50 to-transparent" />
+
+    <nav class="app-container h-[60px] flex items-center justify-between gap-4">
+      <!-- Logo -->
+      <RouterLink to="/" class="flex items-center gap-3 group shrink-0">
+        <div class="relative w-7 h-7 flex items-center justify-center">
+          <!-- Rotating geometric ornament -->
+          <div
+            class="absolute inset-0 border border-gold-dim/40 rotate-45 group-hover:rotate-[90deg] transition-transform duration-500"
+            style="border-radius: 2px"
+          />
+          <span class="relative text-gold-mid text-sm leading-none select-none">⚔</span>
+        </div>
+        <span class="font-display text-base tracking-[0.2em] text-vellum uppercase group-hover:text-gold-pale transition-colors duration-300">
+          Grimoire
+        </span>
+      </RouterLink>
+
+      <!-- Desktop nav links -->
+      <div class="hidden md:flex items-center gap-1">
+        <RouterLink
+          v-for="link in navLinks"
+          :key="link.to"
+          :to="link.to"
+          custom
+          v-slot="{ isActive, href, navigate }"
+        >
+          <a
+            :href="href"
+            :class="isActive ? 'nav-link-active' : 'nav-link'"
+            @click="navigate"
+          >
+            <component :is="link.icon" :size="14" class="shrink-0" />
+            {{ link.label }}
+            <LockIcon
+              v-if="link.authRequired && !auth.isAuthenticated"
+              :size="10"
+              class="text-mist ml-0.5"
+            />
+          </a>
+        </RouterLink>
+      </div>
+
+      <!-- Right side -->
+      <div class="flex items-center gap-2">
+        <ColorModeToggle class="hidden sm:flex" />
+
+        <template v-if="auth.isAuthenticated">
+          <RouterLink to="/profile" class="nav-link text-sm hidden sm:flex">
+            <div class="w-5 h-5 rounded-full border border-gold-dim/50 bg-gold-dim/20 flex items-center justify-center">
+              <span class="text-gold-mid text-xs font-heading">{{ initials }}</span>
+            </div>
+            <span class="hidden lg:inline">{{ auth.userEmail }}</span>
+          </RouterLink>
+          <button class="btn-ghost text-xs px-2.5 py-1" @click="auth.signOut">
+            Sign out
+          </button>
+        </template>
+        <template v-else>
+          <RouterLink to="/login" class="btn-primary px-4 py-1.5 text-xs">
+            Sign in
+          </RouterLink>
+        </template>
+
+        <!-- Mobile hamburger -->
+        <button
+          class="md:hidden btn-icon"
+          aria-label="Toggle menu"
+          @click="mobileOpen = !mobileOpen"
+        >
+          <MenuIcon v-if="!mobileOpen" :size="18" />
+          <XIcon v-else :size="18" />
+        </button>
+      </div>
+    </nav>
+
+    <!-- Mobile menu -->
+    <Transition name="nav-slide">
+      <div
+        v-if="mobileOpen"
+        class="md:hidden border-t border-shadow bg-abyss px-4 py-3 flex flex-col gap-0.5"
+      >
+        <RouterLink
+          v-for="link in navLinks"
+          :key="link.to"
+          :to="link.to"
+          class="nav-link justify-start py-2.5"
+          @click="mobileOpen = false"
+        >
+          <component :is="link.icon" :size="14" />
+          {{ link.label }}
+          <LockIcon
+            v-if="link.authRequired && !auth.isAuthenticated"
+            :size="10"
+            class="ml-auto text-mist"
+          />
+        </RouterLink>
+        <div class="mt-2 pt-2 border-t border-shadow flex items-center gap-2">
+          <ColorModeToggle />
+          <span class="text-xs text-mist font-heading tracking-wider">Theme</span>
+        </div>
+      </div>
+    </Transition>
+  </header>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { UsersIcon, SparklesIcon, ShieldIcon, BookOpenIcon, MenuIcon, XIcon, LockIcon } from 'lucide-vue-next'
+import { useAuthStore } from '@/auth/store'
+import ColorModeToggle from './ColorModeToggle.vue'
+
+const auth = useAuthStore()
+const mobileOpen = ref(false)
+
+const initials = computed(() => {
+  const email = auth.userEmail ?? ''
+  return email.slice(0, 2).toUpperCase()
+})
+
+const navLinks = [
+  { to: '/',          label: 'Characters', icon: UsersIcon,     authRequired: false },
+  { to: '/spells',    label: 'Spells',     icon: SparklesIcon,  authRequired: false },
+  { to: '/items',     label: 'Items',      icon: ShieldIcon,    authRequired: false },
+  { to: '/campaigns', label: 'Campaigns',  icon: BookOpenIcon,  authRequired: true  },
+]
+</script>
+
+<style scoped>
+.nav-slide-enter-active,
+.nav-slide-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.nav-slide-enter-from,
+.nav-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+</style>
