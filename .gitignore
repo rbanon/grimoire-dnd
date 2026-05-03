@@ -11,3 +11,5 @@ ROADMAP.local.md
 .claude/
 .agents/
 supabase/.temp/
+
+.vercel
