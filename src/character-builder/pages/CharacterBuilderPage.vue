@@ -161,43 +161,54 @@
         </div>
 
         <!-- Bottom nav bar -->
-        <div class="border-t border-shadow bg-abyss px-6 py-4 flex items-center justify-between gap-4">
-          <!-- Mobile step indicator -->
-          <div class="md:hidden text-xs font-heading tracking-wider text-mist">
-            {{ builder.draft.currentStep }} / {{ builder.totalSteps }}
-          </div>
+        <div class="border-t border-shadow bg-abyss px-6 py-4 flex flex-col gap-2">
+          <!-- Save error -->
+          <p
+            v-if="builder.saveError && builder.draft.currentStep === builder.totalSteps"
+            role="alert"
+            class="text-xs font-body text-blood-bright text-center"
+          >
+            {{ builder.saveError }}
+          </p>
 
-          <div class="hidden md:block" />
+          <div class="flex items-center justify-between gap-4">
+            <!-- Mobile step indicator -->
+            <div class="md:hidden text-xs font-heading tracking-wider text-mist">
+              {{ builder.draft.currentStep }} / {{ builder.totalSteps }}
+            </div>
 
-          <div class="flex items-center gap-3">
-            <button
-              v-if="builder.draft.currentStep > 1"
-              class="btn-secondary gap-2"
-              @click="builder.back()"
-            >
-              <ChevronLeftIcon :size="15" />
-              Back
-            </button>
+            <div class="hidden md:block" />
 
-            <!-- Save on last step -->
-            <button
-              v-if="builder.draft.currentStep === builder.totalSteps"
-              class="btn-primary gap-2 px-6"
-              :disabled="builder.saving"
-              @click="handleSave"
-            >
-              <span v-if="builder.saving" class="w-4 h-4 border-2 border-void/60 border-t-transparent rounded-full animate-spin" />
-              <BookmarkIcon v-else :size="15" />
-              {{ builder.saving ? 'Saving…' : 'Create Character' }}
-            </button>
-            <button
-              v-else
-              class="btn-primary gap-2 px-6"
-              @click="handleNext"
-            >
-              Next
-              <ChevronRightIcon :size="15" />
-            </button>
+            <div class="flex items-center gap-3">
+              <button
+                v-if="builder.draft.currentStep > 1"
+                class="btn-secondary gap-2"
+                @click="builder.back()"
+              >
+                <ChevronLeftIcon :size="15" />
+                Back
+              </button>
+
+              <!-- Save on last step -->
+              <button
+                v-if="builder.draft.currentStep === builder.totalSteps"
+                class="btn-primary gap-2 px-6"
+                :disabled="builder.saving"
+                @click="handleSave"
+              >
+                <span v-if="builder.saving" class="w-4 h-4 border-2 border-void/60 border-t-transparent rounded-full animate-spin" />
+                <BookmarkIcon v-else :size="15" />
+                {{ builder.saving ? 'Saving…' : 'Create Character' }}
+              </button>
+              <button
+                v-else
+                class="btn-primary gap-2 px-6"
+                @click="handleNext"
+              >
+                Next
+                <ChevronRightIcon :size="15" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -298,8 +309,12 @@ function handleNext() {
 }
 
 async function handleSave() {
-  const id = await builder.save()
-  router.push(`/characters/${id}`)
+  try {
+    const id = await builder.save()
+    router.push(`/characters/${id}`)
+  } catch {
+    // saveError is set in the store; error display is handled in the template
+  }
 }
 
 function startFresh() {

@@ -278,10 +278,12 @@ export type TraitFeature = z.infer<typeof TraitFeatureSchema>
 
 // ─── Full Character ───────────────────────────────────────────────────────────
 
+export const CURRENT_SCHEMA_VERSION = '1.0' as const
+
 export const CharacterSchema = z.object({
   // Meta
   id: z.string().uuid(),
-  schemaVersion: z.literal('1.0'),
+  schemaVersion: z.string(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 

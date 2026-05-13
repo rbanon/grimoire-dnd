@@ -122,6 +122,7 @@ const DraftSchema = z.object({ currentStep: z.number() }).passthrough()
 export const useBuilderStore = defineStore('builder', () => {
   const draft = ref<BuilderDraft>(defaultDraft())
   const saving = ref(false)
+  const saveError = ref<string | null>(null)
 
   // ── Computed ──────────────────────────────────────────────────────────────
 
@@ -261,6 +262,7 @@ export const useBuilderStore = defineStore('builder', () => {
 
   async function save(): Promise<string> {
     saving.value = true
+    saveError.value = null
     const characterStore = useCharactersStore()
     const d = draft.value
     const ts = now()
@@ -330,6 +332,9 @@ export const useBuilderStore = defineStore('builder', () => {
     await characterStore.create(character)
     clearDraft()
     return id
+    } catch (err) {
+      saveError.value = err instanceof Error ? err.message : 'Could not save character. Please try again.'
+      throw err
     } finally {
       saving.value = false
     }
@@ -338,6 +343,7 @@ export const useBuilderStore = defineStore('builder', () => {
   return {
     draft,
     saving,
+    saveError,
     totalSteps,
     isSpellcaster,
     effectiveScores,

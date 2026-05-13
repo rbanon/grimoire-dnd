@@ -9,9 +9,10 @@ import {
   toCharacterSummary,
 } from '@/shared/types/character'
 import { storageGet, storageSet } from '@/shared/lib/storage'
+import { migrateCharacter } from '@/shared/lib/migrateCharacter'
+import { toJsonValue } from '@/shared/lib/toJsonValue'
 import { generateId, now } from '@/shared/lib/uuid'
 import { supabase } from '@/shared/api/supabase.client'
-import type { Json } from '@/shared/types/supabase'
 import { useAuthStore } from '@/auth/store'
 
 const LOCAL_KEY = 'characters'
@@ -92,8 +93,11 @@ export const useCharactersStore = defineStore('characters', () => {
   }
 
   function loadFromLocal() {
-    const stored = storageGet(LOCAL_KEY, z.array(CharacterSchema))
-    characters.value = stored ?? []
+    const stored = storageGet(LOCAL_KEY, z.array(z.unknown()))
+    if (!stored) { characters.value = []; return }
+    characters.value = stored.flatMap((raw) => {
+      try { return [migrateCharacter(raw)] } catch { return [] }
+    })
   }
 
   async function loadFromCloud() {
@@ -109,11 +113,9 @@ export const useCharactersStore = defineStore('characters', () => {
       return
     }
     const rows = (data ?? []) as Array<{ data: unknown }>
-    const parsed = rows
-      .map((row) => CharacterSchema.safeParse(row.data))
-      .filter((r) => r.success)
-      .map((r) => r.data as Character)
-    characters.value = parsed
+    characters.value = rows.flatMap((row) => {
+      try { return [migrateCharacter(row.data)] } catch { return [] }
+    })
   }
 
   // ── Persist ───────────────────────────────────────────────────────────────
@@ -132,7 +134,7 @@ export const useCharactersStore = defineStore('characters', () => {
       class_name: character.identity.class.name,
       race_name: character.identity.race.name,
       portrait_url: character.portrait.type === 'url' ? character.portrait.url : null,
-      data: character as unknown as Json,
+      data: toJsonValue(character),
     })
     if (error) throw error
   }
@@ -222,21 +224,24 @@ export const useCharactersStore = defineStore('characters', () => {
     // Try single character envelope
     const singleResult = CharacterExportEnvelopeSchema.safeParse(parsed)
     if (singleResult.success) {
-      const c = { ...singleResult.data.data, id: generateId(), updatedAt: now() }
-      toAdd.push(c)
+      try {
+        const c = migrateCharacter({ ...singleResult.data.data, id: generateId(), updatedAt: now() })
+        toAdd.push(c)
+      } catch { errors.push('Character in envelope failed validation.') }
     } else {
       // Try collection envelope
       const collResult = CharacterCollectionExportEnvelopeSchema.safeParse(parsed)
       if (collResult.success) {
-        for (const c of collResult.data.data) {
-          toAdd.push({ ...c, id: generateId(), updatedAt: now() })
+        for (const raw of collResult.data.data) {
+          try {
+            toAdd.push(migrateCharacter({ ...raw, id: generateId(), updatedAt: now() }))
+          } catch { errors.push(`A character in the collection failed validation.`) }
         }
       } else {
         // Try bare character
-        const bareResult = CharacterSchema.safeParse(parsed)
-        if (bareResult.success) {
-          toAdd.push({ ...bareResult.data, id: generateId(), updatedAt: now() })
-        } else {
+        try {
+          toAdd.push(migrateCharacter({ ...(parsed as object), id: generateId(), updatedAt: now() }))
+        } catch {
           errors.push('Unrecognized format. Expected a DnD Creator character export.')
         }
       }

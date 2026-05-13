@@ -1,4 +1,4 @@
-// Local metadata for classes and races — flavor + glyphs
+// Local metadata for classes and races — flavor + glyphs, spell limits
 // Supplements the 5e-bits API (which only returns index + name in list responses)
 
 export interface ClassMeta {
@@ -113,6 +113,74 @@ export const RACE_META: Record<string, RaceMeta> = {
   halfling:   { glyph: '◉', flavor: 'Small but nimble folk with surprising luck', traits: ['Lucky', 'Brave', 'Halfling Nimbleness'] },
   human:      { glyph: '⊕', flavor: 'Ambitious and adaptable, humans shape the world', traits: ['Extra Skill Proficiency', 'Bonus Feat (optional)'] },
   tiefling:   { glyph: '⌬', flavor: 'Marked by infernal heritage, tieflings are both feared and alluring', traits: ['Darkvision', 'Hellish Resistance', 'Infernal Legacy'] },
+}
+
+// ─── Spell profiles ───────────────────────────────────────────────────────────
+
+/** How a class acquires spells. */
+export type CastingType =
+  | 'known'      // fixed list that grows by level (Bard, Ranger, Sorcerer, Warlock)
+  | 'prepared'   // daily preparation: abilityMod + level (Cleric, Druid, Paladin)
+  | 'spellbook'  // learns Int_mod + level spells, prepares Int_mod + level (Wizard)
+
+export interface SpellProfile {
+  castingType: CastingType
+  /** Cantrips known at each level, indexed [0] = level 1. 20 entries. */
+  cantripsKnown: readonly number[]
+  /** Spells known at each level. Only for castingType 'known'. */
+  spellsKnown?: readonly number[]
+  /** Ability modifier used for prepared-spell limit. Only for 'prepared' / 'spellbook'. */
+  preparedAbility?: 'int' | 'wis' | 'cha'
+}
+
+// SRD 5e 2014 data — 20 entries per array, index = level - 1
+const ZERO20 = new Array<number>(20).fill(0)
+
+export const SPELL_PROFILES: Partial<Record<string, SpellProfile>> = {
+  bard: {
+    castingType: 'known',
+    cantripsKnown: [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
+    spellsKnown:   [4,5,6,7,8,9,10,11,12,14,15,15,16,18,19,19,20,22,22,22],
+  },
+  cleric: {
+    castingType: 'prepared',
+    cantripsKnown:  [3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5],
+    preparedAbility: 'wis',
+  },
+  druid: {
+    castingType: 'prepared',
+    cantripsKnown:  [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
+    preparedAbility: 'wis',
+  },
+  paladin: {
+    castingType: 'prepared',
+    cantripsKnown:  ZERO20, // no cantrips; first spells at level 2
+    preparedAbility: 'cha',
+  },
+  ranger: {
+    castingType: 'known',
+    cantripsKnown:  ZERO20, // no cantrips; first spells at level 2
+    spellsKnown:   [0,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10,11],
+  },
+  sorcerer: {
+    castingType: 'known',
+    cantripsKnown: [4,4,4,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6],
+    spellsKnown:   [2,3,4,5,6,7,8,9,10,11,12,12,13,13,14,14,15,15,15,15],
+  },
+  warlock: {
+    castingType: 'known',
+    cantripsKnown: [2,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4],
+    spellsKnown:   [2,3,4,5,6,7,8,9,10,10,11,11,12,12,13,13,14,14,14,15],
+  },
+  wizard: {
+    castingType: 'spellbook',
+    cantripsKnown:  [3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5],
+    preparedAbility: 'int',
+  },
+}
+
+export function getSpellProfile(classIndex: string): SpellProfile | null {
+  return SPELL_PROFILES[classIndex] ?? null
 }
 
 export function getClassMeta(index: string): ClassMeta {

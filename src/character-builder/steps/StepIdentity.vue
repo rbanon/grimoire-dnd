@@ -15,9 +15,14 @@
               type="text"
               placeholder="What do the gods call you?"
               class="input-base text-lg font-heading"
+              :class="{ '!border-blood-base/60 bg-blood-deep/10': fieldErrors.name }"
               maxlength="120"
               autofocus
+              @blur="touched.name = true"
             />
+            <p v-if="fieldErrors.name" class="mt-1 text-xs font-body text-blood-bright">
+              Character name is required.
+            </p>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
@@ -92,6 +97,10 @@
         />
       </div>
 
+      <p v-if="fieldErrors.race" class="mt-2 text-xs font-body text-blood-bright">
+        Select a race to continue.
+      </p>
+
       <!-- Subrace picker -->
       <Transition name="expand">
         <div v-if="builder.draft.availableSubraces.length > 0" class="mt-3">
@@ -143,6 +152,9 @@
           </button>
         </div>
       </div>
+      <p v-if="fieldErrors.background" class="text-xs font-body text-blood-bright">
+        Select a background to continue.
+      </p>
     </section>
 
     <!-- Alignment -->
@@ -168,7 +180,7 @@
             <label class="label" :for="`char-${field.key}`">{{ field.label }}</label>
             <input
               :id="`char-${field.key}`"
-              v-model="(builder.draft as any)[field.key]"
+              v-model="builder.draft[field.key]"
               type="text"
               :placeholder="field.placeholder"
               class="input-base"
@@ -207,7 +219,7 @@
             <label class="label" :for="`char-${field.key}`">{{ field.label }}</label>
             <textarea
               :id="`char-${field.key}`"
-              v-model="(builder.draft as any)[field.key]"
+              v-model="builder.draft[field.key]"
               class="input-base resize-none"
               rows="2"
               :placeholder="field.placeholder"
@@ -223,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { ImageIcon, PencilIcon, InfoIcon } from 'lucide-vue-next'
 import { useBuilderStore } from '@/character-builder/builderStore'
@@ -241,6 +253,15 @@ const showPortraitInput = ref(false)
 const showAppearance = ref(false)
 const showPersonality = ref(false)
 
+// Track which required fields have been interacted with — errors only show after touch
+const touched = reactive({ name: false, race: false, background: false })
+
+const fieldErrors = computed(() => ({
+  name:       touched.name       && !builder.draft.name.trim(),
+  race:       touched.race       && !builder.draft.raceIndex,
+  background: touched.background && !builder.draft.backgroundIndex,
+}))
+
 const { data: raceList, isPending: racesLoading, isError: racesError } = useQuery({
   queryKey: ['races'],
   queryFn: () => fiveEApi.listRaces(),
@@ -256,6 +277,7 @@ const { data: bgList, isPending: backgroundsLoading, isError: backgroundsError }
 const backgrounds = computed(() => bgList.value?.results ?? [])
 
 async function selectRace(index: string, name: string) {
+  touched.race = true
   builder.draft.raceIndex = index
   builder.draft.raceName = name
   builder.draft.subraceIndex = ''
@@ -280,11 +302,15 @@ function selectSubrace(index: string, name: string) {
 }
 
 function selectBackground(index: string, name: string) {
+  touched.background = true
   builder.draft.backgroundIndex = index
   builder.draft.backgroundName = name
 }
 
-const appearanceFields = [
+type AppearanceKey = 'height' | 'weight' | 'eyes' | 'skin' | 'hair'
+type PersonalityKey = 'personalityTraits' | 'ideals' | 'bonds' | 'flaws'
+
+const appearanceFields: { key: AppearanceKey; label: string; placeholder: string }[] = [
   { key: 'height', label: 'Height', placeholder: "5'10\"" },
   { key: 'weight', label: 'Weight', placeholder: '160 lbs' },
   { key: 'eyes',   label: 'Eyes',   placeholder: 'Amber' },
@@ -292,7 +318,7 @@ const appearanceFields = [
   { key: 'hair',   label: 'Hair',   placeholder: 'Silver, waist-length' },
 ]
 
-const personalityFields = [
+const personalityFields: { key: PersonalityKey; label: string; placeholder: string }[] = [
   { key: 'personalityTraits', label: 'Personality Traits', placeholder: 'How do others see you?' },
   { key: 'ideals',            label: 'Ideals',             placeholder: 'What do you believe in?' },
   { key: 'bonds',             label: 'Bonds',              placeholder: 'What ties you to the world?' },
