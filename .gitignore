@@ -27,6 +27,7 @@ src/components.d.ts
 .copilot/
 .aider*
 .continue/
+skills/
 
 # Vercel
 .vercel/
