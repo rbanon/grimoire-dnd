@@ -19,7 +19,7 @@ const { mode, setMode } = useColorMode()
 const order = ['light', 'dark'] as const
 
 function cycle() {
-  const idx = order.indexOf(mode.value)
+  const idx = order.indexOf(mode.value as 'light' | 'dark')
   setMode(order[(idx + 1) % order.length])
 }
 </script>
