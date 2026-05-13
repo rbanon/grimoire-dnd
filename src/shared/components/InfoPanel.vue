@@ -1,5 +1,14 @@
 <template>
   <Teleport to="body">
+    <!-- Backdrop -->
+    <Transition name="ip-fade">
+      <div
+        v-if="panel.target.value"
+        class="fixed inset-0 z-[49] bg-black/40"
+        aria-hidden="true"
+        @click="panel.close()"
+      />
+    </Transition>
     <!-- Drawer -->
     <Transition name="ip-slide">
       <aside
@@ -228,6 +237,104 @@
             >{{ para }}</p>
           </template>
 
+          <!-- Item -->
+          <template v-else-if="panel.target.value?.kind === 'item' && itemData">
+            <div class="flex flex-wrap gap-2">
+              <span class="badge-gold text-xs">{{ itemData.equipment_category.name }}</span>
+              <span v-if="itemData.weapon_category" class="px-2 py-0.5 rounded text-xs font-heading text-stone bg-depths/60 border border-shadow capitalize">
+                {{ itemData.weapon_category }}
+              </span>
+              <span v-if="itemData.armor_category" class="px-2 py-0.5 rounded text-xs font-heading text-stone bg-depths/60 border border-shadow">
+                {{ itemData.armor_category }}
+              </span>
+              <span v-if="itemData.tool_category" class="px-2 py-0.5 rounded text-xs font-heading text-stone bg-depths/60 border border-shadow">
+                {{ itemData.tool_category }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div v-if="itemData.cost" class="card p-2.5 space-y-0.5">
+                <p class="text-2xs font-heading tracking-wide text-mist uppercase">Cost</p>
+                <p class="text-sm font-body text-stone">{{ itemData.cost.quantity }} {{ itemData.cost.unit }}</p>
+              </div>
+              <div v-if="itemData.weight !== undefined" class="card p-2.5 space-y-0.5">
+                <p class="text-2xs font-heading tracking-wide text-mist uppercase">Weight</p>
+                <p class="text-sm font-body text-stone">{{ itemData.weight }} lb</p>
+              </div>
+            </div>
+
+            <div v-if="itemData.damage" class="card p-3 space-y-1 border-blood-base/20 bg-blood-deep/10">
+              <p class="text-2xs font-heading tracking-wide text-mist uppercase">Damage</p>
+              <p class="text-xl font-heading text-vellum">{{ itemData.damage.damage_dice }}</p>
+              <p class="text-xs font-body text-stone">{{ itemData.damage.damage_type.name }}</p>
+            </div>
+
+            <div v-if="itemData.two_handed_damage" class="card p-2.5 space-y-0.5">
+              <p class="text-2xs font-heading tracking-wide text-mist uppercase">Two-Handed</p>
+              <p class="text-sm font-body text-stone">
+                {{ itemData.two_handed_damage.damage_dice }} {{ itemData.two_handed_damage.damage_type.name }}
+              </p>
+            </div>
+
+            <div v-if="itemData.range || itemData.throw_range" class="grid grid-cols-2 gap-2">
+              <div v-if="itemData.range" class="card p-2.5 space-y-0.5">
+                <p class="text-2xs font-heading tracking-wide text-mist uppercase">Range</p>
+                <p class="text-sm font-body text-stone">
+                  {{ itemData.range.normal }}{{ itemData.range.long ? ` / ${itemData.range.long}` : '' }} ft.
+                </p>
+              </div>
+              <div v-if="itemData.throw_range" class="card p-2.5 space-y-0.5">
+                <p class="text-2xs font-heading tracking-wide text-mist uppercase">Throw</p>
+                <p class="text-sm font-body text-stone">{{ itemData.throw_range.normal }} / {{ itemData.throw_range.long }} ft.</p>
+              </div>
+            </div>
+
+            <div v-if="itemData.armor_class" class="card p-3 space-y-1">
+              <p class="text-2xs font-heading tracking-wide text-mist uppercase">Armor Class</p>
+              <p class="text-xl font-heading text-vellum">{{ itemData.armor_class.base }}</p>
+              <p v-if="itemData.armor_class.dex_bonus" class="text-xs font-body text-stone">
+                + Dex modifier{{ itemData.armor_class.max_bonus ? ` (max ${itemData.armor_class.max_bonus})` : '' }}
+              </p>
+              <p v-if="itemData.str_minimum" class="text-xs font-body text-mist">Requires Str {{ itemData.str_minimum }}</p>
+              <p v-if="itemData.stealth_disadvantage" class="text-xs text-blood-pale">Stealth disadvantage</p>
+            </div>
+
+            <div v-if="itemData.properties?.length" class="space-y-1.5">
+              <p class="label">Properties</p>
+              <div class="flex flex-wrap gap-1.5">
+                <span
+                  v-for="prop in itemData.properties"
+                  :key="prop.index"
+                  class="px-2 py-0.5 rounded text-xs font-body text-stone bg-depths/60 border border-shadow"
+                >{{ prop.name }}</span>
+              </div>
+            </div>
+
+            <div v-if="itemData.contents?.length" class="space-y-1.5">
+              <p class="label">Contents</p>
+              <div class="space-y-1">
+                <div
+                  v-for="c in itemData.contents"
+                  :key="c.item.index"
+                  class="flex items-center justify-between text-xs"
+                >
+                  <span class="font-body text-stone">{{ c.item.name }}</span>
+                  <span class="text-mist">×{{ c.quantity }}</span>
+                </div>
+              </div>
+            </div>
+
+            <p v-if="itemData.capacity" class="text-sm font-body text-ash leading-relaxed">
+              Capacity: {{ itemData.capacity }}
+            </p>
+
+            <p
+              v-for="(note, i) in itemData.special"
+              :key="i"
+              class="text-sm font-body text-ash leading-relaxed italic"
+            >{{ note }}</p>
+          </template>
+
           <!-- Alignment -->
           <template v-else-if="panel.target.value?.kind === 'alignment' && alignmentInfo">
             <p class="text-xs font-heading tracking-widest text-mist uppercase">{{ alignmentInfo.nickname }}</p>
@@ -265,12 +372,14 @@ const isClass      = computed(() => panel.target.value?.kind === 'class')
 const isBackground = computed(() => panel.target.value?.kind === 'background')
 const isSpell      = computed(() => panel.target.value?.kind === 'spell')
 const isSkill      = computed(() => panel.target.value?.kind === 'skill')
+const isItem       = computed(() => panel.target.value?.kind === 'item')
 
 const raceIndex  = computed(() => isRace.value  ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'race' }>)!.index : '')
 const classIndex = computed(() => isClass.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'class' }>)!.index : '')
 const bgIndex    = computed(() => isBackground.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'background' }>)!.index : '')
 const spellIndex = computed(() => isSpell.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'spell' }>)!.index : '')
 const skillIndex = computed(() => isSkill.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'skill' }>)!.index : '')
+const itemIndex  = computed(() => isItem.value  ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'item' }>)!.index : '')
 
 const { data: raceData,  isFetching: raceFetching,  isError: raceError  } = useQuery({
   queryKey: computed(() => ['race-detail',  raceIndex.value]),
@@ -302,6 +411,12 @@ const { data: skillData, isFetching: skillFetching, isError: skillError } = useQ
   staleTime: Infinity,
   enabled:  isSkill,
 })
+const { data: itemData, isFetching: itemFetching, isError: itemError } = useQuery({
+  queryKey: computed(() => ['item-detail', itemIndex.value]),
+  queryFn:  () => fiveEApi.getEquipment(itemIndex.value),
+  staleTime: Infinity,
+  enabled:  isItem,
+})
 
 const isLoading = computed(() => {
   const k = panel.target.value?.kind
@@ -310,6 +425,7 @@ const isLoading = computed(() => {
   if (k === 'background') return bgFetching.value
   if (k === 'spell')      return spellFetching.value
   if (k === 'skill')      return skillFetching.value
+  if (k === 'item')       return itemFetching.value
   return false
 })
 
@@ -320,6 +436,7 @@ const isError = computed(() => {
   if (k === 'background') return bgError.value
   if (k === 'spell')      return spellError.value
   if (k === 'skill')      return skillError.value
+  if (k === 'item')       return itemError.value
   return false
 })
 
@@ -403,6 +520,16 @@ const alignmentInfo = computed(() => {
   return ALIGNMENT_INFO[panel.target.value.value] ?? null
 })
 
+const ITEM_CATEGORY_GLYPH: Record<string, string> = {
+  weapon: '⚔',
+  armor: '🛡',
+  'adventuring-gear': '🎒',
+  tools: '🔧',
+  mounts: '🐴',
+  vehicles: '⛵',
+  'trade-goods': '💰',
+}
+
 const entityGlyph = computed(() => {
   const t = panel.target.value
   if (!t) return ''
@@ -412,6 +539,7 @@ const entityGlyph = computed(() => {
   if (t.kind === 'spell')      return '✶'
   if (t.kind === 'skill')      return '🎯'
   if (t.kind === 'alignment')  return ALIGNMENT_INFO[t.value]?.glyph ?? '◎'
+  if (t.kind === 'item')       return ITEM_CATEGORY_GLYPH[itemData.value?.equipment_category.index ?? ''] ?? '⚙'
   return ''
 })
 
@@ -423,6 +551,7 @@ const entityName = computed(() => {
   if (t.kind === 'background') return bgData.value?.name         ?? t.index
   if (t.kind === 'spell')      return spellData.value?.name      ?? t.index
   if (t.kind === 'skill')      return skillData.value?.name      ?? t.index
+  if (t.kind === 'item')       return itemData.value?.name       ?? t.index
   if (t.kind === 'alignment')  return t.value
   return ''
 })
@@ -435,4 +564,9 @@ const kindBadge = computed(() => panel.target.value?.kind ?? '')
 .ip-slide-leave-active { transition: transform 0.25s ease-out; }
 .ip-slide-enter-from,
 .ip-slide-leave-to { transform: translateX(100%); }
+
+.ip-fade-enter-active,
+.ip-fade-leave-active { transition: opacity 0.2s ease; }
+.ip-fade-enter-from,
+.ip-fade-leave-to { opacity: 0; }
 </style>

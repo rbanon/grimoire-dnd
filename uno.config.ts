@@ -9,18 +9,18 @@ export default defineConfig({
 
   theme: {
     colors: {
-      // Core palette — resolved via CSS custom properties for light/dark switching
-      void:    'rgb(var(--c-void) / <alpha-value>)',
-      abyss:   'rgb(var(--c-abyss) / <alpha-value>)',
-      depths:  'rgb(var(--c-depths) / <alpha-value>)',
-      shadow:  'rgb(var(--c-shadow) / <alpha-value>)',
-      dusk:    'rgb(var(--c-dusk) / <alpha-value>)',
-      mist:    'rgb(var(--c-mist) / <alpha-value>)',
-      stone:   'rgb(var(--c-stone) / <alpha-value>)',
-      ash:     'rgb(var(--c-ash) / <alpha-value>)',
-      vellum:  'rgb(var(--c-vellum) / <alpha-value>)',
+      // Core neutrals — resolved via CSS custom properties for light/dark switching
+      void:   'rgb(var(--c-void) / <alpha-value>)',
+      abyss:  'rgb(var(--c-abyss) / <alpha-value>)',
+      depths: 'rgb(var(--c-depths) / <alpha-value>)',
+      shadow: 'rgb(var(--c-shadow) / <alpha-value>)',
+      dusk:   'rgb(var(--c-dusk) / <alpha-value>)',
+      mist:   'rgb(var(--c-mist) / <alpha-value>)',
+      stone:  'rgb(var(--c-stone) / <alpha-value>)',
+      ash:    'rgb(var(--c-ash) / <alpha-value>)',
+      vellum: 'rgb(var(--c-vellum) / <alpha-value>)',
 
-      // Gold — antique, rich, not yellow
+      // Antique gold — dividers, legendary items, secondary accents
       gold: {
         dim:    'rgb(var(--c-gold-dim) / <alpha-value>)',
         deep:   'rgb(var(--c-gold-deep) / <alpha-value>)',
@@ -31,15 +31,7 @@ export default defineConfig({
         glow:   'rgb(var(--c-gold-glow) / <alpha-value>)',
       },
 
-      // Crimson — blood magic
-      blood: {
-        deep:   'rgb(var(--c-blood-deep) / <alpha-value>)',
-        base:   'rgb(var(--c-blood-base) / <alpha-value>)',
-        mid:    'rgb(var(--c-blood-mid) / <alpha-value>)',
-        bright: 'rgb(var(--c-blood-bright) / <alpha-value>)',
-      },
-
-      // Arcane — sapphire magic
+      // Crimson — primary interactive accent (DnD Beyond red)
       arcane: {
         deep:   'rgb(var(--c-arcane-deep) / <alpha-value>)',
         base:   'rgb(var(--c-arcane-base) / <alpha-value>)',
@@ -48,7 +40,15 @@ export default defineConfig({
         pale:   'rgb(var(--c-arcane-pale) / <alpha-value>)',
       },
 
-      // Emerald — nature / druid
+      // Blood — danger, HP, critical (darker wine/maroon than arcane)
+      blood: {
+        deep:   'rgb(var(--c-blood-deep) / <alpha-value>)',
+        base:   'rgb(var(--c-blood-base) / <alpha-value>)',
+        mid:    'rgb(var(--c-blood-mid) / <alpha-value>)',
+        bright: 'rgb(var(--c-blood-bright) / <alpha-value>)',
+      },
+
+      // Verdant — nature, druid
       verdant: {
         deep:   'rgb(var(--c-verdant-deep) / <alpha-value>)',
         base:   'rgb(var(--c-verdant-base) / <alpha-value>)',
@@ -56,7 +56,7 @@ export default defineConfig({
         bright: 'rgb(var(--c-verdant-bright) / <alpha-value>)',
       },
 
-      // Semantic
+      // Semantic aliases
       success: 'rgb(var(--c-success) / <alpha-value>)',
       danger:  'rgb(var(--c-danger) / <alpha-value>)',
       warning: 'rgb(var(--c-warning) / <alpha-value>)',
@@ -64,23 +64,23 @@ export default defineConfig({
     },
 
     fontFamily: {
-      display: ['"Cinzel Decorative"', 'Cinzel', 'Georgia', 'serif'],
-      heading: ['Cinzel', '"Cinzel Decorative"', 'Georgia', 'serif'],
-      body:    ['"EB Garamond"', 'Georgia', 'serif'],
-      mono:    ['"JetBrains Mono"', 'monospace'],
+      display: ['Cinzel', 'Georgia', 'serif'],
+      heading: ['Cinzel', 'Georgia', 'serif'],
+      body:    ['"Crimson Pro"', 'Georgia', 'serif'],
+      mono:    ['"JetBrains Mono"', '"Fira Code"', 'Consolas', 'monospace'],
     },
 
     fontSize: {
       '2xs': ['0.625rem', { lineHeight: '1rem' }],
       xs:    ['0.75rem',  { lineHeight: '1.125rem' }],
       sm:    ['0.875rem', { lineHeight: '1.375rem' }],
-      base:  ['1.0625rem',{ lineHeight: '1.75rem' }],
-      lg:    ['1.1875rem',{ lineHeight: '1.875rem' }],
-      xl:    ['1.375rem', { lineHeight: '2rem' }],
-      '2xl': ['1.625rem', { lineHeight: '2.25rem' }],
-      '3xl': ['2rem',     { lineHeight: '2.5rem' }],
-      '4xl': ['2.5rem',   { lineHeight: '3rem' }],
-      '5xl': ['3.25rem',  { lineHeight: '3.75rem' }],
+      base:  ['1rem',     { lineHeight: '1.65rem' }],
+      lg:    ['1.125rem', { lineHeight: '1.75rem' }],
+      xl:    ['1.25rem',  { lineHeight: '1.875rem' }],
+      '2xl': ['1.5rem',   { lineHeight: '2rem' }],
+      '3xl': ['1.875rem', { lineHeight: '2.375rem' }],
+      '4xl': ['2.25rem',  { lineHeight: '2.75rem' }],
+      '5xl': ['3rem',     { lineHeight: '3.5rem' }],
     },
 
     boxShadow: {
@@ -94,14 +94,14 @@ export default defineConfig({
     },
 
     borderRadius: {
-      none: '0',
-      sm:   '2px',
-      DEFAULT: '4px',
-      md:   '6px',
-      lg:   '8px',
-      xl:   '12px',
-      '2xl':'16px',
-      full: '9999px',
+      none:    '0',
+      sm:      '2px',
+      DEFAULT: '3px',
+      md:      '4px',
+      lg:      '6px',
+      xl:      '8px',
+      '2xl':   '12px',
+      full:    '9999px',
     },
   },
 
@@ -109,36 +109,36 @@ export default defineConfig({
     // ── Layout
     'app-container': 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8',
 
-    // ── Cards — tome pages
+    // ── Cards
     'card':
       'bg-abyss border border-shadow rounded-lg shadow-card relative overflow-hidden',
     'card-hover':
-      'card transition-all duration-300 hover:border-gold-dim hover:shadow-card-hover cursor-pointer hover:-translate-y-px',
+      'card transition-colors duration-200 hover:border-arcane-base/40 hover:shadow-card-hover cursor-pointer',
     'card-inner':
       'bg-depths border border-shadow/60 rounded-md',
 
     // ── Buttons
     'btn-base':
-      'inline-flex items-center justify-center gap-2 font-heading text-sm tracking-wide transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-mid focus-visible:ring-offset-2 focus-visible:ring-offset-void disabled:opacity-40 disabled:pointer-events-none select-none',
+      'inline-flex items-center justify-center gap-2 font-heading text-sm tracking-wide transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arcane-mid focus-visible:ring-offset-2 focus-visible:ring-offset-void disabled:opacity-40 disabled:pointer-events-none select-none',
 
     'btn-primary':
-      'btn-base px-5 py-2 rounded bg-gold-base text-void font-semibold hover:bg-gold-mid active:bg-gold-deep shadow-[0_1px_0_rgba(255,255,255,0.15)_inset] hover:shadow-glow-gold',
+      'btn-base px-5 py-2 rounded-md bg-arcane-base text-vellum font-semibold hover:bg-arcane-mid active:bg-arcane-deep',
 
     'btn-secondary':
-      'btn-base px-5 py-2 rounded border border-shadow bg-depths text-stone hover:border-gold-dim hover:text-vellum hover:bg-dusk/50',
+      'btn-base px-5 py-2 rounded-md border border-shadow bg-depths text-stone hover:border-arcane-base/40 hover:text-vellum',
 
     'btn-ghost':
-      'btn-base px-3 py-1.5 rounded text-ash hover:text-stone hover:bg-shadow/60',
+      'btn-base px-3 py-1.5 rounded-md text-ash hover:text-stone hover:bg-shadow/50',
 
     'btn-danger':
-      'btn-base px-5 py-2 rounded bg-blood-mid text-vellum hover:bg-blood-bright',
+      'btn-base px-5 py-2 rounded-md bg-blood-mid text-vellum hover:bg-blood-bright',
 
     'btn-icon':
-      'btn-base p-2 rounded text-ash hover:text-stone hover:bg-shadow/60',
+      'btn-base p-2 rounded-md text-ash hover:text-stone hover:bg-shadow/50',
 
     // ── Form controls
     'input-base':
-      'w-full rounded border border-shadow bg-depths px-3.5 py-2.5 text-base font-body text-stone placeholder:text-mist focus:outline-none focus:border-gold-dim focus:ring-1 focus:ring-gold-dim/50 transition-colors',
+      'w-full rounded-md border border-shadow bg-depths px-3.5 py-2 text-base font-body text-stone placeholder:text-mist focus:outline-none focus:border-arcane-base/60 focus:ring-1 focus:ring-arcane-base/30 transition-colors',
 
     'label':
       'block text-xs font-heading tracking-widest uppercase text-ash mb-1.5',
@@ -153,7 +153,7 @@ export default defineConfig({
     'text-caption':
       'text-xs font-heading tracking-widest uppercase text-mist',
 
-    // ── Decorative dividers
+    // ── Dividers
     'divider':
       'border-t border-shadow',
     'divider-gold':
@@ -175,10 +175,10 @@ export default defineConfig({
     'stat-box':
       'card flex flex-col items-center justify-center p-3 gap-0.5',
 
-    // ── Nav link
+    // ── Navigation
     'nav-link':
-      'flex items-center gap-2 px-3 py-1.5 rounded text-sm font-heading tracking-wide text-ash hover:text-stone hover:bg-shadow/60 transition-all duration-150',
+      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-heading tracking-wide text-ash hover:text-stone hover:bg-shadow/50 transition-all duration-150',
     'nav-link-active':
-      'nav-link text-gold-mid hover:text-gold-bright bg-gold-dim/10 hover:bg-gold-dim/15',
+      'nav-link text-arcane-bright hover:text-arcane-bright bg-arcane-deep/30 hover:bg-arcane-deep/50',
   },
 })

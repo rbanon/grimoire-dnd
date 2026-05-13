@@ -5,19 +5,18 @@
     @click="cycle"
   >
     <Transition name="icon-swap" mode="out-in">
-      <SunIcon    v-if="mode === 'light'"  :size="15" class="text-gold-mid" />
-      <MoonIcon   v-else-if="mode === 'dark'"   :size="15" class="text-arcane-pale" />
-      <MonitorIcon v-else                        :size="15" class="text-ash" />
+      <SunIcon  v-if="mode === 'light'" :size="15" class="text-gold-mid" />
+      <MoonIcon v-else                 :size="15" class="text-arcane-pale" />
     </Transition>
   </button>
 </template>
 
 <script setup lang="ts">
-import { SunIcon, MoonIcon, MonitorIcon } from 'lucide-vue-next'
+import { SunIcon, MoonIcon } from 'lucide-vue-next'
 import { useColorMode } from '@/shared/composables/useColorMode'
 
 const { mode, setMode } = useColorMode()
-const order = ['system', 'light', 'dark'] as const
+const order = ['light', 'dark'] as const
 
 function cycle() {
   const idx = order.indexOf(mode.value)

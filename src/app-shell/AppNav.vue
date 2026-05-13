@@ -26,11 +26,11 @@
           :key="link.to"
           :to="link.to"
           custom
-          v-slot="{ isActive, href, navigate }"
+          v-slot="{ isExactActive, href, navigate }"
         >
           <a
             :href="href"
-            :class="isActive ? 'nav-link-active' : 'nav-link'"
+            :class="isExactActive ? 'nav-link-active' : 'nav-link'"
             @click="navigate"
           >
             <component :is="link.icon" :size="14" class="shrink-0" />

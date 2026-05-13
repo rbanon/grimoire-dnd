@@ -5,57 +5,57 @@
 
   /* Light theme (Parchment Codex) — default */
   html {
-    --c-void:           245 240 228;
-    --c-abyss:          238 231 218;
-    --c-depths:         230 222 206;
-    --c-shadow:         204 192 172;
-    --c-dusk:           184 172 152;
-    --c-mist:           140 126 108;
-    --c-stone:          42 34 24;
-    --c-ash:            92 78 64;
-    --c-vellum:         20 14 8;
+    --c-void:           248 244 237;
+    --c-abyss:          241 235 224;
+    --c-depths:         231 224 210;
+    --c-shadow:         196 184 166;
+    --c-dusk:           162 149 132;
+    --c-mist:           118 106 92;
+    --c-stone:          36 26 16;
+    --c-ash:            76 62 48;
+    --c-vellum:         14 8 4;
 
-    /* Gold — shared across themes */
-    --c-gold-dim:       107 79 26;
-    --c-gold-deep:      139 101 32;
-    --c-gold-base:      200 146 42;
-    --c-gold-mid:       212 168 67;
-    --c-gold-bright:    232 192 106;
-    --c-gold-pale:      242 217 138;
-    --c-gold-glow:      253 233 176;
+    /* Gold — antique, warm; dividers and legendary content */
+    --c-gold-dim:       148 112 40;
+    --c-gold-deep:      28 18 6;
+    --c-gold-base:      176 136 52;
+    --c-gold-mid:       200 162 72;
+    --c-gold-bright:    222 188 100;
+    --c-gold-pale:      238 212 144;
+    --c-gold-glow:      252 232 168;
 
-    /* Blood */
-    --c-blood-deep:     92 26 26;
-    --c-blood-base:     155 32 32;
-    --c-blood-mid:      192 57 43;
-    --c-blood-bright:   231 76 60;
+    /* Crimson — primary interactive accent (DnD Beyond red) */
+    --c-arcane-deep:    38 8 8;
+    --c-arcane-base:    152 30 30;
+    --c-arcane-mid:     188 44 44;
+    --c-arcane-bright:  218 62 62;
+    --c-arcane-pale:    246 190 190;
 
-    /* Arcane */
-    --c-arcane-deep:    26 26 92;
-    --c-arcane-base:    45 45 155;
-    --c-arcane-mid:     61 90 176;
-    --c-arcane-bright:  107 130 212;
-    --c-arcane-pale:    168 184 240;
+    /* Blood — danger, HP critical (darker wine/maroon) */
+    --c-blood-deep:     28 6 6;
+    --c-blood-base:     96 18 18;
+    --c-blood-mid:      120 24 24;
+    --c-blood-bright:   150 32 32;
 
-    /* Verdant */
-    --c-verdant-deep:   13 51 32;
-    --c-verdant-base:   26 92 53;
-    --c-verdant-mid:    45 138 82;
-    --c-verdant-bright: 74 184 112;
+    /* Verdant — nature, druid */
+    --c-verdant-deep:   10 44 28;
+    --c-verdant-base:   22 88 52;
+    --c-verdant-mid:    38 128 72;
+    --c-verdant-bright: 62 168 96;
 
     /* Semantic */
-    --c-success:        74 184 112;
-    --c-danger:         192 57 43;
-    --c-warning:        212 168 67;
-    --c-info:           107 130 212;
+    --c-success:        62 168 96;
+    --c-danger:         218 62 62;
+    --c-warning:        200 162 72;
+    --c-info:           76 120 196;
 
-    /* Shadows — lighter for parchment */
-    --shadow-card:        0 1px 0 rgba(212,168,67,0.04), 0 2px 12px rgba(0,0,0,0.10);
-    --shadow-card-hover:  0 0 0 1px rgba(212,168,67,0.25), 0 4px 20px rgba(0,0,0,0.16), 0 0 40px rgba(212,168,67,0.04);
-    --shadow-panel:       0 0 0 1px rgba(212,168,67,0.10), 0 8px 32px rgba(0,0,0,0.12);
-    --shadow-modal:       0 0 0 1px rgba(212,168,67,0.12), 0 16px 64px rgba(0,0,0,0.20);
-    --shadow-glow-gold:   0 0 24px rgba(212,168,67,0.30), 0 0 60px rgba(212,168,67,0.10);
-    --shadow-glow-arcane: 0 0 24px rgba(107,130,212,0.30), 0 0 60px rgba(107,130,212,0.10);
+    /* Shadows */
+    --shadow-card:        0 1px 3px rgba(0,0,0,0.08), 0 1px 0 rgba(0,0,0,0.04);
+    --shadow-card-hover:  0 0 0 1px rgba(152,30,30,0.22), 0 4px 16px rgba(0,0,0,0.14);
+    --shadow-panel:       0 0 0 1px rgba(152,30,30,0.12), 0 8px 32px rgba(0,0,0,0.12);
+    --shadow-modal:       0 0 0 1px rgba(152,30,30,0.12), 0 16px 64px rgba(0,0,0,0.20);
+    --shadow-glow-gold:   0 0 24px rgba(200,162,72,0.30);
+    --shadow-glow-arcane: 0 0 24px rgba(188,44,44,0.25);
     --shadow-inner:       inset 0 1px 0 rgba(0,0,0,0.04);
 
     color-scheme: light;
@@ -63,153 +63,80 @@
     color: rgb(var(--c-stone));
   }
 
-  /* Dark theme (Midnight Grimoire) */
+  /* Dark theme (Tome) */
   html.dark {
-    --c-void:           8 11 18;
-    --c-abyss:          13 17 32;
-    --c-depths:         19 24 40;
-    --c-shadow:         28 35 56;
-    --c-dusk:           42 52 82;
-    --c-mist:           74 85 120;
-    --c-stone:          200 204 216;
-    --c-ash:            139 145 168;
-    --c-vellum:         240 232 213;
+    --c-void:           12 9 7;
+    --c-abyss:          20 16 12;
+    --c-depths:         30 24 18;
+    --c-shadow:         46 38 28;
+    --c-dusk:           68 56 42;
+    --c-mist:           126 112 96;
+    --c-stone:          208 198 184;
+    --c-ash:            156 144 128;
+    --c-vellum:         244 238 228;
 
-    /* Shadows — deeper for dark backgrounds */
-    --shadow-card:        0 1px 0 rgba(212,168,67,0.06), 0 4px 24px rgba(0,0,0,0.50);
-    --shadow-card-hover:  0 0 0 1px rgba(212,168,67,0.25), 0 8px 40px rgba(0,0,0,0.60), 0 0 60px rgba(212,168,67,0.04);
-    --shadow-panel:       0 0 0 1px rgba(212,168,67,0.12), 0 16px 64px rgba(0,0,0,0.70);
-    --shadow-modal:       0 0 0 1px rgba(212,168,67,0.15), 0 32px 96px rgba(0,0,0,0.85);
+    /* Shadows */
+    --shadow-card:        0 2px 8px rgba(0,0,0,0.50), 0 1px 0 rgba(255,255,255,0.03);
+    --shadow-card-hover:  0 0 0 1px rgba(188,44,44,0.32), 0 8px 32px rgba(0,0,0,0.60);
+    --shadow-panel:       0 0 0 1px rgba(188,44,44,0.15), 0 16px 64px rgba(0,0,0,0.70);
+    --shadow-modal:       0 0 0 1px rgba(188,44,44,0.18), 0 32px 96px rgba(0,0,0,0.85);
     --shadow-inner:       inset 0 1px 0 rgba(255,255,255,0.04);
 
     color-scheme: dark;
   }
 
-  * {
-    box-sizing: border-box;
+  * { box-sizing: border-box; }
+
+  body {
+    font-size: 1rem;
+    line-height: 1.65;
   }
 
-  /* Custom scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: rgb(var(--c-abyss)); }
-  ::-webkit-scrollbar-thumb {
-    background: rgb(var(--c-dusk));
-    border-radius: 3px;
-  }
+  /* Scrollbar */
+  ::-webkit-scrollbar        { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track  { background: rgb(var(--c-abyss)); }
+  ::-webkit-scrollbar-thumb  { background: rgb(var(--c-dusk)); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-gold-dim)); }
+  * { scrollbar-width: thin; scrollbar-color: rgb(var(--c-dusk)) transparent; }
 
   /* Selection */
   ::selection {
-    background: rgba(212, 168, 67, 0.25);
+    background: rgba(188, 44, 44, 0.18);
     color: rgb(var(--c-vellum));
   }
-
-  /* EB Garamond needs slightly larger base */
-  body {
-    font-size: 1.0625rem;
-    line-height: 1.75;
-  }
-}
-
-/* ── Grain texture overlay ────────────────────────────────────────────────── */
-#app::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.032;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 256px 256px;
-}
-
-/* ── Ornamental decorations ──────────────────────────────────────────────── */
-
-/* Gold corner decoration */
-.corner-ornament {
-  position: relative;
-}
-.corner-ornament::before,
-.corner-ornament::after {
-  content: '';
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border-color: rgba(212, 168, 67, 0.3);
-  border-style: solid;
-}
-.corner-ornament::before {
-  top: 8px;
-  left: 8px;
-  border-width: 1px 0 0 1px;
-}
-.corner-ornament::after {
-  bottom: 8px;
-  right: 8px;
-  border-width: 0 1px 1px 0;
-}
-
-/* Gold shimmer on display headings */
-.text-shimmer {
-  background: linear-gradient(
-    105deg,
-    #c8922a 0%,
-    #f2d98a 30%,
-    #d4a843 50%,
-    #f2d98a 70%,
-    #c8922a 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: shimmer 4s linear infinite;
-}
-
-@keyframes shimmer {
-  0%   { background-position: 200% center; }
-  100% { background-position: -200% center; }
 }
 
 /* ── Card entrance animation ─────────────────────────────────────────────── */
 @keyframes card-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .animate-card-in {
-  animation: card-in 0.4s ease both;
+  animation: card-in 0.3s ease both;
 }
 
-/* Staggered children */
 .stagger-children > * {
-  animation: card-in 0.35s ease both;
+  animation: card-in 0.3s ease both;
 }
-.stagger-children > *:nth-child(1)  { animation-delay: 0ms; }
-.stagger-children > *:nth-child(2)  { animation-delay: 50ms; }
-.stagger-children > *:nth-child(3)  { animation-delay: 100ms; }
-.stagger-children > *:nth-child(4)  { animation-delay: 150ms; }
-.stagger-children > *:nth-child(5)  { animation-delay: 200ms; }
-.stagger-children > *:nth-child(6)  { animation-delay: 250ms; }
-.stagger-children > *:nth-child(7)  { animation-delay: 300ms; }
-.stagger-children > *:nth-child(8)  { animation-delay: 350ms; }
-.stagger-children > *:nth-child(n+9){ animation-delay: 400ms; }
+.stagger-children > *:nth-child(1)  { animation-delay:   0ms; }
+.stagger-children > *:nth-child(2)  { animation-delay:  40ms; }
+.stagger-children > *:nth-child(3)  { animation-delay:  80ms; }
+.stagger-children > *:nth-child(4)  { animation-delay: 120ms; }
+.stagger-children > *:nth-child(5)  { animation-delay: 160ms; }
+.stagger-children > *:nth-child(6)  { animation-delay: 200ms; }
+.stagger-children > *:nth-child(7)  { animation-delay: 240ms; }
+.stagger-children > *:nth-child(8)  { animation-delay: 280ms; }
+.stagger-children > *:nth-child(n+9){ animation-delay: 320ms; }
 
-/* ── Gold rule / ornamental divider ─────────────────────────────────────── */
+/* ── Gold section divider ────────────────────────────────────────────────── */
 .rule-gold {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: rgba(212, 168, 67, 0.5);
+  color: rgba(200, 162, 72, 0.65);
   font-family: 'Cinzel', serif;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
@@ -218,38 +145,26 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(212,168,67,0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(200,162,72,0.35), transparent);
 }
 
-/* ── Magic rune background motif (subtle, decorative) ────────────────────── */
-.rune-bg {
-  position: relative;
-}
-.rune-bg::after {
-  content: '⌬ ✦ ⌬';
-  position: absolute;
-  bottom: -1px;
-  right: 16px;
-  font-size: 10px;
-  letter-spacing: 6px;
-  color: rgba(212,168,67,0.12);
-  pointer-events: none;
-  font-family: monospace;
+html:not(.dark) .rule-gold {
+  color: rgba(148, 112, 40, 0.80);
 }
 
-/* ── Hover glow on interactive gold elements ─────────────────────────────── */
+/* ── Hover glow on interactive elements ──────────────────────────────────── */
 .gold-glow-hover {
-  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .gold-glow-hover:hover {
-  box-shadow: 0 0 0 1px rgba(212,168,67,0.25), 0 0 40px rgba(212,168,67,0.08);
-  border-color: rgba(212,168,67,0.25);
+  box-shadow: 0 0 0 1px rgba(200,162,72,0.25), 0 0 32px rgba(200,162,72,0.08);
+  border-color: rgba(200,162,72,0.25);
 }
 
-/* ── Tab underline active state ──────────────────────────────────────────── */
+/* ── Tab active state ────────────────────────────────────────────────────── */
 .tab-active {
   position: relative;
-  color: #d4a843;
+  color: rgb(var(--c-gold-mid));
 }
 .tab-active::after {
   content: '';
@@ -258,38 +173,32 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #d4a843, transparent);
+  background: linear-gradient(90deg, transparent, rgb(var(--c-gold-mid)), transparent);
 }
 
-/* ── Light mode badge contrast fixes ─────────────────────────────────────── */
-/* Badges use colors designed for dark backgrounds; in light mode we use      */
-/* darker text so they remain readable against the parchment background.      */
+/* ── HP critical pulse ───────────────────────────────────────────────────── */
+@keyframes pulse-blood {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(150,32,32,0); }
+  50%       { box-shadow: 0 0 0 6px rgba(150,32,32,0.22); }
+}
+.pulse-blood {
+  animation: pulse-blood 2s ease-in-out infinite;
+}
+
+/* ── Light mode badge contrast fixes ────────────────────────────────────── */
 html:not(.dark) .badge-gold {
   color: rgb(var(--c-gold-dim));
 }
 html:not(.dark) .badge-arcane {
-  color: rgb(var(--c-arcane-mid));
-  background-color: rgba(61, 90, 176, 0.08);
+  color: rgb(var(--c-arcane-base));
+  background-color: rgba(152, 30, 30, 0.08);
+  border-color: rgba(152, 30, 30, 0.25);
 }
 html:not(.dark) .badge-blood {
   color: rgb(var(--c-blood-base));
-  background-color: rgba(155, 32, 32, 0.08);
+  background-color: rgba(96, 18, 18, 0.08);
 }
 html:not(.dark) .badge-verdant {
   color: rgb(var(--c-verdant-base));
-  background-color: rgba(26, 92, 53, 0.08);
-}
-
-/* rule-gold divider text is too pale on the parchment background */
-html:not(.dark) .rule-gold {
-  color: rgba(107, 79, 26, 0.75);
-}
-
-/* ── Pulse glow for HP critical ──────────────────────────────────────────── */
-@keyframes pulse-blood {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(192,57,43,0); }
-  50%       { box-shadow: 0 0 0 6px rgba(192,57,43,0.2); }
-}
-.pulse-blood {
-  animation: pulse-blood 2s ease-in-out infinite;
+  background-color: rgba(22, 88, 52, 0.08);
 }

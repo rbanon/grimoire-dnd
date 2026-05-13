@@ -52,7 +52,7 @@ export const ItemSearchFilterStateSchema = z.object({
   maxCostGp: z.number().nullable(),
   minWeight: z.number().nullable(),
   maxWeight: z.number().nullable(),
-  sortBy: z.enum(['name', 'cost', 'weight']),
+  sortBy: z.enum(['name', 'cost', 'weight', 'rarity', 'category']),
   sortDir: z.enum(['asc', 'desc']),
 })
 export type ItemSearchFilterState = z.infer<typeof ItemSearchFilterStateSchema>

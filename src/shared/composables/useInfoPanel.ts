@@ -7,6 +7,7 @@ export type InfoTarget =
   | { kind: 'spell';      index: string }
   | { kind: 'skill';      index: string }
   | { kind: 'alignment';  value: string }
+  | { kind: 'item';       index: string }
 
 const _target = ref<InfoTarget | null>(null)
 

@@ -1,15 +1,35 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
 .env
 .env.local
-*.local
+.env*.local
+
+# OS
 .DS_Store
 Thumbs.db
+
+# Auto-generated types (Vite / unplugin)
 src/auto-imports.d.ts
 src/components.d.ts
-ROADMAP.local.md
+
+# Local-only docs
+*.local.md
+
+# AI tools
 .claude/
 .agents/
-supabase/.temp/
+.cursor/
+.copilot/
+.aider*
+.continue/
 
-.vercel
+# Vercel
+.vercel/
+
+# Supabase
+supabase/.temp/
