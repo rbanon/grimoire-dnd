@@ -8,14 +8,14 @@
           <button
             type="button"
             class="p-1.5 rounded transition-colors"
-            :class="viewMode === 'grid' ? 'bg-arcane-base/20 text-arcane-pale' : 'text-muted hover:text-stone'"
+            :class="viewMode === 'grid' ? 'bg-arcane-base/20 text-arcane-pale' : 'text-stone hover:text-vellum'"
             aria-label="Grid view"
             @click="viewMode = 'grid'"
           ><LayoutGridIcon :size="15" /></button>
           <button
             type="button"
             class="p-1.5 rounded transition-colors"
-            :class="viewMode === 'list' ? 'bg-arcane-base/20 text-arcane-pale' : 'text-muted hover:text-stone'"
+            :class="viewMode === 'list' ? 'bg-arcane-base/20 text-arcane-pale' : 'text-stone hover:text-vellum'"
             aria-label="List view"
             @click="viewMode = 'list'"
           ><ListIcon :size="15" /></button>

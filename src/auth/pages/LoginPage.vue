@@ -37,7 +37,7 @@
             class="flex-1 py-2 text-sm font-heading tracking-wide rounded transition-all duration-200"
             :class="mode === 'signin'
               ? 'bg-gold-dim/30 text-gold-mid border border-gold-dim/30'
-              : 'text-ash hover:text-stone'"
+              : 'text-stone hover:text-vellum'"
             @click="mode = 'signin'"
           >
             Sign in
@@ -46,7 +46,7 @@
             class="flex-1 py-2 text-sm font-heading tracking-wide rounded transition-all duration-200"
             :class="mode === 'signup'
               ? 'bg-gold-dim/30 text-gold-mid border border-gold-dim/30'
-              : 'text-ash hover:text-stone'"
+              : 'text-stone hover:text-vellum'"
             @click="mode = 'signup'"
           >
             Create account

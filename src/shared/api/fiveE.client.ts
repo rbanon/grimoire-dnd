@@ -8,6 +8,9 @@ import type {
   ApiEquipment,
   ApiMagicItem,
   ApiSkill,
+  ApiFeature,
+  ApiTrait,
+  ApiClassLevel,
   SpellQueryParams,
 } from '../types/api'
 
@@ -68,4 +71,12 @@ export const fiveEApi = {
   // Magic items — no server-side filtering
   listMagicItems: () => get<ApiReferenceList>('/magic-items'),
   getMagicItem: (index: string) => get<ApiMagicItem>(`/magic-items/${index}`),
+
+  // Class features
+  getClassLevels: (classIndex: string) =>
+    get<ApiClassLevel[]>(`/classes/${classIndex}/levels`),
+  getFeature: (index: string) => get<ApiFeature>(`/features/${index}`),
+
+  // Race/subrace traits
+  getTrait: (index: string) => get<ApiTrait>(`/traits/${index}`),
 }

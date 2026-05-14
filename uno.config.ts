@@ -128,13 +128,13 @@ export default defineConfig({
       'btn-base px-5 py-2 rounded-md border border-shadow bg-depths text-stone hover:border-arcane-base/40 hover:text-vellum',
 
     'btn-ghost':
-      'btn-base px-3 py-1.5 rounded-md text-ash hover:text-stone hover:bg-shadow/50',
+      'btn-base px-3 py-1.5 rounded-md text-stone hover:text-vellum hover:bg-dusk/40',
 
     'btn-danger':
       'btn-base px-5 py-2 rounded-md bg-blood-mid text-vellum hover:bg-blood-bright',
 
     'btn-icon':
-      'btn-base p-2 rounded-md text-ash hover:text-stone hover:bg-shadow/50',
+      'btn-base p-2 rounded-md text-stone hover:text-vellum hover:bg-dusk/40',
 
     // ── Form controls
     'input-base':
@@ -177,7 +177,7 @@ export default defineConfig({
 
     // ── Navigation
     'nav-link':
-      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-heading tracking-wide text-ash hover:text-stone hover:bg-shadow/50 transition-all duration-150',
+      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-heading tracking-wide text-stone hover:text-vellum hover:bg-dusk/40 transition-all duration-150',
     'nav-link-active':
       'nav-link text-arcane-bright hover:text-arcane-bright bg-arcane-deep/30 hover:bg-arcane-deep/50',
   },

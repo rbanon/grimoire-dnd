@@ -189,3 +189,35 @@ export interface ApiSkill {
   ability_score: ApiReference
   url: string
 }
+
+// ── Features (class features) ─────────────────────────────────────────────────
+
+export interface ApiFeature {
+  index: string
+  name: string
+  level: number
+  class: ApiReference
+  subclass: ApiReference | null
+  desc: string[]
+  url: string
+}
+
+// ── Traits (race/subrace traits) ──────────────────────────────────────────────
+
+export interface ApiTrait {
+  index: string
+  name: string
+  desc: string[]
+  races: ApiReference[]
+  subraces: ApiReference[]
+  url: string
+}
+
+// ── Class level entry ─────────────────────────────────────────────────────────
+
+export interface ApiClassLevel {
+  level: number
+  features: ApiReference[]
+  class: ApiReference
+  url: string
+}

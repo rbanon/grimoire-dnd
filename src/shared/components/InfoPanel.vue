@@ -16,19 +16,21 @@
         class="fixed top-0 right-0 h-full w-full sm:w-[440px] z-50 flex flex-col bg-void border-l border-shadow overflow-hidden"
       >
         <!-- Header -->
-        <header class="flex items-center gap-3 px-5 py-4 border-b border-shadow shrink-0 bg-abyss/50">
-          <button type="button" class="btn-icon shrink-0" aria-label="Close panel" @click="panel.close()">
-            <XIcon :size="16" />
-          </button>
-          <div class="flex items-center gap-2 min-w-0 flex-1">
-            <span class="text-xl leading-none shrink-0">{{ entityGlyph }}</span>
-            <h2 class="font-heading text-base text-vellum truncate">{{ entityName }}</h2>
+        <header class="flex flex-col px-5 py-4 border-b border-shadow shrink-0 bg-abyss/50 gap-1">
+          <div class="flex items-center gap-3">
+            <button type="button" class="btn-icon shrink-0" aria-label="Close panel" @click="panel.close()">
+              <XIcon :size="16" />
+            </button>
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+              <span class="text-xl leading-none shrink-0">{{ entityGlyph }}</span>
+              <h2 class="font-heading text-base text-vellum truncate">{{ entityName }}</h2>
+            </div>
+            <span v-if="kindBadge" class="badge-arcane text-2xs shrink-0 capitalize">{{ kindBadge }}</span>
           </div>
-          <span v-if="kindBadge" class="badge-arcane text-2xs shrink-0 capitalize">{{ kindBadge }}</span>
-        </header>
+          <p class="text-right text-blood-bright text-xs font-body italic">This panel is work in progress.</p>        </header>
 
         <!-- Body -->
-        <div class="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+          <div class="flex-1 overflow-y-auto px-5 py-5 space-y-5">
           <div v-if="isLoading" class="flex justify-center py-20">
             <GrimoireSpinner />
           </div>
