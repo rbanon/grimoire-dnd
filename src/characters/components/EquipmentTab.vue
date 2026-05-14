@@ -4,14 +4,14 @@
     <!-- ── Currency ──────────────────────────────────────────────────────── -->
     <section class="space-y-3">
       <p class="label">Currency</p>
-      <div class="grid grid-cols-5 gap-2">
-        <div v-for="coin in COINS" :key="coin.key" class="card p-2 text-center">
-          <p class="text-2xs font-heading tracking-wide text-mist uppercase mb-1">{{ coin.label }}</p>
+      <div class="flex gap-2">
+        <div v-for="coin in COINS" :key="coin.key" class="card flex-1 flex items-center gap-1.5 px-2 py-1.5 min-w-0">
+          <span class="text-2xs font-heading tracking-wide text-mist uppercase shrink-0">{{ coin.label }}</span>
           <input
             v-model.number="currencyEdit[coin.key]"
             type="number"
             min="0"
-            class="w-full text-center font-heading text-base bg-transparent outline-none text-vellum border-b border-transparent focus:border-gold-mid/50 transition-colors"
+            class="w-full text-center font-heading text-sm bg-transparent outline-none text-vellum border-b border-transparent focus:border-gold-mid/50 transition-colors min-w-0"
             @blur="saveCurrency"
           />
         </div>

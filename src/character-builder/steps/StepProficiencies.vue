@@ -109,7 +109,11 @@ const { data: skillData, isPending: skillsLoading } = useQuery({
   queryFn: () => fiveEApi.listSkills(),
   staleTime: Infinity,
 })
-const skills = computed(() => skillData.value?.results ?? [])
+const skills = computed(() => {
+  const all = skillData.value?.results ?? []
+  const allowed = builder.draft.classSkillOptions
+  return allowed.length > 0 ? all.filter(s => allowed.includes(s.index)) : all
+})
 
 const { data: langData, isPending: languagesLoading } = useQuery({
   queryKey: ['languages'],

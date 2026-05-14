@@ -33,6 +33,12 @@
             {{ result.modifier >= 0 ? '+' : '' }}{{ result.modifier }}
             = {{ result.total }}
           </p>
+          <p v-if="result.die2 !== undefined" class="text-2xs font-body text-mist/40 mt-0.5">
+            <span :class="result.mode === 'advantage' ? 'text-gold-mid/70' : 'text-blood-mid/70'">
+              {{ result.mode === 'advantage' ? '▲' : '▼' }}
+            </span>
+            {{ result.die }} vs {{ result.die2 }}
+          </p>
           <p v-if="result.isCrit" class="text-xs font-heading text-gold-mid mt-0.5 tracking-wide">Critical Hit!</p>
           <p v-else-if="result.isCritFail" class="text-xs font-heading text-blood-bright mt-0.5 tracking-wide">Critical Fail</p>
         </div>

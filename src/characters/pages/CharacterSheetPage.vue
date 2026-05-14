@@ -18,8 +18,12 @@
           <div class="flex items-center gap-4 flex-wrap sm:flex-nowrap">
 
             <!-- Portrait -->
-            <div class="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded border border-shadow overflow-hidden relative"
-              style="box-shadow: 0 0 0 1px rgba(212,168,67,0.08) inset">
+            <div
+              class="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded border border-shadow overflow-hidden relative group cursor-pointer"
+              style="box-shadow: 0 0 0 1px rgba(212,168,67,0.08) inset"
+              title="Change portrait"
+              @click="portraitFileInput?.click()"
+            >
               <img
                 v-if="character.portrait.type === 'url'"
                 :src="character.portrait.url"
@@ -29,11 +33,21 @@
               <div v-else class="w-full h-full flex items-center justify-center bg-depths text-2xl text-gold-dim/30 font-display select-none">
                 {{ classGlyph }}
               </div>
+              <div class="absolute inset-0 bg-abyss/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <ImageIcon :size="14" class="text-stone" />
+              </div>
               <div class="absolute top-0 left-0 w-2.5 h-2.5 border-t border-l border-gold-dim/30" />
               <div class="absolute top-0 right-0 w-2.5 h-2.5 border-t border-r border-gold-dim/30" />
               <div class="absolute bottom-0 left-0 w-2.5 h-2.5 border-b border-l border-gold-dim/30" />
               <div class="absolute bottom-0 right-0 w-2.5 h-2.5 border-b border-r border-gold-dim/30" />
             </div>
+            <input
+              ref="portraitFileInput"
+              type="file"
+              accept="image/*"
+              class="sr-only"
+              @change="onPortraitChange"
+            />
 
             <!-- Identity -->
             <div class="flex-1 min-w-0">
@@ -194,6 +208,64 @@
                   @click="adjustTempHp(1)"
                 >+</button>
               </div>
+
+              <!-- Death Saves — solo visible a 0 HP -->
+              <div
+                v-if="character.combat.currentHp === 0"
+                class="w-full mt-2 pt-1.5 border-t border-blood-base/30"
+              >
+                <p class="text-2xs font-heading tracking-[0.12em] uppercase text-blood-bright/70 text-center mb-1.5">Death Saves</p>
+                <div class="flex items-center justify-center gap-3">
+                  <div class="flex items-center gap-0.5">
+                    <button
+                      v-for="pip in 3"
+                      :key="`s${pip}`"
+                      type="button"
+                      class="w-3 h-3 rounded-full border-2 transition-all duration-100"
+                      :class="[
+                        pip <= deathSaves.successes ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/30',
+                        editMode ? 'cursor-pointer hover:border-gold-dim/60' : 'cursor-default',
+                      ]"
+                      @click="editMode && toggleDeathSave('successes', pip)"
+                    />
+                  </div>
+                  <span class="text-mist/20 text-xs">|</span>
+                  <div class="flex items-center gap-0.5">
+                    <button
+                      v-for="pip in 3"
+                      :key="`f${pip}`"
+                      type="button"
+                      class="w-3 h-3 rounded-full border-2 transition-all duration-100"
+                      :class="[
+                        pip <= deathSaves.failures ? 'bg-blood-bright border-blood-bright' : 'bg-transparent border-mist/30',
+                        editMode ? 'cursor-pointer hover:border-blood-base/60' : 'cursor-default',
+                      ]"
+                      @click="editMode && toggleDeathSave('failures', pip)"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Exhaustion -->
+              <div class="flex items-center justify-center gap-1 mt-1.5 pt-1 border-t border-shadow/30 w-full">
+                <button
+                  v-show="editMode"
+                  type="button"
+                  class="w-4 h-4 flex items-center justify-center text-mist/40 hover:text-ash font-heading text-xs transition-colors"
+                  @click="adjustExhaustion(-1)"
+                >−</button>
+                <span class="text-2xs font-heading uppercase text-mist/50">Exh</span>
+                <span
+                  class="font-heading text-sm leading-none min-w-[1ch] text-center"
+                  :class="(character.combat.exhaustion ?? 0) > 0 ? 'text-blood-bright' : 'text-mist/30'"
+                >{{ character.combat.exhaustion ?? 0 }}</span>
+                <button
+                  v-show="editMode"
+                  type="button"
+                  class="w-4 h-4 flex items-center justify-center text-mist/40 hover:text-ash font-heading text-xs transition-colors"
+                  @click="adjustExhaustion(1)"
+                >+</button>
+              </div>
             </div>
 
             <!-- AC -->
@@ -226,7 +298,7 @@
                 type="button"
                 class="font-heading text-xl text-vellum mt-0.5 leading-none hover:text-gold-mid transition-colors"
                 title="Roll Initiative"
-                @click="rollD20(initiativeMod, 'Initiative')"
+                @click="rollD20(initiativeMod, 'Initiative', $event)"
               >{{ initiativeDisplay }}</button>
             </div>
 
@@ -263,7 +335,7 @@
                 type="button"
                 class="font-heading text-xl text-arcane-pale mt-0.5 leading-none hover:text-arcane-bright transition-colors"
                 title="Roll Spell Attack"
-                @click="rollD20(spellAttackBonus, 'Spell Attack')"
+                @click="rollD20(spellAttackBonus, 'Spell Attack', $event)"
               >{{ fmt(spellAttackBonus) }}</button>
             </div>
 
@@ -300,42 +372,6 @@
             </div>
           </div>
 
-          <!-- Death saves row -->
-          <div class="flex items-center gap-5 flex-wrap mt-3 pt-2.5 border-t border-shadow/30">
-
-            <!-- Death Saves -->
-            <div class="flex items-center gap-3">
-              <p class="text-2xs font-heading tracking-[0.12em] uppercase text-mist shrink-0">Death Saves</p>
-              <div class="flex items-center gap-1">
-                <span class="text-2xs text-mist/40 mr-0.5 font-body">Suc</span>
-                <button
-                  v-for="pip in 3"
-                  :key="`s${pip}`"
-                  type="button"
-                  class="w-3 h-3 rounded-full border-2 transition-all duration-100"
-                  :class="[
-                    pip <= deathSaves.successes ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/30',
-                    editMode ? 'cursor-pointer hover:border-gold-dim/60' : 'cursor-default',
-                  ]"
-                  @click="editMode && toggleDeathSave('successes', pip)"
-                />
-              </div>
-              <div class="flex items-center gap-1">
-                <span class="text-2xs text-mist/40 mr-0.5 font-body">Fail</span>
-                <button
-                  v-for="pip in 3"
-                  :key="`f${pip}`"
-                  type="button"
-                  class="w-3 h-3 rounded-full border-2 transition-all duration-100"
-                  :class="[
-                    pip <= deathSaves.failures ? 'bg-blood-bright border-blood-bright' : 'bg-transparent border-mist/30',
-                    editMode ? 'cursor-pointer hover:border-blood-base/60' : 'cursor-default',
-                  ]"
-                  @click="editMode && toggleDeathSave('failures', pip)"
-                />
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -372,7 +408,7 @@
                     class="relative block w-full font-heading text-2xl leading-none mt-1 transition-colors"
                     :class="ab.mod >= 0 ? 'text-gold-mid hover:text-gold-bright' : 'text-blood-bright hover:text-blood-mid'"
                     :title="`Roll ${ab.label} check`"
-                    @click="rollD20(ab.mod, `${ab.label} Check`)"
+                    @click="rollD20(ab.mod, `${ab.label} Check`, $event)"
                   >{{ ab.mod >= 0 ? `+${ab.mod}` : ab.mod }}</button>
                   <p class="relative text-sm font-body text-ash mt-1 leading-none">{{ ab.score }}</p>
                 </div>
@@ -400,14 +436,14 @@
                     :class="character.savingThrowProficiencies[save.key]
                       ? 'text-gold-pale hover:text-gold-bright'
                       : 'text-stone hover:text-ash'"
-                    @click="rollD20(saveBonus(save.key), `${save.label} Save`)"
+                    @click="rollD20(saveBonus(save.key), `${save.label} Save`, $event)"
                   >{{ fmt(saveBonus(save.key)) }}</button>
                   <span class="text-xs font-body text-ash flex-1">{{ save.label }}</span>
                   <button
                     type="button"
                     class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-mist/40 hover:text-gold-mid shrink-0"
                     :aria-label="`Roll ${save.label} saving throw`"
-                    @click="rollD20(saveBonus(save.key), `${save.label} Save`)"
+                    @click="rollD20(saveBonus(save.key), `${save.label} Save`, $event)"
                   >⚄</button>
                 </div>
               </div>
@@ -441,7 +477,7 @@
                     :class="hasProficiency(skill.index)
                       ? 'text-gold-pale hover:text-gold-bright'
                       : 'text-stone hover:text-ash'"
-                    @click="rollD20(skillBonus(skill), skill.name)"
+                    @click="rollD20(skillBonus(skill), skill.name, $event)"
                   >{{ fmt(skillBonus(skill)) }}</button>
                   <span class="text-xs font-body text-ash flex-1 truncate">{{ skill.name }}</span>
                   <span class="text-2xs font-heading text-mist/50 shrink-0">{{ skill.ability.toUpperCase() }}</span>
@@ -449,7 +485,7 @@
                     type="button"
                     class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-mist/40 hover:text-gold-mid shrink-0"
                     :aria-label="`Roll ${skill.name}`"
-                    @click="rollD20(skillBonus(skill), skill.name)"
+                    @click="rollD20(skillBonus(skill), skill.name, $event)"
                   >⚄</button>
                 </div>
                 <div v-if="filteredSkills.length === 0" class="px-2 py-3 text-xs font-body text-mist/50 italic">
@@ -510,14 +546,15 @@
 
     </template>
 
-    <!-- ── Roll result overlay ──────────────────────────────────────────────── -->
+    <!-- ── Roll overlays ─────────────────────────────────────────────────────── -->
+    <RollConfirm />
     <RollResult />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { DownloadIcon, LockIcon, LockOpenIcon } from 'lucide-vue-next'
+import { DownloadIcon, ImageIcon, LockIcon, LockOpenIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName } from '@/shared/types/character'
@@ -532,6 +569,7 @@ import SpellsTab from '@/characters/components/SpellsTab.vue'
 import FeaturesTab from '@/characters/components/FeaturesTab.vue'
 import BioTab from '@/characters/components/BioTab.vue'
 import RollResult from '@/shared/components/RollResult.vue'
+import RollConfirm from '@/shared/components/RollConfirm.vue'
 
 const props = defineProps<{ id: string }>()
 const store = useCharactersStore()
@@ -540,6 +578,19 @@ const dialog = useDialog()
 const { rollD20 } = useRoll()
 
 const editMode = ref(true)
+
+const portraitFileInput = ref<HTMLInputElement | null>(null)
+
+function onPortraitChange(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file || !character.value) return
+  if (file.size > 1_048_576) return
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    store.update(props.id, { portrait: { type: 'url', url: e.target?.result as string } })
+  }
+  reader.readAsDataURL(file)
+}
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
@@ -710,6 +761,16 @@ async function adjustTempHp(delta: number) {
   const next = Math.max(0, character.value.combat.tempHp + delta)
   if (next === character.value.combat.tempHp) return
   await store.update(character.value.id, { combat: { ...character.value.combat, tempHp: next } })
+}
+
+// ── Exhaustion ────────────────────────────────────────────────────────────────
+
+async function adjustExhaustion(delta: number) {
+  if (!character.value) return
+  const current = character.value.combat.exhaustion ?? 0
+  const next = Math.max(0, Math.min(6, current + delta))
+  if (next === current) return
+  await store.update(character.value.id, { combat: { ...character.value.combat, exhaustion: next } })
 }
 
 // ── Death saves ───────────────────────────────────────────────────────────────

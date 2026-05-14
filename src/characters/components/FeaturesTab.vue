@@ -109,7 +109,7 @@ import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import type { Character } from '@/shared/types/character'
-import type { ApiTrait } from '@/shared/types/api'
+import type { ApiFeature, ApiTrait } from '@/shared/types/api'
 import FeatureRow from './FeatureRow.vue'
 
 const props = defineProps<{ character: Character }>()
@@ -137,24 +137,29 @@ const {
   refetch: classRefetch,
 } = useQuery({
   queryKey: computed(() => ['class-features', classIndex.value, characterLevel.value]),
+  enabled: computed(() => !!classIndex.value),
   queryFn: async () => {
     const levels = await fiveEApi.getClassLevels(classIndex.value)
     // Collect feature refs up to character level, deduplicated
     const seen = new Set<string>()
-    const refs: { index: string; level: number }[] = []
+    const refs: string[] = []
     for (const lvl of levels) {
       if (lvl.level > characterLevel.value) continue
       for (const f of lvl.features) {
         if (!seen.has(f.index)) {
           seen.add(f.index)
-          refs.push({ index: f.index, level: lvl.level })
+          refs.push(f.index)
         }
       }
     }
-    // Fetch full details in parallel
-    const features = await Promise.all(refs.map(r => fiveEApi.getFeature(r.index)))
+    // Fetch full details in parallel; skip any that 404 or error
+    const settled = await Promise.allSettled(refs.map(i => fiveEApi.getFeature(i)))
+    const features = settled
+      .filter((r): r is PromiseFulfilledResult<ApiFeature> => r.status === 'fulfilled')
+      .map(r => r.value)
+    // Keep base-class features and features matching the selected subclass
     return features.filter(f =>
-      f.subclass === null || f.subclass.index === subclassIndex.value,
+      !f.subclass || f.subclass.index === subclassIndex.value,
     )
   },
   staleTime: Infinity,

@@ -1,20 +1,31 @@
 import { ref, readonly } from 'vue'
 
+export type RollMode = 'normal' | 'advantage' | 'disadvantage'
+
 export interface RollResult {
   id: number
   label: string
   die: number
+  die2?: number
   modifier: number
   total: number
   isCrit: boolean
   isCritFail: boolean
   type: 'd20' | 'damage'
   formula?: string
+  mode?: RollMode
 }
 
-// Module-level singleton — all callers share the same result
+export interface PendingRoll {
+  modifier: number
+  label: string
+  rect: DOMRect | null
+}
+
+// Module-level singletons — all callers share the same state
 let _id = 0
 const _current = ref<RollResult | null>(null)
+const _pending = ref<PendingRoll | null>(null)
 let _timer: ReturnType<typeof setTimeout> | null = null
 
 function _show(r: RollResult, ms = 4500) {
@@ -35,20 +46,44 @@ function _evalFormula(formula: string): number {
 }
 
 export function useRoll() {
-  function rollD20(modifier: number, label: string): RollResult {
-    const die = Math.ceil(Math.random() * 20)
+  function rollD20(modifier: number, label: string, event?: MouseEvent): void {
+    const rect = event
+      ? (event.currentTarget as Element | null)?.getBoundingClientRect() ?? null
+      : null
+    _pending.value = { modifier, label, rect }
+  }
+
+  function confirmRoll(mode: RollMode): RollResult | null {
+    if (!_pending.value) return null
+    const { modifier, label } = _pending.value
+    _pending.value = null
+
+    let die = Math.ceil(Math.random() * 20)
+    let die2: number | undefined
+
+    if (mode === 'advantage' || mode === 'disadvantage') {
+      die2 = Math.ceil(Math.random() * 20)
+      die = mode === 'advantage' ? Math.max(die, die2) : Math.min(die, die2)
+    }
+
     const r: RollResult = {
       id: ++_id,
       label,
       die,
+      die2,
       modifier,
       total: die + modifier,
       isCrit: die === 20,
       isCritFail: die === 1,
       type: 'd20',
+      mode,
     }
     _show(r)
     return r
+  }
+
+  function cancelRoll(): void {
+    _pending.value = null
   }
 
   function rollDamage(formula: string, label: string): RollResult {
@@ -75,7 +110,10 @@ export function useRoll() {
 
   return {
     current: readonly(_current),
+    pending: readonly(_pending),
     rollD20,
+    confirmRoll,
+    cancelRoll,
     rollDamage,
     dismiss,
   }

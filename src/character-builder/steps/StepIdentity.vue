@@ -42,7 +42,7 @@
           <label class="label mb-2">Portrait</label>
           <div
             class="w-24 h-24 rounded border border-shadow bg-depths flex items-center justify-center overflow-hidden relative group cursor-pointer"
-            @click="showPortraitInput = !showPortraitInput"
+            @click="fileInput?.click()"
           >
             <img
               v-if="builder.draft.portraitUrl"
@@ -52,7 +52,7 @@
             />
             <div v-else class="flex flex-col items-center gap-1 text-mist group-hover:text-ash transition-colors">
               <ImageIcon :size="20" />
-              <span class="text-2xs font-heading tracking-wide">URL</span>
+              <span class="text-2xs font-heading tracking-wide">Upload</span>
             </div>
             <div
               v-if="builder.draft.portraitUrl"
@@ -61,15 +61,20 @@
               <PencilIcon :size="16" class="text-stone" />
             </div>
           </div>
-          <Transition name="fade">
-            <input
-              v-if="showPortraitInput"
-              v-model="builder.draft.portraitUrl"
-              type="url"
-              placeholder="https://…"
-              class="input-base mt-2 text-xs w-36"
-            />
-          </Transition>
+          <input
+            ref="fileInput"
+            type="file"
+            accept="image/*"
+            class="sr-only"
+            @change="onFileChange"
+          />
+          <p v-if="portraitError" class="mt-1 text-2xs font-body text-blood-bright w-24">{{ portraitError }}</p>
+          <button
+            v-if="builder.draft.portraitUrl"
+            type="button"
+            class="mt-1 text-2xs font-heading text-mist hover:text-blood-bright transition-colors w-24 text-center"
+            @click="builder.draft.portraitUrl = ''"
+          >Remove</button>
         </div>
       </div>
     </section>
@@ -247,11 +252,29 @@ import PickerCard from '@/character-builder/components/PickerCard.vue'
 import AlignmentGrid from '@/character-builder/components/AlignmentGrid.vue'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
+const MAX_PORTRAIT_BYTES = 1_048_576 // 1 MB
+
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
-const showPortraitInput = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+const portraitError = ref('')
 const showAppearance = ref(false)
 const showPersonality = ref(false)
+
+function onFileChange(event: Event) {
+  portraitError.value = ''
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  if (file.size > MAX_PORTRAIT_BYTES) {
+    portraitError.value = 'Max 1 MB'
+    return
+  }
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    builder.draft.portraitUrl = e.target?.result as string
+  }
+  reader.readAsDataURL(file)
+}
 
 // Track which required fields have been interacted with — errors only show after touch
 const touched = reactive({ name: false, race: false, background: false })

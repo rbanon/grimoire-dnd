@@ -30,11 +30,16 @@ export interface ApiClass {
   url: string
 }
 
+export interface ApiProfChoiceOption {
+  option_type: 'reference'
+  item: ApiReference
+}
+
 export interface ApiProficiencyChoice {
   desc: string
   choose: number
   type: string
-  from: { option_set_type: string; options: unknown[] }
+  from: { option_set_type: string; options: ApiProfChoiceOption[] }
 }
 
 export interface ApiSpellcasting {

@@ -32,7 +32,7 @@
                   type="button"
                   class="px-2 py-1 rounded border border-arcane-base/30 bg-arcane-deep/10 text-arcane-pale hover:border-arcane-base/60 hover:bg-arcane-deep/20 transition-all font-heading text-xs"
                   title="Roll attack"
-                  @click="rollAttack(attack)"
+                  @click="(e) => rollAttack(attack, e)"
                 >⚃ Atk</button>
                 <!-- Roll damage -->
                 <button
@@ -198,8 +198,8 @@ function parseBonus(bonusStr: string | undefined): number {
   return m ? parseInt(m[1]) : 0
 }
 
-function rollAttack(attack: Attack) {
-  rollD20(parseBonus(attack.attackBonus), `${attack.name} Attack`)
+function rollAttack(attack: Attack, event?: MouseEvent) {
+  rollD20(parseBonus(attack.attackBonus), `${attack.name} Attack`, event)
 }
 
 function rollDmg(attack: Attack) {

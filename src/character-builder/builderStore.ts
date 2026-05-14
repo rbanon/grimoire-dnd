@@ -89,9 +89,8 @@ export interface BuilderDraft {
   useStartingEquipment: boolean
   manualGold: number
 
-  // Step 6 — Spells
+  // Step 6 — Spells (cantrips only; leveled spells are managed post-creation on the sheet)
   selectedCantrips: { index: string; name: string }[]
-  selectedSpells: { index: string; name: string; level: number }[]
 }
 
 const defaultDraft = (): BuilderDraft => ({
@@ -114,7 +113,7 @@ const defaultDraft = (): BuilderDraft => ({
   standardArrayAssignments: {},
   selectedSkills: [], selectedLanguages: [],
   useStartingEquipment: true, manualGold: 0,
-  selectedCantrips: [], selectedSpells: [],
+  selectedCantrips: [],
 })
 
 const DraftSchema = z.object({ currentStep: z.number() }).passthrough()
@@ -323,7 +322,15 @@ export const useBuilderStore = defineStore('builder', () => {
       attacks: [],
       inventory: [],
       currency: { cp: 0, sp: 0, ep: 0, gp: d.manualGold, pp: 0 },
-      spellcasting: null,
+      spellcasting: d.classSpellcastingAbility ? {
+        spellcastingAbility: d.classSpellcastingAbility as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha',
+        slotsMax:  { level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0, level7: 0, level8: 0, level9: 0 },
+        slotsUsed: { level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0, level7: 0, level8: 0, level9: 0 },
+        cantripsKnown: d.selectedCantrips.map(c => ({ ...c, level: 0 })),
+        spellsKnown: [],
+        spellsPrepared: [],
+        ritualCasting: false,
+      } : null,
       favoriteSpells: [],
       features: [],
       overrides: {},

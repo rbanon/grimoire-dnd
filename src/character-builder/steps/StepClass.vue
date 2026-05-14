@@ -165,7 +165,7 @@ import { useBuilderStore } from '@/character-builder/builderStore'
 import { getClassMeta } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
-import type { ApiClass } from '@/shared/types/api'
+import type { ApiClass, ApiProfChoiceOption } from '@/shared/types/api'
 import { computeProficiencyBonus } from '@/shared/lib/derivedStats'
 import PickerCard from '@/character-builder/components/PickerCard.vue'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
@@ -202,11 +202,22 @@ async function selectClass(index: string, name: string) {
   const meta = getClassMeta(index)
   builder.draft.classHitDie = meta.hitDie
 
+  builder.draft.selectedSkills = []
+
   try {
     const detail: ApiClass = await fiveEApi.getClass(index)
     builder.draft.classSpellcastingAbility = detail.spellcasting?.spellcasting_ability?.index ?? null
-    builder.draft.classSkillChoices = detail.proficiency_choices?.[0]?.choose ?? 2
     builder.draft.availableSubclasses = detail.subclasses.map(s => ({ index: s.index, name: s.name }))
+
+    const skillChoice = detail.proficiency_choices?.find(c =>
+      c.from.options.some((o: ApiProfChoiceOption) => o.item?.index?.startsWith('skill-'))
+    )
+    builder.draft.classSkillChoices = skillChoice?.choose ?? 2
+    builder.draft.classSkillOptions = skillChoice
+      ? skillChoice.from.options
+          .filter((o: ApiProfChoiceOption) => o.item?.index?.startsWith('skill-'))
+          .map((o: ApiProfChoiceOption) => o.item.index.replace(/^skill-/, ''))
+      : []
   } catch { /* ignore */ }
 }
 
