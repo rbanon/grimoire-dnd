@@ -125,7 +125,11 @@ export interface ApiSpell {
   casting_time: string
   level: number
   attack_type?: string
-  damage?: { damage_type?: ApiReference; damage_at_slot_level?: Record<string, string> }
+  damage?: {
+    damage_type?: ApiReference
+    damage_at_slot_level?: Record<string, string>
+    damage_at_character_level?: Record<string, string>
+  }
   school: ApiReference
   classes: ApiReference[]
   subclasses: ApiReference[]

@@ -47,43 +47,47 @@
 
       <!-- ── Cantrips ───────────────────────────────────────────────────── -->
       <section>
-        <div class="rule-gold mb-4"><span>Cantrips</span></div>
+        <div class="rule-gold mb-4 flex items-center">
+          <span class="flex-1">Cantrips</span>
+          <button
+            v-if="editMode"
+            type="button"
+            class="text-xs font-heading px-2 py-0.5 rounded border transition-all"
+            :class="cantripEditMode
+              ? 'border-blood-base/40 text-blood-mid hover:border-blood-base/70'
+              : 'border-shadow text-mist hover:border-arcane-base/40 hover:text-arcane-pale'"
+            @click="cantripEditMode = !cantripEditMode"
+          >{{ cantripEditMode ? 'Listo' : 'Editar' }}</button>
+        </div>
 
-        <div v-if="sc.cantripsKnown.length > 0" class="flex flex-wrap gap-2 mb-4">
-          <div
+        <div v-if="sc.cantripsKnown.length > 0" class="space-y-1.5 mb-4">
+          <CantripCard
             v-for="c in sc.cantripsKnown"
             :key="c.index"
-            class="group flex items-center gap-1.5 px-3 py-1.5 rounded border border-arcane-base/30 bg-arcane-deep/10"
-          >
-            <span class="text-sm font-heading text-arcane-pale">{{ c.name }}</span>
-            <button
-              v-if="editMode"
-              type="button"
-              class="text-mist/30 hover:text-blood-bright transition-colors opacity-0 group-hover:opacity-100 ml-0.5"
-              title="Remove"
-              @click="removeSpell(c.index, 'cantrip')"
-            >
-              <XIcon :size="11" />
-            </button>
-          </div>
+            :cantrip="c"
+            :cantrip-edit-mode="cantripEditMode"
+            @remove="removeSpell(c.index, 'cantrip')"
+          />
         </div>
         <p v-else class="font-body text-mist text-sm mb-4">No cantrips known.</p>
 
         <button
-          v-if="editMode && addTarget !== 'cantrip'"
+          v-if="editMode"
           type="button"
           class="btn-secondary text-xs gap-1.5"
-          @click="openAdd('cantrip')"
+          @click="showCantripPicker = true"
         >
           <PlusIcon :size="12" /> Add Cantrip
         </button>
 
-        <!-- Inline add form for cantrips -->
-        <AddSpellForm
-          v-if="editMode && addTarget === 'cantrip'"
-          label="Cantrip name"
-          @submit="onAddCantrip"
-          @cancel="addTarget = null"
+        <CantripPickerModal
+          :show="showCantripPicker"
+          :class-index="props.character.identity.class.index"
+          :class-name="props.character.identity.class.name"
+          :known-indices="sc?.cantripsKnown.map(c => c.index) ?? []"
+          :limit="cantripLimit"
+          @close="showCantripPicker = false"
+          @add="onAddCantrips"
         />
       </section>
 
@@ -185,16 +189,24 @@
 import { ref, computed } from 'vue'
 import { SparklesIcon, PlusIcon, XIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
-import {
-  computeAllModifiers,
-} from '@/shared/types/character'
+import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
+import { getSpellProfile } from '@/character-builder/classMeta'
 import type { Character, SpellReference } from '@/shared/types/character'
 import { generateId } from '@/shared/lib/uuid'
 import AddSpellForm from './AddSpellForm.vue'
+import CantripCard from './CantripCard.vue'
+import CantripPickerModal from './CantripPickerModal.vue'
 
 const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
+const cantripEditMode = ref(false)
+const showCantripPicker = ref(false)
+
+const cantripLimit = computed(() => {
+  const profile = getSpellProfile(props.character.identity.class.index)
+  return profile?.cantripsKnown[props.character.combat.level - 1] ?? Infinity
+})
 
 // ── Aliases ───────────────────────────────────────────────────────────────────
 
@@ -270,13 +282,12 @@ function spellRef(name: string, level: number): SpellReference {
   return { index: name.toLowerCase().replace(/\s+/g, '-') + '-' + generateId().slice(0, 6), name, level }
 }
 
-async function onAddCantrip(name: string) {
-  if (!sc.value || !name.trim()) return
-  const ref = spellRef(name.trim(), 0)
+async function onAddCantrips(cantrips: { index: string; name: string; level: number }[]) {
+  if (!sc.value || cantrips.length === 0) return
+  showCantripPicker.value = false
   await store.update(props.character.id, {
-    spellcasting: { ...sc.value, cantripsKnown: [...sc.value.cantripsKnown, ref] },
+    spellcasting: { ...sc.value, cantripsKnown: [...sc.value.cantripsKnown, ...cantrips] },
   })
-  addTarget.value = null
 }
 
 async function onAddSpell(name: string, level: number) {

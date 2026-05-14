@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { z } from 'zod'
 import type { Alignment, AbilityScores } from '@/shared/types/character'
 import { CharacterSchema } from '@/shared/types/character'
@@ -122,6 +122,7 @@ export const useBuilderStore = defineStore('builder', () => {
   const draft = ref<BuilderDraft>(defaultDraft())
   const saving = ref(false)
   const saveError = ref<string | null>(null)
+  let _skipSave = false
 
   // ── Computed ──────────────────────────────────────────────────────────────
 
@@ -182,20 +183,24 @@ export const useBuilderStore = defineStore('builder', () => {
 
   function loadDraft(): boolean {
     const saved = storageGet(DRAFT_KEY, DraftSchema)
-    if (saved) {
-      draft.value = { ...defaultDraft(), ...(saved as Partial<BuilderDraft>) }
-      return true
-    }
-    return false
+    if (!saved) return false
+    const merged = { ...defaultDraft(), ...(saved as Partial<BuilderDraft>) }
+    if (!merged.name && !merged.raceIndex && !merged.classIndex) return false
+    draft.value = merged
+    return true
   }
 
   function saveDraft() {
+    if (_skipSave) return
     storageSet(DRAFT_KEY, draft.value)
   }
 
-  function clearDraft() {
+  async function clearDraft() {
+    _skipSave = true
     storageRemove(DRAFT_KEY)
     draft.value = defaultDraft()
+    await nextTick()
+    _skipSave = false
   }
 
   watch(draft, saveDraft, { deep: true })
@@ -337,7 +342,7 @@ export const useBuilderStore = defineStore('builder', () => {
     })
 
     await characterStore.create(character)
-    clearDraft()
+    await clearDraft()
     return id
     } catch (err) {
       saveError.value = err instanceof Error ? err.message : 'Could not save character. Please try again.'
