@@ -171,6 +171,9 @@ export const CombatStatsSchema = z.object({
   inspiration: z.boolean().default(false),
   hitDiceRemaining: z.number().int().min(0),
   deathSaves: DeathSavesSchema.optional(),
+  conditions: z.array(z.string()).default([]),
+  exhaustion: z.number().int().min(0).max(6).default(0),
+  concentrationSpell: z.string().nullable().default(null),
 })
 export type CombatStats = z.infer<typeof CombatStatsSchema>
 

@@ -6,6 +6,7 @@
     </main>
     <AppFooter />
     <InfoPanel />
+    <AppDialog />
   </div>
 </template>
 
@@ -13,4 +14,5 @@
 import AppNav from './AppNav.vue'
 import AppFooter from './AppFooter.vue'
 import InfoPanel from '@/shared/components/InfoPanel.vue'
+import AppDialog from '@/shared/components/AppDialog.vue'
 </script>

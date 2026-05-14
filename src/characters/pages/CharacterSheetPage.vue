@@ -54,9 +54,18 @@
                     {{ character.identity.alignment }}
                   </p>
                 </div>
-                <div class="flex gap-2 shrink-0">
+                <div class="flex gap-2 shrink-0 items-center">
                   <button class="btn-secondary text-xs gap-1.5" @click="downloadExport">
                     <DownloadIcon :size="13" />Export
+                  </button>
+                  <button
+                    :title="editMode ? 'Bloquear ficha' : 'Desbloquear ficha'"
+                    class="w-7 h-7 flex items-center justify-center rounded transition-colors"
+                    :class="editMode ? 'text-mist hover:text-ash hover:bg-shadow/40' : 'text-gold-mid hover:text-gold-bright hover:bg-gold-dim/10'"
+                    @click="editMode = !editMode"
+                  >
+                    <LockOpenIcon v-if="editMode" :size="14" />
+                    <LockIcon v-else :size="14" />
                   </button>
                 </div>
               </div>
@@ -73,7 +82,29 @@
       <section class="border-b border-shadow bg-depths/50">
         <div class="app-container py-4">
           <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            <StatBox label="AC" :value="character.combat.armorClass" />
+            <!-- AC editable -->
+            <div class="card flex flex-col items-center justify-center p-3 gap-0.5">
+              <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">AC</p>
+              <input
+                v-if="acEditing && editMode"
+                ref="acInputEl"
+                v-model.number="acValue"
+                type="number"
+                min="0"
+                class="w-10 text-center font-heading text-xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum"
+                @blur="commitAc"
+                @keydown.enter="commitAc"
+                @keydown.esc="acEditing = false"
+              />
+              <button
+                v-else
+                type="button"
+                class="font-heading text-xl text-vellum transition-colors"
+                :class="editMode ? 'hover:text-gold-mid cursor-pointer' : 'cursor-default'"
+                :title="editMode ? 'Click to edit AC' : ''"
+                @click="editMode && startAcEdit()"
+              >{{ character.combat.armorClass }}</button>
+            </div>
             <StatBox label="Initiative" :value="initiativeDisplay" />
             <StatBox label="Speed" :value="`${speedDisplay}ft`" />
 
@@ -83,7 +114,7 @@
               :class="hpPercent < 0.25 ? 'pulse-blood border-blood-base/40' : ''"
             >
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">HP</p>
-              <div v-if="hpEditing" class="flex items-center gap-1">
+              <div v-if="hpEditing && editMode" class="flex items-center gap-1">
                 <input
                   ref="hpInputEl"
                   v-model.number="hpInputValue"
@@ -97,21 +128,54 @@
                 />
               </div>
               <div v-else class="flex items-center gap-1">
-                <button type="button" class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading transition-colors" @click="adjustHp(-1)">−</button>
-                <button type="button" class="font-heading text-lg leading-none hover:text-gold-mid transition-colors" :class="hpPercent < 0.25 ? 'text-blood-bright' : 'text-vellum'" @click="startHpEdit">
-                  {{ character.combat.currentHp }}
-                </button>
-                <button type="button" class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading transition-colors" @click="adjustHp(1)">+</button>
+                <button v-if="editMode" type="button" class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading transition-colors" @click="adjustHp(-1)">−</button>
+                <button
+                  type="button"
+                  class="font-heading text-lg leading-none transition-colors"
+                  :class="[hpPercent < 0.25 ? 'text-blood-bright' : 'text-vellum', editMode ? 'hover:text-gold-mid cursor-pointer' : 'cursor-default']"
+                  @click="editMode && startHpEdit()"
+                >{{ character.combat.currentHp }}</button>
+                <button v-if="editMode" type="button" class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading transition-colors" @click="adjustHp(1)">+</button>
               </div>
               <p class="text-xs text-mist leading-none">/ {{ character.combat.maxHp }}</p>
+              <!-- Temp HP -->
+              <div class="flex items-center gap-1 mt-0.5 border-t border-shadow/40 pt-0.5 w-full justify-center">
+                <button v-if="editMode" type="button" class="w-4 h-4 flex items-center justify-center rounded text-mist/60 hover:text-ash font-heading text-xs transition-colors" @click="adjustTempHp(-1)">−</button>
+                <span class="text-2xs font-heading text-mist leading-none">THP&nbsp;</span>
+                <button
+                  type="button"
+                  class="font-heading text-xs transition-colors"
+                  :class="[character.combat.tempHp > 0 ? 'text-arcane-pale' : 'text-mist/40', editMode ? 'hover:text-arcane-pale/80 cursor-pointer' : 'cursor-default']"
+                  :title="editMode ? 'Click to set Temp HP' : ''"
+                  @click="editMode && startTempHpEdit()"
+                >
+                  <template v-if="tempHpEditing && editMode">
+                    <input
+                      ref="tempHpInputEl"
+                      v-model.number="tempHpValue"
+                      type="number"
+                      min="0"
+                      class="w-8 text-center bg-transparent border-b border-arcane-base/50 outline-none text-arcane-pale font-heading text-xs"
+                      @blur="commitTempHp"
+                      @keydown.enter="commitTempHp"
+                      @keydown.esc="tempHpEditing = false"
+                    />
+                  </template>
+                  <template v-else>{{ character.combat.tempHp }}</template>
+                </button>
+                <button v-if="editMode" type="button" class="w-4 h-4 flex items-center justify-center rounded text-mist/60 hover:text-ash font-heading text-xs transition-colors" @click="adjustTempHp(1)">+</button>
+              </div>
             </div>
 
             <!-- Inspiration -->
             <div
-              class="card flex flex-col items-center justify-center p-3 gap-0.5 cursor-pointer transition-all duration-150"
-              :class="character.combat.inspiration ? 'border-gold-mid/50 bg-gold-dim/10' : 'hover:border-gold-dim/20'"
-              title="Toggle inspiration"
-              @click="toggleInspiration"
+              class="card flex flex-col items-center justify-center p-3 gap-0.5 transition-all duration-150"
+              :class="[
+                character.combat.inspiration ? 'border-gold-mid/50 bg-gold-dim/10' : '',
+                editMode ? 'cursor-pointer hover:border-gold-dim/20' : 'cursor-default',
+              ]"
+              :title="editMode ? 'Toggle inspiration' : ''"
+              @click="editMode && toggleInspiration()"
             >
               <p class="text-2xs font-heading tracking-[0.15em] uppercase" :class="character.combat.inspiration ? 'text-gold-mid' : 'text-mist'">Inspiration</p>
               <p class="font-heading text-xl leading-none" :class="character.combat.inspiration ? 'text-gold-mid' : 'text-mist/30'">✦</p>
@@ -119,6 +183,77 @@
 
             <StatBox label="Prof Bonus" :value="`+${profBonus}`" />
           </div>
+
+          <!-- ── Death Saves ─────────────────────────────────────────────── -->
+          <div class="mt-3 pt-3 border-t border-shadow/40 flex items-center gap-6 flex-wrap">
+            <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist shrink-0">Death Saves</p>
+
+            <!-- Successes -->
+            <div class="flex items-center gap-1.5">
+              <span class="text-2xs font-body text-mist/60 mr-0.5">Success</span>
+              <button
+                v-for="pip in 3"
+                :key="`s${pip}`"
+                type="button"
+                class="w-3.5 h-3.5 rounded-full border-2 transition-all duration-100"
+                :class="[
+                  pip <= deathSaves.successes ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/30',
+                  editMode ? 'hover:border-gold-dim/60 cursor-pointer' : 'cursor-default',
+                ]"
+                @click="editMode && toggleDeathSave('successes', pip)"
+              />
+            </div>
+            <!-- Failures -->
+            <div class="flex items-center gap-1.5">
+              <span class="text-2xs font-body text-mist/60 mr-0.5">Failure</span>
+              <button
+                v-for="pip in 3"
+                :key="`f${pip}`"
+                type="button"
+                class="w-3.5 h-3.5 rounded-full border-2 transition-all duration-100"
+                :class="[
+                  pip <= deathSaves.failures ? 'bg-blood-bright border-blood-bright' : 'bg-transparent border-mist/30',
+                  editMode ? 'hover:border-blood-base/60 cursor-pointer' : 'cursor-default',
+                ]"
+                @click="editMode && toggleDeathSave('failures', pip)"
+              />
+            </div>
+          </div>
+
+          <!-- ── Rest ──────────────────────────────────────────────────────── -->
+          <div class="mt-3 pt-3 border-t border-shadow/40 flex items-center gap-4 flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist shrink-0">Hit Dice (d{{ hitDie }})</p>
+              <div class="flex items-center gap-1">
+                <div
+                  v-for="pip in character.combat.level"
+                  :key="pip"
+                  class="w-3.5 h-3.5 rounded-full border-2 transition-all duration-100"
+                  :class="pip <= character.combat.hitDiceRemaining
+                    ? 'bg-arcane-pale border-arcane-pale'
+                    : 'bg-transparent border-mist/30'"
+                />
+              </div>
+              <span class="text-2xs font-body text-mist/60">{{ character.combat.hitDiceRemaining }}/{{ character.combat.level }}</span>
+            </div>
+            <div class="flex gap-2 ml-auto">
+              <button
+                class="btn-secondary text-xs gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                :disabled="character.combat.hitDiceRemaining <= 0"
+                @click="shortRest"
+              >Short Rest</button>
+              <button
+                class="btn-secondary text-xs gap-1.5"
+                @click="longRest"
+              >Long Rest</button>
+            </div>
+          </div>
+
+          <!-- ── Conditions & Concentration ─────────────────────────────────── -->
+          <div class="mt-3 pt-3 border-t border-shadow/40">
+            <ConditionsBar :character="character" :edit-mode="editMode" />
+          </div>
+
         </div>
       </section>
 
@@ -207,154 +342,27 @@
 
           <!-- Attacks -->
           <div v-if="activeTab === 'attacks'">
-            <div v-if="character.attacks.length === 0" class="card p-10 text-center">
-              <SwordIcon :size="36" class="mx-auto text-mist/25 mb-3" />
-              <p class="font-body text-ash text-sm">No attacks recorded.</p>
-              <p class="font-body text-mist text-xs mt-1">Attacks can be added from the edit view (coming soon).</p>
-            </div>
-            <div v-else class="overflow-x-auto">
-              <table class="w-full text-sm font-body border-collapse">
-                <thead>
-                  <tr class="border-b border-shadow">
-                    <th class="text-left py-2 px-3 text-2xs font-heading tracking-wide text-mist uppercase">Name</th>
-                    <th class="text-left py-2 px-3 text-2xs font-heading tracking-wide text-mist uppercase">Bonus</th>
-                    <th class="text-left py-2 px-3 text-2xs font-heading tracking-wide text-mist uppercase">Damage</th>
-                    <th class="text-left py-2 px-3 text-2xs font-heading tracking-wide text-mist uppercase">Type</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="attack in character.attacks" :key="attack.id" class="border-b border-shadow/50 hover:bg-depths/40 transition-colors">
-                    <td class="py-2.5 px-3 font-heading text-vellum">{{ attack.name }}</td>
-                    <td class="py-2.5 px-3 text-gold-mid">{{ attack.attackBonus || '—' }}</td>
-                    <td class="py-2.5 px-3 text-stone">{{ attack.damage || '—' }}</td>
-                    <td class="py-2.5 px-3 text-mist">{{ attack.damageType || '—' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <AttacksTab :character="character" :edit-mode="editMode" />
           </div>
 
           <!-- Spells -->
           <div v-else-if="activeTab === 'spells'">
-            <div v-if="character.favoriteSpells.length > 0" class="mb-6">
-              <div class="rule-gold mb-4"><span class="text-gold-mid">★ Favorite Spells</span></div>
-              <div class="flex flex-wrap gap-2">
-                <div
-                  v-for="spell in character.favoriteSpells"
-                  :key="spell.index"
-                  class="flex items-center gap-2 px-3 py-2 rounded border border-gold-dim/25 bg-gold-dim/10 text-sm"
-                >
-                  <span class="text-gold-mid text-xs">★</span>
-                  <span class="font-heading text-vellum">{{ spell.name }}</span>
-                  <span class="badge-arcane text-2xs">{{ spell.level === 0 ? 'Cantrip' : `Lv ${spell.level}` }}</span>
-                </div>
-              </div>
-            </div>
-            <div v-if="character.spellcasting?.cantripsKnown.length">
-              <div class="rule-gold mb-4"><span>Cantrips</span></div>
-              <div class="flex flex-wrap gap-2">
-                <span
-                  v-for="c in character.spellcasting.cantripsKnown"
-                  :key="c.index"
-                  class="px-3 py-1.5 rounded border border-arcane-base/30 bg-arcane-deep/10 text-sm font-heading text-arcane-pale"
-                >{{ c.name }}</span>
-              </div>
-            </div>
-            <div v-if="!character.favoriteSpells.length && !character.spellcasting?.cantripsKnown.length" class="card p-10 text-center">
-              <SparklesIcon :size="36" class="mx-auto text-mist/25 mb-3" />
-              <p class="font-body text-ash text-sm">No spells recorded.</p>
-            </div>
+            <SpellsTab :character="character" :edit-mode="editMode" />
           </div>
 
           <!-- Equipment -->
-          <div v-else-if="activeTab === 'equipment'" class="space-y-6">
-            <!-- Currency -->
-            <div class="space-y-2">
-              <p class="label">Currency</p>
-              <div class="grid grid-cols-5 gap-2">
-                <div v-for="coin in COINS" :key="coin.key" class="card p-2 text-center">
-                  <p class="text-2xs font-heading tracking-wide text-mist uppercase mb-1">{{ coin.label }}</p>
-                  <input
-                    v-model.number="currencyEdit[coin.key]"
-                    type="number"
-                    min="0"
-                    class="w-full text-center font-heading text-base bg-transparent outline-none text-vellum border-b border-transparent focus:border-gold-mid/50 transition-colors"
-                    @blur="saveCurrency"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Inventory -->
-            <div class="space-y-2">
-              <p class="label">Inventory</p>
-              <div v-if="character.inventory.length === 0" class="card p-10 text-center">
-                <PackageIcon :size="36" class="mx-auto text-mist/25 mb-3" />
-                <p class="font-body text-ash text-sm">Inventory is empty.</p>
-              </div>
-              <div v-else class="space-y-1.5">
-                <div
-                  v-for="item in character.inventory"
-                  :key="item.id"
-                  class="flex items-center gap-3 px-3 py-2.5 rounded border border-shadow bg-abyss/50"
-                >
-                  <span
-                    class="w-2 h-2 rounded-full shrink-0"
-                    :class="item.equipped ? 'bg-gold-mid' : 'bg-mist/30'"
-                    :title="item.equipped ? 'Equipped' : 'Not equipped'"
-                  />
-                  <span class="font-heading text-sm text-vellum flex-1">{{ item.item.name }}</span>
-                  <span v-if="item.quantity > 1" class="text-xs font-body text-mist">×{{ item.quantity }}</span>
-                  <span v-if="item.item.category" class="text-xs font-body text-mist/60">{{ item.item.category }}</span>
-                </div>
-              </div>
-            </div>
+          <div v-else-if="activeTab === 'equipment'">
+            <EquipmentTab :character="character" :edit-mode="editMode" />
           </div>
 
           <!-- Features & Traits -->
           <div v-else-if="activeTab === 'features'">
-            <div v-if="character.features.length === 0" class="card p-10 text-center">
-              <ScrollIcon :size="36" class="mx-auto text-mist/25 mb-3" />
-              <p class="font-body text-ash text-sm">No features recorded.</p>
-              <p class="font-body text-mist text-xs mt-1">Features from race, class, and background will appear here.</p>
-            </div>
-            <div v-else class="space-y-3">
-              <div v-for="feature in character.features" :key="feature.id" class="card p-4 space-y-1.5">
-                <div class="flex items-start justify-between gap-3">
-                  <p class="font-heading text-sm text-vellum">{{ feature.name }}</p>
-                  <span v-if="feature.source" class="badge-gold text-2xs shrink-0">{{ feature.source }}</span>
-                </div>
-                <p class="font-body text-sm text-ash leading-relaxed">{{ feature.description }}</p>
-              </div>
-            </div>
+            <FeaturesTab :character="character" />
           </div>
 
           <!-- Biography -->
           <div v-else-if="activeTab === 'bio'">
-            <div class="grid sm:grid-cols-2 gap-4">
-              <div
-                v-for="field in bioFields"
-                :key="field.key"
-                v-show="field.value"
-                class="card p-5"
-              >
-                <p class="label mb-2">{{ field.label }}</p>
-                <p class="font-body text-stone leading-relaxed text-sm">{{ field.value }}</p>
-              </div>
-              <!-- Appearance -->
-              <div v-if="hasAppearance" class="card p-5 sm:col-span-2">
-                <p class="label mb-3">Appearance</p>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm font-body">
-                  <div v-for="f in appearanceFields" :key="f.key" v-show="f.value">
-                    <p class="text-mist text-xs">{{ f.label }}</p>
-                    <p class="text-stone">{{ f.value }}</p>
-                  </div>
-                </div>
-              </div>
-              <div v-if="!bioFields.some(f => f.value) && !hasAppearance" class="col-span-2 text-center py-12">
-                <p class="font-body text-ash">No biography written yet.</p>
-              </div>
-            </div>
+            <BioTab :character="character" :edit-mode="editMode" />
           </div>
 
           <!-- Notes -->
@@ -376,18 +384,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, reactive, nextTick } from 'vue'
-import { DownloadIcon, SparklesIcon, SwordIcon, PackageIcon, ScrollIcon } from 'lucide-vue-next'
+import { ref, computed, watch, nextTick } from 'vue'
+import { DownloadIcon, LockIcon, LockOpenIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
+import type { Character, AbilityName } from '@/shared/types/character'
 import { computeProficiencyBonus } from '@/shared/lib/derivedStats'
-import type { AbilityName } from '@/shared/types/character'
+import { CLASS_META } from '@/character-builder/classMeta'
+import { useDialog } from '@/shared/composables/useDialog'
 import StatBox from '@/characters/components/StatBox.vue'
 import AbilityBlock from '@/characters/components/AbilityBlock.vue'
+import FeaturesTab from '@/characters/components/FeaturesTab.vue'
+import BioTab from '@/characters/components/BioTab.vue'
+import ConditionsBar from '@/characters/components/ConditionsBar.vue'
+import AttacksTab from '@/characters/components/AttacksTab.vue'
+import EquipmentTab from '@/characters/components/EquipmentTab.vue'
+import SpellsTab from '@/characters/components/SpellsTab.vue'
 
 const props = defineProps<{ id: string }>()
 const store = useCharactersStore()
 const character = computed(() => store.getById(props.id))
+const dialog = useDialog()
+
+const editMode = ref(true)
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
@@ -485,6 +504,74 @@ async function toggleInspiration() {
   })
 }
 
+// ── AC editable ───────────────────────────────────────────────────────────────
+
+const acEditing = ref(false)
+const acValue = ref(0)
+const acInputEl = ref<HTMLInputElement | null>(null)
+
+function startAcEdit() {
+  if (!character.value) return
+  acValue.value = character.value.combat.armorClass
+  acEditing.value = true
+  nextTick(() => acInputEl.value?.select())
+}
+
+async function commitAc() {
+  if (!character.value) return
+  acEditing.value = false
+  const next = Math.max(0, acValue.value || 0)
+  if (next === character.value.combat.armorClass) return
+  await store.update(character.value.id, { combat: { ...character.value.combat, armorClass: next } })
+}
+
+// ── Temp HP ───────────────────────────────────────────────────────────────────
+
+const tempHpEditing = ref(false)
+const tempHpValue = ref(0)
+const tempHpInputEl = ref<HTMLInputElement | null>(null)
+
+function startTempHpEdit() {
+  if (!character.value) return
+  tempHpValue.value = character.value.combat.tempHp
+  tempHpEditing.value = true
+  nextTick(() => tempHpInputEl.value?.select())
+}
+
+async function commitTempHp() {
+  if (!character.value) return
+  tempHpEditing.value = false
+  const next = Math.max(0, tempHpValue.value || 0)
+  if (next === character.value.combat.tempHp) return
+  await store.update(character.value.id, { combat: { ...character.value.combat, tempHp: next } })
+}
+
+async function adjustTempHp(delta: number) {
+  if (!character.value) return
+  const next = Math.max(0, character.value.combat.tempHp + delta)
+  if (next === character.value.combat.tempHp) return
+  await store.update(character.value.id, { combat: { ...character.value.combat, tempHp: next } })
+}
+
+// ── Death saves ───────────────────────────────────────────────────────────────
+
+const deathSaves = computed(() =>
+  character.value?.combat.deathSaves ?? { successes: 0, failures: 0 },
+)
+
+async function toggleDeathSave(type: 'successes' | 'failures', pip: number) {
+  if (!character.value) return
+  const current = deathSaves.value
+  const currentVal = current[type]
+  const next = pip <= currentVal ? pip - 1 : pip
+  await store.update(character.value.id, {
+    combat: {
+      ...character.value.combat,
+      deathSaves: { ...current, [type]: Math.max(0, Math.min(3, next)) },
+    },
+  })
+}
+
 // ── Saving Throws & Skills ─────────────────────────────────────────────────────
 
 const SAVES: { key: AbilityName; label: string }[] = [
@@ -554,33 +641,6 @@ const passivePerception = computed(() => {
   return 10 + skillBonus(percSkill)
 })
 
-// ── Currency ──────────────────────────────────────────────────────────────────
-
-const COINS = [
-  { key: 'cp' as const, label: 'CP' },
-  { key: 'sp' as const, label: 'SP' },
-  { key: 'ep' as const, label: 'EP' },
-  { key: 'gp' as const, label: 'GP' },
-  { key: 'pp' as const, label: 'PP' },
-]
-
-const currencyEdit = reactive({ cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 })
-
-watch(character, (c) => {
-  if (c) {
-    currencyEdit.cp = c.currency.cp
-    currencyEdit.sp = c.currency.sp
-    currencyEdit.ep = c.currency.ep
-    currencyEdit.gp = c.currency.gp
-    currencyEdit.pp = c.currency.pp
-  }
-}, { immediate: true })
-
-async function saveCurrency() {
-  if (!character.value) return
-  await store.update(character.value.id, { currency: { ...currencyEdit } })
-}
-
 // ── Notes ─────────────────────────────────────────────────────────────────────
 
 const notesText = ref('')
@@ -592,35 +652,73 @@ async function saveNotes() {
   await store.update(character.value.id, { notes: notesText.value })
 }
 
-// ── Biography ─────────────────────────────────────────────────────────────────
 
-const bioFields = computed(() => {
-  const p = character.value?.personality
-  if (!p) return []
-  return [
-    { key: 'personalityTraits', label: 'Personality Traits', value: p.personalityTraits },
-    { key: 'ideals',  label: 'Ideals',     value: p.ideals    },
-    { key: 'bonds',   label: 'Bonds',      value: p.bonds     },
-    { key: 'flaws',   label: 'Flaws',      value: p.flaws     },
-    { key: 'biography', label: 'Biography', value: p.biography },
+// ── Rest ──────────────────────────────────────────────────────────────────────
+
+const hitDie = computed(() =>
+  CLASS_META[character.value?.identity.class.index ?? '']?.hitDie ?? 8,
+)
+
+function shortRest() {
+  const c = character.value
+  if (!c || c.combat.hitDiceRemaining <= 0) return
+  const conMod = computeModifier(c.abilityScores.con)
+  const roll = Math.ceil(Math.random() * hitDie.value)
+  const healed = Math.max(1, roll + conMod)
+  const newHp = Math.min(c.combat.maxHp, c.combat.currentHp + healed)
+  store.update(c.id, {
+    combat: {
+      ...c.combat,
+      currentHp: newHp,
+      hitDiceRemaining: c.combat.hitDiceRemaining - 1,
+    },
+  })
+  const conStr = conMod >= 0 ? `+${conMod}` : String(conMod)
+  dialog.open({
+    title: 'Short Rest',
+    body: 'You spend a moment to catch your breath and tend to your wounds.',
+    items: [
+      { label: 'Hit die rolled', value: `d${hitDie.value} → ${roll} ${conStr} = ${roll + conMod}` },
+      { label: 'HP recovered',   value: `+${healed} (${newHp} / ${c.combat.maxHp})` },
+      { label: 'Hit dice left',  value: `${c.combat.hitDiceRemaining - 1}d${hitDie.value}` },
+    ],
+  })
+}
+
+function longRest() {
+  const c = character.value
+  if (!c) return
+  const regained = Math.max(1, Math.floor(c.combat.level / 2))
+  const newHitDice = Math.min(c.combat.level, c.combat.hitDiceRemaining + regained)
+  const updates: Partial<Character> = {
+    combat: {
+      ...c.combat,
+      currentHp: c.combat.maxHp,
+      tempHp: 0,
+      hitDiceRemaining: newHitDice,
+      deathSaves: { successes: 0, failures: 0 },
+    },
+  }
+  const items: { label: string; value: string }[] = [
+    { label: 'HP',        value: `Restaurado a ${c.combat.maxHp} / ${c.combat.maxHp}` },
+    { label: 'Hit Dice',  value: `+${regained} recuperados (${newHitDice}d${hitDie.value})` },
+    { label: 'Death Saves', value: 'Reiniciados' },
   ]
-})
-
-const appearanceFields = computed(() => {
-  const id = character.value?.identity
-  if (!id) return []
-  return [
-    { key: 'age',    label: 'Age',    value: id.age    },
-    { key: 'gender', label: 'Gender', value: id.gender },
-    { key: 'height', label: 'Height', value: id.height },
-    { key: 'weight', label: 'Weight', value: id.weight },
-    { key: 'eyes',   label: 'Eyes',   value: id.eyes   },
-    { key: 'skin',   label: 'Skin',   value: id.skin   },
-    { key: 'hair',   label: 'Hair',   value: id.hair   },
-  ].filter(f => f.value)
-})
-
-const hasAppearance = computed(() => appearanceFields.value.length > 0)
+  if (c.spellcasting) {
+    updates.spellcasting = {
+      ...c.spellcasting,
+      slotsUsed: { level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0, level7: 0, level8: 0, level9: 0 },
+    }
+    items.splice(1, 0, { label: 'Spell Slots', value: 'Todos recuperados' })
+  }
+  store.update(c.id, updates)
+  dialog.open({
+    title: 'Long Rest',
+    body: 'Tras un descanso completo, te despiertas renovado y recuperado.',
+    items,
+    variant: 'success',
+  })
+}
 
 // ── Export ────────────────────────────────────────────────────────────────────
 
