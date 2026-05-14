@@ -1,89 +1,203 @@
 <template>
   <div>
+    <!-- ── Not found ──────────────────────────────────────────────────────────── -->
     <div v-if="!character" class="app-container py-24 text-center">
       <p class="font-body text-ash">Character not found in this tome.</p>
       <RouterLink to="/" class="btn-secondary mt-4 inline-flex">← Back to characters</RouterLink>
     </div>
 
     <template v-else>
-      <!-- ── Header ────────────────────────────────────────────────────────── -->
-      <section class="border-b border-shadow relative overflow-hidden">
+
+      <!-- ══ HEADER ═══════════════════════════════════════════════════════════ -->
+      <header class="border-b border-shadow bg-abyss relative overflow-hidden">
         <div
           class="absolute inset-0 pointer-events-none"
-          style="background: linear-gradient(180deg, rgba(212,168,67,0.03) 0%, transparent 100%)"
+          style="background: linear-gradient(180deg, rgba(212,168,67,0.04) 0%, transparent 100%)"
         />
-        <div class="app-container py-8 relative">
-          <div class="flex items-start gap-5">
+        <div class="app-container py-4 relative">
+          <div class="flex items-center gap-4 flex-wrap sm:flex-nowrap">
+
             <!-- Portrait -->
-            <div
-              class="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded relative overflow-hidden border border-shadow"
-              style="box-shadow: 0 0 0 1px rgba(212,168,67,0.1) inset"
-            >
+            <div class="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded border border-shadow overflow-hidden relative"
+              style="box-shadow: 0 0 0 1px rgba(212,168,67,0.08) inset">
               <img
                 v-if="character.portrait.type === 'url'"
                 :src="character.portrait.url"
                 :alt="character.identity.name"
                 class="w-full h-full object-cover"
               />
-              <div v-else class="w-full h-full flex items-center justify-center bg-depths">
-                <span class="text-3xl text-gold-dim/40">{{ classGlyph }}</span>
+              <div v-else class="w-full h-full flex items-center justify-center bg-depths text-2xl text-gold-dim/30 font-display select-none">
+                {{ classGlyph }}
               </div>
-              <div class="absolute top-0 left-0 w-3 h-3 border-t border-l border-gold-dim/40" />
-              <div class="absolute top-0 right-0 w-3 h-3 border-t border-r border-gold-dim/40" />
-              <div class="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-gold-dim/40" />
-              <div class="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-gold-dim/40" />
+              <div class="absolute top-0 left-0 w-2.5 h-2.5 border-t border-l border-gold-dim/30" />
+              <div class="absolute top-0 right-0 w-2.5 h-2.5 border-t border-r border-gold-dim/30" />
+              <div class="absolute bottom-0 left-0 w-2.5 h-2.5 border-b border-l border-gold-dim/30" />
+              <div class="absolute bottom-0 right-0 w-2.5 h-2.5 border-b border-r border-gold-dim/30" />
             </div>
 
             <!-- Identity -->
             <div class="flex-1 min-w-0">
-              <div class="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <h1 class="font-display text-3xl sm:text-4xl text-vellum leading-tight">
-                    {{ character.identity.name }}
-                  </h1>
-                  <p class="font-body text-ash mt-1">
-                    {{ character.identity.race.name }}<span v-if="character.identity.subrace">&nbsp;({{ character.identity.subrace.name }})</span>
-                    <span class="text-mist mx-1.5">·</span>
-                    {{ character.identity.class.name }}<span v-if="character.identity.subclass">&nbsp;— {{ character.identity.subclass.name }}</span>
-                    <span class="text-mist mx-1.5">·</span>
-                    Level {{ character.combat.level }}
-                  </p>
-                  <p class="font-body text-sm text-mist mt-0.5">
-                    {{ character.identity.background.name }}
-                    <span class="mx-1">·</span>
-                    {{ character.identity.alignment }}
-                  </p>
-                </div>
-                <div class="flex gap-2 shrink-0 items-center">
-                  <button class="btn-secondary text-xs gap-1.5" @click="downloadExport">
-                    <DownloadIcon :size="13" />Export
-                  </button>
-                  <button
-                    :title="editMode ? 'Bloquear ficha' : 'Desbloquear ficha'"
-                    class="w-7 h-7 flex items-center justify-center rounded transition-colors"
-                    :class="editMode ? 'text-mist hover:text-ash hover:bg-shadow/40' : 'text-gold-mid hover:text-gold-bright hover:bg-gold-dim/10'"
-                    @click="editMode = !editMode"
-                  >
-                    <LockOpenIcon v-if="editMode" :size="14" />
-                    <LockIcon v-else :size="14" />
-                  </button>
-                </div>
-              </div>
-              <div class="flex flex-wrap gap-2 mt-3">
+              <h1 class="font-display text-2xl sm:text-3xl leading-tight text-vellum truncate">
+                {{ character.identity.name }}
+              </h1>
+              <p class="font-body text-sm text-ash mt-0.5 truncate">
+                {{ character.identity.race.name }}<span v-if="character.identity.subrace">&nbsp;({{ character.identity.subrace.name }})</span>
+                <span class="text-mist/40 mx-1.5">·</span>
+                {{ character.identity.class.name }}<span v-if="character.identity.subclass">&nbsp;— {{ character.identity.subclass.name }}</span>
+                <span class="text-mist/40 mx-1.5">·</span>
+                Level {{ character.combat.level }}
+              </p>
+              <p class="font-body text-xs text-mist mt-0.5">
+                {{ character.identity.background.name }}
+                <span class="mx-1 text-mist/30">·</span>
+                {{ character.identity.alignment }}
+              </p>
+              <div class="flex flex-wrap gap-1.5 mt-2">
                 <span class="badge-gold">Lv {{ character.combat.level }}</span>
                 <span v-if="character.spellcasting" class="badge-arcane">Spellcaster</span>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border text-xs font-heading tracking-wide transition-all"
+                  :class="character.combat.inspiration
+                    ? 'bg-gold-dim/20 border-gold-mid/50 text-gold-mid'
+                    : 'border-shadow/40 text-mist/40 hover:border-gold-dim/30 hover:text-mist'"
+                  :disabled="!editMode"
+                  @click="editMode && toggleInspiration()"
+                >✦ Inspiration</button>
               </div>
+            </div>
+
+            <!-- Utility buttons -->
+            <div class="flex items-center gap-1 shrink-0">
+              <button class="btn-secondary p-1.5" title="Export character" @click="downloadExport">
+                <DownloadIcon :size="14" />
+              </button>
+              <button
+                type="button"
+                class="w-8 h-8 flex items-center justify-center rounded border transition-colors"
+                :class="editMode
+                  ? 'border-shadow/50 text-mist hover:text-ash hover:border-shadow'
+                  : 'border-gold-dim/40 text-gold-mid hover:text-gold-bright hover:border-gold-mid/60'"
+                :title="editMode ? 'Lock sheet' : 'Unlock sheet'"
+                @click="editMode = !editMode"
+              >
+                <LockOpenIcon v-if="editMode" :size="14" />
+                <LockIcon v-else :size="14" />
+              </button>
             </div>
           </div>
         </div>
-      </section>
+      </header>
 
-      <!-- ── Quick Stats ────────────────────────────────────────────────────── -->
-      <section class="border-b border-shadow bg-depths/50">
-        <div class="app-container py-4">
-          <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            <!-- AC editable -->
-            <div class="card flex flex-col items-center justify-center p-3 gap-0.5">
+      <!-- ══ TACTICAL STRIP ════════════════════════════════════════════════════ -->
+      <section class="border-b border-shadow bg-depths/60">
+        <div class="app-container py-3">
+
+          <!-- Stat boxes row -->
+          <div class="flex items-start gap-2">
+            <!-- Stat grid -->
+            <div
+              class="grid gap-2 flex-1 min-w-0 items-start"
+              :class="character.spellcasting
+                ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8'
+                : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'"
+            >
+
+            <!-- HP (special widget) -->
+            <div
+              class="card flex flex-col items-center p-3 min-w-0"
+              :class="hpPercent < 0.25 ? 'border-blood-base/50' : ''"
+            >
+              <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">HP</p>
+
+              <div class="flex items-center gap-1 mt-0.5">
+                <button
+                  v-show="editMode"
+                  type="button"
+                  class="w-6 h-6 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths font-heading text-lg leading-none transition-colors"
+                  @click="adjustHp(-1)"
+                >−</button>
+
+                <input
+                  v-if="hpEditing && editMode"
+                  ref="hpInputEl"
+                  v-model.number="hpInputValue"
+                  type="number"
+                  :min="0"
+                  :max="character.combat.maxHp"
+                  class="w-12 text-center font-heading text-xl bg-transparent border-b border-gold-mid/50 outline-none"
+                  :class="hpPercent < 0.25 ? 'text-blood-bright' : 'text-vellum'"
+                  @blur="commitHp"
+                  @keydown.enter="commitHp"
+                  @keydown.esc="hpEditing = false"
+                />
+                <button
+                  v-else
+                  type="button"
+                  class="font-heading text-xl leading-none transition-colors"
+                  :class="[
+                    hpPercent < 0.25 ? 'text-blood-bright' : 'text-vellum',
+                    editMode ? 'hover:text-gold-mid cursor-pointer' : 'cursor-default',
+                  ]"
+                  @click="editMode && startHpEdit()"
+                >{{ character.combat.currentHp }}</button>
+
+                <button
+                  v-show="editMode"
+                  type="button"
+                  class="w-6 h-6 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths font-heading text-lg leading-none transition-colors"
+                  @click="adjustHp(1)"
+                >+</button>
+              </div>
+
+              <p class="text-xs text-mist leading-none">/ {{ character.combat.maxHp }}</p>
+
+              <!-- Temp HP -->
+              <div class="flex items-center gap-1 mt-1 pt-1 border-t border-shadow/30 w-full justify-center">
+                <button
+                  v-show="editMode"
+                  type="button"
+                  class="w-4 h-4 flex items-center justify-center text-mist/50 hover:text-ash font-heading text-xs transition-colors"
+                  @click="adjustTempHp(-1)"
+                >−</button>
+                <span class="text-2xs font-heading text-mist/50">THP</span>
+                <button
+                  v-if="tempHpEditing && editMode"
+                  type="button"
+                  class="w-8 text-center bg-transparent border-b border-arcane-base/50 outline-none text-arcane-pale font-heading text-xs"
+                >
+                  <input
+                    ref="tempHpInputEl"
+                    v-model.number="tempHpValue"
+                    type="number"
+                    min="0"
+                    class="w-8 text-center bg-transparent outline-none text-arcane-pale font-heading text-xs"
+                    @blur="commitTempHp"
+                    @keydown.enter="commitTempHp"
+                    @keydown.esc="tempHpEditing = false"
+                  />
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="font-heading text-xs transition-colors"
+                  :class="[
+                    character.combat.tempHp > 0 ? 'text-arcane-pale' : 'text-mist/30',
+                    editMode ? 'cursor-pointer hover:text-arcane-pale/70' : 'cursor-default',
+                  ]"
+                  @click="editMode && startTempHpEdit()"
+                >{{ character.combat.tempHp }}</button>
+                <button
+                  v-show="editMode"
+                  type="button"
+                  class="w-4 h-4 flex items-center justify-center text-mist/50 hover:text-ash font-heading text-xs transition-colors"
+                  @click="adjustTempHp(1)"
+                >+</button>
+              </div>
+            </div>
+
+            <!-- AC -->
+            <div class="card flex flex-col items-center justify-center p-3 min-w-0">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">AC</p>
               <input
                 v-if="acEditing && editMode"
@@ -91,7 +205,7 @@
                 v-model.number="acValue"
                 type="number"
                 min="0"
-                class="w-10 text-center font-heading text-xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum"
+                class="w-10 text-center font-heading text-xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum mt-0.5"
                 @blur="commitAc"
                 @keydown.enter="commitAc"
                 @keydown.esc="acEditing = false"
@@ -99,287 +213,305 @@
               <button
                 v-else
                 type="button"
-                class="font-heading text-xl text-vellum transition-colors"
+                class="font-heading text-xl text-vellum mt-0.5 leading-none transition-colors"
                 :class="editMode ? 'hover:text-gold-mid cursor-pointer' : 'cursor-default'"
-                :title="editMode ? 'Click to edit AC' : ''"
                 @click="editMode && startAcEdit()"
               >{{ character.combat.armorClass }}</button>
             </div>
-            <StatBox label="Initiative" :value="initiativeDisplay" />
-            <StatBox label="Speed" :value="`${speedDisplay}ft`" />
 
-            <!-- HP tracker -->
-            <div
-              class="card flex flex-col items-center justify-center p-3 gap-0.5"
-              :class="hpPercent < 0.25 ? 'pulse-blood border-blood-base/40' : ''"
-            >
-              <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">HP</p>
-              <div v-if="hpEditing && editMode" class="flex items-center gap-1">
-                <input
-                  ref="hpInputEl"
-                  v-model.number="hpInputValue"
-                  type="number"
-                  :min="0"
-                  :max="character.combat.maxHp"
-                  class="w-14 text-center font-heading text-lg bg-transparent border-b border-gold-mid/50 outline-none text-vellum"
-                  @blur="commitHp"
-                  @keydown.enter="commitHp"
-                  @keydown.esc="hpEditing = false"
-                />
-              </div>
-              <div v-else class="flex items-center gap-1">
-                <button v-if="editMode" type="button" class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading transition-colors" @click="adjustHp(-1)">−</button>
-                <button
-                  type="button"
-                  class="font-heading text-lg leading-none transition-colors"
-                  :class="[hpPercent < 0.25 ? 'text-blood-bright' : 'text-vellum', editMode ? 'hover:text-gold-mid cursor-pointer' : 'cursor-default']"
-                  @click="editMode && startHpEdit()"
-                >{{ character.combat.currentHp }}</button>
-                <button v-if="editMode" type="button" class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading transition-colors" @click="adjustHp(1)">+</button>
-              </div>
-              <p class="text-xs text-mist leading-none">/ {{ character.combat.maxHp }}</p>
-              <!-- Temp HP -->
-              <div class="flex items-center gap-1 mt-0.5 border-t border-shadow/40 pt-0.5 w-full justify-center">
-                <button v-if="editMode" type="button" class="w-4 h-4 flex items-center justify-center rounded text-mist/60 hover:text-ash font-heading text-xs transition-colors" @click="adjustTempHp(-1)">−</button>
-                <span class="text-2xs font-heading text-mist leading-none">THP&nbsp;</span>
-                <button
-                  type="button"
-                  class="font-heading text-xs transition-colors"
-                  :class="[character.combat.tempHp > 0 ? 'text-arcane-pale' : 'text-mist/40', editMode ? 'hover:text-arcane-pale/80 cursor-pointer' : 'cursor-default']"
-                  :title="editMode ? 'Click to set Temp HP' : ''"
-                  @click="editMode && startTempHpEdit()"
-                >
-                  <template v-if="tempHpEditing && editMode">
-                    <input
-                      ref="tempHpInputEl"
-                      v-model.number="tempHpValue"
-                      type="number"
-                      min="0"
-                      class="w-8 text-center bg-transparent border-b border-arcane-base/50 outline-none text-arcane-pale font-heading text-xs"
-                      @blur="commitTempHp"
-                      @keydown.enter="commitTempHp"
-                      @keydown.esc="tempHpEditing = false"
-                    />
-                  </template>
-                  <template v-else>{{ character.combat.tempHp }}</template>
-                </button>
-                <button v-if="editMode" type="button" class="w-4 h-4 flex items-center justify-center rounded text-mist/60 hover:text-ash font-heading text-xs transition-colors" @click="adjustTempHp(1)">+</button>
-              </div>
-            </div>
-
-            <!-- Inspiration -->
-            <div
-              class="card flex flex-col items-center justify-center p-3 gap-0.5 transition-all duration-150"
-              :class="[
-                character.combat.inspiration ? 'border-gold-mid/50 bg-gold-dim/10' : '',
-                editMode ? 'cursor-pointer hover:border-gold-dim/20' : 'cursor-default',
-              ]"
-              :title="editMode ? 'Toggle inspiration' : ''"
-              @click="editMode && toggleInspiration()"
-            >
-              <p class="text-2xs font-heading tracking-[0.15em] uppercase" :class="character.combat.inspiration ? 'text-gold-mid' : 'text-mist'">Inspiration</p>
-              <p class="font-heading text-xl leading-none" :class="character.combat.inspiration ? 'text-gold-mid' : 'text-mist/30'">✦</p>
-            </div>
-
-            <StatBox label="Prof Bonus" :value="`+${profBonus}`" />
-          </div>
-
-          <!-- ── Death Saves ─────────────────────────────────────────────── -->
-          <div class="mt-3 pt-3 border-t border-shadow/40 flex items-center gap-6 flex-wrap">
-            <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist shrink-0">Death Saves</p>
-
-            <!-- Successes -->
-            <div class="flex items-center gap-1.5">
-              <span class="text-2xs font-body text-mist/60 mr-0.5">Success</span>
+            <!-- Initiative (clickable roll) -->
+            <div class="card flex flex-col items-center justify-center p-3 min-w-[60px] group">
+              <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Init</p>
               <button
-                v-for="pip in 3"
-                :key="`s${pip}`"
                 type="button"
-                class="w-3.5 h-3.5 rounded-full border-2 transition-all duration-100"
-                :class="[
-                  pip <= deathSaves.successes ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/30',
-                  editMode ? 'hover:border-gold-dim/60 cursor-pointer' : 'cursor-default',
-                ]"
-                @click="editMode && toggleDeathSave('successes', pip)"
-              />
+                class="font-heading text-xl text-vellum mt-0.5 leading-none hover:text-gold-mid transition-colors"
+                title="Roll Initiative"
+                @click="rollD20(initiativeMod, 'Initiative')"
+              >{{ initiativeDisplay }}</button>
             </div>
-            <!-- Failures -->
-            <div class="flex items-center gap-1.5">
-              <span class="text-2xs font-body text-mist/60 mr-0.5">Failure</span>
-              <button
-                v-for="pip in 3"
-                :key="`f${pip}`"
-                type="button"
-                class="w-3.5 h-3.5 rounded-full border-2 transition-all duration-100"
-                :class="[
-                  pip <= deathSaves.failures ? 'bg-blood-bright border-blood-bright' : 'bg-transparent border-mist/30',
-                  editMode ? 'hover:border-blood-base/60 cursor-pointer' : 'cursor-default',
-                ]"
-                @click="editMode && toggleDeathSave('failures', pip)"
-              />
-            </div>
-          </div>
 
-          <!-- ── Rest ──────────────────────────────────────────────────────── -->
-          <div class="mt-3 pt-3 border-t border-shadow/40 flex items-center gap-4 flex-wrap">
-            <div class="flex items-center gap-2 flex-wrap">
-              <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist shrink-0">Hit Dice (d{{ hitDie }})</p>
-              <div class="flex items-center gap-1">
-                <div
-                  v-for="pip in character.combat.level"
-                  :key="pip"
-                  class="w-3.5 h-3.5 rounded-full border-2 transition-all duration-100"
-                  :class="pip <= character.combat.hitDiceRemaining
-                    ? 'bg-arcane-pale border-arcane-pale'
-                    : 'bg-transparent border-mist/30'"
-                />
-              </div>
-              <span class="text-2xs font-body text-mist/60">{{ character.combat.hitDiceRemaining }}/{{ character.combat.level }}</span>
+            <!-- Speed -->
+            <div class="card flex flex-col items-center justify-center p-3 min-w-0">
+              <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Speed</p>
+              <p class="font-heading text-xl text-vellum mt-0.5 leading-none">
+                {{ speedDisplay }}<span class="text-xs text-mist font-body ml-0.5">ft</span>
+              </p>
             </div>
-            <div class="flex gap-2 ml-auto">
+
+            <!-- Passive Perception -->
+            <div class="card flex flex-col items-center justify-center p-3 min-w-0">
+              <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Pass. Perc</p>
+              <p class="font-heading text-xl text-vellum mt-0.5 leading-none">{{ passivePerception }}</p>
+            </div>
+
+            <!-- Prof Bonus -->
+            <div class="card flex flex-col items-center justify-center p-3 min-w-0">
+              <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Prof</p>
+              <p class="font-heading text-xl text-vellum mt-0.5 leading-none">+{{ profBonus }}</p>
+            </div>
+
+            <!-- Spell Save DC -->
+            <div v-if="character.spellcasting" class="card flex flex-col items-center justify-center p-3 min-w-0">
+              <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Spell DC</p>
+              <p class="font-heading text-xl text-arcane-pale mt-0.5 leading-none">{{ spellSaveDC }}</p>
+            </div>
+
+            <!-- Spell Attack Bonus (clickable roll) -->
+            <div v-if="character.spellcasting" class="card flex flex-col items-center justify-center p-3 min-w-0">
+              <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Spell Atk</p>
               <button
-                class="btn-secondary text-xs gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                type="button"
+                class="font-heading text-xl text-arcane-pale mt-0.5 leading-none hover:text-arcane-bright transition-colors"
+                title="Roll Spell Attack"
+                @click="rollD20(spellAttackBonus, 'Spell Attack')"
+              >{{ fmt(spellAttackBonus) }}</button>
+            </div>
+
+            </div><!-- /stat grid -->
+
+            <!-- Rest buttons + Hit Dice -->
+            <div class="flex flex-col gap-1 self-center shrink-0">
+              <button
+                class="btn-secondary text-xs py-1.5 px-3"
+                :class="character.combat.hitDiceRemaining <= 0 ? 'opacity-40 pointer-events-none' : ''"
                 :disabled="character.combat.hitDiceRemaining <= 0"
                 @click="shortRest"
               >Short Rest</button>
               <button
-                class="btn-secondary text-xs gap-1.5"
+                class="btn-secondary text-xs py-1.5 px-3"
                 @click="longRest"
               >Long Rest</button>
+              <!-- Hit Dice indicator -->
+              <div class="flex items-center justify-center gap-1 pt-0.5">
+                <span class="text-2xs font-heading uppercase text-mist shrink-0">d{{ hitDie }}</span>
+                <div class="flex items-center gap-0.5">
+                  <div
+                    v-for="pip in Math.min(character.combat.level, 10)"
+                    :key="pip"
+                    class="w-2 h-2 rounded-full border transition-all duration-100"
+                    :class="pip <= character.combat.hitDiceRemaining
+                      ? 'bg-arcane-pale border-arcane-pale'
+                      : 'bg-transparent border-mist/25'"
+                  />
+                  <span v-if="character.combat.level > 10" class="text-2xs font-body text-mist/40 ml-0.5">+{{ character.combat.level - 10 }}</span>
+                </div>
+                <span class="text-2xs font-body text-mist/50">{{ character.combat.hitDiceRemaining }}/{{ character.combat.level }}</span>
+              </div>
             </div>
           </div>
 
-          <!-- ── Conditions & Concentration ─────────────────────────────────── -->
-          <div class="mt-3 pt-3 border-t border-shadow/40">
-            <ConditionsBar :character="character" :edit-mode="editMode" />
-          </div>
+          <!-- Death saves row -->
+          <div class="flex items-center gap-5 flex-wrap mt-3 pt-2.5 border-t border-shadow/30">
 
+            <!-- Death Saves -->
+            <div class="flex items-center gap-3">
+              <p class="text-2xs font-heading tracking-[0.12em] uppercase text-mist shrink-0">Death Saves</p>
+              <div class="flex items-center gap-1">
+                <span class="text-2xs text-mist/40 mr-0.5 font-body">Suc</span>
+                <button
+                  v-for="pip in 3"
+                  :key="`s${pip}`"
+                  type="button"
+                  class="w-3 h-3 rounded-full border-2 transition-all duration-100"
+                  :class="[
+                    pip <= deathSaves.successes ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/30',
+                    editMode ? 'cursor-pointer hover:border-gold-dim/60' : 'cursor-default',
+                  ]"
+                  @click="editMode && toggleDeathSave('successes', pip)"
+                />
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-2xs text-mist/40 mr-0.5 font-body">Fail</span>
+                <button
+                  v-for="pip in 3"
+                  :key="`f${pip}`"
+                  type="button"
+                  class="w-3 h-3 rounded-full border-2 transition-all duration-100"
+                  :class="[
+                    pip <= deathSaves.failures ? 'bg-blood-bright border-blood-bright' : 'bg-transparent border-mist/30',
+                    editMode ? 'cursor-pointer hover:border-blood-base/60' : 'cursor-default',
+                  ]"
+                  @click="editMode && toggleDeathSave('failures', pip)"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- ── Ability Scores ─────────────────────────────────────────────────── -->
-      <section class="border-b border-shadow">
-        <div class="app-container py-5">
-          <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            <AbilityBlock
-              v-for="ab in abilityEntries"
-              :key="ab.key"
-              :label="ab.label"
-              :score="ab.score"
-              :mod="ab.mod"
-            />
-          </div>
+      <!-- ══ CONDITIONS BAR ════════════════════════════════════════════════════ -->
+      <section class="border-b border-shadow/40 bg-depths/20">
+        <div class="app-container py-2">
+          <ConditionsBar :character="character" :edit-mode="editMode" />
         </div>
       </section>
 
-      <!-- ── Saving Throws & Skills ─────────────────────────────────────────── -->
-      <section class="border-b border-shadow">
-        <div class="app-container py-5">
-          <div class="grid sm:grid-cols-[200px_1fr] gap-6">
+      <!-- ══ MAIN BODY: two columns on lg+ ════════════════════════════════════ -->
+      <div class="app-container">
+        <div class="lg:grid lg:grid-cols-[288px_1fr] lg:gap-8 pt-5 lg:pt-6">
+
+          <!-- ── LEFT PANEL: Abilities · Saves · Skills ─────────────────────── -->
+          <aside class="space-y-7 mb-8 lg:mb-0">
+
+            <!-- Ability Scores -->
+            <section>
+              <p class="label mb-3">Ability Scores</p>
+              <div class="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-3 gap-2">
+                <div
+                  v-for="ab in abilityEntries"
+                  :key="ab.key"
+                  class="card py-3 px-2 text-center group relative overflow-hidden"
+                >
+                  <div
+                    class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                    style="background: radial-gradient(ellipse at center, rgba(212,168,67,0.05) 0%, transparent 70%)"
+                  />
+                  <p class="relative text-2xs font-heading tracking-[0.2em] uppercase text-mist">{{ ab.label }}</p>
+                  <button
+                    type="button"
+                    class="relative block w-full font-heading text-2xl leading-none mt-1 transition-colors"
+                    :class="ab.mod >= 0 ? 'text-gold-mid hover:text-gold-bright' : 'text-blood-bright hover:text-blood-mid'"
+                    :title="`Roll ${ab.label} check`"
+                    @click="rollD20(ab.mod, `${ab.label} Check`)"
+                  >{{ ab.mod >= 0 ? `+${ab.mod}` : ab.mod }}</button>
+                  <p class="relative text-sm font-body text-ash mt-1 leading-none">{{ ab.score }}</p>
+                </div>
+              </div>
+            </section>
 
             <!-- Saving Throws -->
-            <div>
-              <p class="label mb-3">Saving Throws</p>
-              <div class="space-y-1.5">
-                <div v-for="save in SAVES" :key="save.key" class="flex items-center gap-2">
+            <section>
+              <p class="label mb-2">Saving Throws</p>
+              <div class="space-y-0.5">
+                <div
+                  v-for="save in SAVES"
+                  :key="save.key"
+                  class="flex items-center gap-2 px-2 py-1.5 rounded group hover:bg-depths/50 transition-colors"
+                >
                   <span
                     class="w-2.5 h-2.5 rounded-full border-2 shrink-0 transition-colors"
                     :class="character.savingThrowProficiencies[save.key]
                       ? 'bg-gold-mid border-gold-mid'
-                      : 'bg-transparent border-mist/50'"
+                      : 'bg-transparent border-mist/40'"
                   />
-                  <span class="font-heading text-sm w-8 shrink-0" :class="character.savingThrowProficiencies[save.key] ? 'text-gold-pale' : 'text-stone'">
-                    {{ fmt(saveBonus(save.key)) }}
-                  </span>
-                  <span class="text-xs font-body text-ash">{{ save.label }}</span>
+                  <button
+                    type="button"
+                    class="font-heading text-sm w-8 shrink-0 text-left transition-colors"
+                    :class="character.savingThrowProficiencies[save.key]
+                      ? 'text-gold-pale hover:text-gold-bright'
+                      : 'text-stone hover:text-ash'"
+                    @click="rollD20(saveBonus(save.key), `${save.label} Save`)"
+                  >{{ fmt(saveBonus(save.key)) }}</button>
+                  <span class="text-xs font-body text-ash flex-1">{{ save.label }}</span>
+                  <button
+                    type="button"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-mist/40 hover:text-gold-mid shrink-0"
+                    :aria-label="`Roll ${save.label} saving throw`"
+                    @click="rollD20(saveBonus(save.key), `${save.label} Save`)"
+                  >⚄</button>
                 </div>
               </div>
-            </div>
+            </section>
 
             <!-- Skills -->
-            <div>
-              <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <section>
+              <div class="flex items-center justify-between mb-2">
                 <p class="label">Skills</p>
-                <p class="text-xs font-body text-mist">Passive Perception {{ passivePerception }}</p>
+                <span class="text-2xs font-body text-mist">PP {{ passivePerception }}</span>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
-                <div v-for="skill in SKILLS" :key="skill.index" class="flex items-center gap-2">
+              <input
+                v-model="skillSearch"
+                type="search"
+                class="input-base text-xs py-1.5 mb-2"
+                placeholder="Filter skills…"
+              />
+              <div class="space-y-0.5">
+                <div
+                  v-for="skill in filteredSkills"
+                  :key="skill.index"
+                  class="flex items-center gap-2 px-2 py-1 rounded group hover:bg-depths/50 transition-colors"
+                >
                   <span
                     class="w-2.5 h-2.5 rounded-full border-2 shrink-0 transition-colors"
                     :class="profClass(skill.index)"
                   />
-                  <span class="font-heading text-sm w-8 shrink-0" :class="hasProficiency(skill.index) ? 'text-gold-pale' : 'text-stone'">
-                    {{ fmt(skillBonus(skill)) }}
-                  </span>
-                  <span class="text-xs font-body text-ash flex-1">{{ skill.name }}</span>
-                  <span class="text-2xs font-heading text-mist/60 shrink-0">{{ skill.ability.toUpperCase() }}</span>
+                  <button
+                    type="button"
+                    class="font-heading text-sm w-8 shrink-0 text-left transition-colors"
+                    :class="hasProficiency(skill.index)
+                      ? 'text-gold-pale hover:text-gold-bright'
+                      : 'text-stone hover:text-ash'"
+                    @click="rollD20(skillBonus(skill), skill.name)"
+                  >{{ fmt(skillBonus(skill)) }}</button>
+                  <span class="text-xs font-body text-ash flex-1 truncate">{{ skill.name }}</span>
+                  <span class="text-2xs font-heading text-mist/50 shrink-0">{{ skill.ability.toUpperCase() }}</span>
+                  <button
+                    type="button"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-mist/40 hover:text-gold-mid shrink-0"
+                    :aria-label="`Roll ${skill.name}`"
+                    @click="rollD20(skillBonus(skill), skill.name)"
+                  >⚄</button>
+                </div>
+                <div v-if="filteredSkills.length === 0" class="px-2 py-3 text-xs font-body text-mist/50 italic">
+                  No skills match "{{ skillSearch }}"
                 </div>
               </div>
+            </section>
+
+          </aside>
+
+          <!-- ── RIGHT PANEL: Tabs ─────────────────────────────────────────── -->
+          <main class="min-w-0 pb-16">
+
+            <!-- Tab bar -->
+            <div class="border-b border-shadow mb-5">
+              <div class="flex gap-0 overflow-x-auto">
+                <button
+                  v-for="tab in tabs"
+                  :key="tab.id"
+                  class="px-4 py-2.5 text-sm font-heading tracking-wide border-b-2 transition-all duration-150 whitespace-nowrap shrink-0"
+                  :class="activeTab === tab.id
+                    ? 'border-gold-mid text-gold-mid'
+                    : 'border-transparent text-ash hover:text-stone hover:border-shadow'"
+                  @click="activeTab = tab.id"
+                >{{ tab.label }}</button>
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <!-- ── Tabs ───────────────────────────────────────────────────────────── -->
-      <div class="app-container pt-5">
-        <div class="border-b border-shadow mb-6">
-          <div class="flex gap-0 overflow-x-auto">
-            <button
-              v-for="tab in tabs"
-              :key="tab.id"
-              class="px-4 py-2.5 text-sm font-heading tracking-wide border-b-2 transition-all duration-150 whitespace-nowrap shrink-0"
-              :class="activeTab === tab.id
-                ? 'border-gold-mid text-gold-mid'
-                : 'border-transparent text-ash hover:text-stone hover:border-shadow'"
-              @click="activeTab = tab.id"
-            >
-              {{ tab.label }}
-            </button>
-          </div>
-        </div>
-
-        <div class="pb-12">
-
-          <!-- Attacks -->
-          <div v-if="activeTab === 'attacks'">
-            <AttacksTab :character="character" :edit-mode="editMode" />
-          </div>
-
-          <!-- Spells -->
-          <div v-else-if="activeTab === 'spells'">
-            <SpellsTab :character="character" :edit-mode="editMode" />
-          </div>
-
-          <!-- Equipment -->
-          <div v-else-if="activeTab === 'equipment'">
-            <EquipmentTab :character="character" :edit-mode="editMode" />
-          </div>
-
-          <!-- Features & Traits -->
-          <div v-else-if="activeTab === 'features'">
-            <FeaturesTab :character="character" />
-          </div>
-
-          <!-- Biography -->
-          <div v-else-if="activeTab === 'bio'">
-            <BioTab :character="character" :edit-mode="editMode" />
-          </div>
-
-          <!-- Notes -->
-          <div v-else-if="activeTab === 'notes'" class="space-y-2">
-            <p class="label">Session Notes</p>
-            <textarea
-              v-model="notesText"
-              class="input-base w-full resize-y font-body text-sm leading-relaxed"
-              rows="12"
-              placeholder="Write notes about this character's adventures, session recaps, plans for the next session…"
-              @blur="saveNotes"
-            />
-          </div>
-
+            <!-- Tab content -->
+            <div v-if="activeTab === 'combat'">
+              <AttacksTab :character="character" :edit-mode="editMode" />
+            </div>
+            <div v-else-if="activeTab === 'spells'">
+              <SpellsTab :character="character" :edit-mode="editMode" />
+            </div>
+            <div v-else-if="activeTab === 'equipment'">
+              <EquipmentTab :character="character" :edit-mode="editMode" />
+            </div>
+            <div v-else-if="activeTab === 'features'">
+              <FeaturesTab :character="character" />
+            </div>
+            <div v-else-if="activeTab === 'bio'">
+              <BioTab :character="character" :edit-mode="editMode" />
+            </div>
+            <div v-else-if="activeTab === 'notes'">
+              <p class="label mb-3">Session Notes</p>
+              <textarea
+                v-model="notesText"
+                class="input-base w-full resize-y font-body text-sm leading-relaxed"
+                rows="14"
+                placeholder="Write notes about this character's adventures, session recaps, plans for next session…"
+                @blur="saveNotes"
+              />
+            </div>
+          </main>
         </div>
       </div>
+
     </template>
+
+    <!-- ── Roll result overlay ──────────────────────────────────────────────── -->
+    <RollResult />
   </div>
 </template>
 
@@ -389,30 +521,31 @@ import { DownloadIcon, LockIcon, LockOpenIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName } from '@/shared/types/character'
-import { computeProficiencyBonus } from '@/shared/lib/derivedStats'
+import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
 import { CLASS_META } from '@/character-builder/classMeta'
 import { useDialog } from '@/shared/composables/useDialog'
-import StatBox from '@/characters/components/StatBox.vue'
-import AbilityBlock from '@/characters/components/AbilityBlock.vue'
-import FeaturesTab from '@/characters/components/FeaturesTab.vue'
-import BioTab from '@/characters/components/BioTab.vue'
+import { useRoll } from '@/shared/composables/useRoll'
 import ConditionsBar from '@/characters/components/ConditionsBar.vue'
 import AttacksTab from '@/characters/components/AttacksTab.vue'
 import EquipmentTab from '@/characters/components/EquipmentTab.vue'
 import SpellsTab from '@/characters/components/SpellsTab.vue'
+import FeaturesTab from '@/characters/components/FeaturesTab.vue'
+import BioTab from '@/characters/components/BioTab.vue'
+import RollResult from '@/shared/components/RollResult.vue'
 
 const props = defineProps<{ id: string }>()
 const store = useCharactersStore()
 const character = computed(() => store.getById(props.id))
 const dialog = useDialog()
+const { rollD20 } = useRoll()
 
 const editMode = ref(true)
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-const activeTab = ref('attacks')
+const activeTab = ref('combat')
 const tabs = [
-  { id: 'attacks',   label: 'Attacks'   },
+  { id: 'combat',    label: 'Combat'    },
   { id: 'spells',    label: 'Spells'    },
   { id: 'equipment', label: 'Equipment' },
   { id: 'features',  label: 'Features'  },
@@ -427,7 +560,9 @@ const profBonus = computed(() =>
 )
 
 const mods = computed(() =>
-  character.value ? computeAllModifiers(character.value.abilityScores) : { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
+  character.value
+    ? computeAllModifiers(character.value.abilityScores)
+    : { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
 )
 
 const hpPercent = computed(() => {
@@ -435,18 +570,38 @@ const hpPercent = computed(() => {
   return character.value.combat.currentHp / character.value.combat.maxHp
 })
 
+const initiativeMod = computed(() => {
+  if (!character.value) return 0
+  return character.value.overrides.initiative ?? computeModifier(character.value.abilityScores.dex)
+})
+
 const initiativeDisplay = computed(() => {
-  if (!character.value) return '—'
-  const override = character.value.overrides.initiative
-  if (override !== undefined) return override >= 0 ? `+${override}` : String(override)
-  const mod = computeModifier(character.value.abilityScores.dex)
-  return mod >= 0 ? `+${mod}` : String(mod)
+  const m = initiativeMod.value
+  return m >= 0 ? `+${m}` : String(m)
 })
 
 const speedDisplay = computed(() => {
   if (!character.value) return 30
   return character.value.overrides.speed ?? character.value.identity.race.speed
 })
+
+// ── Spellcasting stats ────────────────────────────────────────────────────────
+
+const spellAbilityMod = computed(() => {
+  const sc = character.value?.spellcasting
+  if (!sc) return 0
+  return mods.value[sc.spellcastingAbility]
+})
+
+const spellSaveDC = computed(() =>
+  computeSpellSaveDC(spellAbilityMod.value, profBonus.value),
+)
+
+const spellAttackBonus = computed(() =>
+  computeSpellAttackBonus(spellAbilityMod.value, profBonus.value),
+)
+
+// ── Ability entries for left panel ────────────────────────────────────────────
 
 const abilityEntries = computed(() => {
   if (!character.value) return []
@@ -462,12 +617,16 @@ const abilityEntries = computed(() => {
   ]
 })
 
+// ── Class glyph ───────────────────────────────────────────────────────────────
+
 const classGlyphs: Record<string, string> = {
   barbarian: '⚔', bard: '♪', cleric: '✦', druid: '☘', fighter: '🛡',
   monk: '◎', paladin: '✚', ranger: '⌖', rogue: '◆', sorcerer: '✶',
   warlock: '⌬', wizard: '⎊',
 }
-const classGlyph = computed(() => classGlyphs[character.value?.identity.class.name.toLowerCase() ?? ''] ?? '⚔')
+const classGlyph = computed(() =>
+  classGlyphs[character.value?.identity.class.name.toLowerCase() ?? ''] ?? '⚔',
+)
 
 // ── HP tracker ────────────────────────────────────────────────────────────────
 
@@ -562,8 +721,7 @@ const deathSaves = computed(() =>
 async function toggleDeathSave(type: 'successes' | 'failures', pip: number) {
   if (!character.value) return
   const current = deathSaves.value
-  const currentVal = current[type]
-  const next = pip <= currentVal ? pip - 1 : pip
+  const next = pip <= current[type] ? pip - 1 : pip
   await store.update(character.value.id, {
     combat: {
       ...character.value.combat,
@@ -572,37 +730,44 @@ async function toggleDeathSave(type: 'successes' | 'failures', pip: number) {
   })
 }
 
-// ── Saving Throws & Skills ─────────────────────────────────────────────────────
+// ── Saves & Skills ────────────────────────────────────────────────────────────
 
 const SAVES: { key: AbilityName; label: string }[] = [
-  { key: 'str', label: 'Strength' },
-  { key: 'dex', label: 'Dexterity' },
+  { key: 'str', label: 'Strength'     },
+  { key: 'dex', label: 'Dexterity'    },
   { key: 'con', label: 'Constitution' },
   { key: 'int', label: 'Intelligence' },
-  { key: 'wis', label: 'Wisdom' },
-  { key: 'cha', label: 'Charisma' },
+  { key: 'wis', label: 'Wisdom'       },
+  { key: 'cha', label: 'Charisma'     },
 ]
 
 const SKILLS = [
-  { index: 'acrobatics',      name: 'Acrobatics',     ability: 'dex' as AbilityName },
-  { index: 'animal-handling', name: 'Animal Handling', ability: 'wis' as AbilityName },
-  { index: 'arcana',          name: 'Arcana',          ability: 'int' as AbilityName },
-  { index: 'athletics',       name: 'Athletics',       ability: 'str' as AbilityName },
-  { index: 'deception',       name: 'Deception',       ability: 'cha' as AbilityName },
-  { index: 'history',         name: 'History',         ability: 'int' as AbilityName },
-  { index: 'insight',         name: 'Insight',         ability: 'wis' as AbilityName },
-  { index: 'intimidation',    name: 'Intimidation',    ability: 'cha' as AbilityName },
-  { index: 'investigation',   name: 'Investigation',   ability: 'int' as AbilityName },
-  { index: 'medicine',        name: 'Medicine',        ability: 'wis' as AbilityName },
-  { index: 'nature',          name: 'Nature',          ability: 'int' as AbilityName },
-  { index: 'perception',      name: 'Perception',      ability: 'wis' as AbilityName },
-  { index: 'performance',     name: 'Performance',     ability: 'cha' as AbilityName },
-  { index: 'persuasion',      name: 'Persuasion',      ability: 'cha' as AbilityName },
-  { index: 'religion',        name: 'Religion',        ability: 'int' as AbilityName },
-  { index: 'sleight-of-hand', name: 'Sleight of Hand', ability: 'dex' as AbilityName },
-  { index: 'stealth',         name: 'Stealth',         ability: 'dex' as AbilityName },
-  { index: 'survival',        name: 'Survival',        ability: 'wis' as AbilityName },
+  { index: 'acrobatics',      name: 'Acrobatics',      ability: 'dex' as AbilityName },
+  { index: 'animal-handling', name: 'Animal Handling',  ability: 'wis' as AbilityName },
+  { index: 'arcana',          name: 'Arcana',           ability: 'int' as AbilityName },
+  { index: 'athletics',       name: 'Athletics',        ability: 'str' as AbilityName },
+  { index: 'deception',       name: 'Deception',        ability: 'cha' as AbilityName },
+  { index: 'history',         name: 'History',          ability: 'int' as AbilityName },
+  { index: 'insight',         name: 'Insight',          ability: 'wis' as AbilityName },
+  { index: 'intimidation',    name: 'Intimidation',     ability: 'cha' as AbilityName },
+  { index: 'investigation',   name: 'Investigation',    ability: 'int' as AbilityName },
+  { index: 'medicine',        name: 'Medicine',         ability: 'wis' as AbilityName },
+  { index: 'nature',          name: 'Nature',           ability: 'int' as AbilityName },
+  { index: 'perception',      name: 'Perception',       ability: 'wis' as AbilityName },
+  { index: 'performance',     name: 'Performance',      ability: 'cha' as AbilityName },
+  { index: 'persuasion',      name: 'Persuasion',       ability: 'cha' as AbilityName },
+  { index: 'religion',        name: 'Religion',         ability: 'int' as AbilityName },
+  { index: 'sleight-of-hand', name: 'Sleight of Hand',  ability: 'dex' as AbilityName },
+  { index: 'stealth',         name: 'Stealth',          ability: 'dex' as AbilityName },
+  { index: 'survival',        name: 'Survival',         ability: 'wis' as AbilityName },
 ]
+
+const skillSearch = ref('')
+
+const filteredSkills = computed(() => {
+  const q = skillSearch.value.trim().toLowerCase()
+  return q ? SKILLS.filter(s => s.name.toLowerCase().includes(q)) : SKILLS
+})
 
 function fmt(n: number) { return n >= 0 ? `+${n}` : String(n) }
 
@@ -622,14 +787,14 @@ function skillBonus(skill: (typeof SKILLS)[number]): number {
 }
 
 function hasProficiency(skillIndex: string): boolean {
-  const prof = character.value?.skillProficiencies[skillIndex]
-  return prof === 'proficient' || prof === 'expertise'
+  const p = character.value?.skillProficiencies[skillIndex]
+  return p === 'proficient' || p === 'expertise'
 }
 
 function profClass(skillIndex: string): string {
-  const prof = character.value?.skillProficiencies[skillIndex]
-  if (prof === 'expertise')  return 'bg-arcane-pale border-arcane-pale'
-  if (prof === 'proficient') return 'bg-gold-mid border-gold-mid'
+  const p = character.value?.skillProficiencies[skillIndex]
+  if (p === 'expertise')  return 'bg-arcane-pale border-arcane-pale'
+  if (p === 'proficient') return 'bg-gold-mid border-gold-mid'
   return 'bg-transparent border-mist/50'
 }
 
@@ -637,21 +802,19 @@ const passivePerception = computed(() => {
   if (!character.value) return 10
   const override = character.value.overrides.passivePerception
   if (override !== undefined) return override
-  const percSkill = SKILLS.find(s => s.index === 'perception')!
-  return 10 + skillBonus(percSkill)
+  const perc = SKILLS.find(s => s.index === 'perception')!
+  return 10 + skillBonus(perc)
 })
 
 // ── Notes ─────────────────────────────────────────────────────────────────────
 
 const notesText = ref('')
-
 watch(character, (c) => { notesText.value = c?.notes ?? '' }, { immediate: true })
 
 async function saveNotes() {
   if (!character.value) return
   await store.update(character.value.id, { notes: notesText.value })
 }
-
 
 // ── Rest ──────────────────────────────────────────────────────────────────────
 
@@ -667,16 +830,12 @@ function shortRest() {
   const healed = Math.max(1, roll + conMod)
   const newHp = Math.min(c.combat.maxHp, c.combat.currentHp + healed)
   store.update(c.id, {
-    combat: {
-      ...c.combat,
-      currentHp: newHp,
-      hitDiceRemaining: c.combat.hitDiceRemaining - 1,
-    },
+    combat: { ...c.combat, currentHp: newHp, hitDiceRemaining: c.combat.hitDiceRemaining - 1 },
   })
   const conStr = conMod >= 0 ? `+${conMod}` : String(conMod)
   dialog.open({
     title: 'Short Rest',
-    body: 'You spend a moment to catch your breath and tend to your wounds.',
+    body: 'You spend a moment to catch your breath and tend your wounds.',
     items: [
       { label: 'Hit die rolled', value: `d${hitDie.value} → ${roll} ${conStr} = ${roll + conMod}` },
       { label: 'HP recovered',   value: `+${healed} (${newHp} / ${c.combat.maxHp})` },
@@ -700,21 +859,21 @@ function longRest() {
     },
   }
   const items: { label: string; value: string }[] = [
-    { label: 'HP',        value: `Restaurado a ${c.combat.maxHp} / ${c.combat.maxHp}` },
-    { label: 'Hit Dice',  value: `+${regained} recuperados (${newHitDice}d${hitDie.value})` },
-    { label: 'Death Saves', value: 'Reiniciados' },
+    { label: 'HP',          value: `Restored to ${c.combat.maxHp} / ${c.combat.maxHp}` },
+    { label: 'Hit Dice',    value: `+${regained} recovered (${newHitDice}d${hitDie.value})` },
+    { label: 'Death Saves', value: 'Reset' },
   ]
   if (c.spellcasting) {
     updates.spellcasting = {
       ...c.spellcasting,
       slotsUsed: { level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0, level7: 0, level8: 0, level9: 0 },
     }
-    items.splice(1, 0, { label: 'Spell Slots', value: 'Todos recuperados' })
+    items.splice(1, 0, { label: 'Spell Slots', value: 'All recovered' })
   }
   store.update(c.id, updates)
   dialog.open({
     title: 'Long Rest',
-    body: 'Tras un descanso completo, te despiertas renovado y recuperado.',
+    body: 'After a full rest, you awaken refreshed and restored.',
     items,
     variant: 'success',
   })

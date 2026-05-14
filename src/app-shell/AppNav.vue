@@ -15,10 +15,11 @@
           <span class="relative text-gold-mid text-sm leading-none select-none">⚔</span>
         </div>
         <span class="font-display text-base tracking-[0.2em] text-vellum uppercase group-hover:text-gold-pale transition-colors duration-300">
-          Grimoire
+          Grimoire<span class="tracking-[0.2em]" style="color: red; font-size:small; text-decoration: none;"> v0.1.0</span>
         </span>
+        
       </RouterLink>
-
+      
       <!-- Desktop nav links -->
       <div class="hidden md:flex items-center gap-1">
         <RouterLink

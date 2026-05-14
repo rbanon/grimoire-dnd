@@ -9,9 +9,9 @@
             <th class="text-left py-2 px-3 text-2xs font-heading tracking-wide text-mist uppercase">Name</th>
             <th class="text-left py-2 px-3 text-2xs font-heading tracking-wide text-mist uppercase">Bonus</th>
             <th class="text-left py-2 px-3 text-2xs font-heading tracking-wide text-mist uppercase">Damage</th>
-            <th class="text-left py-2 px-3 text-2xs font-heading tracking-wide text-mist uppercase">Type</th>
+            <th class="text-left py-2 px-3 text-2xs font-heading tracking-wide text-mist uppercase hidden sm:table-cell">Type</th>
             <th class="text-left py-2 px-3 text-2xs font-heading tracking-wide text-mist uppercase hidden sm:table-cell">Range</th>
-            <th class="py-2 px-2 w-8" />
+            <th class="py-2 px-2 text-2xs font-heading tracking-wide text-mist uppercase text-right">Roll</th>
           </tr>
         </thead>
         <tbody>
@@ -22,26 +22,44 @@
           >
             <td class="py-2.5 px-3 font-heading text-vellum">{{ attack.name }}</td>
             <td class="py-2.5 px-3 font-heading text-gold-mid">{{ attack.attackBonus || '—' }}</td>
-            <td class="py-2.5 px-3 text-stone">{{ attack.damage || '—' }}</td>
-            <td class="py-2.5 px-3 text-mist">{{ attack.damageType || '—' }}</td>
+            <td class="py-2.5 px-3 text-stone font-mono text-xs">{{ attack.damage || '—' }}</td>
+            <td class="py-2.5 px-3 text-mist hidden sm:table-cell">{{ attack.damageType || '—' }}</td>
             <td class="py-2.5 px-3 text-mist hidden sm:table-cell">{{ attack.range || '—' }}</td>
             <td class="py-2 px-2">
-              <button
-                v-if="editMode"
-                type="button"
-                class="p-1 rounded text-mist/40 hover:text-blood-bright hover:bg-blood-base/10 transition-colors opacity-0 group-hover:opacity-100"
-                title="Remove attack"
-                @click="removeAttack(attack.id)"
-              >
-                <Trash2Icon :size="13" />
-              </button>
+              <div class="flex items-center gap-1 justify-end">
+                <!-- Roll attack -->
+                <button
+                  type="button"
+                  class="px-2 py-1 rounded border border-arcane-base/30 bg-arcane-deep/10 text-arcane-pale hover:border-arcane-base/60 hover:bg-arcane-deep/20 transition-all font-heading text-xs"
+                  title="Roll attack"
+                  @click="rollAttack(attack)"
+                >⚃ Atk</button>
+                <!-- Roll damage -->
+                <button
+                  v-if="attack.damage"
+                  type="button"
+                  class="px-2 py-1 rounded border border-blood-base/30 bg-blood-deep/10 text-blood-mid hover:border-blood-base/60 hover:bg-blood-deep/20 transition-all font-heading text-xs"
+                  title="Roll damage"
+                  @click="rollDmg(attack)"
+                >⚀ Dmg</button>
+                <!-- Remove -->
+                <button
+                  v-if="editMode"
+                  type="button"
+                  class="p-1 rounded text-mist/30 hover:text-blood-bright hover:bg-blood-base/10 transition-colors opacity-0 group-hover:opacity-100 ml-1"
+                  title="Remove attack"
+                  @click="removeAttack(attack.id)"
+                >
+                  <Trash2Icon :size="12" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- ── Empty state (no attacks, form hidden) ─────────────────────────── -->
+    <!-- ── Empty state ────────────────────────────────────────────────────── -->
     <div v-else-if="!showForm" class="card p-10 text-center">
       <SwordIcon :size="36" class="mx-auto text-mist/25 mb-3" />
       <p class="font-body text-ash text-sm">No attacks recorded.</p>
@@ -67,7 +85,7 @@
         </button>
       </div>
 
-      <!-- Row 1: Name -->
+      <!-- Name -->
       <div>
         <label class="label mb-1.5 block">Name <span class="text-blood-bright">*</span></label>
         <input
@@ -80,7 +98,7 @@
         />
       </div>
 
-      <!-- Row 2: Ability + Proficient + Flat bonus → computed preview -->
+      <!-- Ability + Proficient + Flat bonus → computed preview -->
       <div>
         <label class="label mb-1.5 block">Attack Bonus</label>
         <div class="flex flex-wrap gap-2 items-end">
@@ -91,21 +109,12 @@
             </option>
           </select>
           <label class="flex items-center gap-1.5 cursor-pointer select-none shrink-0">
-            <input
-              v-model="draft.proficient"
-              type="checkbox"
-              class="w-3.5 h-3.5 accent-gold-mid"
-            />
-            <span class="text-xs font-body text-ash">Proficient (+{{ profBonus }})</span>
+            <input v-model="draft.proficient" type="checkbox" class="w-3.5 h-3.5 accent-gold-mid" />
+            <span class="text-xs font-body text-ash">Prof (+{{ profBonus }})</span>
           </label>
           <div class="flex items-center gap-1 shrink-0">
             <span class="text-xs font-body text-mist">Flat</span>
-            <input
-              v-model.number="draft.flatBonus"
-              type="number"
-              class="input-base w-16 text-center"
-              placeholder="0"
-            />
+            <input v-model.number="draft.flatBonus" type="number" class="input-base w-16 text-center" placeholder="0" />
           </div>
           <div class="px-3 py-2 rounded border border-gold-dim/30 bg-gold-dim/10 font-heading text-gold-mid text-sm shrink-0 min-w-[52px] text-center">
             {{ computedBonusDisplay }}
@@ -113,16 +122,11 @@
         </div>
       </div>
 
-      <!-- Row 3: Damage + Type -->
+      <!-- Damage + Type -->
       <div class="grid grid-cols-2 gap-3">
         <div>
           <label class="label mb-1.5 block">Damage</label>
-          <input
-            v-model="draft.damage"
-            type="text"
-            placeholder="1d8+3"
-            class="input-base w-full font-mono text-sm"
-          />
+          <input v-model="draft.damage" type="text" placeholder="1d8+3" class="input-base w-full font-mono text-sm" />
         </div>
         <div>
           <label class="label mb-1.5 block">Damage Type</label>
@@ -138,25 +142,15 @@
         </div>
       </div>
 
-      <!-- Row 4: Range -->
+      <!-- Range -->
       <div class="max-w-[200px]">
         <label class="label mb-1.5 block">Range</label>
-        <input
-          v-model="draft.range"
-          type="text"
-          placeholder="5 ft., 60/120 ft."
-          class="input-base w-full"
-        />
+        <input v-model="draft.range" type="text" placeholder="5 ft., 60/120 ft." class="input-base w-full" />
       </div>
 
       <!-- Actions -->
       <div class="flex gap-2 pt-1">
-        <button
-          type="button"
-          class="btn-primary text-sm gap-1.5"
-          :disabled="!draft.name.trim()"
-          @click="submitForm"
-        >
+        <button type="button" class="btn-primary text-sm gap-1.5" :disabled="!draft.name.trim()" @click="submitForm">
           <PlusIcon :size="13" /> Add Attack
         </button>
         <button type="button" class="btn-secondary text-sm" @click="closeForm">Cancel</button>
@@ -182,11 +176,13 @@ import { SwordIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus } from '@/shared/lib/derivedStats'
-import type { Character, AbilityName } from '@/shared/types/character'
+import { useRoll } from '@/shared/composables/useRoll'
+import type { Attack, Character, AbilityName } from '@/shared/types/character'
 import { generateId } from '@/shared/lib/uuid'
 
 const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
+const { rollD20, rollDamage } = useRoll()
 
 // ── Derived stats ─────────────────────────────────────────────────────────────
 
@@ -194,21 +190,34 @@ const mods = computed(() => computeAllModifiers(props.character.abilityScores))
 const profBonus = computed(() => computeProficiencyBonus(props.character.combat.level))
 function fmt(n: number) { return n >= 0 ? `+${n}` : String(n) }
 
-// ── Damage type constants ─────────────────────────────────────────────────────
+// ── Roll helpers ──────────────────────────────────────────────────────────────
+
+function parseBonus(bonusStr: string | undefined): number {
+  if (!bonusStr) return 0
+  const m = bonusStr.match(/^([+-]?\d+)$/)
+  return m ? parseInt(m[1]) : 0
+}
+
+function rollAttack(attack: Attack) {
+  rollD20(parseBonus(attack.attackBonus), `${attack.name} Attack`)
+}
+
+function rollDmg(attack: Attack) {
+  if (!attack.damage) return
+  rollDamage(attack.damage, `${attack.name} Damage`)
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const PHYSICAL_TYPES = ['Slashing', 'Piercing', 'Bludgeoning']
 const MAGICAL_TYPES = [
   'Acid', 'Cold', 'Fire', 'Force', 'Lightning',
   'Necrotic', 'Poison', 'Psychic', 'Radiant', 'Thunder',
 ]
-
 const ABILITY_OPTIONS: { value: AbilityName; label: string }[] = [
-  { value: 'str', label: 'STR' },
-  { value: 'dex', label: 'DEX' },
-  { value: 'con', label: 'CON' },
-  { value: 'int', label: 'INT' },
-  { value: 'wis', label: 'WIS' },
-  { value: 'cha', label: 'CHA' },
+  { value: 'str', label: 'STR' }, { value: 'dex', label: 'DEX' },
+  { value: 'con', label: 'CON' }, { value: 'int', label: 'INT' },
+  { value: 'wis', label: 'WIS' }, { value: 'cha', label: 'CHA' },
 ]
 
 // ── Form state ────────────────────────────────────────────────────────────────
@@ -274,7 +283,7 @@ async function submitForm() {
 
 async function removeAttack(attackId: string) {
   await store.update(props.character.id, {
-    attacks: props.character.attacks.filter((a) => a.id !== attackId),
+    attacks: props.character.attacks.filter(a => a.id !== attackId),
   })
 }
 </script>

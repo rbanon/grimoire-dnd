@@ -1,88 +1,70 @@
-/* ── Grimoire Design System — Global Styles ─────────────────────────────── */
+/* ── Grimoire Design System — DESIGN.local.md ────────────────────────────── */
 
 @layer base {
-  /* ── Color tokens ─────────────────────────────────────────────────────── */
 
-  /* Light theme (Parchment Codex) — default */
+  /* Parchment palette — light mode only (dark disabled) */
   html {
-    --c-void:           248 244 237;
-    --c-abyss:          241 235 224;
-    --c-depths:         231 224 210;
-    --c-shadow:         196 184 166;
-    --c-dusk:           162 149 132;
-    --c-mist:           118 106 92;
-    --c-stone:          36 26 16;
-    --c-ash:            76 62 48;
-    --c-vellum:         14 8 4;
+    --c-void:    254 249 241;   /* #fef9f1 background */
+    --c-abyss:   248 243 235;   /* #f8f3eb surface-container-low (cards) */
+    --c-depths:  242 237 229;   /* #f2ede5 surface-container (inputs, nested) */
+    --c-shadow:  224 191 186;   /* #e0bfba outline-variant (default borders) */
+    --c-dusk:    200 168 164;
+    --c-mist:    140 113 109;   /* #8c716d outline (muted text, emphasis borders) */
+    --c-ash:     88 65 62;      /* #58413e on-surface-variant (secondary text) */
+    --c-stone:   54 48 46;
+    --c-vellum:  29 28 23;      /* #1d1c17 on-surface (primary text) */
 
-    /* Gold — antique, warm; dividers and legendary content */
-    --c-gold-dim:       148 112 40;
-    --c-gold-deep:      28 18 6;
-    --c-gold-base:      176 136 52;
-    --c-gold-mid:       200 162 72;
-    --c-gold-bright:    222 188 100;
-    --c-gold-pale:      238 212 144;
-    --c-gold-glow:      252 232 168;
+    /* Gold Leaf — #D4AF37 */
+    --c-gold-dim:    160 120 32;
+    --c-gold-deep:   80 56 8;
+    --c-gold-base:   188 152 44;
+    --c-gold-mid:    212 175 55;
+    --c-gold-bright: 228 200 88;
+    --c-gold-pale:   244 224 148;
+    --c-gold-glow:   255 244 196;
 
-    /* Crimson — primary interactive accent (DnD Beyond red) */
-    --c-arcane-deep:    38 8 8;
-    --c-arcane-base:    152 30 30;
-    --c-arcane-mid:     188 44 44;
-    --c-arcane-bright:  218 62 62;
-    --c-arcane-pale:    246 190 190;
+    /* Blood Red — #D81921 */
+    --c-arcane-deep:   40 0 0;
+    --c-arcane-base:   140 28 19;   /* #8c1c13 */
+    --c-arcane-mid:    176 16 32;
+    --c-arcane-bright: 216 25 33;   /* #D81921 */
+    --c-arcane-pale:   140 28 19;   /* readable on parchment */
 
-    /* Blood — danger, HP critical (darker wine/maroon) */
-    --c-blood-deep:     28 6 6;
-    --c-blood-base:     96 18 18;
-    --c-blood-mid:      120 24 24;
-    --c-blood-bright:   150 32 32;
+    /* Blood — danger, HP */
+    --c-blood-deep:   40 0 0;
+    --c-blood-base:   96 18 18;
+    --c-blood-mid:    120 24 24;
+    --c-blood-bright: 150 32 32;
 
-    /* Verdant — nature, druid */
+    /* Verdant — druid, nature */
     --c-verdant-deep:   10 44 28;
     --c-verdant-base:   22 88 52;
     --c-verdant-mid:    38 128 72;
     --c-verdant-bright: 62 168 96;
 
     /* Semantic */
-    --c-success:        62 168 96;
-    --c-danger:         218 62 62;
-    --c-warning:        200 162 72;
-    --c-info:           76 120 196;
+    --c-success: 74 93 78;
+    --c-danger:  216 25 33;
+    --c-warning: 191 105 30;
+    --c-info:    76 120 196;
 
-    /* Shadows */
-    --shadow-card:        0 1px 3px rgba(0,0,0,0.08), 0 1px 0 rgba(0,0,0,0.04);
-    --shadow-card-hover:  0 0 0 1px rgba(152,30,30,0.22), 0 4px 16px rgba(0,0,0,0.14);
-    --shadow-panel:       0 0 0 1px rgba(152,30,30,0.12), 0 8px 32px rgba(0,0,0,0.12);
-    --shadow-modal:       0 0 0 1px rgba(152,30,30,0.12), 0 16px 64px rgba(0,0,0,0.20);
-    --shadow-glow-gold:   0 0 24px rgba(200,162,72,0.30);
-    --shadow-glow-arcane: 0 0 24px rgba(188,44,44,0.25);
-    --shadow-inner:       inset 0 1px 0 rgba(0,0,0,0.04);
+    /* Flat shadows — minimal */
+    --shadow-card:        0 0 0 1px rgba(212,175,55,0.18);
+    --shadow-card-hover:  0 0 0 1px rgba(212,175,55,0.45);
+    --shadow-panel:       0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(212,175,55,0.18);
+    --shadow-modal:       0 8px 32px rgba(0,0,0,0.10), 0 0 0 1px rgba(212,175,55,0.22);
+    --shadow-glow-gold:   0 0 16px rgba(212,175,55,0.28);
+    --shadow-glow-arcane: 0 0 16px rgba(216,25,33,0.18);
+    --shadow-inner:       inset 0 1px 0 rgba(0,0,0,0.03);
 
     color-scheme: light;
     background-color: rgb(var(--c-void));
-    color: rgb(var(--c-stone));
+    color: rgb(var(--c-vellum));
   }
 
-  /* Dark theme (Tome) */
+  /* Dark mode DISABLED — inherits light vars */
   html.dark {
-    --c-void:           12 9 7;
-    --c-abyss:          20 16 12;
-    --c-depths:         30 24 18;
-    --c-shadow:         46 38 28;
-    --c-dusk:           68 56 42;
-    --c-mist:           126 112 96;
-    --c-stone:          208 198 184;
-    --c-ash:            156 144 128;
-    --c-vellum:         244 238 228;
-
-    /* Shadows */
-    --shadow-card:        0 2px 8px rgba(0,0,0,0.50), 0 1px 0 rgba(255,255,255,0.03);
-    --shadow-card-hover:  0 0 0 1px rgba(188,44,44,0.32), 0 8px 32px rgba(0,0,0,0.60);
-    --shadow-panel:       0 0 0 1px rgba(188,44,44,0.15), 0 16px 64px rgba(0,0,0,0.70);
-    --shadow-modal:       0 0 0 1px rgba(188,44,44,0.18), 0 32px 96px rgba(0,0,0,0.85);
-    --shadow-inner:       inset 0 1px 0 rgba(255,255,255,0.04);
-
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   * { box-sizing: border-box; }
@@ -92,52 +74,45 @@
     line-height: 1.65;
   }
 
-  /* Scrollbar */
   ::-webkit-scrollbar        { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track  { background: rgb(var(--c-abyss)); }
-  ::-webkit-scrollbar-thumb  { background: rgb(var(--c-dusk)); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-gold-dim)); }
-  * { scrollbar-width: thin; scrollbar-color: rgb(var(--c-dusk)) transparent; }
+  ::-webkit-scrollbar-track  { background: rgb(var(--c-depths)); }
+  ::-webkit-scrollbar-thumb  { background: rgb(var(--c-shadow)); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-gold-mid)); }
+  * { scrollbar-width: thin; scrollbar-color: rgb(var(--c-shadow)) transparent; }
 
-  /* Selection */
   ::selection {
-    background: rgba(188, 44, 44, 0.18);
+    background: rgba(212, 175, 55, 0.22);
     color: rgb(var(--c-vellum));
   }
 }
 
 /* ── Card entrance animation ─────────────────────────────────────────────── */
 @keyframes card-in {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.animate-card-in {
-  animation: card-in 0.3s ease both;
-}
+.animate-card-in { animation: card-in 0.25s ease both; }
 
-.stagger-children > * {
-  animation: card-in 0.3s ease both;
-}
+.stagger-children > * { animation: card-in 0.25s ease both; }
 .stagger-children > *:nth-child(1)  { animation-delay:   0ms; }
 .stagger-children > *:nth-child(2)  { animation-delay:  40ms; }
 .stagger-children > *:nth-child(3)  { animation-delay:  80ms; }
 .stagger-children > *:nth-child(4)  { animation-delay: 120ms; }
 .stagger-children > *:nth-child(5)  { animation-delay: 160ms; }
 .stagger-children > *:nth-child(6)  { animation-delay: 200ms; }
-.stagger-children > *:nth-child(7)  { animation-delay: 240ms; }
-.stagger-children > *:nth-child(8)  { animation-delay: 280ms; }
-.stagger-children > *:nth-child(n+9){ animation-delay: 320ms; }
+.stagger-children > *:nth-child(n+7){ animation-delay: 240ms; }
 
 /* ── Gold section divider ────────────────────────────────────────────────── */
 .rule-gold {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: rgba(200, 162, 72, 0.65);
-  font-family: 'Cinzel', serif;
-  font-size: 0.7rem;
-  letter-spacing: 0.2em;
+  color: rgba(160, 120, 32, 0.75);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 .rule-gold::before,
@@ -145,60 +120,12 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(200,162,72,0.35), transparent);
-}
-
-html:not(.dark) .rule-gold {
-  color: rgba(148, 112, 40, 0.80);
-}
-
-/* ── Hover glow on interactive elements ──────────────────────────────────── */
-.gold-glow-hover {
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
-}
-.gold-glow-hover:hover {
-  box-shadow: 0 0 0 1px rgba(200,162,72,0.25), 0 0 32px rgba(200,162,72,0.08);
-  border-color: rgba(200,162,72,0.25);
-}
-
-/* ── Tab active state ────────────────────────────────────────────────────── */
-.tab-active {
-  position: relative;
-  color: rgb(var(--c-gold-mid));
-}
-.tab-active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgb(var(--c-gold-mid)), transparent);
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.30), transparent);
 }
 
 /* ── HP critical pulse ───────────────────────────────────────────────────── */
 @keyframes pulse-blood {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(150,32,32,0); }
-  50%       { box-shadow: 0 0 0 6px rgba(150,32,32,0.22); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(216,25,33,0); }
+  50%       { box-shadow: 0 0 0 4px rgba(216,25,33,0.14); }
 }
-.pulse-blood {
-  animation: pulse-blood 2s ease-in-out infinite;
-}
-
-/* ── Light mode badge contrast fixes ────────────────────────────────────── */
-html:not(.dark) .badge-gold {
-  color: rgb(var(--c-gold-dim));
-}
-html:not(.dark) .badge-arcane {
-  color: rgb(var(--c-arcane-base));
-  background-color: rgba(152, 30, 30, 0.08);
-  border-color: rgba(152, 30, 30, 0.25);
-}
-html:not(.dark) .badge-blood {
-  color: rgb(var(--c-blood-base));
-  background-color: rgba(96, 18, 18, 0.08);
-}
-html:not(.dark) .badge-verdant {
-  color: rgb(var(--c-verdant-base));
-  background-color: rgba(22, 88, 52, 0.08);
-}
+.pulse-blood { animation: pulse-blood 2s ease-in-out infinite; }

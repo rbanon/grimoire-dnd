@@ -102,7 +102,7 @@
               v-for="pip in maxSlots(lvl)"
               :key="pip"
               type="button"
-              class="w-4 h-4 rounded-full border-2 transition-all duration-100"
+              class="w-4 h-4 rounded border-2 transition-all duration-100"
               :class="[
                 pip <= usedSlots(lvl) ? 'bg-arcane-base/60 border-arcane-base/60' : 'bg-transparent border-arcane-base/40',
                 editMode ? 'hover:border-arcane-pale/60 cursor-pointer' : 'cursor-default',
@@ -129,6 +129,7 @@
             <span class="text-sm font-heading text-arcane-pale/90">{{ spell.name }}</span>
             <span v-if="spell.school" class="text-2xs font-body text-mist/50">{{ spell.school }}</span>
             <button
+              v-if="editMode"
               type="button"
               class="text-mist/30 hover:text-blood-bright transition-colors opacity-0 group-hover:opacity-100 ml-0.5"
               title="Remove"
@@ -142,7 +143,7 @@
 
         <!-- Add spell button / form -->
         <button
-          v-if="addTarget !== lvl"
+          v-if="editMode && addTarget !== lvl"
           type="button"
           class="btn-secondary text-xs gap-1.5"
           @click="openAdd(lvl)"
@@ -151,7 +152,7 @@
         </button>
 
         <AddSpellForm
-          v-if="addTarget === lvl"
+          v-if="editMode && addTarget === lvl"
           :label="`Level ${lvl} spell name`"
           @submit="(name) => onAddSpell(name, lvl)"
           @cancel="addTarget = null"

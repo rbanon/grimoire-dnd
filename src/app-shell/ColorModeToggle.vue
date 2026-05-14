@@ -1,8 +1,9 @@
 <template>
   <button
-    class="btn-icon w-8 h-8 rounded relative overflow-hidden group"
-    :aria-label="`Mode: ${mode}. Click to switch.`"
-    @click="cycle"
+    class="btn-icon w-8 h-8 rounded relative overflow-hidden group opacity-30 cursor-not-allowed"
+    aria-label="Dark mode temporarily disabled"
+    title="Dark mode coming soon"
+    disabled
   >
     <Transition name="icon-swap" mode="out-in">
       <SunIcon  v-if="mode === 'light'" :size="15" class="text-gold-mid" />
@@ -15,13 +16,7 @@
 import { SunIcon, MoonIcon } from 'lucide-vue-next'
 import { useColorMode } from '@/shared/composables/useColorMode'
 
-const { mode, setMode } = useColorMode()
-const order = ['light', 'dark'] as const
-
-function cycle() {
-  const idx = order.indexOf(mode.value as 'light' | 'dark')
-  setMode(order[(idx + 1) % order.length])
-}
+const { mode } = useColorMode()
 </script>
 
 <style scoped>

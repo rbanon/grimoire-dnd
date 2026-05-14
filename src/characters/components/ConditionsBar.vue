@@ -7,7 +7,7 @@
 
       <span
         v-if="character.combat.concentrationSpell"
-        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-arcane-base/20 border border-arcane-base/40 text-arcane-pale text-2xs font-heading tracking-wide"
+        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-arcane-base/20 border border-arcane-base/40 text-arcane-pale text-2xs font-heading tracking-wide"
       >
         ◆ {{ character.combat.concentrationSpell }}
         <button
@@ -50,7 +50,7 @@
         <span
           v-for="cond in character.combat.conditions"
           :key="cond"
-          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-2xs font-heading tracking-wide"
+          class="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-2xs font-heading tracking-wide"
           :class="conditionClass(cond)"
         >
           {{ cond }}
@@ -65,7 +65,7 @@
         <!-- Exhaustion chip -->
         <span
           v-if="character.combat.exhaustion > 0"
-          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-shadow/60 bg-shadow/40 text-mist text-2xs font-heading tracking-wide"
+          class="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-shadow/60 bg-shadow/40 text-mist text-2xs font-heading tracking-wide"
         >
           Exhaustion {{ character.combat.exhaustion }}
           <button
@@ -84,7 +84,7 @@
         <button
           v-if="editMode"
           type="button"
-          class="w-5 h-5 rounded-full border border-shadow/40 text-mist/40 hover:border-gold-mid/50 hover:text-gold-mid transition-colors text-xs font-heading flex items-center justify-center shrink-0"
+          class="w-5 h-5 rounded border border-shadow/40 text-mist/40 hover:border-gold-mid/50 hover:text-gold-mid transition-colors text-xs font-heading flex items-center justify-center shrink-0"
           @click="showPicker = !showPicker"
         >{{ showPicker ? '−' : '+' }}</button>
       </div>
@@ -95,7 +95,7 @@
           v-for="cond in CONDITION_LIST"
           :key="cond.name"
           type="button"
-          class="px-2 py-0.5 rounded-full border text-2xs font-heading tracking-wide transition-all"
+          class="px-2 py-0.5 rounded border text-2xs font-heading tracking-wide transition-all"
           :class="isActive(cond.name)
             ? cond.activeClass
             : 'border-shadow/30 text-mist/50 hover:border-shadow hover:text-mist'"
