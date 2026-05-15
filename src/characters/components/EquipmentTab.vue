@@ -47,16 +47,62 @@
             @click="toggleEquipped(item.id)"
           />
 
-          <!-- Name + category -->
+          <!-- Type icon -->
+          <SwordIcon v-if="item.itemType === 'weapon'" :size="11" class="text-gold-dim/60 shrink-0" />
+          <ShieldIcon v-else-if="item.itemType === 'armor'" :size="11" class="text-arcane-pale/50 shrink-0" />
+          <PackageIcon v-else :size="11" class="text-mist/40 shrink-0" />
+
+          <!-- Name + info -->
           <div class="flex-1 min-w-0">
             <span class="font-heading text-sm text-vellum">{{ item.item.name }}</span>
-            <span v-if="item.item.category" class="text-xs font-body text-mist/60 ml-2">{{ item.item.category }}</span>
+            <!-- Weapon stats -->
+            <span v-if="item.itemType === 'weapon' && (item.attackBonus || item.damage)" class="text-xs font-mono text-mist/60 ml-2">
+              <span v-if="item.attackBonus" class="text-gold-mid">{{ item.attackBonus }}</span>
+              <span v-if="item.attackBonus && item.damage" class="mx-1 text-mist/30">·</span>
+              <span v-if="item.damage">{{ item.damage }}</span>
+              <span v-if="item.damageType" class="text-mist/50 font-body text-2xs ml-1">{{ item.damageType }}</span>
+            </span>
+            <!-- Armor AC -->
+            <span v-else-if="item.itemType === 'armor' && item.armorClass" class="text-xs font-heading text-arcane-pale/70 ml-2">
+              AC {{ item.armorClass }}
+              <span v-if="item.armorType" class="text-mist/40 font-body text-2xs ml-1">{{ item.armorType }}</span>
+            </span>
+            <!-- Generic category -->
+            <span v-else-if="item.item.category" class="text-xs font-body text-mist/60 ml-2">{{ item.item.category }}</span>
           </div>
 
           <!-- Weight -->
           <span v-if="item.item.weight" class="text-xs font-body text-mist/50 shrink-0 hidden sm:inline">
             {{ item.item.weight }} lb.
           </span>
+
+          <!-- Weapon roll buttons + favorite -->
+          <template v-if="item.itemType === 'weapon'">
+            <button
+              type="button"
+              class="px-2 py-0.5 rounded border border-arcane-base/30 bg-arcane-deep/10 text-arcane-pale hover:border-arcane-base/60 hover:bg-arcane-deep/20 transition-all font-heading text-xs shrink-0"
+              title="Roll attack"
+              @click="(e) => rollItemAtk(item, e)"
+            >⚃ Atk</button>
+            <button
+              v-if="item.damage"
+              type="button"
+              class="px-2 py-0.5 rounded border border-blood-base/30 bg-blood-deep/10 text-blood-mid hover:border-blood-base/60 hover:bg-blood-deep/20 transition-all font-heading text-xs shrink-0"
+              title="Roll damage"
+              @click="rollItemDmg(item)"
+            >⚀ Dmg</button>
+            <button
+              type="button"
+              class="w-6 h-6 flex items-center justify-center rounded transition-all shrink-0"
+              :class="isWeaponFav(item.id)
+                ? 'text-gold-mid hover:text-gold-dim'
+                : 'text-mist/30 hover:text-gold-mid hover:bg-gold-dim/10'"
+              :title="isWeaponFav(item.id) ? 'Remove from Favorites' : 'Add to Favorites'"
+              @click="toggleWeaponFav(item)"
+            >
+              <StarIcon :size="13" :fill="isWeaponFav(item.id) ? 'currentColor' : 'none'" />
+            </button>
+          </template>
 
           <!-- Quantity -->
           <div class="flex items-center gap-1 shrink-0">
@@ -96,73 +142,165 @@
         v-if="!showForm"
         type="button"
         class="btn-secondary text-xs gap-1.5 w-full justify-center"
-        @click="openForm"
+        @click="openForm('gear')"
       >
         <PlusIcon :size="13" /> Add Item
       </button>
 
-      <!-- Add item form -->
+      <!-- ── Add item form ────────────────────────────────────────────────── -->
       <div v-if="showForm" class="card p-5 space-y-4">
         <div class="flex items-center justify-between">
-          <p class="font-heading text-sm text-vellum">New Item</p>
+          <div class="flex gap-1">
+            <button
+              v-for="t in ITEM_TYPES"
+              :key="t.id"
+              type="button"
+              class="px-3 py-1.5 rounded text-xs font-heading tracking-wide border transition-all"
+              :class="draftType === t.id
+                ? 'border-gold-mid/60 bg-gold-dim/15 text-gold-mid'
+                : 'border-shadow/40 text-mist/50 hover:border-shadow hover:text-ash'"
+              @click="draftType = t.id"
+            >{{ t.label }}</button>
+          </div>
           <button type="button" class="text-mist hover:text-ash transition-colors" @click="closeForm">
             <XIcon :size="15" />
           </button>
         </div>
 
-        <!-- Name + Category -->
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="label mb-1.5 block">Name <span class="text-blood-bright">*</span></label>
-            <input
-              ref="nameInputEl"
-              v-model="draft.name"
-              type="text"
-              placeholder="Longsword, Rope, Potion…"
-              class="input-base w-full"
-              @keydown.enter="submitForm"
-            />
-          </div>
-          <div>
-            <label class="label mb-1.5 block">Category</label>
-            <input
-              v-model="draft.category"
-              type="text"
-              placeholder="Weapon, Armor, Gear…"
-              class="input-base w-full"
-            />
-          </div>
+        <!-- Name -->
+        <div>
+          <label class="label mb-1.5 block">Name <span class="text-blood-bright">*</span></label>
+          <input
+            ref="nameInputEl"
+            v-model="draft.name"
+            type="text"
+            :placeholder="draftType === 'weapon' ? 'Longsword, Handaxe…' : draftType === 'armor' ? 'Chain Mail, Leather Armor…' : 'Rope, Potion, Torch…'"
+            class="input-base w-full"
+            @keydown.enter="submitForm"
+          />
         </div>
 
-        <!-- Quantity + Weight -->
-        <div class="grid grid-cols-2 gap-3 max-w-xs">
+        <!-- WEAPON fields -->
+        <template v-if="draftType === 'weapon'">
           <div>
-            <label class="label mb-1.5 block">Quantity</label>
-            <input
-              v-model.number="draft.quantity"
-              type="number"
-              min="1"
-              class="input-base w-full"
-            />
+            <label class="label mb-1.5 block">Attack Bonus</label>
+            <div class="flex flex-wrap gap-2 items-end">
+              <select v-model="draft.ability" class="input-base flex-1 min-w-[100px]">
+                <option value="none">No modifier</option>
+                <option v-for="ab in ABILITY_OPTIONS" :key="ab.value" :value="ab.value">
+                  {{ ab.label }} ({{ fmt(mods[ab.value]) }})
+                </option>
+              </select>
+              <label class="flex items-center gap-1.5 cursor-pointer select-none shrink-0">
+                <input v-model="draft.proficient" type="checkbox" class="w-3.5 h-3.5 accent-gold-mid" />
+                <span class="text-xs font-body text-ash">Prof (+{{ profBonus }})</span>
+              </label>
+              <div class="flex items-center gap-1 shrink-0">
+                <span class="text-xs font-body text-mist">Flat</span>
+                <input v-model.number="draft.flatBonus" type="number" class="input-base w-16 text-center" placeholder="0" />
+              </div>
+              <div class="px-3 py-2 rounded border border-gold-dim/30 bg-gold-dim/10 font-heading text-gold-mid text-sm shrink-0 min-w-[52px] text-center">
+                {{ computedBonusDisplay }}
+              </div>
+            </div>
           </div>
-          <div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="label mb-1.5 block">Damage</label>
+              <input v-model="draft.damage" type="text" placeholder="1d8+3" class="input-base w-full font-mono text-sm" />
+            </div>
+            <div>
+              <label class="label mb-1.5 block">Damage Type</label>
+              <select v-model="draft.damageType" class="input-base w-full">
+                <option value="">—</option>
+                <optgroup label="Physical">
+                  <option v-for="t in PHYSICAL_TYPES" :key="t" :value="t">{{ t }}</option>
+                </optgroup>
+                <optgroup label="Magical">
+                  <option v-for="t in MAGICAL_TYPES" :key="t" :value="t">{{ t }}</option>
+                </optgroup>
+              </select>
+            </div>
+          </div>
+          <div class="max-w-[200px]">
+            <label class="label mb-1.5 block">Range</label>
+            <input v-model="draft.range" type="text" placeholder="5 ft., 60/120 ft." class="input-base w-full" />
+          </div>
+          <div class="grid grid-cols-2 gap-3 max-w-xs">
+            <div>
+              <label class="label mb-1.5 block">Quantity</label>
+              <input v-model.number="draft.quantity" type="number" min="1" class="input-base w-full" />
+            </div>
+            <div>
+              <label class="label mb-1.5 block">Weight (lb.)</label>
+              <input v-model.number="draft.weight" type="number" min="0" step="0.1" placeholder="0" class="input-base w-full" />
+            </div>
+          </div>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input v-model="draft.equipped" type="checkbox" class="w-3.5 h-3.5 accent-gold-mid" />
+            <span class="text-xs font-body text-ash">Start equipped</span>
+          </label>
+        </template>
+
+        <!-- ARMOR fields -->
+        <template v-else-if="draftType === 'armor'">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="label mb-1.5 block">Armor Class</label>
+              <input v-model.number="draft.armorClass" type="number" min="0" placeholder="14" class="input-base w-full" />
+            </div>
+            <div>
+              <label class="label mb-1.5 block">Armor Type</label>
+              <select v-model="draft.armorType" class="input-base w-full">
+                <option value="">—</option>
+                <option value="light">Light</option>
+                <option value="medium">Medium</option>
+                <option value="heavy">Heavy</option>
+                <option value="shield">Shield</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 max-w-xs">
+            <div>
+              <label class="label mb-1.5 block">Quantity</label>
+              <input v-model.number="draft.quantity" type="number" min="1" class="input-base w-full" />
+            </div>
+            <div>
+              <label class="label mb-1.5 block">Weight (lb.)</label>
+              <input v-model.number="draft.weight" type="number" min="0" step="0.1" placeholder="0" class="input-base w-full" />
+            </div>
+          </div>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input v-model="draft.stealthDisadvantage" type="checkbox" class="w-3.5 h-3.5 accent-gold-mid" />
+            <span class="text-xs font-body text-ash">Stealth disadvantage</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input v-model="draft.equipped" type="checkbox" class="w-3.5 h-3.5 accent-gold-mid" />
+            <span class="text-xs font-body text-ash">Start equipped</span>
+          </label>
+        </template>
+
+        <!-- GEAR fields -->
+        <template v-else>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="label mb-1.5 block">Category</label>
+              <input v-model="draft.category" type="text" placeholder="Gear, Tool, Consumable…" class="input-base w-full" />
+            </div>
+            <div>
+              <label class="label mb-1.5 block">Quantity</label>
+              <input v-model.number="draft.quantity" type="number" min="1" class="input-base w-full" />
+            </div>
+          </div>
+          <div class="max-w-[150px]">
             <label class="label mb-1.5 block">Weight (lb.)</label>
-            <input
-              v-model.number="draft.weight"
-              type="number"
-              min="0"
-              step="0.1"
-              placeholder="0"
-              class="input-base w-full"
-            />
+            <input v-model.number="draft.weight" type="number" min="0" step="0.1" placeholder="0" class="input-base w-full" />
           </div>
-        </div>
-
-        <!-- Equipped toggle -->
-        <label class="flex items-center gap-2 cursor-pointer select-none">
-          <input v-model="draft.equipped" type="checkbox" class="w-3.5 h-3.5 accent-gold-mid" />
-          <span class="text-xs font-body text-ash">Start equipped</span>
-        </label>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input v-model="draft.equipped" type="checkbox" class="w-3.5 h-3.5 accent-gold-mid" />
+            <span class="text-xs font-body text-ash">Start equipped</span>
+          </label>
+        </template>
 
         <!-- Actions -->
         <div class="flex gap-2 pt-1">
@@ -172,21 +310,24 @@
             :disabled="!draft.name.trim()"
             @click="submitForm"
           >
-            <PlusIcon :size="13" /> Add Item
+            <PlusIcon :size="13" /> Add {{ ITEM_TYPES.find(t => t.id === draftType)?.label }}
           </button>
           <button type="button" class="btn-secondary text-sm" @click="closeForm">Cancel</button>
         </div>
       </div>
 
       <!-- Add another (when list has items) -->
-      <button
-        v-if="!showForm && character.inventory.length > 0"
-        type="button"
-        class="btn-secondary text-xs gap-1.5"
-        @click="openForm"
-      >
-        <PlusIcon :size="13" /> Add Item
-      </button>
+      <div v-if="!showForm && character.inventory.length > 0" class="flex gap-2 flex-wrap">
+        <button
+          v-for="t in ITEM_TYPES"
+          :key="t.id"
+          type="button"
+          class="btn-secondary text-xs gap-1.5"
+          @click="openForm(t.id)"
+        >
+          <PlusIcon :size="13" /> Add {{ t.label }}
+        </button>
+      </div>
     </section>
 
   </div>
@@ -194,15 +335,42 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive, watch, nextTick } from 'vue'
-import { PackageIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-vue-next'
+import { PackageIcon, PlusIcon, Trash2Icon, XIcon, SwordIcon, ShieldIcon, StarIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
-import type { Character } from '@/shared/types/character'
+import { computeAllModifiers } from '@/shared/types/character'
+import { computeProficiencyBonus } from '@/shared/lib/derivedStats'
+import { useRoll } from '@/shared/composables/useRoll'
+import type { Character, AbilityName, InventoryItem, CombatFavorite } from '@/shared/types/character'
 import { generateId } from '@/shared/lib/uuid'
 
-const props = defineProps<{ character: Character }>()
+const props = defineProps<{ character: Character; editMode?: boolean }>()
 const store = useCharactersStore()
+const { rollD20, rollDamage } = useRoll()
 
-// ── Currency ──────────────────────────────────────────────────────────────────
+// ── Derived stats ─────────────────────────────────────────────────────────────
+
+const mods = computed(() => computeAllModifiers(props.character.abilityScores))
+const profBonus = computed(() => computeProficiencyBonus(props.character.combat.level))
+function fmt(n: number) { return n >= 0 ? `+${n}` : String(n) }
+
+// ── Roll helpers ──────────────────────────────────────────────────────────────
+
+function parseBonus(str: string | undefined): number {
+  if (!str) return 0
+  const m = str.match(/^([+-]?\d+)$/)
+  return m ? parseInt(m[1]) : 0
+}
+
+function rollItemAtk(item: InventoryItem, event: MouseEvent) {
+  rollD20(parseBonus(item.attackBonus), `${item.item.name} Attack`, event)
+}
+
+function rollItemDmg(item: InventoryItem) {
+  if (!item.damage) return
+  rollDamage(item.damage, `${item.item.name} Damage`)
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const COINS = [
   { key: 'cp' as const, label: 'CP' },
@@ -211,6 +379,25 @@ const COINS = [
   { key: 'gp' as const, label: 'GP' },
   { key: 'pp' as const, label: 'PP' },
 ]
+
+const ITEM_TYPES = [
+  { id: 'weapon' as const, label: 'Weapon' },
+  { id: 'armor'  as const, label: 'Armor'  },
+  { id: 'gear'   as const, label: 'Gear'   },
+]
+
+const PHYSICAL_TYPES = ['Slashing', 'Piercing', 'Bludgeoning']
+const MAGICAL_TYPES = [
+  'Acid', 'Cold', 'Fire', 'Force', 'Lightning',
+  'Necrotic', 'Poison', 'Psychic', 'Radiant', 'Thunder',
+]
+const ABILITY_OPTIONS: { value: AbilityName; label: string }[] = [
+  { value: 'str', label: 'STR' }, { value: 'dex', label: 'DEX' },
+  { value: 'con', label: 'CON' }, { value: 'int', label: 'INT' },
+  { value: 'wis', label: 'WIS' }, { value: 'cha', label: 'CHA' },
+]
+
+// ── Currency ──────────────────────────────────────────────────────────────────
 
 const currencyEdit = reactive({ cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 })
 
@@ -260,10 +447,36 @@ async function removeItem(itemId: string) {
   })
 }
 
+// ── Weapon favorites ──────────────────────────────────────────────────────────
+
+function isWeaponFav(itemId: string): boolean {
+  return props.character.combatFavorites.some(
+    f => f.type === 'weapon' && f.inventoryItemId === itemId,
+  )
+}
+
+async function toggleWeaponFav(item: InventoryItem) {
+  const next: CombatFavorite[] = isWeaponFav(item.id)
+    ? props.character.combatFavorites.filter(
+        f => !(f.type === 'weapon' && f.inventoryItemId === item.id),
+      )
+    : [
+        ...props.character.combatFavorites,
+        {
+          id: generateId(),
+          type: 'weapon' as const,
+          inventoryItemId: item.id,
+          weaponName: item.item.name,
+        },
+      ]
+  await store.update(props.character.id, { combatFavorites: next })
+}
+
 // ── Add item form ─────────────────────────────────────────────────────────────
 
 const showForm = ref(false)
 const nameInputEl = ref<HTMLInputElement | null>(null)
+const draftType = ref<'weapon' | 'armor' | 'gear'>('gear')
 
 const draft = reactive({
   name: '',
@@ -271,6 +484,25 @@ const draft = reactive({
   quantity: 1,
   weight: undefined as number | undefined,
   equipped: false,
+  // weapon
+  ability: 'str' as AbilityName | 'none',
+  proficient: true,
+  flatBonus: 0,
+  damage: '',
+  damageType: '',
+  range: '',
+  // armor
+  armorClass: undefined as number | undefined,
+  armorType: '' as '' | 'light' | 'medium' | 'heavy' | 'shield',
+  stealthDisadvantage: false,
+})
+
+const computedBonusDisplay = computed(() => {
+  const abilMod = draft.ability === 'none' ? 0 : mods.value[draft.ability as AbilityName]
+  const prof = draft.proficient ? profBonus.value : 0
+  const flat = draft.flatBonus || 0
+  const total = abilMod + prof + flat
+  return total >= 0 ? `+${total}` : String(total)
 })
 
 function resetDraft() {
@@ -279,9 +511,19 @@ function resetDraft() {
   draft.quantity = 1
   draft.weight = undefined
   draft.equipped = false
+  draft.ability = 'str'
+  draft.proficient = true
+  draft.flatBonus = 0
+  draft.damage = ''
+  draft.damageType = ''
+  draft.range = ''
+  draft.armorClass = undefined
+  draft.armorType = ''
+  draft.stealthDisadvantage = false
 }
 
-function openForm() {
+function openForm(type: 'weapon' | 'armor' | 'gear') {
+  draftType.value = type
   showForm.value = true
   nextTick(() => nameInputEl.value?.focus())
 }
@@ -293,17 +535,46 @@ function closeForm() {
 
 async function submitForm() {
   if (!draft.name.trim()) return
-  const newItem = {
+
+  const base = {
     id: generateId(),
+    itemType: draftType.value,
     item: {
       index: generateId(),
       name: draft.name.trim(),
-      category: draft.category.trim() || undefined,
       weight: draft.weight || undefined,
     },
     quantity: Math.max(1, draft.quantity || 1),
     equipped: draft.equipped,
   }
+
+  let newItem: InventoryItem
+
+  if (draftType.value === 'weapon') {
+    newItem = {
+      ...base,
+      itemType: 'weapon',
+      attackBonus: computedBonusDisplay.value,
+      damage: draft.damage.trim() || undefined,
+      damageType: draft.damageType || undefined,
+      range: draft.range.trim() || undefined,
+    }
+  } else if (draftType.value === 'armor') {
+    newItem = {
+      ...base,
+      itemType: 'armor',
+      armorClass: draft.armorClass || undefined,
+      armorType: draft.armorType || undefined,
+      stealthDisadvantage: draft.stealthDisadvantage || undefined,
+    }
+  } else {
+    newItem = {
+      ...base,
+      itemType: 'gear',
+      item: { ...base.item, category: draft.category.trim() || undefined },
+    }
+  }
+
   await store.update(props.character.id, {
     inventory: [...props.character.inventory, newItem],
   })

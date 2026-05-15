@@ -66,7 +66,9 @@
             :key="c.index"
             :cantrip="c"
             :cantrip-edit-mode="cantripEditMode"
+            :is-favorite="isSpellFav(c.index)"
             @remove="removeSpell(c.index, 'cantrip')"
+            @toggle-favorite="toggleSpellFav(c, 'cantrip')"
           />
         </div>
         <p v-else class="font-body text-mist text-sm mb-4">No cantrips known.</p>
@@ -92,6 +94,19 @@
       </section>
 
       <!-- ── Spell levels 1–9 ───────────────────────────────────────────── -->
+      <div v-if="activeLevels.length > 0" class="rule-gold mb-0 flex items-center">
+        <span class="flex-1">Spells</span>
+        <button
+          v-if="editMode"
+          type="button"
+          class="text-xs font-heading px-2 py-0.5 rounded border transition-all"
+          :class="spellEditMode
+            ? 'border-blood-base/40 text-blood-mid hover:border-blood-base/70'
+            : 'border-shadow text-mist hover:border-arcane-base/40 hover:text-arcane-pale'"
+          @click="spellEditMode = !spellEditMode"
+        >{{ spellEditMode ? 'Done' : 'Edit' }}</button>
+      </div>
+
       <section
         v-for="lvl in activeLevels"
         :key="lvl"
@@ -128,8 +143,10 @@
             v-for="spell in spellsAtLevel(lvl)"
             :key="spell.index"
             :spell="spell"
-            :edit-mode="editMode"
+            :spell-edit-mode="spellEditMode"
+            :is-favorite="isSpellFav(spell.index)"
             @remove="removeSpell(spell.index, spell.prepared ? 'prepared' : 'known')"
+            @toggle-favorite="toggleSpellFav(spell, 'spell')"
           />
         </div>
         <p v-else class="font-body text-mist/50 text-xs italic">No spells at this level.</p>
@@ -179,7 +196,8 @@ import { useCharactersStore } from '@/characters/store'
 import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
 import { getSpellProfile, getMaxSpellLevel } from '@/character-builder/classMeta'
-import type { Character, SpellReference } from '@/shared/types/character'
+import type { Character, SpellReference, CombatFavorite } from '@/shared/types/character'
+import { generateId } from '@/shared/lib/uuid'
 import CantripCard from './CantripCard.vue'
 import CantripPickerModal from './CantripPickerModal.vue'
 import SpellCard from './SpellCard.vue'
@@ -188,6 +206,7 @@ import SpellPickerModal from './SpellPickerModal.vue'
 const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
 const cantripEditMode = ref(false)
+const spellEditMode = ref(false)
 const showCantripPicker = ref(false)
 const spellPickerLevel = ref<number | null>(null)
 
@@ -311,5 +330,32 @@ async function removeSpell(index: string, list: 'cantrip' | 'known' | 'prepared'
   if (list === 'known')    updated.spellsKnown    = sc.value.spellsKnown.filter(s => s.index !== index)
   if (list === 'prepared') updated.spellsPrepared = sc.value.spellsPrepared.filter(s => s.index !== index)
   await store.update(props.character.id, { spellcasting: updated })
+}
+
+// ── Favorites ─────────────────────────────────────────────────────────────────
+
+function isSpellFav(spellIndex: string): boolean {
+  return props.character.combatFavorites.some(
+    f => (f.type === 'cantrip' || f.type === 'spell') && f.spellIndex === spellIndex,
+  )
+}
+
+async function toggleSpellFav(spell: SpellReference, type: 'cantrip' | 'spell') {
+  const next: CombatFavorite[] = isSpellFav(spell.index)
+    ? props.character.combatFavorites.filter(
+        f => !((f.type === 'cantrip' || f.type === 'spell') && f.spellIndex === spell.index),
+      )
+    : [
+        ...props.character.combatFavorites,
+        {
+          id: generateId(),
+          type,
+          spellIndex: spell.index,
+          spellName: spell.name,
+          spellLevel: spell.level,
+          spellSchool: spell.school,
+        },
+      ]
+  await store.update(props.character.id, { combatFavorites: next })
 }
 </script>

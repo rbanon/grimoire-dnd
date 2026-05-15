@@ -204,20 +204,46 @@ export type ItemSnapshot = z.infer<typeof ItemSnapshotSchema>
 
 export const InventoryItemSchema = z.object({
   id: z.string().uuid(),
+  itemType: z.enum(['weapon', 'armor', 'gear']).default('gear'),
   item: ItemSnapshotSchema,
   quantity: z.number().int().min(0).default(1),
   equipped: z.boolean().default(false),
   notes: z.string().max(500).optional(),
+  // weapon-specific
+  attackBonus: z.string().optional(),
+  damage: z.string().optional(),
+  damageType: z.string().optional(),
+  range: z.string().optional(),
+  // armor-specific
+  armorClass: z.number().int().optional(),
+  armorType: z.enum(['light', 'medium', 'heavy', 'shield']).optional(),
+  stealthDisadvantage: z.boolean().optional(),
 })
 export type InventoryItem = z.infer<typeof InventoryItemSchema>
 
-// ─── Attacks ──────────────────────────────────────────────────────────────────
+// ─── Combat Favorites ─────────────────────────────────────────────────────────
+
+export const CombatFavoriteSchema = z.object({
+  id: z.string().uuid(),
+  type: z.enum(['cantrip', 'spell', 'weapon']),
+  // cantrip/spell
+  spellIndex: z.string().optional(),
+  spellName: z.string().optional(),
+  spellLevel: z.number().int().min(0).max(9).optional(),
+  spellSchool: z.string().optional(),
+  // weapon (reference to inventory item)
+  inventoryItemId: z.string().optional(),
+  weaponName: z.string().optional(),
+})
+export type CombatFavorite = z.infer<typeof CombatFavoriteSchema>
+
+// ─── Attacks (legacy — kept for schema compat, no longer used in UI) ──────────
 
 export const AttackSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
-  attackBonus: z.string().optional(), // e.g. "+5", "prof+str"
-  damage: z.string().optional(), // e.g. "1d8+3"
+  attackBonus: z.string().optional(),
+  damage: z.string().optional(),
   damageType: z.string().optional(),
   range: z.string().optional(),
   notes: z.string().max(500).optional(),
@@ -305,6 +331,7 @@ export const CharacterSchema = z.object({
   vulnerabilities: z.array(z.string()),
   senses: z.array(z.string()),
   attacks: z.array(AttackSchema),
+  combatFavorites: z.array(CombatFavoriteSchema).default([]),
   inventory: z.array(InventoryItemSchema),
   currency: CurrencySchema,
   spellcasting: SpellcastingStateSchema.nullable(),

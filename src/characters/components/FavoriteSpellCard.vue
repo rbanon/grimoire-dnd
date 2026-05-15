@@ -1,43 +1,37 @@
 <template>
-  <div class="px-3 py-2.5 rounded border border-arcane-base/20 bg-arcane-deep/5">
+  <div class="card px-4 py-3 space-y-1.5">
 
     <!-- Name row -->
     <div class="flex items-center gap-2">
-      <span v-if="spell.prepared" class="text-gold-mid text-2xs shrink-0" title="Prepared">◆</span>
-      <p class="font-heading text-sm text-arcane-pale/90 flex-1 min-w-0 truncate">{{ spell.name }}</p>
-      <!-- Favorite toggle -->
-      <button
-        type="button"
-        class="shrink-0 w-6 h-6 flex items-center justify-center rounded transition-all"
-        :class="isFavorite
-          ? 'text-gold-mid hover:text-gold-dim'
-          : 'text-mist/30 hover:text-gold-mid hover:bg-gold-dim/10'"
-        :title="isFavorite ? 'Remove from Favorites' : 'Add to Favorites'"
-        @click="$emit('toggleFavorite')"
-      >
-        <StarIcon :size="12" :fill="isFavorite ? 'currentColor' : 'none'" />
-      </button>
+      <span class="text-arcane-pale/60 text-sm shrink-0">{{ fav.type === 'cantrip' ? '✦' : '◆' }}</span>
+      <p class="font-heading text-sm text-vellum flex-1 min-w-0 truncate">{{ fav.spellName }}</p>
+
+      <span
+        class="text-2xs font-heading tracking-wide text-arcane-pale/50 bg-arcane-deep/20 px-2 py-0.5 rounded shrink-0"
+      >{{ fav.type === 'cantrip' ? 'Cantrip' : `Lv ${fav.spellLevel}` }}</span>
+
       <button
         type="button"
         class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/20 transition-all"
-        title="Ver detalles"
-        @click="infoPanel.open({ kind: 'spell', index: spell.index })"
+        title="Details"
+        @click="infoPanel.open({ kind: 'spell', index: fav.spellIndex! })"
       >
         <InfoIcon :size="12" />
       </button>
+
       <button
-        v-if="spellEditMode"
+        v-if="editMode"
         type="button"
-        class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/30 hover:text-blood-bright hover:bg-blood-deep/20 transition-all"
-        title="Remove spell"
+        class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/40 hover:text-blood-bright hover:bg-blood-deep/20 transition-all"
+        title="Remove from Favorites"
         @click="$emit('remove')"
       >
         <XIcon :size="12" />
       </button>
     </div>
 
-    <!-- Summary row -->
-    <div class="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+    <!-- Detail row -->
+    <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 pl-5">
       <template v-if="loading">
         <div class="h-2.5 w-40 rounded bg-shadow/40 animate-pulse" />
       </template>
@@ -64,30 +58,31 @@
         </template>
       </template>
     </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { InfoIcon, XIcon, StarIcon } from 'lucide-vue-next'
+import { InfoIcon, XIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
-import type { SpellReference } from '@/shared/types/character'
+import type { CombatFavorite } from '@/shared/types/character'
 
 const props = defineProps<{
-  spell: SpellReference & { prepared: boolean }
-  spellEditMode: boolean
-  isFavorite: boolean
+  fav: CombatFavorite
+  editMode: boolean
 }>()
-defineEmits<{ remove: []; toggleFavorite: [] }>()
+defineEmits<{ remove: [] }>()
 
 const infoPanel = useInfoPanel()
 
 const { data: detail, isPending: loading } = useQuery({
-  queryKey: ['spell', props.spell.index],
-  queryFn: () => fiveEApi.getSpell(props.spell.index),
+  queryKey: computed(() => ['spell', props.fav.spellIndex]),
+  queryFn: () => fiveEApi.getSpell(props.fav.spellIndex!),
   staleTime: Infinity,
+  enabled: computed(() => !!props.fav.spellIndex),
 })
 
 const castingTime = computed(() => {

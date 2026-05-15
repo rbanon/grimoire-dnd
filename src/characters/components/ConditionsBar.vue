@@ -24,7 +24,7 @@
           ref="concentrationInputEl"
           v-model="concentrationDraft"
           type="text"
-          placeholder="Nombre del hechizo…"
+          placeholder="Spell name…"
           class="input-base text-xs py-0.5 px-2 w-40"
           @blur="commitConcentration"
           @keydown.enter="commitConcentration"
@@ -35,16 +35,16 @@
           type="button"
           class="text-2xs text-mist/40 hover:text-mist transition-colors font-body"
           @click="startConcentration"
-        >+ Añadir concentración</button>
+        >+ Add concentration</button>
       </template>
 
-      <span v-else class="text-2xs text-mist/30 font-body italic">Ninguna</span>
+      <span v-else class="text-2xs text-mist/30 font-body italic">None</span>
     </div>
 
     <!-- ── Conditions ──────────────────────────────────────────────────────── -->
     <div>
       <div class="flex items-center gap-2 flex-wrap">
-        <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist shrink-0">Condiciones</p>
+        <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist shrink-0">Conditions</p>
 
         <!-- Active condition chips -->
         <span
@@ -62,24 +62,10 @@
           >×</button>
         </span>
 
-        <!-- Exhaustion chip -->
         <span
-          v-if="character.combat.exhaustion > 0"
-          class="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-shadow/60 bg-shadow/40 text-mist text-2xs font-heading tracking-wide"
-        >
-          Exhaustion {{ character.combat.exhaustion }}
-          <button
-            v-if="editMode"
-            type="button"
-            class="opacity-60 hover:opacity-100 transition-opacity leading-none ml-0.5"
-            @click="setExhaustion(0)"
-          >×</button>
-        </span>
-
-        <span
-          v-if="!character.combat.conditions.length && !character.combat.exhaustion"
+          v-if="!character.combat.conditions.length"
           class="text-2xs text-mist/30 font-body italic"
-        >Ninguna</span>
+        >None</span>
 
         <button
           v-if="editMode"
@@ -102,13 +88,6 @@
           @click="toggleCondition(cond.name)"
         >{{ cond.name }}</button>
 
-        <!-- Exhaustion stepper inside picker -->
-        <div class="flex items-center gap-1.5 ml-1 pl-2 border-l border-shadow/40">
-          <span class="text-2xs font-body text-mist/60 shrink-0">Exhaustion</span>
-          <button type="button" class="w-4 h-4 flex items-center justify-center text-mist/50 hover:text-ash transition-colors font-heading" @click="setExhaustion(Math.max(0, character.combat.exhaustion - 1))">−</button>
-          <span class="text-2xs font-heading text-stone w-3 text-center">{{ character.combat.exhaustion }}</span>
-          <button type="button" class="w-4 h-4 flex items-center justify-center text-mist/50 hover:text-ash transition-colors font-heading" @click="setExhaustion(Math.min(6, character.combat.exhaustion + 1))">+</button>
-        </div>
       </div>
     </div>
 
@@ -175,12 +154,6 @@ function removeCondition(name: string) {
       ...props.character.combat,
       conditions: props.character.combat.conditions.filter(c => c !== name),
     },
-  })
-}
-
-function setExhaustion(level: number) {
-  store.update(props.character.id, {
-    combat: { ...props.character.combat, exhaustion: level },
   })
 }
 

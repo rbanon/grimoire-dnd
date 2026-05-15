@@ -515,8 +515,8 @@
             </div>
 
             <!-- Tab content -->
-            <div v-if="activeTab === 'combat'">
-              <AttacksTab :character="character" :edit-mode="editMode" />
+            <div v-if="activeTab === 'favorites'">
+              <FavoritesTab :character="character" :edit-mode="editMode" />
             </div>
             <div v-else-if="activeTab === 'spells'">
               <SpellsTab :character="character" :edit-mode="editMode" />
@@ -563,7 +563,7 @@ import { CLASS_META } from '@/character-builder/classMeta'
 import { useDialog } from '@/shared/composables/useDialog'
 import { useRoll } from '@/shared/composables/useRoll'
 import ConditionsBar from '@/characters/components/ConditionsBar.vue'
-import AttacksTab from '@/characters/components/AttacksTab.vue'
+import FavoritesTab from '@/characters/components/FavoritesTab.vue'
 import EquipmentTab from '@/characters/components/EquipmentTab.vue'
 import SpellsTab from '@/characters/components/SpellsTab.vue'
 import FeaturesTab from '@/characters/components/FeaturesTab.vue'
@@ -594,9 +594,9 @@ function onPortraitChange(event: Event) {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-const activeTab = ref('combat')
+const activeTab = ref('favorites')
 const tabs = [
-  { id: 'combat',    label: 'Combat'    },
+  { id: 'favorites', label: 'Favorites' },
   { id: 'spells',    label: 'Spells'    },
   { id: 'equipment', label: 'Equipment' },
   { id: 'features',  label: 'Features'  },

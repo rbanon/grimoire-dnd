@@ -4,6 +4,18 @@
     <!-- Name row -->
     <div class="flex items-center gap-2">
       <p class="font-heading text-sm text-arcane-pale flex-1 min-w-0 truncate">{{ cantrip.name }}</p>
+      <!-- Favorite toggle -->
+      <button
+        type="button"
+        class="shrink-0 w-6 h-6 flex items-center justify-center rounded transition-all"
+        :class="isFavorite
+          ? 'text-gold-mid hover:text-gold-dim'
+          : 'text-mist/30 hover:text-gold-mid hover:bg-gold-dim/10'"
+        :title="isFavorite ? 'Remove from Favorites' : 'Add to Favorites'"
+        @click="$emit('toggleFavorite')"
+      >
+        <StarIcon :size="12" :fill="isFavorite ? 'currentColor' : 'none'" />
+      </button>
       <button
         type="button"
         class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/20 transition-all"
@@ -66,7 +78,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { InfoIcon, XIcon } from 'lucide-vue-next'
+import { InfoIcon, XIcon, StarIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
@@ -75,8 +87,9 @@ import type { SpellReference } from '@/shared/types/character'
 const props = defineProps<{
   cantrip: SpellReference
   cantripEditMode: boolean
+  isFavorite: boolean
 }>()
-defineEmits<{ remove: [] }>()
+defineEmits<{ remove: []; toggleFavorite: [] }>()
 
 const infoPanel = useInfoPanel()
 
