@@ -41,14 +41,18 @@ export const fiveEApi = {
   listBackgrounds: () => get<ApiReferenceList>('/backgrounds'),
   getBackground: (index: string) => get<ApiBackground>(`/backgrounds/${index}`),
 
-  // Spells support server-side filtering
-  listSpells: (params?: SpellQueryParams) =>
-    get<ApiReferenceList>('/spells', {
-      ...(params?.name ? { name: params.name } : {}),
-      ...(params?.level !== undefined ? { level: String(params.level) } : {}),
-      ...(params?.school ? { school: params.school } : {}),
-      ...(params?.class ? { class: params.class } : {}),
-    }),
+  // Spells: when filtering by class, the API requires the class-scoped endpoint
+  // (/classes/{index}/spells) — the ?class= query param on /spells is silently ignored.
+  listSpells: (params?: SpellQueryParams) => {
+    const queryParams: Record<string, string> = {}
+    if (params?.name)            queryParams.name   = params.name
+    if (params?.level !== undefined) queryParams.level = String(params.level)
+    if (params?.school)          queryParams.school = params.school
+    const path = params?.class
+      ? `/classes/${params.class}/spells`
+      : '/spells'
+    return get<ApiReferenceList>(path, queryParams)
+  },
   getSpell: (index: string) => get<ApiSpell>(`/spells/${index}`),
 
   listSkills: () => get<ApiReferenceList>('/skills'),

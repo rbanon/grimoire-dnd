@@ -6,7 +6,7 @@ import { CharacterSchema } from '@/shared/types/character'
 import { storageGet, storageSet, storageRemove } from '@/shared/lib/storage'
 import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
-import { getSpellSlots } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 7
@@ -329,15 +329,19 @@ export const useBuilderStore = defineStore('builder', () => {
       attacks: [],
       inventory: [],
       currency: { cp: 0, sp: 0, ep: 0, gp: d.manualGold, pp: 0 },
-      spellcasting: d.classSpellcastingAbility ? {
-        spellcastingAbility: d.classSpellcastingAbility as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha',
-        slotsMax:  getSpellSlots(d.classIndex, d.level),
-        slotsUsed: { level1:0, level2:0, level3:0, level4:0, level5:0, level6:0, level7:0, level8:0, level9:0 },
-        cantripsKnown: d.selectedCantrips.map(c => ({ ...c, level: 0 })),
-        spellsKnown: d.selectedSpells,
-        spellsPrepared: [],
-        ritualCasting: false,
-      } : null,
+      spellcasting: d.classSpellcastingAbility ? (() => {
+        const castingType = getSpellProfile(d.classIndex)?.castingType ?? 'known'
+        return {
+          spellcastingAbility: d.classSpellcastingAbility as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha',
+          slotsMax:  getSpellSlots(d.classIndex, d.level),
+          slotsUsed: { level1:0, level2:0, level3:0, level4:0, level5:0, level6:0, level7:0, level8:0, level9:0 },
+          cantripsKnown: d.selectedCantrips.map(c => ({ ...c, level: 0 })),
+          // known → spellsKnown; prepared → spellsPrepared; spellbook → both (spellbook + prepared)
+          spellsKnown:    castingType === 'known' || castingType === 'spellbook' ? d.selectedSpells : [],
+          spellsPrepared: castingType === 'prepared' || castingType === 'spellbook' ? d.selectedSpells : [],
+          ritualCasting: false,
+        }
+      })() : null,
       favoriteSpells: [],
       features: [],
       overrides: {},

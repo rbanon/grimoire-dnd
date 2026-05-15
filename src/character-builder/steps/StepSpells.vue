@@ -76,7 +76,7 @@
         </div>
       </section>
 
-      <!-- ── Spells Known (known casters) ────────────────────────────── -->
+      <!-- ── Spells Known (known casters: Bard, Ranger, Sorcerer, Warlock) ── -->
       <section v-if="profile?.castingType === 'known' && spellLimit > 0" class="space-y-4">
         <div class="flex items-center justify-between">
           <p class="label">Spells Known</p>
@@ -88,25 +88,7 @@
           Maximum spells known reached for level {{ builder.draft.level }}.
         </p>
 
-        <!-- Selected spells list -->
-        <div v-if="builder.draft.selectedSpells.length > 0" class="space-y-1.5">
-          <div
-            v-for="s in builder.draft.selectedSpells"
-            :key="s.index"
-            class="group flex items-center gap-2 px-3 py-2 rounded border border-arcane-base/25 bg-arcane-deep/8"
-          >
-            <span class="flex-1 text-sm font-heading text-arcane-pale/90">{{ s.name }}</span>
-            <span class="badge-arcane text-2xs">Lv {{ s.level }}</span>
-            <button
-              type="button"
-              class="shrink-0 w-5 h-5 flex items-center justify-center rounded text-mist/30 hover:text-blood-bright transition-colors opacity-0 group-hover:opacity-100"
-              @click="removeSpell(s.index)"
-            >
-              <XIcon :size="11" />
-            </button>
-          </div>
-        </div>
-        <p v-else class="text-xs font-body text-mist">No spells selected yet.</p>
+        <SelectedSpellList :spells="builder.draft.selectedSpells" @remove="removeSpell" />
 
         <button
           v-if="!atSpellLimit"
@@ -116,36 +98,52 @@
         >
           <PlusIcon :size="12" /> Add Spell
         </button>
-
-        <SpellPickerModal
-          :show="showSpellPicker"
-          :class-index="builder.draft.classIndex"
-          :class-name="builder.draft.className"
-          :known-indices="builder.draft.selectedSpells.map(s => s.index)"
-          :max-level="maxSpellLevel"
-          :limit="spellLimit"
-          @close="showSpellPicker = false"
-          @add="onAddSpells"
-        />
       </section>
 
-      <!-- ── Info for prepared/spellbook casters ──────────────────────── -->
-      <div
-        v-else-if="profile && profile.castingType !== 'known'"
-        class="card p-4 border-shadow/40 bg-depths/30"
+      <!-- ── Prepared Spells (Cleric, Druid, Paladin) ──────────────────── -->
+      <!-- ── Spellbook (Wizard) ────────────────────────────────────────── -->
+      <section
+        v-else-if="profile?.castingType === 'prepared' || profile?.castingType === 'spellbook'"
+        class="space-y-4"
       >
-        <p class="text-xs font-heading text-stone mb-1">
-          {{ profile.castingType === 'spellbook' ? 'Spellbook' : 'Prepared Spells' }}
+        <div class="flex items-center justify-between">
+          <p class="label">{{ preparedSectionLabel }}</p>
+          <span class="text-xs font-body tabular-nums" :class="atPreparedLimit ? 'text-blood-bright' : 'text-mist'">
+            {{ builder.draft.selectedSpells.length }} / {{ preparedSpellLimit }}
+          </span>
+        </div>
+        <p v-if="atPreparedLimit" class="text-xs font-body text-blood-bright/80 -mt-2">
+          Limit reached for level {{ builder.draft.level }}.
         </p>
-        <p class="text-xs font-body text-mist">
-          <template v-if="profile.castingType === 'spellbook'">
-            Wizards copy spells into their spellbook. You'll add your starting spells from the character sheet after creation.
-          </template>
-          <template v-else>
-            {{ builder.draft.className }}s prepare their spell list each day. You'll choose prepared spells from the character sheet.
-          </template>
-        </p>
-      </div>
+
+        <div class="card p-3 border-shadow/30 bg-depths/20 flex items-start gap-2">
+          <span class="text-gold-dim/60 text-xs shrink-0 mt-0.5">ℹ</span>
+          <p class="text-xs font-body text-mist">{{ preparedSectionNote }}</p>
+        </div>
+
+        <SelectedSpellList :spells="builder.draft.selectedSpells" @remove="removeSpell" />
+
+        <button
+          v-if="!atPreparedLimit"
+          type="button"
+          class="btn-secondary text-xs gap-1.5"
+          @click="showSpellPicker = true"
+        >
+          <PlusIcon :size="12" /> Add Spell
+        </button>
+      </section>
+
+      <!-- Shared SpellPickerModal (known + prepared/spellbook) -->
+      <SpellPickerModal
+        :show="showSpellPicker"
+        :class-index="builder.draft.classIndex"
+        :class-name="builder.draft.className"
+        :known-indices="builder.draft.selectedSpells.map(s => s.index)"
+        :max-level="maxSpellLevel"
+        :limit="activeSpellLimit"
+        @close="showSpellPicker = false"
+        @add="onAddSpells"
+      />
 
     </template>
 
@@ -154,33 +152,93 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, defineComponent, h } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { InfoIcon, PlusIcon, XIcon } from 'lucide-vue-next'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { getSpellProfile, getMaxSpellLevel } from '@/character-builder/classMeta'
+import { computeModifier } from '@/shared/types/character'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 import SpellPickerModal from '@/characters/components/SpellPickerModal.vue'
 
+// ── Inline sub-component: selected spell list ─────────────────────────────────
+const SelectedSpellList = defineComponent({
+  props: {
+    spells: { type: Array as () => { index: string; name: string; level: number }[], required: true },
+  },
+  emits: ['remove'],
+  setup(props, { emit }) {
+    return () => {
+      if (props.spells.length === 0) {
+        return h('p', { class: 'text-xs font-body text-mist' }, 'No spells selected yet.')
+      }
+      return h('div', { class: 'space-y-1.5' },
+        props.spells.map(s =>
+          h('div', {
+            key: s.index,
+            class: 'group flex items-center gap-2 px-3 py-2 rounded border border-arcane-base/25 bg-arcane-deep/8',
+          }, [
+            h('span', { class: 'flex-1 text-sm font-heading text-arcane-pale/90' }, s.name),
+            h('span', { class: 'badge-arcane text-2xs' }, `Lv ${s.level}`),
+            h('button', {
+              type: 'button',
+              class: 'shrink-0 w-5 h-5 flex items-center justify-center rounded text-mist/30 hover:text-blood-bright transition-colors opacity-0 group-hover:opacity-100',
+              onClick: () => emit('remove', s.index),
+            }, h(XIcon, { size: 11 })),
+          ])
+        )
+      )
+    }
+  },
+})
+
+// ── Store & composables ───────────────────────────────────────────────────────
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
 const showSpellPicker = ref(false)
 
-const abilityNames: Record<string, string> = {
+// ── Spell profile helpers ─────────────────────────────────────────────────────
+const abilityFullName: Record<string, string> = {
   cha: 'Charisma', int: 'Intelligence', wis: 'Wisdom',
 }
 const spellAbilityName = computed(() =>
-  abilityNames[builder.draft.classSpellcastingAbility ?? ''] ?? '—'
+  abilityFullName[builder.draft.classSpellcastingAbility ?? ''] ?? '—'
 )
 
 const profile  = computed(() => getSpellProfile(builder.draft.classIndex))
 const levelIdx = computed(() => builder.draft.level - 1)
 
-const cantripLimit = computed(() => profile.value?.cantripsKnown[levelIdx.value] ?? Infinity)
-const spellLimit   = computed(() => profile.value?.spellsKnown?.[levelIdx.value] ?? 0)
+// ── Limits ────────────────────────────────────────────────────────────────────
+const cantripLimit  = computed(() => profile.value?.cantripsKnown[levelIdx.value] ?? Infinity)
+const spellLimit    = computed(() => profile.value?.spellsKnown?.[levelIdx.value] ?? 0)
+const maxSpellLevel = computed(() => getMaxSpellLevel(builder.draft.classIndex, builder.draft.level))
 
+// Prepared / spellbook limit = ability_mod + level (paladin: CHA_mod + floor(level/2))
+const preparedSpellLimit = computed(() => {
+  const p = profile.value
+  if (!p || p.castingType === 'known') return 0
+  const ability = p.preparedAbility!
+  const mod = computeModifier(builder.effectiveScores[ability])
+  const level = builder.draft.level
+  const raw = builder.draft.classIndex === 'paladin'
+    ? Math.floor(level / 2) + mod
+    : level + mod
+  return Math.max(1, raw)
+})
+
+// Unified limit used by the shared modal
+const activeSpellLimit = computed(() =>
+  profile.value?.castingType === 'known' ? spellLimit.value : preparedSpellLimit.value
+)
+
+// ── At-limit flags ────────────────────────────────────────────────────────────
+const atCantripLimit  = computed(() => builder.draft.selectedCantrips.length >= cantripLimit.value)
+const atSpellLimit    = computed(() => builder.draft.selectedSpells.length >= spellLimit.value)
+const atPreparedLimit = computed(() => builder.draft.selectedSpells.length >= preparedSpellLimit.value)
+
+// ── No spells at this level (Paladin/Ranger lv1) ──────────────────────────────
 const noSpellsAtLevel = computed(() => {
   const p = profile.value
   if (!p) return false
@@ -191,11 +249,22 @@ const noSpellsAtLevel = computed(() => {
   return !hasCantrips && !hasSpells
 })
 
-const atCantripLimit = computed(() => builder.draft.selectedCantrips.length >= cantripLimit.value)
-const maxSpellLevel = computed(() => getMaxSpellLevel(builder.draft.classIndex, builder.draft.level))
+// ── Prepared section labels ───────────────────────────────────────────────────
+const preparedSectionLabel = computed(() =>
+  profile.value?.castingType === 'spellbook' ? 'Starting Spellbook' : 'Starting Prepared Spells'
+)
 
-const atSpellLimit   = computed(() => builder.draft.selectedSpells.length >= spellLimit.value)
+const preparedSectionNote = computed(() => {
+  const p = profile.value
+  if (!p) return ''
+  const abilityName = abilityFullName[p.preparedAbility ?? ''] ?? ''
+  if (p.castingType === 'spellbook') {
+    return `Wizards prepare ${abilityName} modifier + level spells from their spellbook each day. These are your starting prepared spells — you can add more to your spellbook from the character sheet.`
+  }
+  return `${builder.draft.className}s prepare ${abilityName} modifier + level spells per day. Select your starting prepared spells; you can change them each long rest.`
+})
 
+// ── Cantrip fetch ─────────────────────────────────────────────────────────────
 const { data: cantripData, isPending: cantripsLoading } = useQuery({
   queryKey: ['cantrips', builder.draft.classIndex],
   queryFn: () => fiveEApi.listSpells({ level: 0, class: builder.draft.classIndex }),
@@ -204,6 +273,7 @@ const { data: cantripData, isPending: cantripsLoading } = useQuery({
 })
 const cantrips = computed(() => cantripData.value?.results ?? [])
 
+// ── Cantrip interactions ──────────────────────────────────────────────────────
 function isCantripSelected(index: string) {
   return builder.draft.selectedCantrips.some(c => c.index === index)
 }
@@ -215,6 +285,7 @@ function toggleCantrip(c: { index: string; name: string }) {
   }
 }
 
+// ── Spell interactions ────────────────────────────────────────────────────────
 function removeSpell(index: string) {
   builder.draft.selectedSpells = builder.draft.selectedSpells.filter(s => s.index !== index)
 }

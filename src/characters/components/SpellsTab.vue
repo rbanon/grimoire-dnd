@@ -162,6 +162,8 @@
         :class-name="props.character.identity.class.name"
         :known-indices="allKnownSpellIndices"
         :initial-level="spellPickerLevel ?? 1"
+        :max-level="maxSpellLevel"
+        :limit="sheetSpellLimit"
         @close="spellPickerLevel = null"
         @add="onAddSpells"
       />
@@ -176,7 +178,7 @@ import { SparklesIcon, PlusIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
-import { getSpellProfile } from '@/character-builder/classMeta'
+import { getSpellProfile, getMaxSpellLevel } from '@/character-builder/classMeta'
 import type { Character, SpellReference } from '@/shared/types/character'
 import CantripCard from './CantripCard.vue'
 import CantripPickerModal from './CantripPickerModal.vue'
@@ -194,6 +196,10 @@ const cantripLimit = computed(() => {
   return profile?.cantripsKnown[props.character.combat.level - 1] ?? Infinity
 })
 
+const maxSpellLevel = computed(() =>
+  getMaxSpellLevel(props.character.identity.class.index, props.character.combat.level)
+)
+
 // ── Aliases ───────────────────────────────────────────────────────────────────
 
 const sc = computed(() => props.character.spellcasting)
@@ -203,6 +209,21 @@ const profBonus = computed(() => computeProficiencyBonus(props.character.combat.
 const spellAbilityMod = computed(() => {
   if (!sc.value) return 0
   return mods.value[sc.value.spellcastingAbility]
+})
+
+// Spell limit enforced in the picker:
+// - known casters  → total spells known from profile table
+// - prepared/spellbook → ability_mod + level (or CHA_mod + floor(level/2) for paladin)
+const sheetSpellLimit = computed((): number | undefined => {
+  const p = getSpellProfile(props.character.identity.class.index)
+  if (!p) return undefined
+  const level = props.character.combat.level
+  if (p.castingType === 'known') return p.spellsKnown?.[level - 1]
+  const mod = spellAbilityMod.value
+  if (props.character.identity.class.index === 'paladin') {
+    return Math.max(1, Math.floor(level / 2) + mod)
+  }
+  return Math.max(1, level + mod)
 })
 const spellSaveDC = computed(() => computeSpellSaveDC(spellAbilityMod.value, profBonus.value))
 const spellAttackBonus = computed(() => computeSpellAttackBonus(spellAbilityMod.value, profBonus.value))
