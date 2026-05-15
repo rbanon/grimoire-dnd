@@ -183,6 +183,61 @@ export function getSpellProfile(classIndex: string): SpellProfile | null {
   return SPELL_PROFILES[classIndex] ?? null
 }
 
+
+// ─── Spell slots ──────────────────────────────────────────────────────────────
+
+// SRD 5e slot tables, index = level-1, each row = [l1,l2,l3,l4,l5,l6,l7,l8,l9]
+const FULL_CASTER_SLOTS = [
+  [2,0,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,0],[4,2,0,0,0,0,0,0,0],[4,3,0,0,0,0,0,0,0],
+  [4,3,2,0,0,0,0,0,0],[4,3,3,0,0,0,0,0,0],[4,3,3,1,0,0,0,0,0],[4,3,3,2,0,0,0,0,0],
+  [4,3,3,3,1,0,0,0,0],[4,3,3,3,2,0,0,0,0],[4,3,3,3,2,1,0,0,0],[4,3,3,3,2,1,0,0,0],
+  [4,3,3,3,2,1,1,0,0],[4,3,3,3,2,1,1,0,0],[4,3,3,3,2,1,1,1,0],[4,3,3,3,2,1,1,1,0],
+  [4,3,3,3,2,1,1,1,1],[4,3,3,3,3,1,1,1,1],[4,3,3,3,3,2,1,1,1],[4,3,3,3,3,2,2,1,1],
+] as const
+
+const HALF_CASTER_SLOTS = [
+  [0,0,0,0,0,0,0,0,0],[2,0,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,0],
+  [4,2,0,0,0,0,0,0,0],[4,2,0,0,0,0,0,0,0],[4,3,0,0,0,0,0,0,0],[4,3,0,0,0,0,0,0,0],
+  [4,3,2,0,0,0,0,0,0],[4,3,2,0,0,0,0,0,0],[4,3,3,0,0,0,0,0,0],[4,3,3,0,0,0,0,0,0],
+  [4,3,3,1,0,0,0,0,0],[4,3,3,1,0,0,0,0,0],[4,3,3,2,0,0,0,0,0],[4,3,3,2,0,0,0,0,0],
+  [4,3,3,3,1,0,0,0,0],[4,3,3,3,1,0,0,0,0],[4,3,3,3,2,0,0,0,0],[4,3,3,3,2,0,0,0,0],
+] as const
+
+const WARLOCK_SLOTS = [
+  [1,0,0,0,0,0,0,0,0],[2,0,0,0,0,0,0,0,0],[0,2,0,0,0,0,0,0,0],[0,2,0,0,0,0,0,0,0],
+  [0,0,2,0,0,0,0,0,0],[0,0,2,0,0,0,0,0,0],[0,0,0,2,0,0,0,0,0],[0,0,0,2,0,0,0,0,0],
+  [0,0,0,0,2,0,0,0,0],[0,0,0,0,2,0,0,0,0],[0,0,0,0,3,0,0,0,0],[0,0,0,0,3,0,0,0,0],
+  [0,0,0,0,3,0,0,0,0],[0,0,0,0,3,0,0,0,0],[0,0,0,0,3,0,0,0,0],[0,0,0,0,3,0,0,0,0],
+  [0,0,0,0,4,0,0,0,0],[0,0,0,0,4,0,0,0,0],[0,0,0,0,4,0,0,0,0],[0,0,0,0,4,0,0,0,0],
+] as const
+
+export interface SpellSlotsMax {
+  level1: number; level2: number; level3: number; level4: number; level5: number
+  level6: number; level7: number; level8: number; level9: number
+}
+
+export function getSpellSlots(classIndex: string, level: number): SpellSlotsMax {
+  const empty: SpellSlotsMax = { level1:0, level2:0, level3:0, level4:0, level5:0, level6:0, level7:0, level8:0, level9:0 }
+  if (!getSpellProfile(classIndex)) return empty
+  const idx = Math.min(Math.max(level, 1), 20) - 1
+  const row = classIndex === 'warlock' ? WARLOCK_SLOTS[idx]
+    : (classIndex === 'paladin' || classIndex === 'ranger') ? HALF_CASTER_SLOTS[idx]
+    : FULL_CASTER_SLOTS[idx]
+  return { level1:row[0], level2:row[1], level3:row[2], level4:row[3], level5:row[4], level6:row[5], level7:row[6], level8:row[7], level9:row[8] }
+}
+// Max spell level accessible per character level, index = level (1-based, index 0 unused)
+const FULL_CASTER_MAX   = [0, 1,1, 2,2, 3,3, 4,4, 5,5, 6,6, 7,7, 8,8, 9,9,9,9]
+const HALF_CASTER_MAX   = [0, 0,1, 1,1, 2,2, 2,2, 3,3, 3,3, 4,4, 4,4, 5,5,5,5]
+const WARLOCK_MAX       = [0, 1,1, 2,2, 3,3, 4,4, 5,5, 5,5, 5,5, 5,5, 5,5,5,5]
+
+export function getMaxSpellLevel(classIndex: string, level: number): number {
+  const profile = getSpellProfile(classIndex)
+  if (!profile) return 0
+  if (classIndex === 'paladin' || classIndex === 'ranger') return HALF_CASTER_MAX[level] ?? 0
+  if (classIndex === 'warlock') return WARLOCK_MAX[level] ?? 0
+  return FULL_CASTER_MAX[level] ?? 0
+}
+
 export function getClassMeta(index: string): ClassMeta {
   return CLASS_META[index] ?? {
     glyph: '⚔', hitDie: 8, flavor: '', tags: [], primaryAbility: '—', saves: '—',

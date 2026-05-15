@@ -123,44 +123,25 @@
         </div>
 
         <!-- Spells at this level -->
-        <div v-if="spellsAtLevel(lvl).length > 0" class="flex flex-wrap gap-2">
-          <div
+        <div v-if="spellsAtLevel(lvl).length > 0" class="space-y-1.5">
+          <SpellCard
             v-for="spell in spellsAtLevel(lvl)"
             :key="spell.index"
-            class="group flex items-center gap-1.5 px-3 py-1.5 rounded border border-arcane-base/20 bg-arcane-deep/5"
-          >
-            <span v-if="spell.prepared" class="text-gold-mid text-2xs" title="Prepared">◆</span>
-            <span class="text-sm font-heading text-arcane-pale/90">{{ spell.name }}</span>
-            <span v-if="spell.school" class="text-2xs font-body text-mist/50">{{ spell.school }}</span>
-            <button
-              v-if="editMode"
-              type="button"
-              class="text-mist/30 hover:text-blood-bright transition-colors opacity-0 group-hover:opacity-100 ml-0.5"
-              title="Remove"
-              @click="removeSpell(spell.index, spell.prepared ? 'prepared' : 'known')"
-            >
-              <XIcon :size="11" />
-            </button>
-          </div>
+            :spell="spell"
+            :edit-mode="editMode"
+            @remove="removeSpell(spell.index, spell.prepared ? 'prepared' : 'known')"
+          />
         </div>
         <p v-else class="font-body text-mist/50 text-xs italic">No spells at this level.</p>
 
-        <!-- Add spell button / form -->
         <button
-          v-if="editMode && addTarget !== lvl"
+          v-if="editMode"
           type="button"
           class="btn-secondary text-xs gap-1.5"
-          @click="openAdd(lvl)"
+          @click="openSpellPicker(lvl)"
         >
           <PlusIcon :size="12" /> Add Level {{ lvl }} Spell
         </button>
-
-        <AddSpellForm
-          v-if="editMode && addTarget === lvl"
-          :label="`Level ${lvl} spell name`"
-          @submit="(name) => onAddSpell(name, lvl)"
-          @cancel="addTarget = null"
-        />
       </section>
 
       <!-- ── No slots configured ────────────────────────────────────────── -->
@@ -169,17 +150,21 @@
         <p class="font-body text-mist text-xs mt-1">
           Spell slots will be set automatically when Short/Long Rest and Level Up are implemented.
         </p>
-        <button class="btn-secondary text-xs mt-3 gap-1.5" @click="openAdd(1)">
-          <PlusIcon :size="12" /> Add Level 1 Spell
+        <button v-if="editMode" class="btn-secondary text-xs mt-3 gap-1.5" @click="openSpellPicker(1)">
+          <PlusIcon :size="12" /> Add Spell
         </button>
-        <AddSpellForm
-          v-if="typeof addTarget === 'number'"
-          :label="`Level ${addTarget} spell name`"
-          class="mt-3 text-left"
-          @submit="(name) => onAddSpell(name, addTarget as number)"
-          @cancel="addTarget = null"
-        />
       </div>
+
+      <!-- Shared spell picker modal -->
+      <SpellPickerModal
+        :show="spellPickerLevel !== null"
+        :class-index="props.character.identity.class.index"
+        :class-name="props.character.identity.class.name"
+        :known-indices="allKnownSpellIndices"
+        :initial-level="spellPickerLevel ?? 1"
+        @close="spellPickerLevel = null"
+        @add="onAddSpells"
+      />
 
     </template>
   </div>
@@ -187,21 +172,22 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { SparklesIcon, PlusIcon, XIcon } from 'lucide-vue-next'
+import { SparklesIcon, PlusIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
 import { getSpellProfile } from '@/character-builder/classMeta'
 import type { Character, SpellReference } from '@/shared/types/character'
-import { generateId } from '@/shared/lib/uuid'
-import AddSpellForm from './AddSpellForm.vue'
 import CantripCard from './CantripCard.vue'
 import CantripPickerModal from './CantripPickerModal.vue'
+import SpellCard from './SpellCard.vue'
+import SpellPickerModal from './SpellPickerModal.vue'
 
 const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
 const cantripEditMode = ref(false)
 const showCantripPicker = ref(false)
+const spellPickerLevel = ref<number | null>(null)
 
 const cantripLimit = computed(() => {
   const profile = getSpellProfile(props.character.identity.class.index)
@@ -234,7 +220,6 @@ function usedSlots(n: number) { return sc.value?.slotsUsed[slotKey(n)] ?? 0 }
 
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
 
-// Show a level row if it has slots OR any spells at that level
 const activeLevels = computed(() => {
   if (!sc.value) return []
   return LEVELS.filter(lvl => {
@@ -245,18 +230,24 @@ const activeLevels = computed(() => {
   })
 })
 
-// Merged spell list for a given level, with `prepared` flag
 function spellsAtLevel(lvl: number) {
   if (!sc.value) return []
-  const knownAt = sc.value.spellsKnown.filter(s => s.level === lvl)
+  const knownAt   = sc.value.spellsKnown.filter(s => s.level === lvl)
   const preparedAt = sc.value.spellsPrepared.filter(s => s.level === lvl)
-  // Union: prepared takes precedence; known-only are listed without diamond
   const seen = new Set<string>()
   const result: (SpellReference & { prepared: boolean })[] = []
   for (const s of preparedAt) { seen.add(s.index); result.push({ ...s, prepared: true }) }
   for (const s of knownAt)    { if (!seen.has(s.index)) result.push({ ...s, prepared: false }) }
   return result
 }
+
+const allKnownSpellIndices = computed(() => {
+  if (!sc.value) return []
+  return [
+    ...sc.value.spellsKnown.map(s => s.index),
+    ...sc.value.spellsPrepared.map(s => s.index),
+  ]
+})
 
 // ── Slot toggle ───────────────────────────────────────────────────────────────
 
@@ -270,17 +261,9 @@ async function toggleSlot(lvl: number, pip: number) {
   })
 }
 
-// ── Add spell ─────────────────────────────────────────────────────────────────
+// ── Add spells ────────────────────────────────────────────────────────────────
 
-const addTarget = ref<SlotLevel | 'cantrip' | null>(null)
-
-function openAdd(target: SlotLevel | 'cantrip' | number) {
-  addTarget.value = target as SlotLevel | 'cantrip'
-}
-
-function spellRef(name: string, level: number): SpellReference {
-  return { index: name.toLowerCase().replace(/\s+/g, '-') + '-' + generateId().slice(0, 6), name, level }
-}
+function openSpellPicker(lvl: number) { spellPickerLevel.value = lvl }
 
 async function onAddCantrips(cantrips: { index: string; name: string; level: number }[]) {
   if (!sc.value || cantrips.length === 0) return
@@ -290,13 +273,12 @@ async function onAddCantrips(cantrips: { index: string; name: string; level: num
   })
 }
 
-async function onAddSpell(name: string, level: number) {
-  if (!sc.value || !name.trim()) return
-  const ref = spellRef(name.trim(), level)
+async function onAddSpells(spells: { index: string; name: string; level: number }[]) {
+  if (!sc.value || spells.length === 0) return
+  spellPickerLevel.value = null
   await store.update(props.character.id, {
-    spellcasting: { ...sc.value, spellsKnown: [...sc.value.spellsKnown, ref] },
+    spellcasting: { ...sc.value, spellsKnown: [...sc.value.spellsKnown, ...spells] },
   })
-  addTarget.value = null
 }
 
 // ── Remove spell ──────────────────────────────────────────────────────────────
@@ -304,9 +286,9 @@ async function onAddSpell(name: string, level: number) {
 async function removeSpell(index: string, list: 'cantrip' | 'known' | 'prepared') {
   if (!sc.value) return
   const updated = { ...sc.value }
-  if (list === 'cantrip')   updated.cantripsKnown  = sc.value.cantripsKnown.filter(s => s.index !== index)
-  if (list === 'known')     updated.spellsKnown    = sc.value.spellsKnown.filter(s => s.index !== index)
-  if (list === 'prepared')  updated.spellsPrepared = sc.value.spellsPrepared.filter(s => s.index !== index)
+  if (list === 'cantrip')  updated.cantripsKnown  = sc.value.cantripsKnown.filter(s => s.index !== index)
+  if (list === 'known')    updated.spellsKnown    = sc.value.spellsKnown.filter(s => s.index !== index)
+  if (list === 'prepared') updated.spellsPrepared = sc.value.spellsPrepared.filter(s => s.index !== index)
   await store.update(props.character.id, { spellcasting: updated })
 }
 </script>

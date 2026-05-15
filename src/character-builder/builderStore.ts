@@ -6,6 +6,7 @@ import { CharacterSchema } from '@/shared/types/character'
 import { storageGet, storageSet, storageRemove } from '@/shared/lib/storage'
 import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
+import { getSpellSlots } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 7
@@ -89,8 +90,9 @@ export interface BuilderDraft {
   useStartingEquipment: boolean
   manualGold: number
 
-  // Step 6 — Spells (cantrips only; leveled spells are managed post-creation on the sheet)
+  // Step 6 — Spells
   selectedCantrips: { index: string; name: string }[]
+  selectedSpells: { index: string; name: string; level: number }[]
 }
 
 const defaultDraft = (): BuilderDraft => ({
@@ -113,7 +115,7 @@ const defaultDraft = (): BuilderDraft => ({
   standardArrayAssignments: {},
   selectedSkills: [], selectedLanguages: [],
   useStartingEquipment: true, manualGold: 0,
-  selectedCantrips: [],
+  selectedCantrips: [], selectedSpells: [],
 })
 
 const DraftSchema = z.object({ currentStep: z.number() }).passthrough()
@@ -329,10 +331,10 @@ export const useBuilderStore = defineStore('builder', () => {
       currency: { cp: 0, sp: 0, ep: 0, gp: d.manualGold, pp: 0 },
       spellcasting: d.classSpellcastingAbility ? {
         spellcastingAbility: d.classSpellcastingAbility as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha',
-        slotsMax:  { level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0, level7: 0, level8: 0, level9: 0 },
-        slotsUsed: { level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0, level7: 0, level8: 0, level9: 0 },
+        slotsMax:  getSpellSlots(d.classIndex, d.level),
+        slotsUsed: { level1:0, level2:0, level3:0, level4:0, level5:0, level6:0, level7:0, level8:0, level9:0 },
         cantripsKnown: d.selectedCantrips.map(c => ({ ...c, level: 0 })),
-        spellsKnown: [],
+        spellsKnown: d.selectedSpells,
         spellsPrepared: [],
         ritualCasting: false,
       } : null,
