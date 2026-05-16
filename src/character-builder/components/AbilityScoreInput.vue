@@ -62,8 +62,9 @@
     </div>
 
     <!-- Point cost (point buy only) -->
-    <div v-if="mode === 'pointbuy'" class="text-2xs font-heading text-mist">
-      {{ pbCost(score) }} pts
+    <div v-if="mode === 'pointbuy'" class="text-2xs font-heading text-center">
+      <span :class="score >= 15 ? 'text-gold-mid' : 'text-mist'">{{ pbCost(score) }} pts</span>
+      <span v-if="score >= 15" class="ml-1 text-mist/50">(max)</span>
     </div>
   </div>
 </template>

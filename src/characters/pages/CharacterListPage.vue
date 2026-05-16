@@ -19,7 +19,10 @@
           </div>
 
           <div class="flex items-center gap-2 shrink-0">
-            <label class="btn-secondary cursor-pointer gap-2 text-sm">
+            <label
+              class="btn-secondary cursor-pointer gap-2 text-sm"
+              title="Import a .json file exported from The Grimoire"
+            >
               <UploadIcon :size="14" />
               Import
               <input type="file" accept=".json" class="sr-only" @change="onImport" />
@@ -94,10 +97,16 @@
           <RouterLink to="/characters/new" class="btn-primary gap-2">
             <PlusIcon :size="14" /> Create a Character
           </RouterLink>
-          <label class="btn-secondary cursor-pointer gap-2">
+          <label
+            class="btn-secondary cursor-pointer gap-2"
+            title="Import a .json file exported from The Grimoire"
+          >
             <UploadIcon :size="14" /> Import from File
             <input type="file" accept=".json" class="sr-only" @change="onImport" />
           </label>
+          <p class="text-2xs font-body text-mist/60 mt-1 text-center">
+            Accepts .json files exported from The Grimoire
+          </p>
         </div>
       </div>
 
@@ -131,10 +140,12 @@ import { ref, onMounted } from 'vue'
 import { PlusIcon, UploadIcon, CloudIcon, BookOpenIcon, CheckIcon, XCircleIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
+import { useConfirm } from '@/shared/composables/useConfirm'
 import CharacterCard from '@/characters/components/CharacterCard.vue'
 
 const store = useCharactersStore()
 const auth = useAuthStore()
+const { confirm } = useConfirm()
 const importResult = ref<{ imported: number; errors: string[] } | null>(null)
 
 onMounted(() => store.load())
@@ -159,11 +170,15 @@ function downloadExport(id: string) {
   URL.revokeObjectURL(url)
 }
 
-function confirmDelete(id: string) {
+async function confirmDelete(id: string) {
   const c = store.getById(id)
-  if (confirm(`Remove "${c?.identity.name}" from your tome? This cannot be undone.`)) {
-    store.remove(id)
-  }
+  const ok = await confirm({
+    title: 'Remove Character',
+    body: `Remove "${c?.identity.name}" from your tome? This cannot be undone.`,
+    confirmLabel: 'Remove',
+    variant: 'danger',
+  })
+  if (ok) store.remove(id)
 }
 </script>
 

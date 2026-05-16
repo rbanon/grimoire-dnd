@@ -242,7 +242,7 @@ export const useCharactersStore = defineStore('characters', () => {
         try {
           toAdd.push(migrateCharacter({ ...(parsed as object), id: generateId(), updatedAt: now() }))
         } catch {
-          errors.push('Unrecognized format. Expected a DnD Creator character export.')
+          errors.push('Unrecognized file format. Please use a .json file exported from The Grimoire (via the Export button on a character card).')
         }
       }
     }

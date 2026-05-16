@@ -152,12 +152,14 @@ import { ref, computed } from 'vue'
 import { PlusIcon, XIcon, SwordIcon, StarIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { useRoll } from '@/shared/composables/useRoll'
+import { useConfirm } from '@/shared/composables/useConfirm'
 import type { Character, CombatFavorite, InventoryItem } from '@/shared/types/character'
 import AddToCombatModal from './AddToCombatModal.vue'
 import FavoriteSpellCard from './FavoriteSpellCard.vue'
 
 const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
+const { confirm } = useConfirm()
 const { rollD20, rollDamage } = useRoll()
 
 const showModal = ref(false)
@@ -200,6 +202,14 @@ function rollWeaponDmg(fav: CombatFavorite) {
 }
 
 async function removeFavorite(id: string) {
+  const fav = favorites.value.find(f => f.id === id)
+  const ok = await confirm({
+    title: 'Remove Favorite',
+    body: `Remove "${fav?.weaponName ?? fav?.spellName ?? 'this favorite'}" from combat favorites?`,
+    confirmLabel: 'Remove',
+    variant: 'danger',
+  })
+  if (!ok) return
   await store.update(props.character.id, {
     combatFavorites: favorites.value.filter(f => f.id !== id),
   })

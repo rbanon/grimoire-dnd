@@ -3,7 +3,12 @@
 
     <!-- Name row -->
     <div class="flex items-center gap-2">
-      <p class="font-heading text-sm text-arcane-pale flex-1 min-w-0 truncate">{{ cantrip.name }}</p>
+      <button
+        type="button"
+        class="font-heading text-sm text-arcane-pale flex-1 min-w-0 truncate text-left hover:text-arcane-bright transition-colors"
+        title="Cast cantrip"
+        @click="$emit('cast')"
+      >{{ cantrip.name }}</button>
       <!-- Favorite toggle -->
       <button
         type="button"
@@ -89,7 +94,7 @@ const props = defineProps<{
   cantripEditMode: boolean
   isFavorite: boolean
 }>()
-defineEmits<{ remove: []; toggleFavorite: [] }>()
+defineEmits<{ remove: []; toggleFavorite: []; cast: [] }>()
 
 const infoPanel = useInfoPanel()
 

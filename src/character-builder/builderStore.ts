@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch, nextTick } from 'vue'
 import { z } from 'zod'
-import type { Alignment, AbilityScores } from '@/shared/types/character'
-import { CharacterSchema } from '@/shared/types/character'
+import type { Alignment, AbilityScores, InventoryItem } from '@/shared/types/character'
+import { CharacterSchema, computeModifier } from '@/shared/types/character'
 import { storageGet, storageSet, storageRemove } from '@/shared/lib/storage'
 import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
-import { getSpellSlots, getSpellProfile } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 7
@@ -26,6 +26,8 @@ export function pbCostDelta(from: number, to: number): number {
 
 // ── Draft shape ───────────────────────────────────────────────────────────────
 export interface BuilderDraft {
+  // Internal — holy symbol / emblem descriptions keyed by slot "${gi}_${si}"
+  holySymbolDescriptions: Record<string, string>
   currentStep: number
 
   // Step 1 — Identity
@@ -52,6 +54,7 @@ export interface BuilderDraft {
   raceSpeed: number
   raceSizeCategory: string
   raceAbilityBonuses: Partial<Record<keyof AbilityScores, number>>
+  raceLanguageCount: number
   subraceIndex: string
   subraceName: string
   subraceAbilityBonuses: Partial<Record<keyof AbilityScores, number>>
@@ -74,8 +77,9 @@ export interface BuilderDraft {
   availableSubclasses: { index: string; name: string }[]
   level: number
   useMilestones: boolean
-  hpMethod: 'average' | 'max' | 'manual'
+  hpMethod: 'average' | 'max' | 'manual' | 'roll'
   manualMaxHp: number
+  rolledHpPerLevel: number[]
 
   // Step 3 — Abilities
   abilityMethod: 'pointbuy' | 'standard' | 'manual'
@@ -90,6 +94,13 @@ export interface BuilderDraft {
   useStartingEquipment: boolean
   manualGold: number
 
+  // Step 3b — Ability Score Improvements (one entry per ASI level unlocked)
+  // Key = class level granting the ASI (e.g. 4, 8, 12…), value = per-ability allocations
+  asiAllocations: Record<number, Partial<Record<keyof AbilityScores, number>>>
+
+  // Step 5b — Starting inventory (resolved from equipment step choices)
+  startingInventory: InventoryItem[]
+
   // Step 6 — Spells
   selectedCantrips: { index: string; name: string }[]
   selectedSpells: { index: string; name: string; level: number }[]
@@ -103,18 +114,21 @@ const defaultDraft = (): BuilderDraft => ({
   age: '', gender: '', height: '', weight: '', eyes: '', skin: '', hair: '',
   appearanceNotes: '', personalityTraits: '', ideals: '', bonds: '', flaws: '', biography: '',
   raceIndex: '', raceName: '', raceSpeed: 30, raceSizeCategory: 'Medium',
-  raceAbilityBonuses: {}, subraceIndex: '', subraceName: '',
+  raceAbilityBonuses: {}, raceLanguageCount: 2, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
   backgroundIndex: '', backgroundName: '', backgroundSkillProficiencies: [],
   classIndex: '', className: '', classHitDie: 8, classSpellcastingAbility: null,
   classSkillChoices: 2, classSkillOptions: [],
   subclassIndex: '', subclassName: '', availableSubclasses: [],
-  level: 1, useMilestones: false, hpMethod: 'average', manualMaxHp: 8,
+  level: 1, useMilestones: false, hpMethod: 'average', manualMaxHp: 8, rolledHpPerLevel: [],
+  holySymbolDescriptions: {},
   abilityMethod: 'pointbuy',
   baseScores: { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 },
   standardArrayAssignments: {},
   selectedSkills: [], selectedLanguages: [],
   useStartingEquipment: true, manualGold: 0,
+  startingInventory: [],
+  asiAllocations: {},
   selectedCantrips: [], selectedSpells: [],
 })
 
@@ -131,14 +145,16 @@ export const useBuilderStore = defineStore('builder', () => {
   const isSpellcaster = computed(() => draft.value.classSpellcastingAbility !== null)
   const totalSteps = computed(() => isSpellcaster.value ? TOTAL_STEPS : TOTAL_STEPS - 1)
 
-  // Effective ability scores (base + racial bonuses)
+  // Effective ability scores (base + racial bonuses + ASI allocations), capped at 20
   const effectiveScores = computed<AbilityScores>(() => {
     const b = draft.value.baseScores
     const rb = draft.value.raceAbilityBonuses
     const sb = draft.value.subraceAbilityBonuses
+    const allAsis = draft.value.asiAllocations
     const keys: (keyof AbilityScores)[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
     return keys.reduce((acc, k) => {
-      acc[k] = b[k] + (rb[k] ?? 0) + (sb[k] ?? 0)
+      const asiTotal = Object.values(allAsis).reduce((sum, alloc) => sum + (alloc[k] ?? 0), 0)
+      acc[k] = Math.min(20, b[k] + (rb[k] ?? 0) + (sb[k] ?? 0) + asiTotal)
       return acc
     }, {} as AbilityScores)
   })
@@ -161,23 +177,89 @@ export const useBuilderStore = defineStore('builder', () => {
       const avg = Math.floor(hd / 2) + 1
       return hd + (avg * (lv - 1)) + conMod * lv
     }
+    if (draft.value.hpMethod === 'roll') {
+      const rolls = draft.value.rolledHpPerLevel
+      if (rolls.length < lv) return 0
+      return rolls.slice(0, lv).reduce((sum, roll, idx) => {
+        // Level 1 always gets max hit die + conMod; subsequent levels get roll + conMod (min 1)
+        return sum + (idx === 0 ? hd + conMod : Math.max(1, roll + conMod))
+      }, 0)
+    }
     return draft.value.manualMaxHp
   })
 
   // Step validation
-  const stepErrors = computed<Record<number, string[]>>(() => ({
-    1: [
-      !draft.value.name.trim() ? 'Name is required' : '',
-      !draft.value.raceIndex ? 'Select a race' : '',
-      !draft.value.backgroundIndex ? 'Select a background' : '',
-    ].filter(Boolean),
-    2: [!draft.value.classIndex ? 'Select a class' : ''].filter(Boolean),
-    3: [
-      draft.value.abilityMethod === 'pointbuy' && pointsRemaining.value < 0
-        ? 'Too many points spent' : '',
-    ].filter(Boolean),
-    4: [], 5: [], 6: [], 7: [],
-  }))
+  const stepErrors = computed<Record<number, string[]>>(() => {
+    // Step 3 ability errors
+    const abilityErrors: string[] = []
+    if (draft.value.abilityMethod === 'pointbuy') {
+      if (pointsRemaining.value < 0) abilityErrors.push('Too many points spent')
+      else if (pointsRemaining.value > 0) abilityErrors.push(`${pointsRemaining.value} point${pointsRemaining.value > 1 ? 's' : ''} left to spend`)
+    } else if (draft.value.abilityMethod === 'standard') {
+      const assigned = Object.keys(draft.value.standardArrayAssignments).length
+      if (assigned < 6) abilityErrors.push(`Assign all standard array values (${assigned}/6 done)`)
+    }
+    // ASI validation
+    const activeAsis = getAsiLevels(draft.value.classIndex).filter(l => l <= draft.value.level)
+    for (const asiLevel of activeAsis) {
+      const spent = Object.values(draft.value.asiAllocations[asiLevel] ?? {}).reduce((s, v) => s + v, 0)
+      if (spent < 2) {
+        abilityErrors.push(`Level ${asiLevel} ASI: ${spent}/2 points allocated`)
+        break
+      }
+    }
+
+    return {
+      1: [
+        !draft.value.name.trim() ? 'Name is required' : '',
+        !draft.value.raceIndex ? 'Select a race' : '',
+        !draft.value.backgroundIndex ? 'Select a background' : '',
+      ].filter(Boolean),
+      2: [
+        !draft.value.classIndex ? 'Select a class' : '',
+        draft.value.classIndex && draft.value.level >= 3 && draft.value.availableSubclasses.length > 0 && !draft.value.subclassIndex
+          ? 'Select a subclass' : '',
+      ].filter(Boolean),
+      3: abilityErrors,
+      4: [
+        draft.value.selectedSkills.length < (draft.value.classSkillChoices || 2)
+          ? `Choose ${draft.value.classSkillChoices || 2} skill${(draft.value.classSkillChoices || 2) > 1 ? 's' : ''} (${draft.value.selectedSkills.length} selected)` : '',
+      ].filter(Boolean),
+      5: [],
+      6: (() => {
+        if (!isSpellcaster.value) return []
+        const profile = getSpellProfile(draft.value.classIndex)
+        if (!profile) return []
+        const levelIdx = draft.value.level - 1
+        const errors: string[] = []
+        // Cantrip limit
+        const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
+        if (cantripLimit > 0 && draft.value.selectedCantrips.length < cantripLimit) {
+          errors.push(`Select ${cantripLimit - draft.value.selectedCantrips.length} more cantrip${cantripLimit - draft.value.selectedCantrips.length > 1 ? 's' : ''} (${draft.value.selectedCantrips.length}/${cantripLimit})`)
+        }
+        // Spell limit
+        if (profile.castingType === 'known') {
+          const spellLimit = profile.spellsKnown?.[levelIdx] ?? 0
+          if (spellLimit > 0 && draft.value.selectedSpells.length < spellLimit) {
+            errors.push(`Select ${spellLimit - draft.value.selectedSpells.length} more spell${spellLimit - draft.value.selectedSpells.length > 1 ? 's' : ''} (${draft.value.selectedSpells.length}/${spellLimit})`)
+          }
+        } else if (draft.value.level >= 2) {
+          const slots = getSpellSlots(draft.value.classIndex, draft.value.level)
+          const totalSlots = Object.values(slots).reduce((s: number, v) => s + (v as number), 0)
+          const ability = profile.preparedAbility!
+          const mod = computeModifier(effectiveScores.value[ability as keyof AbilityScores])
+          const lv = draft.value.level
+          const daily = Math.max(1, draft.value.classIndex === 'paladin' ? Math.floor(lv / 2) + mod : lv + mod)
+          const limit = profile.castingType === 'spellbook' ? daily : Math.max(totalSlots, daily)
+          if (limit > 0 && draft.value.selectedSpells.length < limit) {
+            errors.push(`Select ${limit - draft.value.selectedSpells.length} more starting spell${limit - draft.value.selectedSpells.length > 1 ? 's' : ''} (${draft.value.selectedSpells.length}/${limit})`)
+          }
+        }
+        return errors
+      })(),
+      7: [],
+    }
+  })
 
   const canAdvance = computed(() => stepErrors.value[draft.value.currentStep]?.length === 0)
 
@@ -264,6 +346,25 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value.standardArrayAssignments = {}
   }
 
+  // ── ASI helpers ───────────────────────────────────────────────────────────
+
+  function setAsiAllocation(asiLevel: number, key: keyof AbilityScores, value: number) {
+    if (!draft.value.asiAllocations[asiLevel]) draft.value.asiAllocations[asiLevel] = {}
+    if (value <= 0) delete draft.value.asiAllocations[asiLevel][key]
+    else draft.value.asiAllocations[asiLevel][key] = value
+  }
+
+  // Clear ASI allocations and rolled HP that are no longer valid when class changes
+  watch(() => draft.value.classIndex, () => {
+    draft.value.asiAllocations = {}
+    draft.value.rolledHpPerLevel = []
+  })
+  watch(() => draft.value.level, (newLevel) => {
+    for (const lvl of Object.keys(draft.value.asiAllocations).map(Number)) {
+      if (lvl > newLevel) delete draft.value.asiAllocations[lvl]
+    }
+  })
+
   // ── Finalize ──────────────────────────────────────────────────────────────
 
   async function save(): Promise<string> {
@@ -327,7 +428,7 @@ export const useBuilderStore = defineStore('builder', () => {
       otherProficiencies: [],
       resistances: [], immunities: [], vulnerabilities: [], senses: [],
       attacks: [],
-      inventory: [],
+      inventory: d.startingInventory,
       currency: { cp: 0, sp: 0, ep: 0, gp: d.manualGold, pp: 0 },
       spellcasting: d.classSpellcastingAbility ? (() => {
         const castingType = getSpellProfile(d.classIndex)?.castingType ?? 'known'
@@ -382,6 +483,7 @@ export const useBuilderStore = defineStore('builder', () => {
     decrementScore,
     applyStandardArray,
     resetScores,
+    setAsiAllocation,
     save,
   }
 })

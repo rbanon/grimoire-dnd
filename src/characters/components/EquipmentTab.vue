@@ -76,6 +76,16 @@
             {{ item.item.weight }} lb.
           </span>
 
+          <!-- Info button -->
+          <button
+            type="button"
+            class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/30 hover:text-gold-mid opacity-0 group-hover:opacity-100 transition-all"
+            title="Item details"
+            @click="infoPanel.open({ kind: 'item', index: item.item.index })"
+          >
+            <InfoIcon :size="12" />
+          </button>
+
           <!-- Weapon roll buttons + favorite -->
           <template v-if="item.itemType === 'weapon'">
             <button
@@ -335,8 +345,10 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive, watch, nextTick } from 'vue'
-import { PackageIcon, PlusIcon, Trash2Icon, XIcon, SwordIcon, ShieldIcon, StarIcon } from 'lucide-vue-next'
+import { PackageIcon, PlusIcon, Trash2Icon, XIcon, SwordIcon, ShieldIcon, StarIcon, InfoIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
+import { useConfirm } from '@/shared/composables/useConfirm'
+import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus } from '@/shared/lib/derivedStats'
 import { useRoll } from '@/shared/composables/useRoll'
@@ -345,6 +357,8 @@ import { generateId } from '@/shared/lib/uuid'
 
 const props = defineProps<{ character: Character; editMode?: boolean }>()
 const store = useCharactersStore()
+const { confirm } = useConfirm()
+const infoPanel = useInfoPanel()
 const { rollD20, rollDamage } = useRoll()
 
 // ── Derived stats ─────────────────────────────────────────────────────────────
@@ -442,6 +456,14 @@ async function adjustQuantity(itemId: string, delta: number) {
 }
 
 async function removeItem(itemId: string) {
+  const item = props.character.inventory.find(i => i.id === itemId)
+  const ok = await confirm({
+    title: 'Remove Item',
+    body: `Remove "${item?.item.name ?? 'this item'}" from your inventory?`,
+    confirmLabel: 'Remove',
+    variant: 'danger',
+  })
+  if (!ok) return
   await store.update(props.character.id, {
     inventory: props.character.inventory.filter((i) => i.id !== itemId),
   })

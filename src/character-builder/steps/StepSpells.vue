@@ -76,6 +76,13 @@
         </div>
       </section>
 
+      <p
+        v-if="showValidation && cantripLimit > 0 && cantripLimit !== Infinity && builder.draft.selectedCantrips.length < cantripLimit"
+        class="text-xs font-body text-blood-bright"
+      >
+        Selecciona {{ cantripLimit - builder.draft.selectedCantrips.length }} cantrip{{ cantripLimit - builder.draft.selectedCantrips.length !== 1 ? 's' : '' }} más para continuar.
+      </p>
+
       <!-- ── Spells Known (known casters: Bard, Ranger, Sorcerer, Warlock) ── -->
       <section v-if="profile?.castingType === 'known' && spellLimit > 0" class="space-y-4">
         <div class="flex items-center justify-between">
@@ -98,6 +105,13 @@
         >
           <PlusIcon :size="12" /> Add Spell
         </button>
+
+        <p
+          v-if="showValidation && builder.draft.selectedSpells.length < spellLimit"
+          class="text-xs font-body text-blood-bright"
+        >
+          Selecciona {{ spellLimit - builder.draft.selectedSpells.length }} hechizo{{ spellLimit - builder.draft.selectedSpells.length !== 1 ? 's' : '' }} más para continuar.
+        </p>
       </section>
 
       <!-- ── Prepared Spells (Cleric, Druid, Paladin) ──────────────────── -->
@@ -131,6 +145,13 @@
         >
           <PlusIcon :size="12" /> Add Spell
         </button>
+
+        <p
+          v-if="showValidation && builder.draft.level >= 2 && builder.draft.selectedSpells.length < preparedSpellLimit"
+          class="text-xs font-body text-blood-bright"
+        >
+          Selecciona {{ preparedSpellLimit - builder.draft.selectedSpells.length }} hechizo{{ preparedSpellLimit - builder.draft.selectedSpells.length !== 1 ? 's' : '' }} más para continuar.
+        </p>
       </section>
 
       <!-- Shared SpellPickerModal (known + prepared/spellbook) -->
@@ -139,6 +160,8 @@
         :class-index="builder.draft.classIndex"
         :class-name="builder.draft.className"
         :known-indices="builder.draft.selectedSpells.map(s => s.index)"
+        :known-spells="builder.draft.selectedSpells"
+        :slots-per-level="slotsPerLevel"
         :max-level="maxSpellLevel"
         :limit="activeSpellLimit"
         @close="showSpellPicker = false"
@@ -158,7 +181,8 @@ import { InfoIcon, PlusIcon, XIcon } from 'lucide-vue-next'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
-import { getSpellProfile, getMaxSpellLevel } from '@/character-builder/classMeta'
+import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
+import { getSpellProfile, getMaxSpellLevel, getSpellSlots } from '@/character-builder/classMeta'
 import { computeModifier } from '@/shared/types/character'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 import SpellPickerModal from '@/characters/components/SpellPickerModal.vue'
@@ -197,6 +221,7 @@ const SelectedSpellList = defineComponent({
 // ── Store & composables ───────────────────────────────────────────────────────
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
+const { showValidation } = useBuilderValidation()
 const showSpellPicker = ref(false)
 
 // ── Spell profile helpers ─────────────────────────────────────────────────────
@@ -215,17 +240,45 @@ const cantripLimit  = computed(() => profile.value?.cantripsKnown[levelIdx.value
 const spellLimit    = computed(() => profile.value?.spellsKnown?.[levelIdx.value] ?? 0)
 const maxSpellLevel = computed(() => getMaxSpellLevel(builder.draft.classIndex, builder.draft.level))
 
-// Prepared / spellbook limit = ability_mod + level (paladin: CHA_mod + floor(level/2))
-const preparedSpellLimit = computed(() => {
+// Total spell slots available at this level (used as a floor for prepared casters)
+const totalSlotCount = computed(() => {
+  const s = getSpellSlots(builder.draft.classIndex, builder.draft.level)
+  return s.level1 + s.level2 + s.level3 + s.level4 + s.level5 + s.level6 + s.level7 + s.level8 + s.level9
+})
+
+// Per-level slot map for prepared casters — enforces per-level caps in the modal
+const slotsPerLevel = computed((): Record<number, number> | undefined => {
+  if (profile.value?.castingType !== 'prepared') return undefined
+  const s = getSpellSlots(builder.draft.classIndex, builder.draft.level)
+  const result: Record<number, number> = {}
+  const entries: [number, number][] = [
+    [1, s.level1], [2, s.level2], [3, s.level3], [4, s.level4], [5, s.level5],
+    [6, s.level6], [7, s.level7], [8, s.level8], [9, s.level9],
+  ]
+  for (const [lvl, count] of entries) {
+    if (count > 0) result[lvl] = count
+  }
+  return result
+})
+
+// Daily prepared limit per rules (paladin: CHA_mod + floor(level/2); others: ability_mod + level)
+const dailyPreparedLimit = computed(() => {
   const p = profile.value
   if (!p || p.castingType === 'known') return 0
-  const ability = p.preparedAbility!
-  const mod = computeModifier(builder.effectiveScores[ability])
+  const mod = computeModifier(builder.effectiveScores[p.preparedAbility!])
   const level = builder.draft.level
   const raw = builder.draft.classIndex === 'paladin'
     ? Math.floor(level / 2) + mod
     : level + mod
   return Math.max(1, raw)
+})
+
+// Builder limit for prepared/spellbook: at least totalSlotCount so users aren't blocked by low ability scores
+const preparedSpellLimit = computed(() => {
+  const p = profile.value
+  if (!p || p.castingType === 'known') return 0
+  if (p.castingType === 'spellbook') return dailyPreparedLimit.value
+  return Math.max(totalSlotCount.value, dailyPreparedLimit.value)
 })
 
 // Unified limit used by the shared modal
@@ -261,7 +314,13 @@ const preparedSectionNote = computed(() => {
   if (p.castingType === 'spellbook') {
     return `Wizards prepare ${abilityName} modifier + level spells from their spellbook each day. These are your starting prepared spells — you can add more to your spellbook from the character sheet.`
   }
-  return `${builder.draft.className}s prepare ${abilityName} modifier + level spells per day. Select your starting prepared spells; you can change them each long rest.`
+  const mod = computeModifier(builder.effectiveScores[p.preparedAbility!])
+  const sign = mod >= 0 ? `+${mod}` : `${mod}`
+  const level = builder.draft.level
+  const formulaText = builder.draft.classIndex === 'paladin'
+    ? `${abilityName} mod (${sign}) + ½ level (${Math.floor(level / 2)}) = ${dailyPreparedLimit.value}`
+    : `${abilityName} mod (${sign}) + level (${level}) = ${dailyPreparedLimit.value}`
+  return `Pre-select your starting spells — you can pick up to ${preparedSpellLimit.value}. Daily preparation limit: ${formulaText}. You may swap prepared spells after each long rest.`
 })
 
 // ── Cantrip fetch ─────────────────────────────────────────────────────────────

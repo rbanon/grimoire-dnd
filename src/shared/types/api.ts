@@ -53,11 +53,47 @@ export interface ApiStartingEquipment {
   quantity: number
 }
 
+// ── Equipment option type tree ────────────────────────────────────────────────
+
+export interface ApiEqCountedRef {
+  option_type: 'counted_reference'
+  count: number
+  of: ApiReference
+}
+
+export interface ApiEqCategoryRef {
+  option_set_type: 'equipment_category'
+  equipment_category: ApiReference
+}
+
+export interface ApiEqOptionsArray {
+  option_set_type: 'options_array'
+  options: ApiEqOptionEntry[]
+}
+
+export interface ApiEqChoice {
+  option_type: 'choice'
+  choice: { desc?: string; choose: number; from: ApiEqCategoryRef | ApiEqOptionsArray }
+}
+
+export interface ApiEqMultiple {
+  option_type: 'multiple'
+  items: ApiEqOptionEntry[]
+}
+
+export type ApiEqOptionEntry = ApiEqCountedRef | ApiEqChoice | ApiEqMultiple
+
 export interface ApiEquipmentOption {
   desc: string
   choose: number
   type: string
-  from: unknown
+  from: ApiEqOptionsArray | ApiEqCategoryRef
+}
+
+export interface ApiEquipmentCategory {
+  index: string
+  name: string
+  equipment: ApiReference[]
 }
 
 // ── Races ─────────────────────────────────────────────────────────────────────

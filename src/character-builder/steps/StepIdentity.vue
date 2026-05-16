@@ -247,6 +247,7 @@ import { useBuilderStore } from '@/character-builder/builderStore'
 import { getRaceMeta } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
+import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import type { ApiRace } from '@/shared/types/api'
 import PickerCard from '@/character-builder/components/PickerCard.vue'
 import AlignmentGrid from '@/character-builder/components/AlignmentGrid.vue'
@@ -256,6 +257,7 @@ const MAX_PORTRAIT_BYTES = 1_048_576 // 1 MB
 
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
+const { showValidation } = useBuilderValidation()
 const fileInput = ref<HTMLInputElement | null>(null)
 const portraitError = ref('')
 const showAppearance = ref(false)
@@ -280,9 +282,9 @@ function onFileChange(event: Event) {
 const touched = reactive({ name: false, race: false, background: false })
 
 const fieldErrors = computed(() => ({
-  name:       touched.name       && !builder.draft.name.trim(),
-  race:       touched.race       && !builder.draft.raceIndex,
-  background: touched.background && !builder.draft.backgroundIndex,
+  name:       (touched.name       || showValidation.value) && !builder.draft.name.trim(),
+  race:       (touched.race       || showValidation.value) && !builder.draft.raceIndex,
+  background: (touched.background || showValidation.value) && !builder.draft.backgroundIndex,
 }))
 
 const { data: raceList, isPending: racesLoading, isError: racesError } = useQuery({
@@ -316,6 +318,7 @@ async function selectRace(index: string, name: string) {
       return acc
     }, {} as Record<string, number>)
     builder.draft.availableSubraces = detail.subraces.map(s => ({ index: s.index, name: s.name }))
+    builder.draft.raceLanguageCount = detail.languages.length || 1
   } catch { /* ignore */ }
 }
 

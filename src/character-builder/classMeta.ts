@@ -238,6 +238,29 @@ export function getMaxSpellLevel(classIndex: string, level: number): number {
   return FULL_CASTER_MAX[level] ?? 0
 }
 
+// ─── Ability Score Improvements ───────────────────────────────────────────────
+
+// SRD 5e 2014 — levels at which each class grants an ASI
+const ASI_LEVELS: Record<string, readonly number[]> = {
+  barbarian: [4, 8, 12, 16, 19],
+  bard:      [4, 8, 12, 16, 19],
+  cleric:    [4, 8, 12, 16, 19],
+  druid:     [4, 8, 12, 16, 19],
+  fighter:   [4, 6, 8, 12, 14, 16, 19],
+  monk:      [4, 8, 12, 16, 19],
+  paladin:   [4, 8, 12, 16, 19],
+  ranger:    [4, 8, 12, 16, 19],
+  rogue:     [4, 8, 10, 12, 16, 19],
+  sorcerer:  [4, 8, 12, 16, 19],
+  warlock:   [4, 8, 12, 16, 19],
+  wizard:    [4, 8, 12, 16, 19],
+}
+
+/** Levels at which the class grants an Ability Score Improvement, in order. */
+export function getAsiLevels(classIndex: string): number[] {
+  return [...(ASI_LEVELS[classIndex] ?? [])]
+}
+
 export function getClassMeta(index: string): ClassMeta {
   return CLASS_META[index] ?? {
     glyph: '⚔', hitDie: 8, flavor: '', tags: [], primaryAbility: '—', saves: '—',

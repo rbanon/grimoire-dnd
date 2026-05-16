@@ -18,7 +18,13 @@
               <p class="font-heading text-base text-arcane-pale">Añadir Hechizos</p>
               <p class="text-2xs font-body text-mist mt-0.5">
                 {{ className }}
-                <template v-if="isFinite(limit ?? Infinity)">
+                <template v-if="slotsPerLevel">
+                  · Lv {{ selectedLevel }}:
+                  <span :class="remainingAtLevel <= 0 ? 'text-blood-bright' : ''">
+                    {{ knownAtCurrentLevel + selectedAtCurrentLevel }}/{{ slotsPerLevel[selectedLevel] ?? 0 }}
+                  </span>
+                </template>
+                <template v-else-if="isFinite(limit ?? Infinity)">
                   · <span :class="remaining === 0 ? 'text-blood-bright' : ''">
                     {{ (knownIndices.length + selected.length) }}/{{ limit }}
                   </span>
@@ -139,6 +145,10 @@ const props = defineProps<{
   classIndex: string
   className: string
   knownIndices: string[]
+  /** When provided alongside slotsPerLevel, enables per-level limit enforcement */
+  knownSpells?: { index: string; level: number }[]
+  /** Per spell-level slot counts — enforces per-level caps instead of a single total */
+  slotsPerLevel?: Record<number, number>
   limit?: number
   initialLevel?: number
   maxLevel?: number
@@ -186,9 +196,27 @@ const remaining = computed(() => {
   return props.limit - props.knownIndices.length - selected.value.length
 })
 
+// Per-level limit helpers (only active when slotsPerLevel is provided)
+const knownAtCurrentLevel = computed(() =>
+  (props.knownSpells ?? []).filter(s => s.level === selectedLevel.value).length
+)
+const selectedAtCurrentLevel = computed(() =>
+  selected.value.filter(s => s.level === selectedLevel.value).length
+)
+const limitAtCurrentLevel = computed(() =>
+  props.slotsPerLevel ? (props.slotsPerLevel[selectedLevel.value] ?? 0) : Infinity
+)
+const remainingAtLevel = computed(() =>
+  limitAtCurrentLevel.value - knownAtCurrentLevel.value - selectedAtCurrentLevel.value
+)
+
 function isKnown(index: string) { return props.knownIndices.includes(index) }
 function isSelected(index: string) { return selected.value.some(s => s.index === index) }
-function isBlocked(index: string) { return !isSelected(index) && remaining.value <= 0 }
+function isBlocked(index: string) {
+  if (isSelected(index)) return false
+  if (props.slotsPerLevel) return remainingAtLevel.value <= 0
+  return remaining.value <= 0
+}
 
 function toggle(s: { index: string; name: string }) {
   if (isSelected(s.index)) {

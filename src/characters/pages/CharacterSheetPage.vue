@@ -345,9 +345,7 @@
             <div class="flex flex-col gap-1 self-center shrink-0">
               <button
                 class="btn-secondary text-xs py-1.5 px-3"
-                :class="character.combat.hitDiceRemaining <= 0 ? 'opacity-40 pointer-events-none' : ''"
-                :disabled="character.combat.hitDiceRemaining <= 0"
-                @click="shortRest"
+                @click="showShortRest = true"
               >Short Rest</button>
               <button
                 class="btn-secondary text-xs py-1.5 px-3"
@@ -549,6 +547,15 @@
     <!-- ── Roll overlays ─────────────────────────────────────────────────────── -->
     <RollConfirm />
     <RollResult />
+
+    <!-- ── Short rest modal ──────────────────────────────────────────────────── -->
+    <ShortRestModal
+      v-if="character"
+      :show="showShortRest"
+      :character="character"
+      @close="showShortRest = false"
+      @rested="onShortRested"
+    />
   </div>
 </template>
 
@@ -570,6 +577,7 @@ import FeaturesTab from '@/characters/components/FeaturesTab.vue'
 import BioTab from '@/characters/components/BioTab.vue'
 import RollResult from '@/shared/components/RollResult.vue'
 import RollConfirm from '@/shared/components/RollConfirm.vue'
+import ShortRestModal from '@/characters/components/ShortRestModal.vue'
 
 const props = defineProps<{ id: string }>()
 const store = useCharactersStore()
@@ -578,6 +586,7 @@ const dialog = useDialog()
 const { rollD20 } = useRoll()
 
 const editMode = ref(true)
+const showShortRest = ref(false)
 
 const portraitFileInput = ref<HTMLInputElement | null>(null)
 
@@ -883,25 +892,31 @@ const hitDie = computed(() =>
   CLASS_META[character.value?.identity.class.index ?? '']?.hitDie ?? 8,
 )
 
-function shortRest() {
+function onShortRested(result: { healed: number; diceSpent: number; rolls: number[]; newHp: number; newHitDice: number }) {
   const c = character.value
-  if (!c || c.combat.hitDiceRemaining <= 0) return
-  const conMod = computeModifier(c.abilityScores.con)
-  const roll = Math.ceil(Math.random() * hitDie.value)
-  const healed = Math.max(1, roll + conMod)
-  const newHp = Math.min(c.combat.maxHp, c.combat.currentHp + healed)
+  if (!c) return
+  showShortRest.value = false
   store.update(c.id, {
-    combat: { ...c.combat, currentHp: newHp, hitDiceRemaining: c.combat.hitDiceRemaining - 1 },
+    combat: { ...c.combat, currentHp: result.newHp, hitDiceRemaining: result.newHitDice },
   })
-  const conStr = conMod >= 0 ? `+${conMod}` : String(conMod)
+  const items: { label: string; value: string }[] = []
+  if (result.diceSpent > 0) {
+    const conMod = computeModifier(c.abilityScores.con)
+    const conStr = conMod >= 0 ? `+${conMod}` : String(conMod)
+    items.push(
+      { label: 'Rolls', value: result.rolls.map(r => `${r}${conStr}`).join(', ') },
+      { label: 'HP recovered', value: `+${result.healed} (${result.newHp} / ${c.combat.maxHp})` },
+    )
+  } else {
+    items.push({ label: 'HP recovered', value: 'None (no dice spent)' })
+  }
+  items.push({ label: 'Hit dice left', value: `${result.newHitDice}d${hitDie.value}` })
   dialog.open({
     title: 'Short Rest',
-    body: 'You spend a moment to catch your breath and tend your wounds.',
-    items: [
-      { label: 'Hit die rolled', value: `d${hitDie.value} → ${roll} ${conStr} = ${roll + conMod}` },
-      { label: 'HP recovered',   value: `+${healed} (${newHp} / ${c.combat.maxHp})` },
-      { label: 'Hit dice left',  value: `${c.combat.hitDiceRemaining - 1}d${hitDie.value}` },
-    ],
+    body: result.diceSpent > 0
+      ? 'You spend a moment to catch your breath and tend your wounds.'
+      : 'You take a short rest. Some abilities may recover without spending hit dice.',
+    items,
   })
 }
 

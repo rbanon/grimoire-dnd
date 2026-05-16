@@ -5,10 +5,20 @@
     <section class="space-y-4">
       <div class="rule-gold">
         <span>Skill Proficiencies</span>
-        <span class="text-mist text-xs ml-2 font-body">
-          Choose {{ maxSkills }} — {{ selectedCount }}/{{ maxSkills }} selected
+        <span
+          class="text-xs ml-2 font-body"
+          :class="selectedCount === maxSkills ? 'text-gold-mid' : selectedCount > maxSkills ? 'text-blood-bright' : 'text-mist'"
+        >
+          {{ selectedCount }}/{{ maxSkills }} selected
         </span>
       </div>
+      <p
+        v-if="selectedCount < maxSkills"
+        class="text-xs font-body -mt-2"
+        :class="showValidation ? 'text-blood-bright' : 'text-mist'"
+      >
+        Escoge {{ maxSkills - selectedCount }} habilidad{{ maxSkills - selectedCount > 1 ? 'es' : '' }} más.
+      </p>
 
       <div v-if="skillsLoading" class="flex justify-center py-8"><GrimoireSpinner /></div>
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -29,7 +39,6 @@
             :disabled="!canSelectMore && !isSkillSelected(skill.index)"
             @change="toggleSkill(skill.index)"
           />
-          <!-- Custom checkbox -->
           <div
             class="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all duration-150"
             :class="isSkillSelected(skill.index)
@@ -59,7 +68,27 @@
 
     <!-- Languages -->
     <section class="space-y-4">
-      <div class="rule-gold"><span>Languages</span></div>
+      <div class="rule-gold">
+        <span>Languages</span>
+        <span
+          class="text-xs ml-2 font-body"
+          :class="langCount > maxLanguages ? 'text-blood-bright' : langCount === maxLanguages ? 'text-gold-mid' : 'text-mist'"
+        >
+          {{ langCount }}/{{ maxLanguages }} selected
+        </span>
+      </div>
+
+      <div class="flex items-start gap-2 px-3 py-2 rounded border border-shadow/40 bg-depths/20">
+        <span class="text-gold-dim/60 text-xs shrink-0 mt-0.5">ℹ</span>
+        <p class="text-xs font-body text-mist">
+          <span class="text-stone">{{ builder.draft.raceName }}</span> grants
+          <span class="text-stone">{{ builder.draft.raceLanguageCount }}</span> language{{ builder.draft.raceLanguageCount !== 1 ? 's' : '' }} (e.g. Common + racial).
+          <template v-if="bgLanguageChoices > 0">
+            Your background adds <span class="text-stone">{{ bgLanguageChoices }}</span> of your choice.
+          </template>
+          Select up to <span class="text-stone">{{ maxLanguages }}</span> total.
+        </p>
+      </div>
 
       <div v-if="languagesLoading" class="flex justify-center py-4"><GrimoireSpinner /></div>
       <div v-else class="flex flex-wrap gap-2">
@@ -70,7 +99,9 @@
           class="px-3 py-1.5 rounded text-sm font-heading tracking-wide border transition-all duration-150"
           :class="isLangSelected(lang.index)
             ? 'border-gold-mid/50 bg-gold-dim/10 text-gold-pale'
-            : 'border-shadow text-ash hover:border-gold-dim/20 hover:text-stone'"
+            : canSelectMoreLang || isLangSelected(lang.index)
+              ? 'border-shadow text-ash hover:border-gold-dim/20 hover:text-stone'
+              : 'border-shadow text-mist/40 cursor-not-allowed opacity-50'"
           @click="toggleLang(lang.index)"
         >
           {{ lang.name }}
@@ -90,6 +121,8 @@ import { useQuery } from '@tanstack/vue-query'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
+import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
+import type { ApiBackground } from '@/shared/types/api'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
 const SKILL_ABILITY: Record<string, string> = {
@@ -103,6 +136,7 @@ const SKILL_ABILITY: Record<string, string> = {
 
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
+const { showValidation } = useBuilderValidation()
 
 const { data: skillData, isPending: skillsLoading } = useQuery({
   queryKey: ['skills'],
@@ -122,6 +156,18 @@ const { data: langData, isPending: languagesLoading } = useQuery({
 })
 const languages = computed(() => langData.value?.results ?? [])
 
+const { data: bgDetail } = useQuery({
+  queryKey: computed(() => ['background-detail', builder.draft.backgroundIndex]),
+  queryFn: () => fiveEApi.getBackground(builder.draft.backgroundIndex) as Promise<ApiBackground>,
+  staleTime: Infinity,
+  enabled: computed(() => !!builder.draft.backgroundIndex),
+})
+
+const bgLanguageChoices = computed(() => bgDetail.value?.language_options?.choose ?? 0)
+const maxLanguages = computed(() => builder.draft.raceLanguageCount + bgLanguageChoices.value)
+const langCount = computed(() => builder.draft.selectedLanguages.length)
+const canSelectMoreLang = computed(() => langCount.value < maxLanguages.value)
+
 const maxSkills = computed(() => builder.draft.classSkillChoices || 2)
 const selectedCount = computed(() => builder.draft.selectedSkills.length)
 const canSelectMore = computed(() => selectedCount.value < maxSkills.value)
@@ -139,7 +185,7 @@ function isLangSelected(index: string) { return builder.draft.selectedLanguages.
 function toggleLang(index: string) {
   if (isLangSelected(index)) {
     builder.draft.selectedLanguages = builder.draft.selectedLanguages.filter(l => l !== index)
-  } else {
+  } else if (canSelectMoreLang.value) {
     builder.draft.selectedLanguages.push(index)
   }
 }

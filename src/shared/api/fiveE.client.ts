@@ -6,6 +6,7 @@ import type {
   ApiBackground,
   ApiSpell,
   ApiEquipment,
+  ApiEquipmentCategory,
   ApiMagicItem,
   ApiSkill,
   ApiFeature,
@@ -71,6 +72,7 @@ export const fiveEApi = {
   listEquipment: () => get<ApiReferenceList>('/equipment'),
   getEquipment: (index: string) => get<ApiEquipment>(`/equipment/${index}`),
   listEquipmentCategories: () => get<ApiReferenceList>('/equipment-categories'),
+  getEquipmentCategory: (index: string) => get<ApiEquipmentCategory>(`/equipment-categories/${index}`),
 
   // Magic items — no server-side filtering
   listMagicItems: () => get<ApiReferenceList>('/magic-items'),

@@ -79,18 +79,76 @@
 
       <!-- Right column -->
       <div class="space-y-4">
-        <ReviewSection
-          v-if="builder.isSpellcaster && d.selectedCantrips.length"
-          title="Cantrips"
-          :items="d.selectedCantrips.map(c => c.name)"
-          :empty="'None selected'"
-        />
-        <div class="card p-4 space-y-2">
-          <p class="label">Equipment</p>
-          <p class="text-sm font-body text-ash">
-            {{ d.useStartingEquipment ? 'Starting equipment from class & background' : `${d.manualGold} gp to spend` }}
-          </p>
+
+        <!-- Cantrips -->
+        <div v-if="builder.isSpellcaster && d.selectedCantrips.length" class="card p-4 space-y-2">
+          <p class="label">Cantrips</p>
+          <div class="flex flex-wrap gap-1.5">
+            <span
+              v-for="c in d.selectedCantrips"
+              :key="c.index"
+              class="px-2 py-0.5 rounded text-xs font-heading border border-arcane-bright/30 bg-arcane-bright/8 text-arcane-pale"
+            >
+              {{ c.name }}
+            </span>
+          </div>
         </div>
+
+        <!-- Spells by level -->
+        <div v-if="builder.isSpellcaster && d.selectedSpells.length" class="card p-4 space-y-3">
+          <p class="label">Spells</p>
+          <div v-for="(group, lvl) in spellsByLevel" :key="lvl" class="space-y-1">
+            <p class="text-2xs font-heading tracking-wider text-mist uppercase">
+              {{ lvl === '1' ? '1st' : lvl === '2' ? '2nd' : lvl === '3' ? '3rd' : `${lvl}th` }} Level
+            </p>
+            <div class="flex flex-wrap gap-1.5">
+              <span
+                v-for="s in group"
+                :key="s.index"
+                class="px-2 py-0.5 rounded text-xs font-heading border border-arcane-bright/20 bg-arcane-bright/5 text-arcane-pale/80"
+              >
+                {{ s.name }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Equipment -->
+    <div>
+      <div class="rule-gold"><span>Equipment</span></div>
+
+      <div v-if="!d.useStartingEquipment" class="card p-4 mt-3">
+        <p class="text-sm font-body text-ash">Starting with <span class="text-gold-mid font-heading">{{ d.manualGold }} gp</span> to spend.</p>
+      </div>
+
+      <div v-else-if="d.startingInventory.length" class="mt-3 space-y-1.5">
+        <div
+          v-for="item in d.startingInventory"
+          :key="item.id"
+          class="card px-3 py-2 flex items-center gap-3"
+        >
+          <span class="text-base shrink-0">{{ itemGlyph(item.itemType) }}</span>
+          <div class="flex-1 min-w-0">
+            <span class="text-sm font-heading text-stone">{{ item.item.name }}</span>
+            <span v-if="item.quantity > 1" class="ml-1.5 text-xs text-mist font-body">×{{ item.quantity }}</span>
+          </div>
+          <div class="flex gap-3 text-xs font-heading text-mist shrink-0">
+            <span v-if="item.damage" class="text-vellum">{{ item.damage }} {{ item.damageType }}</span>
+            <span v-if="item.armorClass" class="text-vellum">AC {{ item.armorClass }}</span>
+            <span v-if="item.range" class="text-ash">{{ item.range }}</span>
+            <span
+              class="px-1.5 py-0.5 rounded border text-2xs uppercase tracking-wide"
+              :class="itemTypeBadge(item.itemType)"
+            >{{ item.itemType }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="card p-4 mt-3">
+        <p class="text-sm font-body text-mist">Starting equipment from class &amp; background (details on character sheet).</p>
       </div>
     </div>
 
@@ -134,6 +192,7 @@ import { computeModifier } from '@/shared/types/character'
 import { computeProficiencyBonus } from '@/shared/lib/derivedStats'
 import { getClassMeta } from '@/character-builder/classMeta'
 import ReviewSection from '@/character-builder/components/ReviewSection.vue'
+import type { InventoryItem } from '@/shared/types/character'
 
 const builder = useBuilderStore()
 const auth = useAuthStore()
@@ -164,4 +223,26 @@ const keyStats = computed(() => [
 ])
 
 const skillLabels = computed(() => d.value.selectedSkills)
+
+const spellsByLevel = computed(() => {
+  const groups: Record<string, { index: string; name: string; level: number }[]> = {}
+  for (const s of d.value.selectedSpells) {
+    const key = String(s.level)
+    if (!groups[key]) groups[key] = []
+    groups[key].push(s)
+  }
+  return groups
+})
+
+function itemGlyph(type: InventoryItem['itemType']): string {
+  if (type === 'weapon') return '⚔'
+  if (type === 'armor') return '🛡'
+  return '🎒'
+}
+
+function itemTypeBadge(type: InventoryItem['itemType']): string {
+  if (type === 'weapon') return 'border-blood-base/30 text-blood-mid'
+  if (type === 'armor') return 'border-gold-dim/30 text-gold-dim'
+  return 'border-shadow text-mist'
+}
 </script>

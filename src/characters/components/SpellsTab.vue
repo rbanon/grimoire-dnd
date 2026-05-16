@@ -69,6 +69,7 @@
             :is-favorite="isSpellFav(c.index)"
             @remove="removeSpell(c.index, 'cantrip')"
             @toggle-favorite="toggleSpellFav(c, 'cantrip')"
+            @cast="castingSpell = c"
           />
         </div>
         <p v-else class="font-body text-mist text-sm mb-4">No cantrips known.</p>
@@ -147,6 +148,7 @@
             :is-favorite="isSpellFav(spell.index)"
             @remove="removeSpell(spell.index, spell.prepared ? 'prepared' : 'known')"
             @toggle-favorite="toggleSpellFav(spell, 'spell')"
+            @cast="castingSpell = spell"
           />
         </div>
         <p v-else class="font-body text-mist/50 text-xs italic">No spells at this level.</p>
@@ -186,6 +188,16 @@
       />
 
     </template>
+
+    <!-- Cast spell modal -->
+    <CastSpellModal
+      v-if="castingSpell"
+      :show="castingSpell !== null"
+      :spell="castingSpell"
+      :character="props.character"
+      @close="castingSpell = null"
+      @cast="onCastSpell"
+    />
   </div>
 </template>
 
@@ -193,6 +205,7 @@
 import { ref, computed } from 'vue'
 import { SparklesIcon, PlusIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
+import { useConfirm } from '@/shared/composables/useConfirm'
 import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
 import { getSpellProfile, getMaxSpellLevel } from '@/character-builder/classMeta'
@@ -202,13 +215,16 @@ import CantripCard from './CantripCard.vue'
 import CantripPickerModal from './CantripPickerModal.vue'
 import SpellCard from './SpellCard.vue'
 import SpellPickerModal from './SpellPickerModal.vue'
+import CastSpellModal from './CastSpellModal.vue'
 
 const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
+const { confirm } = useConfirm()
 const cantripEditMode = ref(false)
 const spellEditMode = ref(false)
 const showCantripPicker = ref(false)
 const spellPickerLevel = ref<number | null>(null)
+const castingSpell = ref<SpellReference | null>(null)
 
 const cantripLimit = computed(() => {
   const profile = getSpellProfile(props.character.identity.class.index)
@@ -301,6 +317,19 @@ async function toggleSlot(lvl: number, pip: number) {
   })
 }
 
+// ── Cast spell ────────────────────────────────────────────────────────────────
+
+async function onCastSpell(slotLevel: number) {
+  if (!sc.value || slotLevel === 0) return
+  const key = slotKey(slotLevel)
+  const current = sc.value.slotsUsed[key]
+  const max = sc.value.slotsMax[key]
+  if (current >= max) return
+  await store.update(props.character.id, {
+    spellcasting: { ...sc.value, slotsUsed: { ...sc.value.slotsUsed, [key]: current + 1 } },
+  })
+}
+
 // ── Add spells ────────────────────────────────────────────────────────────────
 
 function openSpellPicker(lvl: number) { spellPickerLevel.value = lvl }
@@ -325,6 +354,14 @@ async function onAddSpells(spells: { index: string; name: string; level: number 
 
 async function removeSpell(index: string, list: 'cantrip' | 'known' | 'prepared') {
   if (!sc.value) return
+  const label = list === 'cantrip' ? 'cantrip' : 'spell'
+  const ok = await confirm({
+    title: `Remove ${label.charAt(0).toUpperCase() + label.slice(1)}`,
+    body: `Remove this ${label} from your character?`,
+    confirmLabel: 'Remove',
+    variant: 'danger',
+  })
+  if (!ok) return
   const updated = { ...sc.value }
   if (list === 'cantrip')  updated.cantripsKnown  = sc.value.cantripsKnown.filter(s => s.index !== index)
   if (list === 'known')    updated.spellsKnown    = sc.value.spellsKnown.filter(s => s.index !== index)

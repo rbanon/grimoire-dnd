@@ -7,6 +7,7 @@
     <AppFooter />
     <InfoPanel />
     <AppDialog />
+    <ConfirmDialog />
   </div>
 </template>
 
@@ -15,4 +16,5 @@ import AppNav from './AppNav.vue'
 import AppFooter from './AppFooter.vue'
 import InfoPanel from '@/shared/components/InfoPanel.vue'
 import AppDialog from '@/shared/components/AppDialog.vue'
+import ConfirmDialog from '@/shared/components/ConfirmDialog.vue'
 </script>

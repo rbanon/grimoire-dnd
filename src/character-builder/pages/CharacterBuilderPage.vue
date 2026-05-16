@@ -159,6 +159,37 @@
             class="font-body text-xs text-arcane-bright text-center mb-2"
           >{{ builder.saveError }}</p>
 
+          <!-- Validation toast -->
+          <Transition name="val-toast">
+            <div
+              v-if="showToast && stepErrors.length"
+              class="mb-3 px-4 py-3 rounded border border-blood-base/40 bg-blood-deep/20"
+            >
+              <div class="flex items-start gap-2">
+                <AlertCircleIcon :size="13" class="text-blood-bright shrink-0 mt-0.5" />
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-heading text-blood-bright mb-1">Obligatorio antes de continuar:</p>
+                  <ul class="space-y-0.5">
+                    <li
+                      v-for="err in stepErrors"
+                      :key="err"
+                      class="text-xs font-body text-blood-mid/90 flex items-start gap-1"
+                    >
+                      <span class="text-blood-base shrink-0 mt-px">·</span> {{ err }}
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  class="shrink-0 text-mist hover:text-ash transition-colors"
+                  @click="showToast = false"
+                >
+                  <XIcon :size="13" />
+                </button>
+              </div>
+            </div>
+          </Transition>
+
           <div class="flex items-center justify-between gap-4">
             <div class="md:hidden font-mono text-xs text-mist tracking-wide">
               {{ builder.draft.currentStep }} / {{ builder.totalSteps }}
@@ -169,7 +200,7 @@
               <button
                 v-if="builder.draft.currentStep > 1"
                 class="btn-secondary gap-2"
-                @click="builder.back()"
+                @click="handleBack"
               >
                 <ChevronLeftIcon :size="14" /> Back
               </button>
@@ -205,9 +236,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ChevronLeftIcon, ChevronRightIcon, CheckIcon,
-  AlertCircleIcon, BookmarkIcon, BookOpenIcon, PlusIcon,
+  AlertCircleIcon, BookmarkIcon, BookOpenIcon, PlusIcon, XIcon,
 } from 'lucide-vue-next'
 import { useBuilderStore } from '@/character-builder/builderStore'
+import { useConfirm } from '@/shared/composables/useConfirm'
+import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import StepIdentity from '@/character-builder/steps/StepIdentity.vue'
 import StepClass from '@/character-builder/steps/StepClass.vue'
 import StepAbilities from '@/character-builder/steps/StepAbilities.vue'
@@ -218,9 +251,13 @@ import StepReview from '@/character-builder/steps/StepReview.vue'
 
 const builder = useBuilderStore()
 const router = useRouter()
+const { confirm } = useConfirm()
+const { trigger: triggerValidation, reset: resetValidation } = useBuilderValidation()
 const showErrors = ref(false)
+const showToast = ref(false)
 const prevStep = ref(1)
 const resumeScreen = ref(false)
+let _toastTimer: ReturnType<typeof setTimeout> | null = null
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII']
 
@@ -273,18 +310,43 @@ function getStepLabelClass(step: number) {
   return 'text-mist'
 }
 
+function scrollTop() { window.scrollTo({ top: 0, behavior: 'smooth' }) }
+
+function clearValidation() {
+  showErrors.value = false
+  showToast.value = false
+  resetValidation()
+  if (_toastTimer) { clearTimeout(_toastTimer); _toastTimer = null }
+}
+
 function tryGoTo(step: number) {
   if (step < builder.draft.currentStep) {
+    clearValidation()
     prevStep.value = builder.draft.currentStep
     builder.goTo(step)
   }
 }
 
 function handleNext() {
-  if (!builder.canAdvance) { showErrors.value = true; return }
-  showErrors.value = false
+  if (!builder.canAdvance) {
+    showErrors.value = true
+    triggerValidation()
+    showToast.value = true
+    if (_toastTimer) clearTimeout(_toastTimer)
+    _toastTimer = setTimeout(() => { showToast.value = false }, 7000)
+    return
+  }
+  clearValidation()
   prevStep.value = builder.draft.currentStep
   builder.next()
+  scrollTop()
+}
+
+function handleBack() {
+  clearValidation()
+  prevStep.value = builder.draft.currentStep
+  builder.back()
+  scrollTop()
 }
 
 async function handleSave() {
@@ -299,8 +361,14 @@ function startFresh() {
   resumeScreen.value = false
 }
 
-function confirmDiscard() {
-  if (confirm('Discard this character draft? Your progress will be lost.')) {
+async function confirmDiscard() {
+  const ok = await confirm({
+    title: 'Discard Draft',
+    body: 'Discard this character draft? Your progress will be lost.',
+    confirmLabel: 'Discard',
+    variant: 'danger',
+  })
+  if (ok) {
     builder.clearDraft()
     router.push('/')
   }
@@ -316,4 +384,7 @@ function confirmDiscard() {
 .slide-left-leave-to    { opacity: 0; transform: translateX(-20px); }
 .slide-right-enter-from { opacity: 0; transform: translateX(-20px); }
 .slide-right-leave-to   { opacity: 0; transform: translateX(20px); }
+
+.val-toast-enter-active, .val-toast-leave-active { transition: all 0.2s ease; }
+.val-toast-enter-from, .val-toast-leave-to { opacity: 0; transform: translateY(6px); }
 </style>

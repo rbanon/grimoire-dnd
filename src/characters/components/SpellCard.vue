@@ -4,7 +4,12 @@
     <!-- Name row -->
     <div class="flex items-center gap-2">
       <span v-if="spell.prepared" class="text-gold-mid text-2xs shrink-0" title="Prepared">◆</span>
-      <p class="font-heading text-sm text-arcane-pale/90 flex-1 min-w-0 truncate">{{ spell.name }}</p>
+      <button
+        type="button"
+        class="font-heading text-sm text-arcane-pale/90 flex-1 min-w-0 truncate text-left hover:text-arcane-pale transition-colors"
+        title="Cast spell"
+        @click="$emit('cast')"
+      >{{ spell.name }}</button>
       <!-- Favorite toggle -->
       <button
         type="button"
@@ -80,7 +85,7 @@ const props = defineProps<{
   spellEditMode: boolean
   isFavorite: boolean
 }>()
-defineEmits<{ remove: []; toggleFavorite: [] }>()
+defineEmits<{ remove: []; toggleFavorite: []; cast: [] }>()
 
 const infoPanel = useInfoPanel()
 

@@ -25,6 +25,10 @@
         />
       </div>
 
+      <p v-if="showValidation && !builder.draft.classIndex" class="text-xs font-body text-blood-bright">
+        Selecciona una clase para continuar.
+      </p>
+
       <!-- Class detail panel -->
       <Transition name="fade">
         <div
@@ -50,8 +54,8 @@
 
       <!-- Subclass picker (level >= 3) -->
       <Transition name="expand">
-        <div v-if="builder.draft.level >= 3 && builder.draft.availableSubclasses.length > 0">
-          <label class="label mb-2">Subclass (optional at this level)</label>
+        <div v-if="builder.draft.level >= 3 && builder.draft.availableSubclasses.length > 0" class="space-y-2">
+          <label class="label mb-2">Subclass</label>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="sub in builder.draft.availableSubclasses"
@@ -66,6 +70,9 @@
               {{ sub.name }}
             </button>
           </div>
+          <p v-if="showValidation && !builder.draft.subclassIndex" class="text-xs font-body text-blood-bright">
+            Selecciona una subclase para continuar.
+          </p>
         </div>
       </Transition>
     </section>
@@ -127,6 +134,7 @@
               :class="builder.draft.hpMethod === opt.value
                 ? 'border-gold-mid/50 bg-gold-dim/8'
                 : 'border-shadow hover:border-gold-dim/20'"
+              @click="opt.value === 'roll' ? openRollModal() : null"
             >
               <input type="radio" :value="opt.value" v-model="builder.draft.hpMethod" class="sr-only" />
               <div
@@ -135,22 +143,58 @@
               >
                 <div v-if="builder.draft.hpMethod === opt.value" class="w-1.5 h-1.5 rounded-full bg-gold-mid" />
               </div>
-              <div>
+              <div class="flex-1">
                 <p class="text-sm font-heading text-stone">{{ opt.label }}</p>
                 <p class="text-xs text-mist font-body">{{ opt.desc }}</p>
               </div>
-              <span v-if="opt.value !== 'manual'" class="ml-auto font-heading text-sm text-gold-mid">
+              <span v-if="opt.value !== 'manual' && opt.value !== 'roll'" class="ml-auto font-heading text-sm text-gold-mid">
                 {{ opt.preview }}
               </span>
+              <button
+                v-if="opt.value === 'roll' && builder.draft.hpMethod === 'roll'"
+                type="button"
+                class="ml-auto text-xs font-heading text-gold-mid border border-gold-dim/40 rounded px-2 py-0.5 hover:bg-gold-dim/10 transition-all"
+                @click.stop="openRollModal"
+              >
+                {{ builder.computedMaxHp > 0 ? `${builder.computedMaxHp} HP · Reroll` : 'Roll Dice' }}
+              </button>
             </label>
           </div>
 
+          <!-- Manual HP input -->
+          <div v-if="builder.draft.hpMethod === 'manual'" class="mt-3 flex items-center gap-3">
+            <label class="text-xs font-heading text-mist shrink-0" for="manual-hp">Max HP</label>
+            <input
+              id="manual-hp"
+              v-model.number="builder.draft.manualMaxHp"
+              type="number"
+              min="1"
+              max="999"
+              class="input-base w-24 text-lg font-heading text-center"
+            />
+          </div>
+
           <!-- Max HP display -->
-          <div class="mt-3 text-center">
+          <div class="mt-3 text-center" v-else>
             <span class="text-xs font-heading text-mist">Computed Max HP</span>
-            <p class="font-heading text-3xl text-gold-mid">{{ builder.computedMaxHp }}</p>
+            <p class="font-heading text-3xl" :class="builder.computedMaxHp > 0 ? 'text-gold-mid' : 'text-mist/40'">
+              {{ builder.computedMaxHp > 0 ? builder.computedMaxHp : '—' }}
+            </p>
+            <p v-if="builder.draft.hpMethod === 'roll' && builder.computedMaxHp === 0" class="text-xs font-body text-mist mt-1">
+              Click "Roll Dice" above to set HP
+            </p>
           </div>
         </div>
+
+        <!-- HP Roll Modal -->
+        <HpRollModal
+          :show="showRollModal"
+          :hit-die="builder.draft.classHitDie"
+          :level="builder.draft.level"
+          :con-mod="conMod"
+          @close="showRollModal = false"
+          @confirm="onRollConfirm"
+        />
       </div>
     </section>
 
@@ -159,19 +203,35 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import { getClassMeta } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
+import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import type { ApiClass, ApiProfChoiceOption } from '@/shared/types/api'
 import { computeProficiencyBonus } from '@/shared/lib/derivedStats'
 import PickerCard from '@/character-builder/components/PickerCard.vue'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
+import HpRollModal from '@/character-builder/components/HpRollModal.vue'
 
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
+const { showValidation } = useBuilderValidation()
+const showRollModal = ref(false)
+
+const conMod = computed(() => Math.floor((builder.effectiveScores.con - 10) / 2))
+
+function openRollModal() {
+  builder.draft.hpMethod = 'roll'
+  showRollModal.value = true
+}
+
+function onRollConfirm(rolls: number[]) {
+  builder.draft.rolledHpPerLevel = rolls
+  showRollModal.value = false
+}
 
 const { data: classList, isPending: classesLoading, isError: classesError } = useQuery({
   queryKey: ['classes'],
@@ -185,10 +245,13 @@ const profBonus = computed(() => computeProficiencyBonus(builder.draft.level))
 const hpOptions = computed(() => {
   const hd = builder.draft.classHitDie
   const avg = Math.floor(hd / 2) + 1
+  const mod = conMod.value
+  const conStr = mod >= 0 ? `+${mod}` : String(mod)
   return [
-    { value: 'average' as const, label: 'Average', desc: `${hd} + ${avg} per level after 1st`, preview: `~${builder.computedMaxHp}` },
-    { value: 'max'     as const, label: 'Maximum', desc: `Take the max (${hd}) every level`,   preview: `${builder.draft.classHitDie * builder.draft.level}+` },
-    { value: 'manual'  as const, label: 'Manual',  desc: 'Enter your own value',                preview: '' },
+    { value: 'average' as const, label: 'Average', desc: `d${hd}${conStr} per level (${hd} at 1st, ${avg}${conStr} after)`, preview: `~${builder.computedMaxHp}` },
+    { value: 'max'     as const, label: 'Maximum', desc: `${hd}${conStr} every level`, preview: `${builder.computedMaxHp}` },
+    { value: 'roll'    as const, label: 'Roll Dice', desc: `Roll d${hd} for each level after 1st — open the dice roller`, preview: '' },
+    { value: 'manual'  as const, label: 'Manual', desc: 'Enter any value directly', preview: '' },
   ]
 })
 
