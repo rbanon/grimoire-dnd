@@ -25,6 +25,12 @@ export function pbCostDelta(from: number, to: number): number {
 }
 
 // ── Draft shape ───────────────────────────────────────────────────────────────
+export interface SpellsByLevelEntry {
+  cantripsGained: { index: string; name: string }[]
+  spellsGained: { index: string; name: string; level: number }[]
+  spellReplaced: { fromIndex: string; to: { index: string; name: string; level: number } } | null
+}
+
 export interface BuilderDraft {
   // Internal — holy symbol / emblem descriptions keyed by slot "${gi}_${si}"
   holySymbolDescriptions: Record<string, string>
@@ -117,6 +123,8 @@ export interface BuilderDraft {
   // Step 6 — Spells
   selectedCantrips: { index: string; name: string }[]
   selectedSpells: { index: string; name: string; level: number }[]
+  // Per-level spell selection for known casters (Bard, Sorcerer, Warlock, Ranger)
+  spellsByLevel: Record<number, SpellsByLevelEntry>
 }
 
 const defaultDraft = (): BuilderDraft => ({
@@ -147,7 +155,7 @@ const defaultDraft = (): BuilderDraft => ({
   levelChoices: {},
   featsByLevel: {},
   asiAllocations: {},
-  selectedCantrips: [], selectedSpells: [],
+  selectedCantrips: [], selectedSpells: [], spellsByLevel: {},
 })
 
 const DraftSchema = z.object({ currentStep: z.number() }).passthrough()
@@ -206,6 +214,35 @@ export const useBuilderStore = defineStore('builder', () => {
     return draft.value.manualMaxHp
   })
 
+  const activeCantrips = computed<{ index: string; name: string }[]>(() => {
+    const profile = getSpellProfile(draft.value.classIndex)
+    if (!profile || profile.castingType !== 'known') return draft.value.selectedCantrips
+    const seen = new Set<string>()
+    const result: { index: string; name: string }[] = []
+    for (let lvl = 1; lvl <= draft.value.level; lvl++) {
+      for (const c of draft.value.spellsByLevel[lvl]?.cantripsGained ?? []) {
+        if (!seen.has(c.index)) { seen.add(c.index); result.push(c) }
+      }
+    }
+    return result
+  })
+
+  const activeSpells = computed<{ index: string; name: string; level: number }[]>(() => {
+    const profile = getSpellProfile(draft.value.classIndex)
+    if (!profile || profile.castingType !== 'known') return draft.value.selectedSpells
+    const pool = new Map<string, { index: string; name: string; level: number }>()
+    for (let lvl = 1; lvl <= draft.value.level; lvl++) {
+      const entry = draft.value.spellsByLevel[lvl]
+      if (!entry) continue
+      for (const s of entry.spellsGained) pool.set(s.index, s)
+      if (entry.spellReplaced) {
+        pool.delete(entry.spellReplaced.fromIndex)
+        pool.set(entry.spellReplaced.to.index, entry.spellReplaced.to)
+      }
+    }
+    return [...pool.values()]
+  })
+
   // Step validation
   const stepErrors = computed<Record<number, string[]>>(() => {
     // Step 3 ability errors
@@ -253,25 +290,35 @@ export const useBuilderStore = defineStore('builder', () => {
       if (!profile) return []
       const levelIdx = draft.value.level - 1
       const errors: string[] = []
-      const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
-      if (cantripLimit > 0 && draft.value.selectedCantrips.length < cantripLimit) {
-        errors.push(`Select ${cantripLimit - draft.value.selectedCantrips.length} more cantrip${cantripLimit - draft.value.selectedCantrips.length > 1 ? 's' : ''} (${draft.value.selectedCantrips.length}/${cantripLimit})`)
-      }
       if (profile.castingType === 'known') {
-        const spellLimit = profile.spellsKnown?.[levelIdx] ?? 0
-        if (spellLimit > 0 && draft.value.selectedSpells.length < spellLimit) {
-          errors.push(`Select ${spellLimit - draft.value.selectedSpells.length} more spell${spellLimit - draft.value.selectedSpells.length > 1 ? 's' : ''} (${draft.value.selectedSpells.length}/${spellLimit})`)
+        const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
+        if (cantripLimit > 0 && activeCantrips.value.length < cantripLimit) {
+          const diff = cantripLimit - activeCantrips.value.length
+          errors.push(`Select ${diff} more cantrip${diff > 1 ? 's' : ''} (${activeCantrips.value.length}/${cantripLimit})`)
         }
-      } else if (draft.value.level >= 2) {
-        const slots = getSpellSlots(draft.value.classIndex, draft.value.level)
-        const totalSlots = Object.values(slots).reduce((s: number, v) => s + (v as number), 0)
-        const ability = profile.preparedAbility!
-        const mod = computeModifier(effectiveScores.value[ability as keyof AbilityScores])
-        const lv = draft.value.level
-        const daily = Math.max(1, draft.value.classIndex === 'paladin' ? Math.floor(lv / 2) + mod : lv + mod)
-        const limit = profile.castingType === 'spellbook' ? daily : Math.max(totalSlots, daily)
-        if (limit > 0 && draft.value.selectedSpells.length < limit) {
-          errors.push(`Select ${limit - draft.value.selectedSpells.length} more starting spell${limit - draft.value.selectedSpells.length > 1 ? 's' : ''} (${draft.value.selectedSpells.length}/${limit})`)
+        const spellLimit = profile.spellsKnown?.[levelIdx] ?? 0
+        if (spellLimit > 0 && activeSpells.value.length < spellLimit) {
+          const diff = spellLimit - activeSpells.value.length
+          errors.push(`Select ${diff} more spell${diff > 1 ? 's' : ''} (${activeSpells.value.length}/${spellLimit})`)
+        }
+      } else {
+        const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
+        if (cantripLimit > 0 && draft.value.selectedCantrips.length < cantripLimit) {
+          const diff = cantripLimit - draft.value.selectedCantrips.length
+          errors.push(`Select ${diff} more cantrip${diff > 1 ? 's' : ''} (${draft.value.selectedCantrips.length}/${cantripLimit})`)
+        }
+        if (draft.value.level >= 2) {
+          const slots = getSpellSlots(draft.value.classIndex, draft.value.level)
+          const totalSlots = Object.values(slots).reduce((s: number, v) => s + (v as number), 0)
+          const ability = profile.preparedAbility!
+          const mod = computeModifier(effectiveScores.value[ability as keyof AbilityScores])
+          const lv = draft.value.level
+          const daily = Math.max(1, draft.value.classIndex === 'paladin' ? Math.floor(lv / 2) + mod : lv + mod)
+          const limit = profile.castingType === 'spellbook' ? daily : Math.max(totalSlots, daily)
+          if (limit > 0 && draft.value.selectedSpells.length < limit) {
+            const diff = limit - draft.value.selectedSpells.length
+            errors.push(`Select ${diff} more starting spell${diff > 1 ? 's' : ''} (${draft.value.selectedSpells.length}/${limit})`)
+          }
         }
       }
       return errors
@@ -435,6 +482,7 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value.rolledHpPerLevel = []
     draft.value.levelChoices = {}
     draft.value.featsByLevel = {}
+    draft.value.spellsByLevel = {}
   })
   watch(() => draft.value.level, (newLevel) => {
     for (const lvl of Object.keys(draft.value.asiAllocations).map(Number)) {
@@ -442,6 +490,9 @@ export const useBuilderStore = defineStore('builder', () => {
     }
     for (const lvl of Object.keys(draft.value.featsByLevel).map(Number)) {
       if (lvl > newLevel) delete draft.value.featsByLevel[lvl]
+    }
+    for (const lvl of Object.keys(draft.value.spellsByLevel).map(Number)) {
+      if (lvl > newLevel) delete draft.value.spellsByLevel[lvl]
     }
   })
 
@@ -515,14 +566,15 @@ export const useBuilderStore = defineStore('builder', () => {
       currency: { cp: 0, sp: 0, ep: 0, gp: d.manualGold, pp: 0 },
       spellcasting: d.classSpellcastingAbility ? (() => {
         const castingType = getSpellProfile(d.classIndex)?.castingType ?? 'known'
+        const finalCantrips = castingType === 'known' ? activeCantrips.value : d.selectedCantrips
+        const finalSpells   = castingType === 'known' ? activeSpells.value   : d.selectedSpells
         return {
           spellcastingAbility: d.classSpellcastingAbility as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha',
           slotsMax:  getSpellSlots(d.classIndex, d.level),
           slotsUsed: { level1:0, level2:0, level3:0, level4:0, level5:0, level6:0, level7:0, level8:0, level9:0 },
-          cantripsKnown: d.selectedCantrips.map(c => ({ ...c, level: 0 })),
-          // known → spellsKnown; prepared → spellsPrepared; spellbook → both (spellbook + prepared)
-          spellsKnown:    castingType === 'known' || castingType === 'spellbook' ? d.selectedSpells : [],
-          spellsPrepared: castingType === 'prepared' || castingType === 'spellbook' ? d.selectedSpells : [],
+          cantripsKnown: finalCantrips.map(c => ({ ...c, level: 0 })),
+          spellsKnown:    castingType === 'known' || castingType === 'spellbook' ? finalSpells : [],
+          spellsPrepared: castingType === 'prepared' || castingType === 'spellbook' ? finalSpells : [],
           ritualCasting: false,
         }
       })() : null,
@@ -575,6 +627,8 @@ export const useBuilderStore = defineStore('builder', () => {
     resetScores,
     setAsiAllocation,
     setFeatDecision,
+    activeCantrips,
+    activeSpells,
     save,
   }
 })

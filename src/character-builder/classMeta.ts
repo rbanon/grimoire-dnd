@@ -589,6 +589,26 @@ export function getLevelEntry(classIndex: string, level: number): LevelEntry | n
   return CLASS_LEVELS[classIndex]?.[level] ?? null
 }
 
+// ─── Per-level spell/cantrip gain counts ──────────────────────────────────────
+
+/** How many cantrips a known-caster gains when they reach `charLevel`. */
+export function cantripsGainedAtLevel(classIndex: string, charLevel: number): number {
+  const profile = getSpellProfile(classIndex)
+  if (!profile) return 0
+  const curr = profile.cantripsKnown[charLevel - 1] ?? 0
+  const prev = charLevel > 1 ? (profile.cantripsKnown[charLevel - 2] ?? 0) : 0
+  return Math.max(0, curr - prev)
+}
+
+/** How many spells a known-caster gains when they reach `charLevel`. */
+export function spellsGainedAtLevel(classIndex: string, charLevel: number): number {
+  const profile = getSpellProfile(classIndex)
+  if (!profile || !profile.spellsKnown) return 0
+  const curr = profile.spellsKnown[charLevel - 1] ?? 0
+  const prev = charLevel > 1 ? (profile.spellsKnown[charLevel - 2] ?? 0) : 0
+  return Math.max(0, curr - prev)
+}
+
 // ─── Starting gold ────────────────────────────────────────────────────────────
 
 export interface StartingGoldFormula {
