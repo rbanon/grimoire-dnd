@@ -5,14 +5,14 @@
     <section>
       <div class="rule-gold mb-4"><span>Ability Scores</span></div>
 
-      <div class="grid grid-cols-3 gap-2">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <button
           v-for="method in methods"
           :key="method.value"
           type="button"
           class="px-3 py-3 rounded border text-center transition-all duration-150"
           :class="builder.draft.abilityMethod === method.value
-            ? 'border-gold-mid/60 bg-gold-dim/10 text-gold-pale'
+            ? 'border-gold-mid/60 bg-gold-dim/10 text-gold-deep'
             : 'border-shadow bg-abyss text-mist hover:border-gold-dim/20 hover:text-ash'"
           @click="setMethod(method.value)"
         >
@@ -56,10 +56,10 @@
       </div>
 
       <p v-if="showValidation && builder.pointsRemaining > 0" class="text-xs font-body text-blood-bright">
-        Faltan {{ builder.pointsRemaining }} punto{{ builder.pointsRemaining !== 1 ? 's' : '' }} por gastar — gasta todos para continuar.
+        {{ builder.pointsRemaining }} point{{ builder.pointsRemaining !== 1 ? 's' : '' }} left to spend — allocate all points to continue.
       </p>
       <p v-else-if="showValidation && builder.pointsRemaining < 0" class="text-xs font-body text-blood-bright">
-        Has gastado demasiados puntos. Reduce alguna puntuación.
+        Too many points spent — reduce a score to continue.
       </p>
     </section>
 
@@ -98,7 +98,87 @@
         v-if="showValidation && Object.keys(builder.draft.standardArrayAssignments).length < 6"
         class="text-xs font-body text-blood-bright"
       >
-        Asigna todos los valores del array estándar ({{ Object.keys(builder.draft.standardArrayAssignments).length }}/6 asignados).
+        Assign all standard array values ({{ Object.keys(builder.draft.standardArrayAssignments).length }}/6 assigned).
+      </p>
+    </section>
+
+    <!-- Roll -->
+    <section v-else-if="builder.draft.abilityMethod === 'roll'" class="space-y-5">
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <p class="text-sm font-body text-mist max-w-sm">
+          Roll 4 six-sided dice, drop the lowest result — repeat six times, then assign each value to an ability.
+        </p>
+        <button type="button" class="btn-primary shrink-0" @click="rollAllAbilities">
+          Roll All
+        </button>
+      </div>
+
+      <!-- Rolled pool -->
+      <div v-if="builder.draft.rolledAbilityScores.length > 0" class="flex gap-2 flex-wrap">
+        <span
+          v-for="(val, i) in builder.draft.rolledAbilityScores"
+          :key="i"
+          class="px-3 py-1.5 rounded font-heading text-sm border transition-all"
+          :class="isRollIndexUsed(i)
+            ? 'border-shadow/40 text-mist/40 line-through'
+            : 'border-gold-dim/30 text-gold-mid bg-gold-dim/10'"
+        >{{ val }}</span>
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded border border-shadow text-xs font-heading text-mist hover:text-ash hover:border-shadow/80 transition-all"
+          @click="rollAllAbilities"
+        >Reroll</button>
+      </div>
+      <div v-else class="px-4 py-4 rounded border border-shadow/50 bg-depths/20 text-center">
+        <p class="text-sm font-body text-mist">Press <span class="font-heading text-stone">Roll All</span> to generate your six ability scores.</p>
+      </div>
+
+      <!-- Assignment grid -->
+      <div v-if="builder.draft.rolledAbilityScores.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div
+          v-for="ab in abilityDefs"
+          :key="ab.key"
+          class="card p-3 flex flex-col gap-2"
+        >
+          <div class="flex items-baseline justify-between">
+            <p class="font-heading text-xs tracking-[0.15em] text-mist uppercase">{{ ab.label }}</p>
+            <p class="text-2xs font-body text-mist/60">{{ ab.fullName }}</p>
+          </div>
+
+          <div class="text-center leading-none">
+            <p class="font-heading text-2xl text-vellum">
+              {{ builder.draft.rollAssignments[ab.key] !== undefined
+                  ? builder.draft.rolledAbilityScores[builder.draft.rollAssignments[ab.key]!]
+                  : '—' }}
+            </p>
+            <p v-if="racialBonus(ab.key)" class="text-2xs font-heading text-verdant-bright mt-1">
+              +{{ racialBonus(ab.key) }} racial
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-1 justify-center">
+            <button
+              v-for="(val, i) in builder.draft.rolledAbilityScores"
+              :key="i"
+              type="button"
+              class="px-2 py-1 rounded border text-xs font-heading transition-all"
+              :class="builder.draft.rollAssignments[ab.key] === i
+                ? 'border-gold-mid/60 bg-gold-dim/15 text-gold-mid'
+                : isRollIndexUsed(i)
+                  ? 'border-shadow/30 text-mist/30 cursor-not-allowed'
+                  : 'border-shadow text-ash hover:border-gold-dim/40 hover:text-stone'"
+              :disabled="isRollIndexUsed(i) && builder.draft.rollAssignments[ab.key] !== i"
+              @click="assignRoll(ab.key, i)"
+            >{{ val }}</button>
+          </div>
+        </div>
+      </div>
+
+      <p v-if="showValidation && builder.draft.rolledAbilityScores.length < 6" class="text-xs font-body text-blood-bright">
+        Roll your ability scores before continuing.
+      </p>
+      <p v-else-if="showValidation && Object.keys(builder.draft.rollAssignments).length < 6" class="text-xs font-body text-blood-bright">
+        Assign all rolled values ({{ Object.keys(builder.draft.rollAssignments).length }}/6 done).
       </p>
     </section>
 
@@ -117,84 +197,10 @@
       </div>
     </section>
 
-    <!-- ── Ability Score Improvements ──────────────────────────────────── -->
-    <template v-if="activeAsiLevels.length > 0">
-      <div class="rule-gold"><span>Ability Score Improvements</span></div>
-
-      <div
-        v-for="asiLevel in activeAsiLevels"
-        :key="asiLevel"
-        class="card p-5 space-y-4"
-      >
-        <!-- Header -->
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="font-heading text-sm text-vellum">
-              Level {{ asiLevel }} — Ability Score Improvement
-            </p>
-            <p class="text-2xs font-body text-mist mt-0.5">
-              +2 to one ability, or +1 to two different abilities · max 20 per score
-            </p>
-          </div>
-          <span
-            class="text-sm font-heading tabular-nums"
-            :class="asiPointsUsed(asiLevel) === 2 ? 'text-gold-mid' : asiPointsUsed(asiLevel) === 0 ? 'text-mist/50' : 'text-stone'"
-          >{{ asiPointsUsed(asiLevel) }}/2</span>
-        </div>
-
-        <!-- Per-ability adjusters -->
-        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          <div
-            v-for="ab in abilityDefs"
-            :key="ab.key"
-            class="flex flex-col items-center gap-1.5"
-          >
-            <p class="text-2xs font-heading tracking-[0.15em] text-mist uppercase">{{ ab.label }}</p>
-
-            <!-- Score display -->
-            <div class="text-center leading-none">
-              <p class="font-heading text-lg text-vellum">{{ scoreAfterAsi(asiLevel, ab.key) }}</p>
-              <p
-                v-if="asiAlloc(asiLevel, ab.key) > 0"
-                class="text-2xs font-heading text-verdant-bright mt-0.5"
-              >+{{ asiAlloc(asiLevel, ab.key) }} ASI</p>
-              <p v-else class="text-2xs text-mist/30 mt-0.5">+0</p>
-            </div>
-
-            <!-- +/- buttons -->
-            <div class="flex items-center gap-1">
-              <button
-                type="button"
-                class="w-6 h-6 flex items-center justify-center rounded border text-sm font-heading transition-all"
-                :class="canDecreaseAsi(asiLevel, ab.key)
-                  ? 'border-shadow text-mist hover:border-blood-base/50 hover:text-blood-mid cursor-pointer'
-                  : 'border-shadow/20 text-mist/20 cursor-not-allowed'"
-                :disabled="!canDecreaseAsi(asiLevel, ab.key)"
-                @click="changeAsi(asiLevel, ab.key, -1)"
-              >−</button>
-              <button
-                type="button"
-                class="w-6 h-6 flex items-center justify-center rounded border text-sm font-heading transition-all"
-                :class="canIncreaseAsi(asiLevel, ab.key)
-                  ? 'border-shadow text-mist hover:border-gold-dim/50 hover:text-gold-mid cursor-pointer'
-                  : 'border-shadow/20 text-mist/20 cursor-not-allowed'"
-                :disabled="!canIncreaseAsi(asiLevel, ab.key)"
-                @click="changeAsi(asiLevel, ab.key, 1)"
-              >+</button>
-            </div>
-          </div>
-        </div>
-
-        <p v-if="showValidation && asiPointsUsed(asiLevel) < 2" class="text-xs font-body text-blood-bright">
-          Asigna los 2 puntos del ASI de nivel {{ asiLevel }} ({{ asiPointsUsed(asiLevel) }}/2 asignados).
-        </p>
-      </div>
-    </template>
-
-    <!-- Final totals -->
+    <!-- Final totals (racial bonuses + ASIs from Step VI) -->
     <section v-if="showFinalScores" class="space-y-3">
       <div class="rule-gold">
-        <span>Final Scores</span>
+        <span>Effective Scores</span>
         <span class="text-mist text-xs ml-2 font-body">
           {{ finalScoresSubtitle }}
         </span>
@@ -236,13 +242,16 @@ import { computeModifier, type AbilityScores } from '@/shared/types/character'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import AbilityScoreInput from '@/character-builder/components/AbilityScoreInput.vue'
 
+// getAsiLevels still used for "Final Scores" section's subtitle + totalAsiBonus
+
 const builder = useBuilderStore()
 const { showValidation } = useBuilderValidation()
 
 const methods = [
-  { value: 'pointbuy' as const, label: 'Point Buy', desc: `${POINT_BUY_BUDGET} pts to spend` },
+  { value: 'pointbuy' as const, label: 'Point Buy',      desc: `${POINT_BUY_BUDGET} pts to spend` },
   { value: 'standard' as const, label: 'Standard Array', desc: '15 14 13 12 10 8' },
-  { value: 'manual'   as const, label: 'Manual', desc: 'Any values · not recommended' },
+  { value: 'roll'     as const, label: 'Roll (4d6)',      desc: 'Drop lowest, assign' },
+  { value: 'manual'   as const, label: 'Manual',          desc: 'Any values · not recommended' },
 ]
 
 const abilityDefs = [
@@ -272,9 +281,45 @@ function isArrayValueUsed(val: number): boolean {
     abilityDefs.some(ab => builder.draft.baseScores[ab.key] === val)
 }
 
-function setMethod(method: 'pointbuy' | 'standard' | 'manual') {
+function setMethod(method: 'pointbuy' | 'standard' | 'manual' | 'roll') {
   builder.draft.abilityMethod = method
   builder.resetScores()
+}
+
+function rollAllAbilities() {
+  function roll4d6(): number {
+    const dice = Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1)
+    dice.sort((a, b) => a - b)
+    return dice.slice(1).reduce((sum, d) => sum + d, 0)
+  }
+  builder.draft.rolledAbilityScores = Array.from({ length: 6 }, roll4d6)
+  builder.draft.rollAssignments = {}
+  builder.resetScores()
+  // Re-set abilityMethod after resetScores (which doesn't touch abilityMethod)
+  builder.draft.abilityMethod = 'roll'
+}
+
+function isRollIndexUsed(poolIndex: number): boolean {
+  return Object.values(builder.draft.rollAssignments).includes(poolIndex)
+}
+
+function assignRoll(ability: keyof AbilityScores, poolIndex: number) {
+  const currentAssignment = builder.draft.rollAssignments[ability]
+  if (currentAssignment === poolIndex) {
+    // Unassign
+    delete builder.draft.rollAssignments[ability]
+    builder.draft.baseScores[ability] = 8
+    return
+  }
+  // If pool slot already owned by another ability, unassign that first
+  const prev = (Object.entries(builder.draft.rollAssignments) as [keyof AbilityScores, number][])
+    .find(([, v]) => v === poolIndex)?.[0]
+  if (prev) {
+    delete builder.draft.rollAssignments[prev]
+    builder.draft.baseScores[prev] = 8
+  }
+  builder.draft.rollAssignments[ability] = poolIndex
+  builder.draft.baseScores[ability] = builder.draft.rolledAbilityScores[poolIndex]
 }
 
 // ── ASI helpers ───────────────────────────────────────────────────────────────
@@ -287,41 +332,6 @@ const activeAsiLevels = computed(() =>
 /** Allocation for a specific ASI level + ability */
 function asiAlloc(asiLevel: number, key: keyof AbilityScores): number {
   return builder.draft.asiAllocations[asiLevel]?.[key] ?? 0
-}
-
-/** Total points spent in a given ASI */
-function asiPointsUsed(asiLevel: number): number {
-  return Object.values(builder.draft.asiAllocations[asiLevel] ?? {}).reduce((s, v) => s + v, 0)
-}
-
-/** Score just BEFORE applying this ASI (base + racial + all previous ASIs) */
-function scoreBeforeAsi(asiLevel: number, key: keyof AbilityScores): number {
-  const base   = builder.draft.baseScores[key]
-  const racial = racialBonus(key)
-  const prevAsiTotal = activeAsiLevels.value
-    .filter(l => l < asiLevel)
-    .reduce((sum, l) => sum + asiAlloc(l, key), 0)
-  return base + racial + prevAsiTotal
-}
-
-function scoreAfterAsi(asiLevel: number, key: keyof AbilityScores): number {
-  return Math.min(20, scoreBeforeAsi(asiLevel, key) + asiAlloc(asiLevel, key))
-}
-
-function canIncreaseAsi(asiLevel: number, key: keyof AbilityScores): boolean {
-  if (asiPointsUsed(asiLevel) >= 2) return false
-  if (scoreBeforeAsi(asiLevel, key) + asiAlloc(asiLevel, key) >= 20) return false
-  return true
-}
-
-function canDecreaseAsi(asiLevel: number, key: keyof AbilityScores): boolean {
-  return asiAlloc(asiLevel, key) > 0
-}
-
-function changeAsi(asiLevel: number, key: keyof AbilityScores, delta: number) {
-  if (delta > 0 && !canIncreaseAsi(asiLevel, key)) return
-  if (delta < 0 && !canDecreaseAsi(asiLevel, key)) return
-  builder.setAsiAllocation(asiLevel, key, asiAlloc(asiLevel, key) + delta)
 }
 
 /** Sum of all ASI allocations for a given ability (used in Final Scores display) */

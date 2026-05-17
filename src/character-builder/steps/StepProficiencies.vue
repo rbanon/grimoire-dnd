@@ -1,10 +1,32 @@
 <template>
   <div class="max-w-3xl mx-auto px-6 py-8 space-y-10">
 
-    <!-- Skills -->
+    <!-- Background auto-proficiencies (read-only) -->
+    <section v-if="builder.draft.backgroundName" class="space-y-4">
+      <div class="rule-gold"><span>Background Proficiencies</span></div>
+      <p class="text-xs font-body text-mist -mt-2">
+        Automatically granted by your background — no selection needed.
+      </p>
+      <div class="flex flex-wrap gap-2">
+        <span
+          v-for="skill in bgDisplaySkills"
+          :key="skill"
+          class="px-2.5 py-1 rounded border border-gold-dim/25 bg-gold-dim/8 text-xs font-heading text-gold-dim"
+        >{{ skill }}</span>
+        <span
+          v-for="tool in builder.draft.backgroundToolProficiencies"
+          :key="tool"
+          class="px-2.5 py-1 rounded border border-shadow/60 text-xs font-heading text-ash"
+        >{{ tool }}</span>
+        <span v-if="bgDisplaySkills.length === 0 && builder.draft.backgroundToolProficiencies.length === 0"
+          class="text-xs font-body text-mist/50 italic">Loading…</span>
+      </div>
+    </section>
+
+    <!-- Class Skill Choices -->
     <section class="space-y-4">
       <div class="rule-gold">
-        <span>Skill Proficiencies</span>
+        <span>Class Skills</span>
         <span
           class="text-xs ml-2 font-body"
           :class="selectedCount === maxSkills ? 'text-gold-mid' : selectedCount > maxSkills ? 'text-blood-bright' : 'text-mist'"
@@ -17,7 +39,7 @@
         class="text-xs font-body -mt-2"
         :class="showValidation ? 'text-blood-bright' : 'text-mist'"
       >
-        Escoge {{ maxSkills - selectedCount }} habilidad{{ maxSkills - selectedCount > 1 ? 'es' : '' }} más.
+        Choose {{ maxSkills - selectedCount }} more skill{{ maxSkills - selectedCount > 1 ? 's' : '' }}.
       </p>
 
       <div v-if="skillsLoading" class="flex justify-center py-8"><GrimoireSpinner /></div>
@@ -98,7 +120,7 @@
           type="button"
           class="px-3 py-1.5 rounded text-sm font-heading tracking-wide border transition-all duration-150"
           :class="isLangSelected(lang.index)
-            ? 'border-gold-mid/50 bg-gold-dim/10 text-gold-pale'
+            ? 'border-gold-mid/50 bg-gold-dim/10 text-gold-deep'
             : canSelectMoreLang || isLangSelected(lang.index)
               ? 'border-shadow text-ash hover:border-gold-dim/20 hover:text-stone'
               : 'border-shadow text-mist/40 cursor-not-allowed opacity-50'"
@@ -164,6 +186,19 @@ const { data: bgDetail } = useQuery({
 })
 
 const bgLanguageChoices = computed(() => bgDetail.value?.language_options?.choose ?? 0)
+
+// Background auto skills for display (convert stored indices to display names via bgDetail)
+const bgDisplaySkills = computed(() => {
+  if (bgDetail.value) {
+    return bgDetail.value.starting_proficiencies
+      .filter(p => p.index.startsWith('skill-'))
+      .map(p => p.name)
+  }
+  // Fallback: use stored indices capitalized
+  return builder.draft.backgroundSkillProficiencies.map(s =>
+    s.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+  )
+})
 const maxLanguages = computed(() => builder.draft.raceLanguageCount + bgLanguageChoices.value)
 const langCount = computed(() => builder.draft.selectedLanguages.length)
 const canSelectMoreLang = computed(() => langCount.value < maxLanguages.value)

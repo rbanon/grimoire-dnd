@@ -270,3 +270,208 @@ export function getClassMeta(index: string): ClassMeta {
 export function getRaceMeta(index: string): RaceMeta {
   return RACE_META[index] ?? { glyph: '◈', flavor: '', traits: [] }
 }
+
+// ─── Level-based features ─────────────────────────────────────────────────────
+
+export type ChoiceType =
+  | { kind: 'fighting-style'; classIndex: string }
+  | { kind: 'static'; label: string; options: { index: string; name: string; desc: string }[] }
+  | { kind: 'skill'; label: string; from: string[]; count: number }
+  | { kind: 'asi' }
+
+export interface LevelEntry {
+  features: string[]
+  choices?: Record<string, ChoiceType>
+  spellInfo?: string
+}
+
+const FIGHTER_STYLES = [
+  { index: 'archery',      name: 'Archery',               desc: '+2 bonus to attack rolls with ranged weapons' },
+  { index: 'defense',      name: 'Defense',               desc: '+1 to AC while wearing armor' },
+  { index: 'dueling',      name: 'Dueling',               desc: '+2 damage when wielding a melee weapon in one hand and no other weapons' },
+  { index: 'great-weapon', name: 'Great Weapon Fighting', desc: 'Reroll 1s and 2s on damage dice with two-handed weapons' },
+  { index: 'protection',   name: 'Protection',            desc: 'Use reaction to impose disadvantage on attacks against adjacent allies' },
+  { index: 'two-weapon',   name: 'Two-Weapon Fighting',   desc: 'Add ability modifier to off-hand attack damage' },
+]
+const PALADIN_STYLES = [
+  { index: 'defense',      name: 'Defense',               desc: '+1 to AC while wearing armor' },
+  { index: 'dueling',      name: 'Dueling',               desc: '+2 damage when wielding a melee weapon in one hand and no other weapons' },
+  { index: 'great-weapon', name: 'Great Weapon Fighting', desc: 'Reroll 1s and 2s on damage dice with two-handed weapons' },
+  { index: 'protection',   name: 'Protection',            desc: 'Use reaction to impose disadvantage on attacks against adjacent allies' },
+]
+const RANGER_STYLES = [
+  { index: 'archery',      name: 'Archery',               desc: '+2 bonus to attack rolls with ranged weapons' },
+  { index: 'defense',      name: 'Defense',               desc: '+1 to AC while wearing armor' },
+  { index: 'dueling',      name: 'Dueling',               desc: '+2 damage when wielding a melee weapon in one hand and no other weapons' },
+  { index: 'two-weapon',   name: 'Two-Weapon Fighting',   desc: 'Add ability modifier to off-hand attack damage' },
+]
+
+const WARLOCK_PACT_BOONS = [
+  { index: 'chain', name: 'Pact of the Chain', desc: 'Learn Find Familiar; familiar can take the form of an imp, pseudodragon, quasit, or sprite' },
+  { index: 'blade', name: 'Pact of the Blade',  desc: 'Create a pact weapon you are proficient with; it disappears if you dismiss it or perform the ritual again' },
+  { index: 'tome',  name: 'Pact of the Tome',   desc: 'Receive a Book of Shadows granting three additional cantrips from any class list' },
+]
+
+export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEntry>>>> = {
+  barbarian: {
+    1:  { features: ['Rage (2/rest, +2 damage)', 'Unarmored Defense (10 + DEX mod + CON mod)'] },
+    2:  { features: ['Reckless Attack', 'Danger Sense (adv on DEX saves vs seen hazards)'] },
+    3:  { features: ['Primal Path (chosen in Step I)'] },
+    4:  { features: ['Ability Score Improvement'] },
+    5:  { features: ['Extra Attack', 'Fast Movement (+10 ft speed)'] },
+    6:  { features: ['Primal Path feature', 'Rage (3/rest)'] },
+    7:  { features: ['Feral Instinct (adv on Initiative; act while surprised if raging)'] },
+    8:  { features: ['Ability Score Improvement'] },
+    9:  { features: ['Brutal Critical (+1 damage die on critical hits)', 'Rage (4/rest)'] },
+    10: { features: ['Primal Path feature'] },
+  },
+  bard: {
+    1:  { features: ['Spellcasting (CHA)', 'Bardic Inspiration (d6, CHA mod uses/rest)'] },
+    2:  { features: ['Jack of All Trades (add half proficiency to non-proficient checks)', 'Song of Rest (d6)'] },
+    3:  { features: ['Bard College (chosen in Step I)', 'Expertise (×2 already-proficient skills)'],
+          spellInfo: 'New spells known at this level' },
+    4:  { features: ['Ability Score Improvement'] },
+    5:  { features: ['Bardic Inspiration (d8)', 'Font of Inspiration (regain uses on short rest)'] },
+    6:  { features: ['Countercharm (action to end frighten/charm on nearby allies)', 'Bard College feature'] },
+    7:  { features: [] },
+    8:  { features: ['Ability Score Improvement'] },
+    9:  { features: ['Song of Rest (d8)'] },
+    10: { features: ['Bardic Inspiration (d10)', 'Expertise (×2 more skills)', 'Magical Secrets (learn 2 spells from any class list)'] },
+  },
+  cleric: {
+    1:  { features: ['Spellcasting (WIS)', 'Divine Domain (chosen in Step I)', 'Domain Spells (always prepared)'] },
+    2:  { features: ['Channel Divinity (1/rest)', 'Divine Domain feature'] },
+    3:  { features: [] },
+    4:  { features: ['Ability Score Improvement'] },
+    5:  { features: ['Destroy Undead (CR ½)'] },
+    6:  { features: ['Channel Divinity (2/rest)', 'Divine Domain feature'] },
+    7:  { features: ['Divine Domain feature'] },
+    8:  { features: ['Destroy Undead (CR 1)', 'Ability Score Improvement', 'Divine Domain feature'] },
+    9:  { features: [] },
+    10: { features: ['Divine Intervention (call upon your deity for aid)'] },
+  },
+  druid: {
+    1:  { features: ['Druidic (secret language)', 'Spellcasting (WIS)'] },
+    2:  { features: ['Wild Shape (CR ¼, no fly/swim)', 'Druid Circle (chosen in Step I)'] },
+    3:  { features: [] },
+    4:  { features: ['Wild Shape improvement (CR ½, no fly)', 'Ability Score Improvement'] },
+    5:  { features: [] },
+    6:  { features: ['Druid Circle feature'] },
+    7:  { features: [] },
+    8:  { features: ['Wild Shape improvement (CR 1)', 'Ability Score Improvement'] },
+    9:  { features: [] },
+    10: { features: ['Druid Circle feature'] },
+  },
+  fighter: {
+    1:  { features: ['Fighting Style', 'Second Wind (1d10 + fighter level HP, 1/short rest)'],
+          choices: { 'fighting-style': { kind: 'fighting-style', classIndex: 'fighter' } } },
+    2:  { features: ['Action Surge (take one additional action, 1/short rest)'] },
+    3:  { features: ['Martial Archetype (chosen in Step I)'] },
+    4:  { features: ['Ability Score Improvement'] },
+    5:  { features: ['Extra Attack (attack twice when you take the Attack action)'] },
+    6:  { features: ['Ability Score Improvement'] },
+    7:  { features: ['Martial Archetype feature'] },
+    8:  { features: ['Ability Score Improvement'] },
+    9:  { features: ['Indomitable (reroll a saving throw, 1/long rest)'] },
+    10: { features: ['Martial Archetype feature'] },
+  },
+  monk: {
+    1:  { features: ['Unarmored Defense (10 + DEX mod + WIS mod)', 'Martial Arts (unarmed die, bonus unarmed attack)'] },
+    2:  { features: ['Ki (ki points = monk level)', 'Unarmored Movement (+10 ft speed)'] },
+    3:  { features: ['Monastic Tradition (chosen in Step I)', 'Deflect Missiles'] },
+    4:  { features: ['Ability Score Improvement', 'Slow Fall (reduce fall damage by 5 × monk level)'] },
+    5:  { features: ['Extra Attack', 'Stunning Strike'] },
+    6:  { features: ['Ki-Empowered Strikes (unarmed strikes count as magical)', 'Monastic Tradition feature'] },
+    7:  { features: ['Evasion', 'Stillness of Mind (end charm/frighten as action)'] },
+    8:  { features: ['Ability Score Improvement'] },
+    9:  { features: ['Unarmored Movement improvement (run up walls, across liquids)', '+15 ft speed'] },
+    10: { features: ['Purity of Body (immune to disease and poison)'] },
+  },
+  paladin: {
+    1:  { features: ['Divine Sense', 'Lay on Hands (HP pool = 5 × paladin level)'] },
+    2:  { features: ['Fighting Style', 'Spellcasting (CHA)', 'Divine Smite'],
+          choices: { 'fighting-style': { kind: 'fighting-style', classIndex: 'paladin' } } },
+    3:  { features: ['Divine Health (immune to disease)', 'Sacred Oath (chosen in Step I)', 'Channel Divinity'] },
+    4:  { features: ['Ability Score Improvement'] },
+    5:  { features: ['Extra Attack'] },
+    6:  { features: ['Aura of Protection (add CHA modifier to saves, 10 ft radius)'] },
+    7:  { features: ['Sacred Oath feature'] },
+    8:  { features: ['Ability Score Improvement'] },
+    9:  { features: [] },
+    10: { features: ['Aura of Courage (immune to the frightened condition, 10 ft radius)'] },
+  },
+  ranger: {
+    1:  { features: ['Favored Enemy (adv on survival/knowledge checks for one creature type)', 'Natural Explorer (double prof in one terrain type)'] },
+    2:  { features: ['Fighting Style', 'Spellcasting (WIS)'],
+          choices: { 'fighting-style': { kind: 'fighting-style', classIndex: 'ranger' } } },
+    3:  { features: ['Ranger Archetype (chosen in Step I)', 'Primeval Awareness'] },
+    4:  { features: ['Ability Score Improvement'] },
+    5:  { features: ['Extra Attack'] },
+    6:  { features: ['Favored Enemy improvement (one more type)', 'Natural Explorer improvement (one more terrain)'] },
+    7:  { features: ['Ranger Archetype feature'] },
+    8:  { features: ['Ability Score Improvement', "Land's Stride (ignore difficult terrain from non-magic plants)"] },
+    9:  { features: [] },
+    10: { features: ["Natural Explorer improvement (one more terrain)", 'Hide in Plain Sight'] },
+  },
+  rogue: {
+    1:  { features: ['Expertise (×2 skills or tools)', 'Sneak Attack (1d6)', "Thieves' Cant"] },
+    2:  { features: ['Cunning Action (Dash, Disengage, or Hide as a bonus action)'] },
+    3:  { features: ['Roguish Archetype (chosen in Step I)', 'Sneak Attack (2d6)'] },
+    4:  { features: ['Ability Score Improvement'] },
+    5:  { features: ['Uncanny Dodge (use reaction to halve damage)', 'Sneak Attack (3d6)'] },
+    6:  { features: ['Expertise (×2 more skills)'] },
+    7:  { features: ['Evasion (take no damage on successful DEX saves)', 'Sneak Attack (4d6)'] },
+    8:  { features: ['Ability Score Improvement'] },
+    9:  { features: ['Roguish Archetype feature', 'Sneak Attack (5d6)'] },
+    10: { features: ['Ability Score Improvement', 'Sneak Attack (5d6)'] },
+  },
+  sorcerer: {
+    1:  { features: ['Spellcasting (CHA)', 'Sorcerous Origin (chosen in Step I)'] },
+    2:  { features: ['Font of Magic (sorcery points = level)'] },
+    3:  { features: ['Metamagic (choose 2 options)',
+          'Options: Careful, Distant, Empowered, Extended, Heightened, Quickened, Subtle, Twinned'] },
+    4:  { features: ['Ability Score Improvement'] },
+    5:  { features: [] },
+    6:  { features: ['Sorcerous Origin feature'] },
+    7:  { features: [] },
+    8:  { features: ['Ability Score Improvement'] },
+    9:  { features: [] },
+    10: { features: ['Metamagic (choose 1 more option)'] },
+  },
+  warlock: {
+    1:  { features: ['Otherworldly Patron (chosen in Step I)', 'Pact Magic (CHA)', 'Expanded Spell List'] },
+    2:  { features: ['Eldritch Invocations (choose 2)'] },
+    3:  { features: ['Pact Boon'],
+          choices: { 'pact-boon': { kind: 'static', label: 'Pact Boon', options: WARLOCK_PACT_BOONS } } },
+    4:  { features: ['Ability Score Improvement'] },
+    5:  { features: ['Eldritch Invocations (+1 invocation)'] },
+    6:  { features: ['Otherworldly Patron feature'] },
+    7:  { features: ['Eldritch Invocations (+1 invocation)'] },
+    8:  { features: ['Ability Score Improvement'] },
+    9:  { features: ['Eldritch Invocations (+1 invocation)'] },
+    10: { features: ['Otherworldly Patron feature'] },
+  },
+  wizard: {
+    1:  { features: ['Spellcasting (INT)', 'Arcane Recovery (recover spell slots up to half wizard level, 1/day)'] },
+    2:  { features: ['Arcane Tradition (chosen in Step I)'] },
+    3:  { features: [] },
+    4:  { features: ['Ability Score Improvement'] },
+    5:  { features: [] },
+    6:  { features: ['Arcane Tradition feature'] },
+    7:  { features: [] },
+    8:  { features: ['Ability Score Improvement'] },
+    9:  { features: [] },
+    10: { features: ['Arcane Tradition feature'] },
+  },
+}
+
+export function getLevelEntry(classIndex: string, level: number): LevelEntry | null {
+  return CLASS_LEVELS[classIndex]?.[level] ?? null
+}
+
+export function getFightingStyleOptions(classIndex: string): { index: string; name: string; desc: string }[] {
+  if (classIndex === 'fighter') return FIGHTER_STYLES
+  if (classIndex === 'paladin') return PALADIN_STYLES
+  if (classIndex === 'ranger')  return RANGER_STYLES
+  return []
+}
