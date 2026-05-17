@@ -163,13 +163,13 @@ export default defineConfig({
     'badge':
       'inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-mono tracking-wide',
     'badge-gold':
-      'badge bg-gold-dim/15 text-gold-mid border border-gold-dim/35',
+      'badge bg-gold-dim/15 text-gold-deep border border-gold-dim/35',
     'badge-arcane':
       'badge bg-arcane-deep/20 text-arcane-pale border border-arcane-base/30',
     'badge-blood':
       'badge bg-blood-deep/20 text-blood-bright border border-blood-base/30',
     'badge-verdant':
-      'badge bg-verdant-deep/20 text-verdant-bright border border-verdant-base/30',
+      'badge bg-verdant-deep/20 text-verdant-base border border-verdant-base/30',
 
     // ── Stat display
     'stat-box':
@@ -179,6 +179,6 @@ export default defineConfig({
     'nav-link':
       'flex items-center gap-2 px-3 py-1.5 rounded text-sm font-body tracking-wide text-stone hover:text-vellum hover:bg-dusk/20 transition-all duration-150',
     'nav-link-active':
-      'nav-link text-arcane-bright hover:text-arcane-bright bg-arcane-deep/15 hover:bg-arcane-deep/25',
+      'nav-link text-arcane-bright hover:text-arcane-bright font-semibold',
   },
 })

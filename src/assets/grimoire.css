@@ -9,7 +9,7 @@
     --c-depths:  242 237 229;   /* #f2ede5 surface-container (inputs, nested) */
     --c-shadow:  224 191 186;   /* #e0bfba outline-variant (default borders) */
     --c-dusk:    200 168 164;
-    --c-mist:    140 113 109;   /* #8c716d outline (muted text, emphasis borders) */
+    --c-mist:    120 96 96;     /* #786060 outline (muted text, emphasis borders) — darkened for WCAG AA */
     --c-ash:     88 65 62;      /* #58413e on-surface-variant (secondary text) */
     --c-stone:   54 48 46;
     --c-vellum:  29 28 23;      /* #1d1c17 on-surface (primary text) */
@@ -45,8 +45,8 @@
     /* Semantic */
     --c-success: 74 93 78;
     --c-danger:  216 25 33;
-    --c-warning: 191 105 30;
-    --c-info:    76 120 196;
+    --c-warning: 166 91 26;    /* #a65b1a — darkened for WCAG AA (was #bf691e) */
+    --c-info:    69 112 184;   /* #4570b8 — darkened for WCAG AA (was #4c78c4) */
 
     /* Flat shadows — minimal */
     --shadow-card:        0 0 0 1px rgba(212,175,55,0.18);
@@ -108,7 +108,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: rgba(160, 120, 32, 0.75);
+  color: rgb(var(--c-gold-deep));
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.65rem;
   font-weight: 600;

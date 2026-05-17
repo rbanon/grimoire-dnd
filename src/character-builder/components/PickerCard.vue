@@ -46,7 +46,7 @@
     <div>
       <p
         class="font-heading text-sm leading-tight transition-colors duration-150"
-        :class="selected ? 'text-gold-pale' : 'text-vellum group-hover:text-gold-pale'"
+        :class="selected ? 'text-gold-deep' : 'text-vellum group-hover:text-gold-dim'"
       >{{ name }}</p>
       <p class="font-body text-xs text-mist mt-1 leading-snug line-clamp-2">{{ flavor }}</p>
     </div>

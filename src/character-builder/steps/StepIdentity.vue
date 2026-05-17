@@ -108,8 +108,8 @@
 
       <!-- Subrace picker -->
       <Transition name="expand">
-        <div v-if="builder.draft.availableSubraces.length > 0" class="mt-3">
-          <label class="label mb-2">Subrace</label>
+        <div v-if="builder.draft.availableSubraces.length > 0" class="mt-3 space-y-2">
+          <label class="label">Subrace *</label>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="sub in builder.draft.availableSubraces"
@@ -117,13 +117,18 @@
               type="button"
               class="px-3 py-1.5 rounded text-sm font-heading tracking-wide border transition-all duration-150"
               :class="builder.draft.subraceIndex === sub.index
-                ? 'border-gold-mid/60 bg-gold-dim/15 text-gold-pale'
-                : 'border-shadow text-ash hover:border-gold-dim/25 hover:text-stone'"
+                ? 'border-gold-mid/60 bg-gold-dim/15 text-gold-deep'
+                : fieldErrors.subrace
+                  ? 'border-blood-base/50 text-ash hover:border-blood-base/70'
+                  : 'border-shadow text-ash hover:border-gold-dim/25 hover:text-stone'"
               @click="selectSubrace(sub.index, sub.name)"
             >
               {{ sub.name }}
             </button>
           </div>
+          <p v-if="fieldErrors.subrace" class="text-xs font-body text-blood-bright">
+            Select a subrace to continue.
+          </p>
         </div>
       </Transition>
     </section>
@@ -142,7 +147,7 @@
           :key="bg.index"
           class="group relative flex items-center rounded border text-sm font-heading tracking-wide transition-all duration-150 cursor-pointer"
           :class="builder.draft.backgroundIndex === bg.index
-            ? 'border-gold-mid/60 bg-gold-dim/10 text-gold-pale'
+            ? 'border-gold-mid/60 bg-gold-dim/10 text-gold-deep'
             : 'border-shadow bg-abyss text-ash hover:border-gold-dim/25 hover:text-stone hover:bg-depths'"
           @click="selectBackground(bg.index, bg.name)"
         >
@@ -284,6 +289,7 @@ const touched = reactive({ name: false, race: false, background: false })
 const fieldErrors = computed(() => ({
   name:       (touched.name       || showValidation.value) && !builder.draft.name.trim(),
   race:       (touched.race       || showValidation.value) && !builder.draft.raceIndex,
+  subrace:    showValidation.value && builder.draft.availableSubraces.length > 0 && !builder.draft.subraceIndex,
   background: (touched.background || showValidation.value) && !builder.draft.backgroundIndex,
 }))
 
