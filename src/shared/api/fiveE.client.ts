@@ -11,6 +11,7 @@ import type {
   ApiSkill,
   ApiFeature,
   ApiTrait,
+  ApiFeat,
   ApiClassLevel,
   SpellQueryParams,
 } from '../types/api'
@@ -62,6 +63,7 @@ export const fiveEApi = {
   listLanguages: () => get<ApiReferenceList>('/languages'),
   listAlignments: () => get<ApiReferenceList>('/alignments'),
   listFeats: () => get<ApiReferenceList>('/feats'),
+  getFeat: (index: string) => get<ApiFeat>(`/feats/${index}`),
   listTraits: () => get<ApiReferenceList>('/traits'),
 
   listMagicSchools: () => get<ApiReferenceList>('/magic-schools'),

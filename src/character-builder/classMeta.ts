@@ -324,6 +324,16 @@ export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEn
     8:  { features: ['Ability Score Improvement'] },
     9:  { features: ['Brutal Critical (+1 damage die on critical hits)', 'Rage (4/rest)'] },
     10: { features: ['Primal Path feature'] },
+    11: { features: ['Relentless Rage (DC 10 CON save to drop to 1 HP instead of 0 while raging)'] },
+    12: { features: ['Ability Score Improvement', 'Rage (5/rest)'] },
+    13: { features: ['Brutal Critical (+2 damage dice)'] },
+    14: { features: ['Primal Path feature'] },
+    15: { features: ['Persistent Rage (rage no longer ends if you fall unconscious)'] },
+    16: { features: ['Ability Score Improvement', 'Rage (+3 damage)'] },
+    17: { features: ['Brutal Critical (+3 damage dice)', 'Rage (6/rest)'] },
+    18: { features: ['Indomitable Might (use STR score instead of roll for STR checks if lower)'] },
+    19: { features: ['Ability Score Improvement'] },
+    20: { features: ['Primal Champion (+4 STR, +4 CON)'] },
   },
   bard: {
     1:  { features: ['Spellcasting (CHA)', 'Bardic Inspiration (d6, CHA mod uses/rest)'] },
@@ -337,6 +347,16 @@ export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEn
     8:  { features: ['Ability Score Improvement'] },
     9:  { features: ['Song of Rest (d8)'] },
     10: { features: ['Bardic Inspiration (d10)', 'Expertise (×2 more skills)', 'Magical Secrets (learn 2 spells from any class list)'] },
+    11: { features: ['Magical Secrets (learn 2 more spells from any class list)'] },
+    12: { features: ['Ability Score Improvement'] },
+    13: { features: ['Song of Rest (d10)'] },
+    14: { features: ['Magical Secrets (learn 2 more spells from any class list)', 'Bard College feature'] },
+    15: { features: ['Bardic Inspiration (d12)'] },
+    16: { features: ['Ability Score Improvement'] },
+    17: { features: ['Song of Rest (d12)'] },
+    18: { features: ['Magical Secrets (learn 2 more spells from any class list)'] },
+    19: { features: ['Ability Score Improvement'] },
+    20: { features: ['Superior Inspiration (regain 1 Bardic Inspiration on initiative roll if none remaining)'] },
   },
   cleric: {
     1:  { features: ['Spellcasting (WIS)', 'Divine Domain (chosen in Step I)', 'Domain Spells (always prepared)'] },
@@ -349,6 +369,16 @@ export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEn
     8:  { features: ['Destroy Undead (CR 1)', 'Ability Score Improvement', 'Divine Domain feature'] },
     9:  { features: [] },
     10: { features: ['Divine Intervention (call upon your deity for aid)'] },
+    11: { features: ['Destroy Undead (CR 2)'] },
+    12: { features: ['Ability Score Improvement'] },
+    13: { features: [] },
+    14: { features: ['Destroy Undead (CR 3)', 'Divine Domain feature'] },
+    15: { features: [] },
+    16: { features: ['Ability Score Improvement'] },
+    17: { features: ['Destroy Undead (CR 4)', 'Divine Domain feature'] },
+    18: { features: ['Channel Divinity (3/rest)'] },
+    19: { features: ['Ability Score Improvement'] },
+    20: { features: ['Divine Intervention improvement (guaranteed success if not used in 7 days)'] },
   },
   druid: {
     1:  { features: ['Druidic (secret language)', 'Spellcasting (WIS)'] },
@@ -361,6 +391,16 @@ export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEn
     8:  { features: ['Wild Shape improvement (CR 1)', 'Ability Score Improvement'] },
     9:  { features: [] },
     10: { features: ['Druid Circle feature'] },
+    11: { features: [] },
+    12: { features: ['Ability Score Improvement'] },
+    13: { features: [] },
+    14: { features: ['Druid Circle feature'] },
+    15: { features: [] },
+    16: { features: ['Wild Shape improvement (CR 3)', 'Ability Score Improvement'] },
+    17: { features: [] },
+    18: { features: ['Timeless Body (age 10× slower)', 'Beast Spells (cast spells while in Wild Shape)', 'Wild Shape improvement (CR 6)'] },
+    19: { features: ['Ability Score Improvement'] },
+    20: { features: ['Archdruid (unlimited Wild Shape uses)'] },
   },
   fighter: {
     1:  { features: ['Fighting Style', 'Second Wind (1d10 + fighter level HP, 1/short rest)'],
@@ -374,6 +414,16 @@ export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEn
     8:  { features: ['Ability Score Improvement'] },
     9:  { features: ['Indomitable (reroll a saving throw, 1/long rest)'] },
     10: { features: ['Martial Archetype feature'] },
+    11: { features: ['Extra Attack (attack 3 times when you take the Attack action)'] },
+    12: { features: ['Ability Score Improvement'] },
+    13: { features: ['Indomitable (2 uses/long rest)'] },
+    14: { features: ['Ability Score Improvement'] },
+    15: { features: ['Martial Archetype feature'] },
+    16: { features: ['Ability Score Improvement'] },
+    17: { features: ['Action Surge (2 uses/short rest)', 'Indomitable (3 uses/long rest)'] },
+    18: { features: ['Martial Archetype feature'] },
+    19: { features: ['Ability Score Improvement'] },
+    20: { features: ['Extra Attack (attack 4 times when you take the Attack action)'] },
   },
   monk: {
     1:  { features: ['Unarmored Defense (10 + DEX mod + WIS mod)', 'Martial Arts (unarmed die, bonus unarmed attack)'] },
@@ -386,6 +436,16 @@ export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEn
     8:  { features: ['Ability Score Improvement'] },
     9:  { features: ['Unarmored Movement improvement (run up walls, across liquids)', '+15 ft speed'] },
     10: { features: ['Purity of Body (immune to disease and poison)'] },
+    11: { features: ['Monastic Tradition feature'] },
+    12: { features: ['Ability Score Improvement'] },
+    13: { features: ['Tongue of the Sun and Moon (understand all spoken languages)'] },
+    14: { features: ['Diamond Soul (proficiency in all saving throws; spend 1 ki to reroll any save)'] },
+    15: { features: ['Timeless Body (no longer age; immune to magical aging)'] },
+    16: { features: ['Ability Score Improvement'] },
+    17: { features: ['Monastic Tradition feature'] },
+    18: { features: ['Empty Body (4 ki: invisible 1 min; 8 ki: ethereal 1 min)'] },
+    19: { features: ['Ability Score Improvement'] },
+    20: { features: ['Perfect Self (regain 4 ki points on initiative roll if you have none)'] },
   },
   paladin: {
     1:  { features: ['Divine Sense', 'Lay on Hands (HP pool = 5 × paladin level)'] },
@@ -399,6 +459,16 @@ export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEn
     8:  { features: ['Ability Score Improvement'] },
     9:  { features: [] },
     10: { features: ['Aura of Courage (immune to the frightened condition, 10 ft radius)'] },
+    11: { features: ['Improved Divine Smite (melee weapon attacks deal extra 1d8 radiant damage)'] },
+    12: { features: ['Ability Score Improvement'] },
+    13: { features: [] },
+    14: { features: ['Cleansing Touch (end one spell effect on a willing creature, CHA mod times/long rest)'] },
+    15: { features: ['Sacred Oath feature'] },
+    16: { features: ['Ability Score Improvement'] },
+    17: { features: ['Aura of Protection and Aura of Courage extend to 30 ft radius'] },
+    18: { features: ['Sacred Oath feature'] },
+    19: { features: ['Ability Score Improvement'] },
+    20: { features: ['Sacred Oath capstone feature'] },
   },
   ranger: {
     1:  { features: ['Favored Enemy (adv on survival/knowledge checks for one creature type)', 'Natural Explorer (double prof in one terrain type)'] },
@@ -412,6 +482,16 @@ export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEn
     8:  { features: ['Ability Score Improvement', "Land's Stride (ignore difficult terrain from non-magic plants)"] },
     9:  { features: [] },
     10: { features: ["Natural Explorer improvement (one more terrain)", 'Hide in Plain Sight'] },
+    11: { features: ['Ranger Archetype feature'] },
+    12: { features: ['Ability Score Improvement'] },
+    13: { features: [] },
+    14: { features: ['Vanish (Hide as a bonus action; cannot be tracked non-magically)'] },
+    15: { features: ['Ranger Archetype feature'] },
+    16: { features: ['Ability Score Improvement'] },
+    17: { features: [] },
+    18: { features: ['Feral Senses (no disadvantage while blind; detect invisible creatures within 30 ft)'] },
+    19: { features: ['Ability Score Improvement'] },
+    20: { features: ['Foe Slayer (add WIS modifier to one attack or damage roll vs favored enemy per turn)'] },
   },
   rogue: {
     1:  { features: ['Expertise (×2 skills or tools)', 'Sneak Attack (1d6)', "Thieves' Cant"] },
@@ -424,6 +504,16 @@ export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEn
     8:  { features: ['Ability Score Improvement'] },
     9:  { features: ['Roguish Archetype feature', 'Sneak Attack (5d6)'] },
     10: { features: ['Ability Score Improvement', 'Sneak Attack (5d6)'] },
+    11: { features: ['Reliable Talent (treat any skill prof d20 roll below 10 as 10)', 'Sneak Attack (6d6)'] },
+    12: { features: ['Ability Score Improvement'] },
+    13: { features: ['Sneak Attack (7d6)'] },
+    14: { features: ['Blindsense (detect hidden creatures within 10 ft if you can hear)'] },
+    15: { features: ['Slippery Mind (gain proficiency in WIS saving throws)', 'Sneak Attack (8d6)'] },
+    16: { features: ['Ability Score Improvement'] },
+    17: { features: ['Roguish Archetype feature', 'Sneak Attack (9d6)'] },
+    18: { features: ['Elusive (attacks against you never have advantage unless incapacitated)'] },
+    19: { features: ['Ability Score Improvement', 'Sneak Attack (10d6)'] },
+    20: { features: ['Stroke of Luck (turn a missed attack into a hit or failed check into 20, 1/short rest)'] },
   },
   sorcerer: {
     1:  { features: ['Spellcasting (CHA)', 'Sorcerous Origin (chosen in Step I)'] },
@@ -437,6 +527,16 @@ export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEn
     8:  { features: ['Ability Score Improvement'] },
     9:  { features: [] },
     10: { features: ['Metamagic (choose 1 more option)'] },
+    11: { features: [] },
+    12: { features: ['Ability Score Improvement'] },
+    13: { features: [] },
+    14: { features: ['Sorcerous Origin feature'] },
+    15: { features: [] },
+    16: { features: ['Ability Score Improvement'] },
+    17: { features: ['Metamagic (choose 1 more option)'] },
+    18: { features: ['Sorcerous Origin feature'] },
+    19: { features: ['Ability Score Improvement'] },
+    20: { features: ['Sorcerous Restoration (regain 4 sorcery points on a short rest)'] },
   },
   warlock: {
     1:  { features: ['Otherworldly Patron (chosen in Step I)', 'Pact Magic (CHA)', 'Expanded Spell List'] },
@@ -450,6 +550,16 @@ export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEn
     8:  { features: ['Ability Score Improvement'] },
     9:  { features: ['Eldritch Invocations (+1 invocation)'] },
     10: { features: ['Otherworldly Patron feature'] },
+    11: { features: ['Mystic Arcanum: one 6th-level spell (1/long rest)'] },
+    12: { features: ['Ability Score Improvement', 'Eldritch Invocations (+1 invocation)'] },
+    13: { features: ['Mystic Arcanum: one 7th-level spell (1/long rest)'] },
+    14: { features: ['Otherworldly Patron feature'] },
+    15: { features: ['Mystic Arcanum: one 8th-level spell (1/long rest)', 'Eldritch Invocations (+1 invocation)'] },
+    16: { features: ['Ability Score Improvement'] },
+    17: { features: ['Mystic Arcanum: one 9th-level spell (1/long rest)', 'Eldritch Invocations (+1 invocation)'] },
+    18: { features: ['Otherworldly Patron feature'] },
+    19: { features: ['Ability Score Improvement', 'Eldritch Invocations (+1 invocation)'] },
+    20: { features: ['Eldritch Master (spend 1 min to regain all spell slots, 1/long rest)'] },
   },
   wizard: {
     1:  { features: ['Spellcasting (INT)', 'Arcane Recovery (recover spell slots up to half wizard level, 1/day)'] },
@@ -462,11 +572,63 @@ export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEn
     8:  { features: ['Ability Score Improvement'] },
     9:  { features: [] },
     10: { features: ['Arcane Tradition feature'] },
+    11: { features: [] },
+    12: { features: ['Ability Score Improvement'] },
+    13: { features: [] },
+    14: { features: ['Arcane Tradition feature'] },
+    15: { features: [] },
+    16: { features: ['Ability Score Improvement'] },
+    17: { features: [] },
+    18: { features: ['Spell Mastery (cast one 1st- and one 2nd-level spell at will at their lowest level)'] },
+    19: { features: ['Ability Score Improvement'] },
+    20: { features: ['Signature Spells (two 3rd-level spells always prepared; cast each once/short rest for free)'] },
   },
 }
 
 export function getLevelEntry(classIndex: string, level: number): LevelEntry | null {
   return CLASS_LEVELS[classIndex]?.[level] ?? null
+}
+
+// ─── Starting gold ────────────────────────────────────────────────────────────
+
+export interface StartingGoldFormula {
+  /** Number of dice to roll */
+  dice: number
+  /** Die sides */
+  sides: number
+  /** Multiplier applied to the total roll */
+  multiplier: number
+  /** Human-readable formula, e.g. "5d4 × 10" */
+  label: string
+}
+
+const STARTING_GOLD: Record<string, StartingGoldFormula> = {
+  barbarian: { dice: 2, sides: 4, multiplier: 10, label: '2d4 × 10 gp' },
+  bard:      { dice: 5, sides: 4, multiplier: 10, label: '5d4 × 10 gp' },
+  cleric:    { dice: 5, sides: 4, multiplier: 10, label: '5d4 × 10 gp' },
+  druid:     { dice: 2, sides: 4, multiplier: 10, label: '2d4 × 10 gp' },
+  fighter:   { dice: 5, sides: 4, multiplier: 10, label: '5d4 × 10 gp' },
+  monk:      { dice: 5, sides: 4, multiplier: 1,  label: '5d4 gp' },
+  paladin:   { dice: 5, sides: 4, multiplier: 10, label: '5d4 × 10 gp' },
+  ranger:    { dice: 5, sides: 4, multiplier: 10, label: '5d4 × 10 gp' },
+  rogue:     { dice: 4, sides: 4, multiplier: 10, label: '4d4 × 10 gp' },
+  sorcerer:  { dice: 3, sides: 4, multiplier: 10, label: '3d4 × 10 gp' },
+  warlock:   { dice: 4, sides: 4, multiplier: 10, label: '4d4 × 10 gp' },
+  wizard:    { dice: 4, sides: 4, multiplier: 10, label: '4d4 × 10 gp' },
+}
+
+export function getStartingGoldFormula(classIndex: string): StartingGoldFormula | null {
+  return STARTING_GOLD[classIndex] ?? null
+}
+
+export function rollStartingGold(classIndex: string): number {
+  const formula = STARTING_GOLD[classIndex]
+  if (!formula) return 0
+  let total = 0
+  for (let i = 0; i < formula.dice; i++) {
+    total += Math.floor(Math.random() * formula.sides) + 1
+  }
+  return total * formula.multiplier
 }
 
 export function getFightingStyleOptions(classIndex: string): { index: string; name: string; desc: string }[] {

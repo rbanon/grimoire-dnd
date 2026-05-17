@@ -23,6 +23,42 @@
       </div>
     </section>
 
+    <!-- Race tool proficiency choices (e.g. Dwarf artisan tool) -->
+    <section v-if="builder.draft.raceProfChoices > 0" class="space-y-4">
+      <div class="rule-gold">
+        <span>Race Proficiency</span>
+        <span
+          class="text-xs ml-2 font-body"
+          :class="builder.draft.selectedRaceProfs.length === builder.draft.raceProfChoices ? 'text-gold-mid' : 'text-mist'"
+        >
+          {{ builder.draft.selectedRaceProfs.length }}/{{ builder.draft.raceProfChoices }} selected
+        </span>
+      </div>
+      <p class="text-xs font-body -mt-2 text-mist">
+        {{ builder.draft.raceName }} grants {{ builder.draft.raceProfChoices }} tool proficiency choice{{ builder.draft.raceProfChoices > 1 ? 's' : '' }}.
+      </p>
+      <p v-if="showValidation && builder.draft.selectedRaceProfs.length < builder.draft.raceProfChoices" class="text-xs font-body text-blood-bright">
+        Choose {{ builder.draft.raceProfChoices - builder.draft.selectedRaceProfs.length }} more tool proficiency.
+      </p>
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="opt in builder.draft.raceProfOptions"
+          :key="opt.index"
+          type="button"
+          class="px-3 py-1.5 rounded text-sm font-heading tracking-wide border transition-all duration-150"
+          :class="builder.draft.selectedRaceProfs.includes(opt.index)
+            ? 'border-gold-mid/50 bg-gold-dim/10 text-gold-deep'
+            : canSelectMoreRaceProfs || builder.draft.selectedRaceProfs.includes(opt.index)
+              ? 'border-shadow text-ash hover:border-gold-dim/20 hover:text-stone'
+              : 'border-shadow text-mist/40 cursor-not-allowed opacity-50'"
+          @click="toggleRaceProf(opt.index)"
+        >
+          {{ opt.name }}
+          <span v-if="builder.draft.selectedRaceProfs.includes(opt.index)" class="ml-1 text-gold-dim">✓</span>
+        </button>
+      </div>
+    </section>
+
     <!-- Class Skill Choices -->
     <section class="space-y-4">
       <div class="rule-gold">
@@ -206,6 +242,18 @@ const canSelectMoreLang = computed(() => langCount.value < maxLanguages.value)
 const maxSkills = computed(() => builder.draft.classSkillChoices || 2)
 const selectedCount = computed(() => builder.draft.selectedSkills.length)
 const canSelectMore = computed(() => selectedCount.value < maxSkills.value)
+
+const canSelectMoreRaceProfs = computed(() =>
+  builder.draft.selectedRaceProfs.length < builder.draft.raceProfChoices,
+)
+
+function toggleRaceProf(index: string) {
+  if (builder.draft.selectedRaceProfs.includes(index)) {
+    builder.draft.selectedRaceProfs = builder.draft.selectedRaceProfs.filter(i => i !== index)
+  } else if (canSelectMoreRaceProfs.value) {
+    builder.draft.selectedRaceProfs.push(index)
+  }
+}
 
 function isSkillSelected(index: string) { return builder.draft.selectedSkills.includes(index) }
 function toggleSkill(index: string) {

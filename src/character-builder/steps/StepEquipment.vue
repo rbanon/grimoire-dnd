@@ -55,9 +55,25 @@
       </button>
     </div>
 
-    <!-- Gold input -->
+    <!-- Gold mode -->
     <Transition name="fade">
-      <div v-if="!builder.draft.useStartingEquipment" class="card p-5 space-y-3">
+      <div v-if="!builder.draft.useStartingEquipment" class="card p-5 space-y-4">
+        <!-- Formula row -->
+        <div v-if="goldFormula" class="flex items-center gap-3 px-3 py-2.5 rounded border border-shadow/40 bg-depths/20">
+          <span class="text-gold-dim/60 text-xs shrink-0">◎</span>
+          <p class="text-xs font-body text-mist flex-1">
+            <span class="text-stone font-heading">{{ builder.draft.className || 'Your class' }}</span>
+            starts with <span class="text-stone font-heading">{{ goldFormula.label }}</span>.
+          </p>
+          <button
+            type="button"
+            class="btn-secondary text-xs px-3 py-1.5 shrink-0"
+            @click="rollGold"
+          >
+            Roll
+          </button>
+        </div>
+
         <label class="label" for="start-gold">Starting Gold (gp)</label>
         <div class="flex items-center gap-3">
           <input
@@ -277,6 +293,7 @@ import { ref, computed, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import { fiveEApi } from '@/shared/api/fiveE.client'
+import { getStartingGoldFormula, rollStartingGold } from '@/character-builder/classMeta'
 import { generateId } from '@/shared/lib/uuid'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 import EquipmentPickerModal from '@/character-builder/components/EquipmentPickerModal.vue'
@@ -294,6 +311,14 @@ import type {
 import type { InventoryItem } from '@/shared/types/character'
 
 const builder = useBuilderStore()
+
+// ── Starting gold ─────────────────────────────────────────────────────────────
+
+const goldFormula = computed(() => getStartingGoldFormula(builder.draft.classIndex))
+
+function rollGold() {
+  builder.draft.manualGold = rollStartingGold(builder.draft.classIndex)
+}
 
 // ── Normalized types ──────────────────────────────────────────────────────────
 

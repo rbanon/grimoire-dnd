@@ -114,7 +114,12 @@
             <GrimoireSpinner />
           </div>
           <template v-else>
-            <p class="text-xs font-body text-mist">Select a feat from the list below.</p>
+            <p class="text-xs font-body text-mist">
+              Select a feat from the list below.
+              <span v-if="Object.keys(featDetailsMap).length > 0" class="text-mist/60">
+                Feats with unmet prerequisites are hidden.
+              </span>
+            </p>
             <div class="relative">
               <input
                 v-model="featSearch"
@@ -123,7 +128,9 @@
                 placeholder="Search feats..."
               />
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-64 overflow-y-auto pr-1">
+            <p v-if="filteredFeats.length === 0 && featSearch" class="text-xs font-body text-mist/60 italic">No feats match your search.</p>
+            <p v-else-if="filteredFeats.length === 0" class="text-xs font-body text-mist/60 italic">No feats available with your current ability scores.</p>
+            <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-64 overflow-y-auto pr-1">
               <button
                 v-for="feat in filteredFeats"
                 :key="feat.index"
@@ -173,6 +180,7 @@ import { getAsiLevels } from '@/character-builder/classMeta'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import type { AbilityScores } from '@/shared/types/character'
+import type { ApiFeat } from '@/shared/types/api'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
 const builder = useBuilderStore()
@@ -200,9 +208,42 @@ const { data: featData, isPending: featsLoading } = useQuery({
   staleTime: Infinity,
 })
 const allFeats = computed(() => featData.value?.results ?? [])
+
+// Fetch all feat details for prerequisite filtering
+const featIndices = computed(() => allFeats.value.map(f => f.index))
+
+const { data: featDetailsList } = useQuery({
+  queryKey: computed(() => ['feat-details', ...featIndices.value]),
+  queryFn: () => Promise.all(featIndices.value.map(i => fiveEApi.getFeat(i))) as Promise<ApiFeat[]>,
+  staleTime: Infinity,
+  enabled: computed(() => featIndices.value.length > 0),
+})
+
+const featDetailsMap = computed<Record<string, ApiFeat>>(() => {
+  const map: Record<string, ApiFeat> = {}
+  for (const feat of featDetailsList.value ?? []) {
+    map[feat.index] = feat
+  }
+  return map
+})
+
+function featMeetsPrerequisites(featIndex: string): boolean {
+  const detail = featDetailsMap.value[featIndex]
+  if (!detail || detail.prerequisites.length === 0) return true
+  const scores = builder.effectiveScores
+  return detail.prerequisites.every(
+    prereq => scores[prereq.ability_score.index as keyof AbilityScores] >= prereq.minimum_score,
+  )
+}
+
 const filteredFeats = computed(() => {
   const q = featSearch.value.toLowerCase().trim()
-  return q ? allFeats.value.filter(f => f.name.toLowerCase().includes(q)) : allFeats.value
+  const list = q ? allFeats.value.filter(f => f.name.toLowerCase().includes(q)) : allFeats.value
+  // When feat details are loaded, filter by prerequisites
+  if (Object.keys(featDetailsMap.value).length > 0) {
+    return list.filter(f => featMeetsPrerequisites(f.index))
+  }
+  return list
 })
 
 // ── ASI/Feat type per level ───────────────────────────────────────────────────

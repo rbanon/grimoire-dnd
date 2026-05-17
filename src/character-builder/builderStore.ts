@@ -89,6 +89,11 @@ export interface BuilderDraft {
   rolledAbilityScores: number[]       // 6 values from 4d6-drop-lowest
   rollAssignments: Partial<Record<keyof AbilityScores, number>> // ability → pool index
 
+  // Race tool proficiency choices (e.g. dwarf picks one artisan tool)
+  raceProfChoices: number
+  raceProfOptions: { index: string; name: string }[]
+  selectedRaceProfs: string[]
+
   // Step 4 — Proficiencies
   selectedSkills: string[]
   selectedLanguages: string[]
@@ -124,6 +129,7 @@ const defaultDraft = (): BuilderDraft => ({
   raceIndex: '', raceName: '', raceSpeed: 30, raceSizeCategory: 'Medium',
   raceAbilityBonuses: {}, raceLanguageCount: 2, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
+  raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [],
   backgroundIndex: '', backgroundName: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [],
   classIndex: '', className: '', classHitDie: 8, classSpellcastingAbility: null,
   classSkillChoices: 2, classSkillOptions: [],
@@ -308,6 +314,8 @@ export const useBuilderStore = defineStore('builder', () => {
       7:  [
         draft.value.selectedSkills.length < (draft.value.classSkillChoices || 2)
           ? `Choose ${draft.value.classSkillChoices || 2} skill${(draft.value.classSkillChoices || 2) > 1 ? 's' : ''} (${draft.value.selectedSkills.length} selected)` : '',
+        draft.value.raceProfChoices > 0 && draft.value.selectedRaceProfs.length < draft.value.raceProfChoices
+          ? `Choose ${draft.value.raceProfChoices} race proficiency tool${draft.value.raceProfChoices > 1 ? 's' : ''} (${draft.value.selectedRaceProfs.length} selected)` : '',
       ].filter(Boolean),
       8:  spellErrors,
       9:  [],
@@ -497,7 +505,10 @@ export const useBuilderStore = defineStore('builder', () => {
       skillProficiencies: d.selectedSkills.reduce((acc, s) => ({ ...acc, [s]: 'proficient' }), {}),
       savingThrowProficiencies: { str: false, dex: false, con: false, int: false, wis: false, cha: false },
       languages: d.selectedLanguages,
-      otherProficiencies: d.backgroundToolProficiencies,
+      otherProficiencies: [
+        ...d.backgroundToolProficiencies,
+        ...d.raceProfOptions.filter(p => d.selectedRaceProfs.includes(p.index)).map(p => p.name),
+      ],
       resistances: [], immunities: [], vulnerabilities: [], senses: [],
       attacks: [],
       inventory: d.startingInventory,
@@ -516,7 +527,14 @@ export const useBuilderStore = defineStore('builder', () => {
         }
       })() : null,
       favoriteSpells: [],
-      features: [],
+      features: Object.entries(d.featsByLevel)
+        .filter(([, dec]) => dec.type === 'feat' && dec.featIndex)
+        .map(([level, dec]) => ({
+          id: generateId(),
+          name: dec.featName ?? dec.featIndex ?? '',
+          source: `Level ${level} Feat`,
+          description: '',
+        })),
       overrides: {},
     })
 

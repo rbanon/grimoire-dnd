@@ -108,6 +108,7 @@ export interface ApiRace {
   size: string
   size_description: string
   starting_proficiencies: ApiReference[]
+  starting_proficiency_options?: ApiProficiencyChoice
   languages: ApiReference[]
   language_desc: string
   traits: ApiReference[]
@@ -255,6 +256,16 @@ export interface ApiTrait {
   desc: string[]
   races: ApiReference[]
   subraces: ApiReference[]
+  url: string
+}
+
+// ── Feats ─────────────────────────────────────────────────────────────────────
+
+export interface ApiFeat {
+  index: string
+  name: string
+  desc: string[]
+  prerequisites: { ability_score: ApiReference; minimum_score: number }[]
   url: string
 }
 
