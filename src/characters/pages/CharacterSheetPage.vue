@@ -265,6 +265,14 @@
                   class="w-4 h-4 flex items-center justify-center text-mist/40 hover:text-ash font-heading text-xs transition-colors"
                   @click="adjustExhaustion(1)"
                 >+</button>
+                <button
+                  type="button"
+                  class="w-4 h-4 flex items-center justify-center text-mist/30 hover:text-ash transition-colors ml-0.5"
+                  title="Exhaustion effects"
+                  @click="infoPanel.open({ kind: 'exhaustion' })"
+                >
+                  <InfoIcon :size="10" />
+                </button>
               </div>
             </div>
 
@@ -432,7 +440,7 @@
                     type="button"
                     class="font-heading text-sm w-8 shrink-0 text-left transition-colors"
                     :class="character.savingThrowProficiencies[save.key]
-                      ? 'text-gold-pale hover:text-gold-bright'
+                      ? 'text-gold-deep hover:text-gold-dim'
                       : 'text-stone hover:text-ash'"
                     @click="rollD20(saveBonus(save.key), `${save.label} Save`, $event)"
                   >{{ fmt(saveBonus(save.key)) }}</button>
@@ -473,7 +481,7 @@
                     type="button"
                     class="font-heading text-sm w-8 shrink-0 text-left transition-colors"
                     :class="hasProficiency(skill.index)
-                      ? 'text-gold-pale hover:text-gold-bright'
+                      ? 'text-gold-deep hover:text-gold-dim'
                       : 'text-stone hover:text-ash'"
                     @click="rollD20(skillBonus(skill), skill.name, $event)"
                   >{{ fmt(skillBonus(skill)) }}</button>
@@ -561,7 +569,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { DownloadIcon, ImageIcon, LockIcon, LockOpenIcon } from 'lucide-vue-next'
+import { DownloadIcon, ImageIcon, InfoIcon, LockIcon, LockOpenIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName } from '@/shared/types/character'
@@ -569,6 +577,7 @@ import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } 
 import { CLASS_META } from '@/character-builder/classMeta'
 import { useDialog } from '@/shared/composables/useDialog'
 import { useRoll } from '@/shared/composables/useRoll'
+import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import ConditionsBar from '@/characters/components/ConditionsBar.vue'
 import FavoritesTab from '@/characters/components/FavoritesTab.vue'
 import EquipmentTab from '@/characters/components/EquipmentTab.vue'
@@ -583,6 +592,7 @@ const props = defineProps<{ id: string }>()
 const store = useCharactersStore()
 const character = computed(() => store.getById(props.id))
 const dialog = useDialog()
+const infoPanel = useInfoPanel()
 const { rollD20 } = useRoll()
 
 const editMode = ref(true)

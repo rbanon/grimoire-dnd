@@ -15,18 +15,20 @@
           <!-- Header -->
           <div class="flex items-center justify-between px-5 py-4 border-b border-shadow shrink-0">
             <div>
-              <p class="font-heading text-base text-arcane-pale">Añadir Hechizos</p>
-              <p class="text-2xs font-body text-mist mt-0.5">
-                {{ className }}
-                <template v-if="slotsPerLevel">
-                  · Lv {{ selectedLevel }}:
-                  <span :class="remainingAtLevel <= 0 ? 'text-blood-bright' : ''">
-                    {{ knownAtCurrentLevel + selectedAtCurrentLevel }}/{{ slotsPerLevel[selectedLevel] ?? 0 }}
+              <p class="font-heading text-base text-arcane-pale">Add Spells</p>
+              <p class="text-2xs font-body text-mist mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <span>{{ className }}</span>
+                <template v-if="isFinite(limit ?? Infinity)">
+                  <span class="text-mist/40">·</span>
+                  <span :class="remaining <= 0 ? 'text-blood-bright' : ''">
+                    {{ knownIndices.length + selected.length }}/{{ limit }} total
                   </span>
                 </template>
-                <template v-else-if="isFinite(limit ?? Infinity)">
-                  · <span :class="remaining === 0 ? 'text-blood-bright' : ''">
-                    {{ (knownIndices.length + selected.length) }}/{{ limit }}
+                <template v-if="slotsPerLevel">
+                  <span class="text-mist/40">·</span>
+                  <span>Lv {{ selectedLevel }}:</span>
+                  <span :class="remainingAtLevel <= 0 ? 'text-blood-bright' : ''">
+                    {{ knownAtCurrentLevel + selectedAtCurrentLevel }}/{{ slotsPerLevel[selectedLevel] ?? 0 }}
                   </span>
                 </template>
               </p>
@@ -55,7 +57,7 @@
             <input
               v-model="search"
               type="text"
-              placeholder="Buscar hechizo…"
+              placeholder="Search spells…"
               class="input-base w-full text-sm"
             />
           </div>
@@ -63,10 +65,10 @@
           <!-- List -->
           <div class="overflow-y-auto flex-1 px-4 py-3 space-y-1">
             <div v-if="loading" class="flex justify-center py-10">
-              <GrimoireSpinner label="Cargando hechizos…" />
+              <GrimoireSpinner label="Loading spells…" />
             </div>
             <p v-else-if="filtered.length === 0" class="text-sm font-body text-mist text-center py-8">
-              No se encontraron hechizos.
+              No spells found.
             </p>
             <template v-else>
               <div
@@ -92,13 +94,13 @@
                   <p class="font-heading text-sm" :class="isSelected(s.index) ? 'text-arcane-pale' : 'text-ash'">
                     {{ s.name }}
                   </p>
-                  <p v-if="isKnown(s.index)" class="text-2xs font-body text-mist">Ya conocido</p>
+                  <p v-if="isKnown(s.index)" class="text-2xs font-body text-mist">Already known</p>
                 </div>
 
                 <button
                   type="button"
                   class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/30 transition-all"
-                  title="Ver detalles"
+                  title="View details"
                   @click.stop="infoPanel.open({ kind: 'spell', index: s.index })"
                 >
                   <InfoIcon :size="12" />
@@ -111,17 +113,17 @@
           <div class="px-5 py-4 border-t border-shadow shrink-0 flex items-center justify-between">
             <span class="text-xs font-body text-mist">
               {{ selected.length > 0
-                ? `${selected.length} seleccionado${selected.length > 1 ? 's' : ''}`
-                : 'Ninguno seleccionado' }}
+                ? `${selected.length} spell${selected.length > 1 ? 's' : ''} selected`
+                : 'None selected' }}
             </span>
             <div class="flex gap-2">
-              <button type="button" class="btn-secondary text-sm" @click="$emit('close')">Cancelar</button>
+              <button type="button" class="btn-secondary text-sm" @click="$emit('close')">Cancel</button>
               <button
                 type="button"
                 class="btn-primary text-sm"
                 :disabled="selected.length === 0"
                 @click="confirm"
-              >Añadir</button>
+              >Add</button>
             </div>
           </div>
         </div>
@@ -214,7 +216,7 @@ function isKnown(index: string) { return props.knownIndices.includes(index) }
 function isSelected(index: string) { return selected.value.some(s => s.index === index) }
 function isBlocked(index: string) {
   if (isSelected(index)) return false
-  if (props.slotsPerLevel) return remainingAtLevel.value <= 0
+  if (props.slotsPerLevel) return remainingAtLevel.value <= 0 || remaining.value <= 0
   return remaining.value <= 0
 }
 

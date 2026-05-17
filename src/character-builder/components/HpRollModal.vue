@@ -128,8 +128,7 @@ function rerollDie(idx: number) {
 }
 
 function getHpPerLevel(roll: number, idx: number): number {
-  if (idx === 0) return props.hitDie + props.conMod
-  return Math.max(1, roll + props.conMod)
+  return Math.max(1, (idx === 0 ? props.hitDie : roll) + props.conMod)
 }
 
 function getDieClass(roll: number, idx: number): string {

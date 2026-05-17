@@ -169,7 +169,7 @@
         <p class="font-body text-mist text-xs mt-1">
           Spell slots will be set automatically when Short/Long Rest and Level Up are implemented.
         </p>
-        <button v-if="editMode" class="btn-secondary text-xs mt-3 gap-1.5" @click="openSpellPicker(1)">
+        <button v-if="editMode && maxSpellLevel > 0" class="btn-secondary text-xs mt-3 gap-1.5" @click="openSpellPicker(1)">
           <PlusIcon :size="12" /> Add Spell
         </button>
       </div>
@@ -180,9 +180,11 @@
         :class-index="props.character.identity.class.index"
         :class-name="props.character.identity.class.name"
         :known-indices="allKnownSpellIndices"
+        :known-spells="allKnownSpellsWithLevel"
         :initial-level="spellPickerLevel ?? 1"
         :max-level="maxSpellLevel"
         :limit="sheetSpellLimit"
+        :slots-per-level="sheetSlotsPerLevel"
         @close="spellPickerLevel = null"
         @add="onAddSpells"
       />
@@ -260,6 +262,27 @@ const sheetSpellLimit = computed((): number | undefined => {
   }
   return Math.max(1, level + mod)
 })
+
+// Per-level slot caps for known casters — limits how many spells can be known at each level
+// (e.g. 1 level-4 slot → at most 1 level-4 spell known)
+const sheetSlotsPerLevel = computed((): Record<number, number> | undefined => {
+  if (!sc.value) return undefined
+  const p = getSpellProfile(props.character.identity.class.index)
+  if (!p || p.castingType !== 'known') return undefined
+  const m = sc.value.slotsMax
+  return { 1: m.level1, 2: m.level2, 3: m.level3, 4: m.level4, 5: m.level5, 6: m.level6, 7: m.level7, 8: m.level8, 9: m.level9 }
+})
+
+// Known spells with their levels — needed for per-level blocking in the picker
+const allKnownSpellsWithLevel = computed(() => {
+  if (!sc.value) return []
+  const seen = new Set<string>()
+  const result: { index: string; level: number }[] = []
+  for (const s of [...sc.value.spellsPrepared, ...sc.value.spellsKnown]) {
+    if (!seen.has(s.index)) { seen.add(s.index); result.push({ index: s.index, level: s.level }) }
+  }
+  return result
+})
 const spellSaveDC = computed(() => computeSpellSaveDC(spellAbilityMod.value, profBonus.value))
 const spellAttackBonus = computed(() => computeSpellAttackBonus(spellAbilityMod.value, profBonus.value))
 
@@ -299,10 +322,10 @@ function spellsAtLevel(lvl: number) {
 
 const allKnownSpellIndices = computed(() => {
   if (!sc.value) return []
-  return [
+  return [...new Set([
     ...sc.value.spellsKnown.map(s => s.index),
     ...sc.value.spellsPrepared.map(s => s.index),
-  ]
+  ])]
 })
 
 // ── Slot toggle ───────────────────────────────────────────────────────────────
@@ -345,9 +368,18 @@ async function onAddCantrips(cantrips: { index: string; name: string; level: num
 async function onAddSpells(spells: { index: string; name: string; level: number }[]) {
   if (!sc.value || spells.length === 0) return
   spellPickerLevel.value = null
-  await store.update(props.character.id, {
-    spellcasting: { ...sc.value, spellsKnown: [...sc.value.spellsKnown, ...spells] },
-  })
+  const castingType = getSpellProfile(props.character.identity.class.index)?.castingType ?? 'known'
+  const updated = { ...sc.value }
+  if (castingType === 'prepared') {
+    updated.spellsPrepared = [...sc.value.spellsPrepared, ...spells]
+  } else if (castingType === 'spellbook') {
+    // Wizard: new spells enter both spellbook and prepared list
+    updated.spellsKnown    = [...sc.value.spellsKnown, ...spells]
+    updated.spellsPrepared = [...sc.value.spellsPrepared, ...spells]
+  } else {
+    updated.spellsKnown = [...sc.value.spellsKnown, ...spells]
+  }
+  await store.update(props.character.id, { spellcasting: updated })
 }
 
 // ── Remove spell ──────────────────────────────────────────────────────────────
@@ -362,10 +394,19 @@ async function removeSpell(index: string, list: 'cantrip' | 'known' | 'prepared'
     variant: 'danger',
   })
   if (!ok) return
+  const castingType = getSpellProfile(props.character.identity.class.index)?.castingType ?? 'known'
   const updated = { ...sc.value }
-  if (list === 'cantrip')  updated.cantripsKnown  = sc.value.cantripsKnown.filter(s => s.index !== index)
-  if (list === 'known')    updated.spellsKnown    = sc.value.spellsKnown.filter(s => s.index !== index)
-  if (list === 'prepared') updated.spellsPrepared = sc.value.spellsPrepared.filter(s => s.index !== index)
+  if (list === 'cantrip') {
+    updated.cantripsKnown = sc.value.cantripsKnown.filter(s => s.index !== index)
+  } else if (castingType === 'spellbook') {
+    // Wizard spells live in both lists; always remove from both
+    updated.spellsKnown    = sc.value.spellsKnown.filter(s => s.index !== index)
+    updated.spellsPrepared = sc.value.spellsPrepared.filter(s => s.index !== index)
+  } else if (list === 'known') {
+    updated.spellsKnown = sc.value.spellsKnown.filter(s => s.index !== index)
+  } else {
+    updated.spellsPrepared = sc.value.spellsPrepared.filter(s => s.index !== index)
+  }
   await store.update(props.character.id, { spellcasting: updated })
 }
 

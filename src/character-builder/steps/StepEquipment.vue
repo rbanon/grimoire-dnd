@@ -107,7 +107,10 @@
             :key="gi"
             class="space-y-3"
           >
-            <p class="text-2xs font-heading tracking-wide uppercase text-mist">Choice {{ gi + 1 }}</p>
+            <p class="text-2xs font-heading tracking-wide uppercase text-mist">
+              Choice {{ gi + 1 }}
+              <span class="normal-case tracking-normal font-body text-mist/60">({{ group.source }}: {{ group.source === 'class' ? builder.draft.className.toLowerCase() : builder.draft.backgroundName.toLowerCase() }})</span>
+            </p>
             <p class="text-sm font-body text-ash">{{ group.desc }}</p>
 
             <div class="space-y-2">
@@ -128,7 +131,10 @@
                     <div v-if="choices[gi] === vi" class="w-2.5 h-2.5 rounded-full bg-gold-mid" />
                     <span v-else class="text-2xs font-heading text-mist">{{ variantLabel(vi) }}</span>
                   </div>
-                  <span class="text-sm font-heading text-vellum">{{ variant.label }}</span>
+                  <div>
+                    <span class="text-sm font-heading text-vellum">{{ variant.label }}</span>
+                    <p v-if="variantItemStatLine(variant)" class="text-xs font-heading text-mist mt-0.5">{{ variantItemStatLine(variant) }}</p>
+                  </div>
                 </div>
 
                 <!-- Expanded content when this variant is selected -->
@@ -303,6 +309,7 @@ interface Variant {
 interface OptionGroup {
   desc: string
   variants: Variant[]
+  source: 'class' | 'background'
 }
 
 // ── Data fetching ─────────────────────────────────────────────────────────────
@@ -360,7 +367,7 @@ function slotLabel(slot: Slot): string {
   return `Any ${slot.categoryRef.name}`
 }
 
-function parseOption(opt: ApiEquipmentOption): OptionGroup {
+function parseOption(opt: ApiEquipmentOption, source: 'class' | 'background'): OptionGroup {
   const from = opt.from
   const isCategoryRef = (from as ApiEqCategoryRef).option_set_type === 'equipment_category'
 
@@ -368,6 +375,7 @@ function parseOption(opt: ApiEquipmentOption): OptionGroup {
     const cat = from as ApiEqCategoryRef
     return {
       desc: opt.desc,
+      source,
       variants: [{ slots: [{ kind: 'category', categoryRef: cat.equipment_category }], label: `Any ${cat.equipment_category.name}` }],
     }
   }
@@ -379,13 +387,13 @@ function parseOption(opt: ApiEquipmentOption): OptionGroup {
     return { slots, label }
   })
 
-  return { desc: opt.desc, variants }
+  return { desc: opt.desc, source, variants }
 }
 
 const optionGroups = computed<OptionGroup[]>(() => {
-  const cls = classData.value?.starting_equipment_options ?? []
-  const bg  = bgData.value?.starting_equipment_options ?? []
-  return [...cls, ...bg].map(parseOption)
+  const cls = (classData.value?.starting_equipment_options ?? []).map(opt => parseOption(opt, 'class'))
+  const bg  = (bgData.value?.starting_equipment_options ?? []).map(opt => parseOption(opt, 'background'))
+  return [...cls, ...bg]
 })
 
 // ── Choices state ─────────────────────────────────────────────────────────────
@@ -446,14 +454,12 @@ const allItemIndices = computed<string[]>(() => {
 
   for (const f of fixedItems.value) seen.add(f.equipment.index)
 
-  for (const [giStr, vi] of Object.entries(choices.value)) {
-    const gi = Number(giStr)
-    const group = optionGroups.value[gi]
-    if (!group) continue
-    const variant = group.variants[vi]
-    if (!variant) continue
-    for (const slot of variant.slots) {
-      if (slot.kind === 'item') seen.add(slot.ref.index)
+  // Fetch all variant items upfront so stat lines are available before selection
+  for (const group of optionGroups.value) {
+    for (const variant of group.variants) {
+      for (const slot of variant.slots) {
+        if (slot.kind === 'item') seen.add(slot.ref.index)
+      }
     }
   }
 
@@ -510,6 +516,24 @@ function catSlotOrdinal(slots: Slot[], si: number): number {
     if (slots[i].kind === 'category' && (slots[i] as Extract<Slot, { kind: 'category' }>).categoryRef.index === targetIdx) n++
   }
   return n
+}
+
+// ── Variant item stat line ────────────────────────────────────────────────────
+
+function variantItemStatLine(variant: Variant): string {
+  const parts: string[] = []
+  for (const slot of variant.slots) {
+    if (slot.kind !== 'item') continue
+    const eq = equipMap.value[slot.ref.index]
+    if (!eq) continue
+    const sp: string[] = []
+    if (eq.damage) sp.push(`${eq.damage.damage_dice} ${eq.damage.damage_type?.name ?? ''}`.trim())
+    if (eq.two_handed_damage) sp.push(`Versatile ${eq.two_handed_damage.damage_dice}`)
+    if (eq.armor_class) sp.push(`CA ${eq.armor_class.base}`)
+    if (eq.weapon_range) sp.push(eq.weapon_range)
+    if (sp.length) parts.push(sp.join(' · '))
+  }
+  return parts.join(' + ')
 }
 
 // ── Category selection display helpers ────────────────────────────────────────

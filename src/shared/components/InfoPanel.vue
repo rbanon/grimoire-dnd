@@ -50,7 +50,7 @@
                 <span
                   v-for="ab in raceData.ability_bonuses"
                   :key="ab.ability_score.index"
-                  class="px-2 py-0.5 rounded text-xs font-heading text-gold-pale bg-gold-dim/15 border border-gold-dim/30"
+                  class="px-2 py-0.5 rounded text-xs font-heading text-gold-deep bg-gold-dim/15 border border-gold-dim/30"
                 >{{ ab.ability_score.name.slice(0, 3).toUpperCase() }} +{{ ab.bonus }}</span>
               </div>
             </div>
@@ -346,6 +346,30 @@
               class="text-sm font-body text-ash leading-relaxed"
             >{{ para }}</p>
           </template>
+
+          <!-- Exhaustion -->
+          <template v-else-if="panel.target.value?.kind === 'exhaustion'">
+            <p class="text-sm font-body text-ash leading-relaxed">
+              Exhaustion is measured in six levels. An effect can give a creature one or more levels. If an exhausted creature suffers another effect that causes exhaustion, its current level of exhaustion increases by the amount specified.
+            </p>
+            <div class="space-y-1.5">
+              <p class="label">Effects by Level</p>
+              <div class="divide-y divide-shadow/40 rounded border border-shadow overflow-hidden">
+                <div
+                  v-for="row in EXHAUSTION_LEVELS"
+                  :key="row.level"
+                  class="flex items-start gap-3 px-3 py-2.5"
+                  :class="row.level === 6 ? 'bg-blood-deep/15' : ''"
+                >
+                  <span class="font-heading text-sm shrink-0 w-4 text-center" :class="row.level === 6 ? 'text-blood-bright' : 'text-gold-dim'">{{ row.level }}</span>
+                  <span class="text-sm font-body text-ash">{{ row.effect }}</span>
+                </div>
+              </div>
+            </div>
+            <p class="text-xs font-body text-mist italic leading-relaxed">
+              A creature's exhaustion level is reduced by 1 after finishing a long rest, provided it has also ingested food and drink.
+            </p>
+          </template>
         </div>
       </aside>
     </Transition>
@@ -532,33 +556,48 @@ const ITEM_CATEGORY_GLYPH: Record<string, string> = {
   'trade-goods': '💰',
 }
 
+const EXHAUSTION_LEVELS = [
+  { level: 1, effect: 'Disadvantage on ability checks' },
+  { level: 2, effect: 'Speed halved' },
+  { level: 3, effect: 'Disadvantage on attack rolls and saving throws' },
+  { level: 4, effect: 'Hit point maximum halved' },
+  { level: 5, effect: 'Speed reduced to 0' },
+  { level: 6, effect: 'Death' },
+]
+
 const entityGlyph = computed(() => {
   const t = panel.target.value
   if (!t) return ''
-  if (t.kind === 'race')       return getRaceMeta(t.index).glyph
-  if (t.kind === 'class')      return getClassMeta(t.index).glyph
-  if (t.kind === 'background') return '📜'
-  if (t.kind === 'spell')      return '✶'
-  if (t.kind === 'skill')      return '🎯'
-  if (t.kind === 'alignment')  return ALIGNMENT_INFO[t.value]?.glyph ?? '◎'
-  if (t.kind === 'item')       return ITEM_CATEGORY_GLYPH[itemData.value?.equipment_category.index ?? ''] ?? '⚙'
+  if (t.kind === 'race')        return getRaceMeta(t.index).glyph
+  if (t.kind === 'class')       return getClassMeta(t.index).glyph
+  if (t.kind === 'background')  return '📜'
+  if (t.kind === 'spell')       return '✶'
+  if (t.kind === 'skill')       return '🎯'
+  if (t.kind === 'alignment')   return ALIGNMENT_INFO[t.value]?.glyph ?? '◎'
+  if (t.kind === 'item')        return ITEM_CATEGORY_GLYPH[itemData.value?.equipment_category.index ?? ''] ?? '⚙'
+  if (t.kind === 'exhaustion')  return '😵'
   return ''
 })
 
 const entityName = computed(() => {
   const t = panel.target.value
   if (!t) return ''
-  if (t.kind === 'race')       return raceData.value?.name       ?? t.index
-  if (t.kind === 'class')      return classData.value?.name      ?? t.index
-  if (t.kind === 'background') return bgData.value?.name         ?? t.index
-  if (t.kind === 'spell')      return spellData.value?.name      ?? t.index
-  if (t.kind === 'skill')      return skillData.value?.name      ?? t.index
-  if (t.kind === 'item')       return itemData.value?.name       ?? t.index
-  if (t.kind === 'alignment')  return t.value
+  if (t.kind === 'race')        return raceData.value?.name  ?? t.index
+  if (t.kind === 'class')       return classData.value?.name ?? t.index
+  if (t.kind === 'background')  return bgData.value?.name    ?? t.index
+  if (t.kind === 'spell')       return spellData.value?.name ?? t.index
+  if (t.kind === 'skill')       return skillData.value?.name ?? t.index
+  if (t.kind === 'item')        return itemData.value?.name  ?? t.index
+  if (t.kind === 'alignment')   return t.value
+  if (t.kind === 'exhaustion')  return 'Exhaustion'
   return ''
 })
 
-const kindBadge = computed(() => panel.target.value?.kind ?? '')
+const kindBadge = computed(() => {
+  const k = panel.target.value?.kind
+  if (k === 'exhaustion') return 'condition'
+  return k ?? ''
+})
 </script>
 
 <style scoped>

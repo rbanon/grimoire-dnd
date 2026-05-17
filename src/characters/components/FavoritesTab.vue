@@ -123,6 +123,35 @@
       </div>
     </section>
 
+    <!-- ── Spell Slots ──────────────────────────────────────────────────── -->
+    <section v-if="spells.length > 0 && slotLevels.length > 0" class="space-y-2">
+      <p class="label">Spell Slots</p>
+      <div class="card p-3 flex flex-wrap gap-x-5 gap-y-2.5">
+        <div
+          v-for="lvl in slotLevels"
+          :key="lvl"
+          class="flex items-center gap-2"
+        >
+          <span class="text-2xs font-heading text-mist/60 w-5 shrink-0">{{ lvl }}</span>
+          <div class="flex items-center gap-1">
+            <button
+              v-for="pip in maxSlots(lvl)"
+              :key="pip"
+              type="button"
+              class="w-3.5 h-3.5 rounded border-2 transition-all duration-100"
+              :class="[
+                pip <= usedSlots(lvl) ? 'bg-arcane-base/60 border-arcane-base/60' : 'bg-transparent border-arcane-base/40',
+                editMode ? 'hover:border-arcane-pale/60 cursor-pointer' : 'cursor-default',
+              ]"
+              :title="editMode ? (pip <= usedSlots(lvl) ? 'Recover slot' : 'Spend slot') : ''"
+              @click="editMode && toggleSlot(lvl, pip)"
+            />
+          </div>
+          <span class="text-2xs font-body text-mist/50">{{ maxSlots(lvl) - usedSlots(lvl) }}/{{ maxSlots(lvl) }}</span>
+        </div>
+      </div>
+    </section>
+
     <!-- ── Spells ─────────────────────────────────────────────────────────── -->
     <section v-if="spells.length > 0" class="space-y-3">
       <p class="label">Spells</p>
@@ -168,6 +197,28 @@ const favorites = computed(() => props.character.combatFavorites ?? [])
 const weapons   = computed(() => favorites.value.filter(f => f.type === 'weapon'))
 const cantrips  = computed(() => favorites.value.filter(f => f.type === 'cantrip'))
 const spells    = computed(() => favorites.value.filter(f => f.type === 'spell'))
+
+// ── Spell slots ───────────────────────────────────────────────────────────────
+
+type SlotLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+const SPELL_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
+
+function slotKey(n: number) { return `level${n}` as `level${SlotLevel}` }
+function maxSlots(n: number) { return props.character.spellcasting?.slotsMax[slotKey(n)] ?? 0 }
+function usedSlots(n: number) { return props.character.spellcasting?.slotsUsed[slotKey(n)] ?? 0 }
+
+const slotLevels = computed(() => SPELL_LEVELS.filter(lvl => maxSlots(lvl) > 0))
+
+async function toggleSlot(lvl: number, pip: number) {
+  const sc = props.character.spellcasting
+  if (!sc) return
+  const key = slotKey(lvl)
+  const current = sc.slotsUsed[key]
+  const next = pip <= current ? pip - 1 : pip
+  await store.update(props.character.id, {
+    spellcasting: { ...sc, slotsUsed: { ...sc.slotsUsed, [key]: next } },
+  })
+}
 
 function resolvedWeapon(fav: CombatFavorite): InventoryItem | null {
   if (fav.type !== 'weapon' || !fav.inventoryItemId) return null

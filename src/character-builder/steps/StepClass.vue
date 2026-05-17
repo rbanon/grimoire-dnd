@@ -63,7 +63,7 @@
               type="button"
               class="px-3 py-1.5 rounded text-sm font-heading tracking-wide border transition-all duration-150"
               :class="builder.draft.subclassIndex === sub.index
-                ? 'border-gold-mid/60 bg-gold-dim/15 text-gold-pale'
+                ? 'border-gold-mid/60 bg-gold-dim/15 text-gold-deep'
                 : 'border-shadow text-ash hover:border-gold-dim/25 hover:text-stone'"
               @click="toggleSubclass(sub.index, sub.name)"
             >
@@ -71,7 +71,7 @@
             </button>
           </div>
           <p v-if="showValidation && !builder.draft.subclassIndex" class="text-xs font-body text-blood-bright">
-            Selecciona una subclase para continuar.
+            Select a subclass to continue.
           </p>
         </div>
       </Transition>
@@ -244,12 +244,17 @@ const profBonus = computed(() => computeProficiencyBonus(builder.draft.level))
 
 const hpOptions = computed(() => {
   const hd = builder.draft.classHitDie
+  const lv = builder.draft.level
   const avg = Math.floor(hd / 2) + 1
   const mod = conMod.value
   const conStr = mod >= 0 ? `+${mod}` : String(mod)
+  // Per D&D 5e rules: each level contributes at least 1 HP
+  const lv1Hp = Math.max(1, hd + mod)
+  const avgHp = lv1Hp + (lv - 1) * Math.max(1, avg + mod)
+  const maxHp = lv * Math.max(1, hd + mod)
   return [
-    { value: 'average' as const, label: 'Average', desc: `d${hd}${conStr} per level (${hd} at 1st, ${avg}${conStr} after)`, preview: `~${builder.computedMaxHp}` },
-    { value: 'max'     as const, label: 'Maximum', desc: `${hd}${conStr} every level`, preview: `${builder.computedMaxHp}` },
+    { value: 'average' as const, label: 'Average', desc: `d${hd}${conStr} per level (${hd} at 1st, ${avg}${conStr} after)`, preview: `~${avgHp}` },
+    { value: 'max'     as const, label: 'Maximum', desc: `${hd}${conStr} every level`, preview: `${maxHp}` },
     { value: 'roll'    as const, label: 'Roll Dice', desc: `Roll d${hd} for each level after 1st — open the dice roller`, preview: '' },
     { value: 'manual'  as const, label: 'Manual', desc: 'Enter any value directly', preview: '' },
   ]

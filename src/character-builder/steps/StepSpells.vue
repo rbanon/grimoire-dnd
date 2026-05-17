@@ -246,9 +246,13 @@ const totalSlotCount = computed(() => {
   return s.level1 + s.level2 + s.level3 + s.level4 + s.level5 + s.level6 + s.level7 + s.level8 + s.level9
 })
 
-// Per-level slot map for prepared casters — enforces per-level caps in the modal
+// Per-level slot map — enforces per-level caps in the modal.
+// Applies to both 'prepared' and 'known' casters: for known casters, slot count at each
+// level happens to equal the number of level-ups during which that spell level was accessible
+// (e.g. sorcerer lvl7 has 3rd-level slots since lvl5 → 3 chances → cap of 3).
 const slotsPerLevel = computed((): Record<number, number> | undefined => {
-  if (profile.value?.castingType !== 'prepared') return undefined
+  const ct = profile.value?.castingType
+  if (ct !== 'prepared' && ct !== 'known') return undefined
   const s = getSpellSlots(builder.draft.classIndex, builder.draft.level)
   const result: Record<number, number> = {}
   const entries: [number, number][] = [

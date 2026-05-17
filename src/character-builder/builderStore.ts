@@ -172,17 +172,17 @@ export const useBuilderStore = defineStore('builder', () => {
     const conMod = Math.floor((con - 10) / 2)
     const hd = draft.value.classHitDie
     const lv = draft.value.level
-    if (draft.value.hpMethod === 'max') return hd * lv + conMod * lv
+    if (draft.value.hpMethod === 'max') return lv * Math.max(1, hd + conMod)
     if (draft.value.hpMethod === 'average') {
       const avg = Math.floor(hd / 2) + 1
-      return hd + (avg * (lv - 1)) + conMod * lv
+      const lv1Hp = Math.max(1, hd + conMod)
+      return lv1Hp + (lv - 1) * Math.max(1, avg + conMod)
     }
     if (draft.value.hpMethod === 'roll') {
       const rolls = draft.value.rolledHpPerLevel
       if (rolls.length < lv) return 0
       return rolls.slice(0, lv).reduce((sum, roll, idx) => {
-        // Level 1 always gets max hit die + conMod; subsequent levels get roll + conMod (min 1)
-        return sum + (idx === 0 ? hd + conMod : Math.max(1, roll + conMod))
+        return sum + Math.max(1, (idx === 0 ? hd : roll) + conMod)
       }, 0)
     }
     return draft.value.manualMaxHp
@@ -213,6 +213,7 @@ export const useBuilderStore = defineStore('builder', () => {
       1: [
         !draft.value.name.trim() ? 'Name is required' : '',
         !draft.value.raceIndex ? 'Select a race' : '',
+        draft.value.availableSubraces.length > 0 && !draft.value.subraceIndex ? 'Select a subrace' : '',
         !draft.value.backgroundIndex ? 'Select a background' : '',
       ].filter(Boolean),
       2: [
