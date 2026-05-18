@@ -8,6 +8,7 @@
     <InfoPanel />
     <AppDialog />
     <ConfirmDialog />
+    <ToastContainer />
   </div>
 </template>
 
@@ -17,4 +18,5 @@ import AppFooter from './AppFooter.vue'
 import InfoPanel from '@/shared/components/InfoPanel.vue'
 import AppDialog from '@/shared/components/AppDialog.vue'
 import ConfirmDialog from '@/shared/components/ConfirmDialog.vue'
+import ToastContainer from '@/shared/components/ToastContainer.vue'
 </script>

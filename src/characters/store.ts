@@ -14,6 +14,7 @@ import { toJsonValue } from '@/shared/lib/toJsonValue'
 import { generateId, now } from '@/shared/lib/uuid'
 import { supabase } from '@/shared/api/supabase.client'
 import { useAuthStore } from '@/auth/store'
+import { useToast } from '@/shared/composables/useToast'
 
 const LOCAL_KEY = 'characters'
 
@@ -145,7 +146,13 @@ export const useCharactersStore = defineStore('characters', () => {
     const character = makeDefaultCharacter(partial)
     characters.value.push(character)
     if (auth.isAuthenticated) {
-      await persistCloud(character)
+      try {
+        await persistCloud(character)
+      } catch {
+        characters.value = characters.value.filter(c => c.id !== character.id)
+        useToast().error('Failed to save character to cloud. Check your connection and try again.')
+        throw new Error('Cloud sync failed')
+      }
     } else {
       persistLocal()
     }
@@ -155,19 +162,34 @@ export const useCharactersStore = defineStore('characters', () => {
   async function update(id: string, updates: Partial<Character>): Promise<void> {
     const idx = characters.value.findIndex((c) => c.id === id)
     if (idx === -1) throw new Error(`Character ${id} not found`)
-    const updated: Character = { ...characters.value[idx], ...updates, updatedAt: now() }
+    const previous = characters.value[idx]
+    const updated: Character = { ...previous, ...updates, updatedAt: now() }
     characters.value[idx] = updated
     if (auth.isAuthenticated) {
-      await persistCloud(updated)
+      try {
+        await persistCloud(updated)
+      } catch {
+        characters.value[idx] = previous
+        useToast().error('Changes could not be saved to cloud. Your data has been restored.')
+        throw new Error('Cloud sync failed')
+      }
     } else {
       persistLocal()
     }
   }
 
   async function remove(id: string): Promise<void> {
+    const idx = characters.value.findIndex(c => c.id === id)
+    if (idx === -1) return
+    const removed = characters.value[idx]
     characters.value = characters.value.filter((c) => c.id !== id)
     if (auth.isAuthenticated) {
-      await supabase.from('characters').delete().eq('id', id).eq('user_id', auth.userId!)
+      const { error } = await supabase.from('characters').delete().eq('id', id).eq('user_id', auth.userId!)
+      if (error) {
+        characters.value.splice(idx, 0, removed)
+        useToast().error('Failed to delete character from cloud. Your data has been restored.')
+        throw error
+      }
     } else {
       persistLocal()
     }
