@@ -26,6 +26,10 @@ app.use(pinia)
 app.use(router)
 app.use(VueQueryPlugin, { queryClient })
 
+app.config.errorHandler = (err, _instance, info) => {
+  console.error('[Vue]', info, err)
+}
+
 // Initialize auth before mount so the router guard has the correct session state
 // on the very first navigation. Supabase reads from localStorage cache, so this
 // resolves in < 1ms in practice and causes no visible delay.

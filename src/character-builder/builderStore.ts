@@ -158,13 +158,34 @@ const defaultDraft = (): BuilderDraft => ({
   selectedCantrips: [], selectedSpells: [], spellsByLevel: {},
 })
 
-const DraftSchema = z.object({ currentStep: z.number() }).passthrough()
+const DRAFT_ARRAY_FIELDS = [
+  'selectedCantrips', 'selectedSpells', 'rolledHpPerLevel', 'rolledAbilityScores',
+  'selectedSkills', 'selectedLanguages', 'startingInventory', 'raceProfOptions',
+  'availableSubraces', 'availableSubclasses', 'backgroundSkillProficiencies',
+  'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs',
+] as const
+
+const DRAFT_OBJ_FIELDS = [
+  'baseScores', 'spellsByLevel', 'asiAllocations', 'featsByLevel', 'levelChoices',
+  'standardArrayAssignments', 'rollAssignments', 'raceAbilityBonuses',
+  'subraceAbilityBonuses', 'holySymbolDescriptions',
+] as const
+
+const DraftSchema = z.object({ currentStep: z.number() })
+  .passthrough()
+  .transform((data) => {
+    const d = data as Record<string, unknown>
+    for (const f of DRAFT_ARRAY_FIELDS) if (!Array.isArray(d[f])) delete d[f]
+    for (const f of DRAFT_OBJ_FIELDS) if (typeof d[f] !== 'object' || d[f] === null) delete d[f]
+    return d
+  })
 
 export const useBuilderStore = defineStore('builder', () => {
   const draft = ref<BuilderDraft>(defaultDraft())
   const saving = ref(false)
   const saveError = ref<string | null>(null)
   let _skipSave = false
+  let _saveTimer: ReturnType<typeof setTimeout> | null = null
 
   // ── Computed ──────────────────────────────────────────────────────────────
 
@@ -253,6 +274,10 @@ export const useBuilderStore = defineStore('builder', () => {
     } else if (draft.value.abilityMethod === 'standard') {
       const assigned = Object.keys(draft.value.standardArrayAssignments).length
       if (assigned < 6) abilityErrors.push(`Assign all standard array values (${assigned}/6 done)`)
+    } else if (draft.value.abilityMethod === 'manual') {
+      if (Object.values(draft.value.baseScores).some(s => s > 20)) {
+        abilityErrors.push('Starting ability scores above 20 are non-standard for player characters')
+      }
     } else if (draft.value.abilityMethod === 'roll') {
       if (draft.value.rolledAbilityScores.length < 6) {
         abilityErrors.push('Roll your ability scores first')
@@ -400,6 +425,12 @@ export const useBuilderStore = defineStore('builder', () => {
     storageSet(DRAFT_KEY, draft.value)
   }
 
+  function debouncedSaveDraft() {
+    if (_skipSave) return
+    if (_saveTimer) clearTimeout(_saveTimer)
+    _saveTimer = setTimeout(saveDraft, 500)
+  }
+
   async function clearDraft() {
     _skipSave = true
     storageRemove(DRAFT_KEY)
@@ -408,7 +439,7 @@ export const useBuilderStore = defineStore('builder', () => {
     _skipSave = false
   }
 
-  watch(draft, saveDraft, { deep: true })
+  watch(draft, debouncedSaveDraft, { deep: true })
 
   // ── Navigation ────────────────────────────────────────────────────────────
 

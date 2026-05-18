@@ -6,8 +6,9 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn(
-    '[Supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not set. ' +
-      'Cloud features will be unavailable.',
+    '[Supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is missing.\n' +
+    'Copy .env.example to .env.local and fill in your project credentials.\n' +
+    'Cloud features (auth, character sync) will be unavailable.',
   )
 }
 
