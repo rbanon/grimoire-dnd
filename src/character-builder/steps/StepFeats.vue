@@ -116,9 +116,7 @@
           <template v-else>
             <p class="text-xs font-body text-mist">
               Select a feat from the list below.
-              <span v-if="Object.keys(featDetailsMap).length > 0" class="text-mist/60">
-                Feats with unmet prerequisites are hidden.
-              </span>
+              <span class="text-mist/60">Feats with unmet prerequisites are hidden.</span>
             </p>
             <div class="relative">
               <input
@@ -189,8 +187,19 @@ import { getAsiLevels } from '@/character-builder/classMeta'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import type { AbilityScores } from '@/shared/types/character'
-import type { ApiFeat } from '@/shared/types/api'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
+
+// SRD feats are fixed — embed prerequisites statically to avoid ~50 HTTP requests
+const FEAT_PREREQUISITES: Record<string, { ability_score: { index: string; name: string }; minimum_score: number }[]> = {
+  athlete:             [{ ability_score: { index: 'str', name: 'Strength' },     minimum_score: 13 }],
+  'defensive-duelist': [{ ability_score: { index: 'dex', name: 'Dexterity' },   minimum_score: 13 }],
+  grappler:            [{ ability_score: { index: 'str', name: 'Strength' },     minimum_score: 13 }],
+  'inspiring-leader':  [{ ability_score: { index: 'cha', name: 'Charisma' },    minimum_score: 13 }],
+  'keen-mind':         [{ ability_score: { index: 'int', name: 'Intelligence' }, minimum_score: 13 }],
+  linguist:            [{ ability_score: { index: 'int', name: 'Intelligence' }, minimum_score: 13 }],
+  observant:           [{ ability_score: { index: 'int', name: 'Intelligence' }, minimum_score: 13 }],
+  skulker:             [{ ability_score: { index: 'dex', name: 'Dexterity' },   minimum_score: 13 }],
+}
 
 const builder = useBuilderStore()
 const { showValidation } = useBuilderValidation()
@@ -218,29 +227,11 @@ const { data: featData, isPending: featsLoading } = useQuery({
 })
 const allFeats = computed(() => featData.value?.results ?? [])
 
-// Fetch all feat details for prerequisite filtering
-const featIndices = computed(() => allFeats.value.map(f => f.index))
-
-const { data: featDetailsList } = useQuery({
-  queryKey: computed(() => ['feat-details', ...featIndices.value]),
-  queryFn: () => Promise.all(featIndices.value.map(i => fiveEApi.getFeat(i))) as Promise<ApiFeat[]>,
-  staleTime: Infinity,
-  enabled: computed(() => featIndices.value.length > 0),
-})
-
-const featDetailsMap = computed<Record<string, ApiFeat>>(() => {
-  const map: Record<string, ApiFeat> = {}
-  for (const feat of featDetailsList.value ?? []) {
-    map[feat.index] = feat
-  }
-  return map
-})
-
 function featMeetsPrerequisites(featIndex: string): boolean {
-  const detail = featDetailsMap.value[featIndex]
-  if (!detail || detail.prerequisites.length === 0) return true
+  const prerequisites = FEAT_PREREQUISITES[featIndex]
+  if (!prerequisites || prerequisites.length === 0) return true
   const scores = builder.effectiveScores
-  return detail.prerequisites.every(
+  return prerequisites.every(
     prereq => scores[prereq.ability_score.index as keyof AbilityScores] >= prereq.minimum_score,
   )
 }
@@ -248,21 +239,17 @@ function featMeetsPrerequisites(featIndex: string): boolean {
 const filteredFeats = computed(() => {
   const q = featSearch.value.toLowerCase().trim()
   const list = q ? allFeats.value.filter(f => f.name.toLowerCase().includes(q)) : allFeats.value
-  if (Object.keys(featDetailsMap.value).length > 0) {
-    return list.filter(f => featMeetsPrerequisites(f.index))
-  }
-  return list
+  return list.filter(f => featMeetsPrerequisites(f.index))
 })
 
 const unmetFeatReasons = computed(() => {
-  if (Object.keys(featDetailsMap.value).length === 0) return []
   const scores = builder.effectiveScores
   return allFeats.value
     .filter(f => !featMeetsPrerequisites(f.index))
     .map(f => {
-      const detail = featDetailsMap.value[f.index]
-      if (!detail) return null
-      const requirements = detail.prerequisites.map(p => ({
+      const prerequisites = FEAT_PREREQUISITES[f.index]
+      if (!prerequisites) return null
+      const requirements = prerequisites.map(p => ({
         name: p.ability_score.name,
         minimum: p.minimum_score,
         current: scores[p.ability_score.index as keyof AbilityScores],

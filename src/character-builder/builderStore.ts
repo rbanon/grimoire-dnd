@@ -6,7 +6,7 @@ import { CharacterSchema, computeModifier } from '@/shared/types/character'
 import { storageGet, storageSet, storageRemove } from '@/shared/lib/storage'
 import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 11
@@ -371,7 +371,10 @@ export const useBuilderStore = defineStore('builder', () => {
           ? `Choose ${draft.value.raceProfChoices} race proficiency tool${draft.value.raceProfChoices > 1 ? 's' : ''} (${draft.value.selectedRaceProfs.length} selected)` : '',
       ].filter(Boolean),
       8:  spellErrors,
-      9:  [],
+      9: [
+        draft.value.hpMethod === 'roll' && draft.value.rolledHpPerLevel.length < draft.value.level
+          ? `Roll HP for all ${draft.value.level} level${draft.value.level > 1 ? 's' : ''}` : '',
+      ].filter(Boolean),
       10: [
         !draft.value.name.trim() ? 'Name is required' : '',
       ].filter(Boolean),
@@ -560,7 +563,19 @@ export const useBuilderStore = defineStore('builder', () => {
         useMilestones: d.useMilestones,
       },
       skillProficiencies: d.selectedSkills.reduce((acc, s) => ({ ...acc, [s]: 'proficient' }), {}),
-      savingThrowProficiencies: { str: false, dex: false, con: false, int: false, wis: false, cha: false },
+      savingThrowProficiencies: (() => {
+        const abbrev: Record<string, keyof AbilityScores> = {
+          STR: 'str', DEX: 'dex', CON: 'con', INT: 'int', WIS: 'wis', CHA: 'cha',
+        }
+        const result: Record<keyof AbilityScores, boolean> = {
+          str: false, dex: false, con: false, int: false, wis: false, cha: false,
+        }
+        for (const part of (CLASS_META[d.classIndex]?.saves ?? '').split('·')) {
+          const key = abbrev[part.trim()]
+          if (key) result[key] = true
+        }
+        return result
+      })(),
       languages: d.selectedLanguages,
       otherProficiencies: [
         ...d.backgroundToolProficiencies,

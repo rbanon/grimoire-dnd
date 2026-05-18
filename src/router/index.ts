@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { watch } from 'vue'
 import { useAuthStore } from '@/auth/store'
 
 export const router = createRouter({
@@ -84,9 +85,16 @@ export const router = createRouter({
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   if (to.meta.requiresAuth) {
     const auth = useAuthStore()
+    if (auth.loading) {
+      await new Promise<void>(resolve => {
+        const stop = watch(() => auth.loading, (loading) => {
+          if (!loading) { stop(); resolve() }
+        })
+      })
+    }
     if (!auth.isAuthenticated) {
       return { name: 'login', query: { redirect: to.fullPath } }
     }
