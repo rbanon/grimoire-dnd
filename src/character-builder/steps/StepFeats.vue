@@ -129,7 +129,16 @@
               />
             </div>
             <p v-if="filteredFeats.length === 0 && featSearch" class="text-xs font-body text-mist/60 italic">No feats match your search.</p>
-            <p v-else-if="filteredFeats.length === 0" class="text-xs font-body text-mist/60 italic">No feats available with your current ability scores.</p>
+            <div v-else-if="filteredFeats.length === 0" class="space-y-1.5">
+              <p class="text-xs font-body text-mist/60 italic">No feats meet your current prerequisites.</p>
+              <div v-for="r in unmetFeatReasons" :key="r.name" class="text-xs font-body text-mist/50">
+                <span class="text-ash">{{ r.name }}</span> requires
+                <span v-for="(req, i) in r.requirements" :key="i">
+                  {{ req.name }} {{ req.minimum }}
+                  <span class="text-mist/40">(yours: {{ req.current }})</span>{{ i < r.requirements.length - 1 ? ', ' : '' }}
+                </span>
+              </div>
+            </div>
             <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-64 overflow-y-auto pr-1">
               <button
                 v-for="feat in filteredFeats"
@@ -239,11 +248,28 @@ function featMeetsPrerequisites(featIndex: string): boolean {
 const filteredFeats = computed(() => {
   const q = featSearch.value.toLowerCase().trim()
   const list = q ? allFeats.value.filter(f => f.name.toLowerCase().includes(q)) : allFeats.value
-  // When feat details are loaded, filter by prerequisites
   if (Object.keys(featDetailsMap.value).length > 0) {
     return list.filter(f => featMeetsPrerequisites(f.index))
   }
   return list
+})
+
+const unmetFeatReasons = computed(() => {
+  if (Object.keys(featDetailsMap.value).length === 0) return []
+  const scores = builder.effectiveScores
+  return allFeats.value
+    .filter(f => !featMeetsPrerequisites(f.index))
+    .map(f => {
+      const detail = featDetailsMap.value[f.index]
+      if (!detail) return null
+      const requirements = detail.prerequisites.map(p => ({
+        name: p.ability_score.name,
+        minimum: p.minimum_score,
+        current: scores[p.ability_score.index as keyof AbilityScores],
+      }))
+      return { name: f.name, requirements }
+    })
+    .filter(Boolean) as { name: string; requirements: { name: string; minimum: number; current: number }[] }[]
 })
 
 // ── ASI/Feat type per level ───────────────────────────────────────────────────

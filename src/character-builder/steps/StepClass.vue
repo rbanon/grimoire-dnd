@@ -76,6 +76,23 @@
           <p v-if="showValidation && !builder.draft.subclassIndex" class="text-xs font-body text-blood-bright">
             Select a subclass to continue.
           </p>
+
+          <!-- Subclass detail -->
+          <Transition name="fade">
+            <div v-if="builder.draft.subclassIndex" class="mt-2 space-y-2">
+              <div v-if="subclassDetailLoading" class="flex justify-center py-3">
+                <GrimoireSpinner />
+              </div>
+              <template v-else-if="subclassDetail">
+                <p class="text-2xs font-heading text-mist/60 uppercase tracking-wide">{{ subclassDetail.subclass_flavor }}</p>
+                <p
+                  v-for="(para, i) in subclassDetail.desc"
+                  :key="i"
+                  class="text-xs font-body text-ash leading-relaxed"
+                >{{ para }}</p>
+              </template>
+            </div>
+          </Transition>
         </div>
       </Transition>
     </section>
@@ -92,7 +109,7 @@ import { getClassMeta } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
-import type { ApiClass, ApiProfChoiceOption } from '@/shared/types/api'
+import type { ApiClass, ApiProfChoiceOption, ApiSubclass } from '@/shared/types/api'
 import PickerCard from '@/character-builder/components/PickerCard.vue'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
@@ -106,6 +123,14 @@ const { data: classList, isPending: classesLoading, isError: classesError } = us
   staleTime: Infinity,
 })
 const classes = computed(() => classList.value?.results ?? [])
+
+const subclassIndex = computed(() => builder.draft.subclassIndex)
+const { data: subclassDetail, isPending: subclassDetailLoading } = useQuery({
+  queryKey: computed(() => ['subclass-detail', subclassIndex.value]),
+  queryFn: () => fiveEApi.getSubclass(subclassIndex.value) as Promise<ApiSubclass>,
+  staleTime: Infinity,
+  enabled: computed(() => !!subclassIndex.value),
+})
 
 async function selectClass(index: string, name: string) {
   builder.draft.classIndex = index

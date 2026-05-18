@@ -3,6 +3,7 @@ import type {
   ApiClass,
   ApiRace,
   ApiSubrace,
+  ApiSubclass,
   ApiBackground,
   ApiSpell,
   ApiEquipment,
@@ -39,6 +40,7 @@ export const fiveEApi = {
   listRaces: () => get<ApiReferenceList>('/races'),
   getRace: (index: string) => get<ApiRace>(`/races/${index}`),
   getSubrace: (index: string) => get<ApiSubrace>(`/subraces/${index}`),
+  getSubclass: (index: string) => get<ApiSubclass>(`/subclasses/${index}`),
 
   listBackgrounds: () => get<ApiReferenceList>('/backgrounds'),
   getBackground: (index: string) => get<ApiBackground>(`/backgrounds/${index}`),

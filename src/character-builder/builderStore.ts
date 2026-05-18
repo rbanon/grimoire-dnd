@@ -359,8 +359,14 @@ export const useBuilderStore = defineStore('builder', () => {
       5:  abilityErrors,
       6:  featErrors,
       7:  [
-        draft.value.selectedSkills.length < (draft.value.classSkillChoices || 2)
-          ? `Choose ${draft.value.classSkillChoices || 2} skill${(draft.value.classSkillChoices || 2) > 1 ? 's' : ''} (${draft.value.selectedSkills.length} selected)` : '',
+        (() => {
+          const chosenByClass = draft.value.selectedSkills.filter(
+            s => !draft.value.backgroundSkillProficiencies.includes(s)
+          ).length
+          const max = draft.value.classSkillChoices || 2
+          return chosenByClass < max
+            ? `Choose ${max} skill${max > 1 ? 's' : ''} (${chosenByClass} selected)` : ''
+        })(),
         draft.value.raceProfChoices > 0 && draft.value.selectedRaceProfs.length < draft.value.raceProfChoices
           ? `Choose ${draft.value.raceProfChoices} race proficiency tool${draft.value.raceProfChoices > 1 ? 's' : ''} (${draft.value.selectedRaceProfs.length} selected)` : '',
       ].filter(Boolean),

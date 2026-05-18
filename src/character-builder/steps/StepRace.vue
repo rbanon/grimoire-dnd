@@ -276,6 +276,7 @@ async function selectRace(index: string, name: string) {
     }, {} as Record<string, number>)
     builder.draft.availableSubraces = detail.subraces.map(s => ({ index: s.index, name: s.name }))
     builder.draft.raceLanguageCount = detail.languages.length || 1
+    builder.draft.selectedLanguages = detail.languages.map(l => l.index)
     if (detail.starting_proficiency_options) {
       builder.draft.raceProfChoices = detail.starting_proficiency_options.choose
       builder.draft.raceProfOptions = detail.starting_proficiency_options.from.options

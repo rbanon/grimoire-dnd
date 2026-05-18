@@ -83,35 +83,40 @@
         <label
           v-for="skill in skills"
           :key="skill.index"
-          class="group flex items-center gap-3 px-3 py-2.5 rounded border cursor-pointer transition-all duration-150"
-          :class="isSkillSelected(skill.index)
-            ? 'border-gold-mid/50 bg-gold-dim/8'
-            : canSelectMore || isSkillSelected(skill.index)
-              ? 'border-shadow hover:border-gold-dim/20 hover:bg-depths'
-              : 'border-shadow opacity-50 cursor-not-allowed'"
+          class="group flex items-center gap-3 px-3 py-2.5 rounded border transition-all duration-150"
+          :class="isBackgroundSkill(skill.index)
+            ? 'border-gold-dim/20 bg-gold-dim/4 cursor-default opacity-70'
+            : isSkillSelected(skill.index)
+              ? 'border-gold-mid/50 bg-gold-dim/8 cursor-pointer'
+              : canSelectMore
+                ? 'border-shadow hover:border-gold-dim/20 hover:bg-depths cursor-pointer'
+                : 'border-shadow opacity-50 cursor-not-allowed'"
         >
           <input
             type="checkbox"
             class="sr-only"
-            :checked="isSkillSelected(skill.index)"
-            :disabled="!canSelectMore && !isSkillSelected(skill.index)"
-            @change="toggleSkill(skill.index)"
+            :checked="isSkillSelected(skill.index) || isBackgroundSkill(skill.index)"
+            :disabled="isBackgroundSkill(skill.index) || (!canSelectMore && !isSkillSelected(skill.index))"
+            @change="!isBackgroundSkill(skill.index) && toggleSkill(skill.index)"
           />
           <div
             class="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all duration-150"
-            :class="isSkillSelected(skill.index)
-              ? 'border-gold-mid bg-gold-dim/30'
-              : 'border-mist group-hover:border-ash'"
+            :class="isBackgroundSkill(skill.index)
+              ? 'border-gold-dim/50 bg-gold-dim/20'
+              : isSkillSelected(skill.index)
+                ? 'border-gold-mid bg-gold-dim/30'
+                : 'border-mist group-hover:border-ash'"
           >
-            <CheckIcon v-if="isSkillSelected(skill.index)" :size="10" class="text-gold-mid" />
+            <CheckIcon v-if="isSkillSelected(skill.index) || isBackgroundSkill(skill.index)" :size="10" class="text-gold-mid" />
           </div>
           <div class="flex-1 min-w-0 flex items-center gap-2">
-            <p class="text-sm font-heading tracking-wide" :class="isSkillSelected(skill.index) ? 'text-stone' : 'text-ash'">
+            <p class="text-sm font-heading tracking-wide" :class="isSkillSelected(skill.index) || isBackgroundSkill(skill.index) ? 'text-stone' : 'text-ash'">
               {{ skill.name }}
             </p>
             <span class="text-2xs font-heading text-mist/70 shrink-0">{{ SKILL_ABILITY[skill.index] }}</span>
           </div>
-          <span v-if="isSkillSelected(skill.index)" class="badge-gold text-2xs shrink-0">Prof</span>
+          <span v-if="isBackgroundSkill(skill.index)" class="px-1.5 py-0.5 rounded border border-gold-dim/30 text-2xs font-heading text-gold-dim/70 shrink-0">BG</span>
+          <span v-else-if="isSkillSelected(skill.index)" class="badge-gold text-2xs shrink-0">Prof</span>
           <button
             type="button"
             class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/50 hover:text-ash hover:bg-depths/60 transition-all opacity-0 group-hover:opacity-100"
@@ -240,8 +245,15 @@ const langCount = computed(() => builder.draft.selectedLanguages.length)
 const canSelectMoreLang = computed(() => langCount.value < maxLanguages.value)
 
 const maxSkills = computed(() => builder.draft.classSkillChoices || 2)
-const selectedCount = computed(() => builder.draft.selectedSkills.length)
+// Background skills don't consume class skill picks
+const selectedCount = computed(() =>
+  builder.draft.selectedSkills.filter(s => !isBackgroundSkill(s)).length
+)
 const canSelectMore = computed(() => selectedCount.value < maxSkills.value)
+
+function isBackgroundSkill(index: string): boolean {
+  return builder.draft.backgroundSkillProficiencies.includes(index)
+}
 
 const canSelectMoreRaceProfs = computed(() =>
   builder.draft.selectedRaceProfs.length < builder.draft.raceProfChoices,

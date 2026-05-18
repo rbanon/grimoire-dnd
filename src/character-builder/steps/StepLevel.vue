@@ -1,14 +1,16 @@
 <template>
-  <div class="max-w-3xl mx-auto px-6 py-8 space-y-10">
+  <div class="max-w-3xl mx-auto px-6 py-8 space-y-8">
 
     <!-- Level & HP section -->
-    <section class="space-y-4">
+    <section class="space-y-6">
       <div class="rule-gold"><span>Level & Hit Points</span></div>
 
-      <div class="grid sm:grid-cols-2 gap-6">
+      <!-- Row 1: Level picker | Computed Max HP -->
+      <div class="grid sm:grid-cols-2 gap-6 items-start">
+
         <!-- Level picker -->
-        <div>
-          <label class="label mb-2">Level (1–20)</label>
+        <div class="space-y-3">
+          <label class="label">Level (1–20)</label>
           <div class="flex items-center gap-3">
             <button
               type="button"
@@ -28,7 +30,7 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-2 mt-3">
+          <div class="flex items-center gap-2">
             <button
               type="button"
               class="w-9 h-5 rounded-full border transition-all duration-200 flex items-center px-0.5"
@@ -46,79 +48,67 @@
           </div>
         </div>
 
-        <!-- HP Method -->
-        <div>
-          <label class="label mb-2">Max HP Method</label>
-          <div class="flex flex-col gap-1.5">
-            <label
-              v-for="opt in hpOptions"
-              :key="opt.value"
-              class="flex items-center gap-3 px-3 py-2.5 rounded border cursor-pointer transition-all duration-150"
-              :class="builder.draft.hpMethod === opt.value
-                ? 'border-gold-mid/50 bg-gold-dim/8'
-                : 'border-shadow hover:border-gold-dim/20'"
-              @click="opt.value === 'roll' ? openRollModal() : null"
-            >
-              <input type="radio" :value="opt.value" v-model="builder.draft.hpMethod" class="sr-only" />
-              <div
-                class="w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-colors"
-                :class="builder.draft.hpMethod === opt.value ? 'border-gold-mid' : 'border-mist'"
-              >
-                <div v-if="builder.draft.hpMethod === opt.value" class="w-1.5 h-1.5 rounded-full bg-gold-mid" />
-              </div>
-              <div class="flex-1">
-                <p class="text-sm font-heading text-stone">{{ opt.label }}</p>
-                <p class="text-xs text-mist font-body">{{ opt.desc }}</p>
-              </div>
-              <span v-if="opt.value !== 'manual' && opt.value !== 'roll'" class="ml-auto font-heading text-sm text-gold-mid">
-                {{ opt.preview }}
-              </span>
-              <button
-                v-if="opt.value === 'roll' && builder.draft.hpMethod === 'roll'"
-                type="button"
-                class="ml-auto text-xs font-heading text-gold-mid border border-gold-dim/40 rounded px-2 py-0.5 hover:bg-gold-dim/10 transition-all"
-                @click.stop="openRollModal"
-              >
-                {{ builder.computedMaxHp > 0 ? `${builder.computedMaxHp} HP · Reroll` : 'Roll Dice' }}
-              </button>
-            </label>
-          </div>
-
-          <div v-if="builder.draft.hpMethod === 'manual'" class="mt-3 flex items-center gap-3">
-            <label class="text-xs font-heading text-mist shrink-0" for="manual-hp">Max HP</label>
+        <!-- Computed Max HP display -->
+        <div class="flex flex-col items-center justify-center gap-2 p-5 rounded border border-shadow/40 bg-depths/20 min-h-[110px] text-center">
+          <p class="text-2xs font-heading text-mist uppercase tracking-wide">Computed Max HP</p>
+          <p
+            class="font-heading text-5xl leading-none"
+            :class="builder.computedMaxHp > 0 ? 'text-gold-mid' : 'text-mist/30'"
+          >
+            {{ builder.computedMaxHp > 0 ? builder.computedMaxHp : '—' }}
+          </p>
+          <button
+            v-if="builder.draft.hpMethod === 'roll'"
+            type="button"
+            class="text-xs font-heading text-gold-mid border border-gold-dim/40 rounded px-2 py-0.5 hover:bg-gold-dim/10 transition-all"
+            @click="openRollModal"
+          >
+            {{ builder.computedMaxHp > 0 ? 'Reroll' : 'Roll Dice' }}
+          </button>
+          <div v-else-if="builder.draft.hpMethod === 'manual'" class="flex items-center gap-2">
+            <label class="text-xs font-heading text-mist shrink-0">Max HP</label>
             <input
-              id="manual-hp"
               v-model.number="builder.draft.manualMaxHp"
               type="number"
               min="1"
               max="999"
-              class="input-base w-24 text-lg font-heading text-center"
+              class="input-base w-20 text-lg font-heading text-center"
             />
           </div>
-
-          <div class="mt-3 text-center" v-else>
-            <span class="text-xs font-heading text-mist">Computed Max HP</span>
-            <p class="font-heading text-3xl" :class="builder.computedMaxHp > 0 ? 'text-gold-mid' : 'text-mist/40'">
-              {{ builder.computedMaxHp > 0 ? builder.computedMaxHp : '—' }}
-            </p>
-            <p v-if="builder.draft.hpMethod === 'roll' && builder.computedMaxHp === 0" class="text-xs font-body text-mist mt-1">
-              Click "Roll Dice" above to set HP
-            </p>
-          </div>
         </div>
+      </div>
 
-        <HpRollModal
-          :show="showRollModal"
-          :hit-die="builder.draft.classHitDie"
-          :level="builder.draft.level"
-          :con-mod="conMod"
-          @close="showRollModal = false"
-          @confirm="onRollConfirm"
-        />
+      <!-- Row 2: HP Method (horizontal) -->
+      <div class="space-y-2">
+        <label class="label">Max HP Method</label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <button
+            v-for="opt in hpOptions"
+            :key="opt.value"
+            type="button"
+            class="flex flex-col items-start px-3 py-2.5 rounded border transition-all text-left"
+            :class="builder.draft.hpMethod === opt.value
+              ? 'border-gold-mid/50 bg-gold-dim/8'
+              : 'border-shadow hover:border-gold-dim/20'"
+            @click="selectHpMethod(opt.value)"
+          >
+            <div class="flex items-center gap-1.5 w-full">
+              <div
+                class="w-3 h-3 rounded-full border-2 shrink-0 flex items-center justify-center"
+                :class="builder.draft.hpMethod === opt.value ? 'border-gold-mid' : 'border-mist'"
+              >
+                <div v-if="builder.draft.hpMethod === opt.value" class="w-1.5 h-1.5 rounded-full bg-gold-mid" />
+              </div>
+              <span class="text-sm font-heading text-stone">{{ opt.label }}</span>
+              <span v-if="opt.preview" class="ml-auto text-xs font-heading text-gold-mid shrink-0">{{ opt.preview }}</span>
+            </div>
+            <p class="text-2xs font-body text-mist mt-1 pl-[18px] leading-relaxed">{{ opt.desc }}</p>
+          </button>
+        </div>
       </div>
     </section>
 
-    <!-- Class features accordion -->
+    <!-- Row 3: Class features accordion -->
     <section v-if="builder.draft.classIndex" class="space-y-4">
       <div class="rule-gold"><span>Class Features</span></div>
 
@@ -245,6 +235,15 @@
       </p>
     </section>
 
+    <HpRollModal
+      :show="showRollModal"
+      :hit-die="builder.draft.classHitDie"
+      :level="builder.draft.level"
+      :con-mod="conMod"
+      @close="showRollModal = false"
+      @confirm="onRollConfirm"
+    />
+
     <div class="h-4" />
   </div>
 </template>
@@ -275,6 +274,11 @@ function onRollConfirm(rolls: number[]) {
   showRollModal.value = false
 }
 
+function selectHpMethod(value: 'average' | 'max' | 'manual' | 'roll') {
+  if (value === 'roll') { openRollModal(); return }
+  builder.draft.hpMethod = value
+}
+
 const hpOptions = computed(() => {
   const hd = builder.draft.classHitDie
   const lv = builder.draft.level
@@ -285,22 +289,19 @@ const hpOptions = computed(() => {
   const avgHp = lv1Hp + (lv - 1) * Math.max(1, avg + mod)
   const maxHp = lv * Math.max(1, hd + mod)
   return [
-    { value: 'average' as const, label: 'Average', desc: `d${hd}${conStr} per level (${hd} at 1st, ${avg}${conStr} after)`, preview: `~${avgHp}` },
+    { value: 'average' as const, label: 'Average', desc: `${hd}÷2+1${conStr} per level`, preview: `~${avgHp}` },
     { value: 'max'     as const, label: 'Maximum', desc: `${hd}${conStr} every level`, preview: `${maxHp}` },
-    { value: 'roll'    as const, label: 'Roll Dice', desc: `Roll d${hd} for each level after 1st — open the dice roller`, preview: '' },
+    { value: 'roll'    as const, label: 'Roll Dice', desc: `Roll d${hd} per level after 1st`, preview: '' },
     { value: 'manual'  as const, label: 'Manual', desc: 'Enter any value directly', preview: '' },
   ]
 })
 
 // ── Features accordion ──────────────────────────────────────────────────────
 
-const openLevels = ref<Set<number>>(new Set([1]))
+const openLevels = ref<Set<number>>(new Set())
 
 function rebuildOpenLevels() {
   const s = new Set<number>()
-  // Always open the current highest level
-  if (builder.draft.level >= 1) s.add(builder.draft.level)
-  // Auto-open any level with a pending required choice
   for (let lvl = 1; lvl <= builder.draft.level; lvl++) {
     if (levelHasError(lvl)) s.add(lvl)
   }
@@ -353,7 +354,6 @@ function setChoice(lvl: number, key: string, value: string) {
     builder.draft.levelChoices[lvl] = {}
   }
   builder.draft.levelChoices[lvl][key] = value
-  // Auto-close level once all its choices are resolved
   if (levelChoicesDone(lvl)) {
     const s = new Set(openLevels.value)
     s.delete(lvl)

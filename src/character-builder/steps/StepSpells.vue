@@ -210,10 +210,10 @@
         :show="showSpellPickerForLevel !== null"
         :class-index="builder.draft.classIndex"
         :class-name="builder.draft.className"
-        :known-indices="knownIndicesForLevel(showSpellPickerForLevel)"
-        :known-spells="builder.activeSpells"
-        :max-level="getMaxSpellLevel(builder.draft.classIndex, showSpellPickerForLevel)"
-        :limit="spellsGainedAt(showSpellPickerForLevel)"
+        :known-indices="knownIndicesForLevel(showSpellPickerForLevel!)"
+        :known-spells="activeSpellsBeforeLevel(showSpellPickerForLevel!)"
+        :max-level="getMaxSpellLevel(builder.draft.classIndex, showSpellPickerForLevel!)"
+        :limit="activeSpellsBeforeLevel(showSpellPickerForLevel!).length + spellsGainedAt(showSpellPickerForLevel!)"
         @close="showSpellPickerForLevel = null"
         @add="(spells) => onSpellPickedAtLevel(showSpellPickerForLevel!, spells)"
       />
@@ -223,10 +223,10 @@
         :show="showReplacementPickerForLevel !== null"
         :class-index="builder.draft.classIndex"
         :class-name="builder.draft.className"
-        :known-indices="replacementKnownIndices(showReplacementPickerForLevel)"
-        :known-spells="builder.activeSpells"
-        :max-level="getMaxSpellLevel(builder.draft.classIndex, showReplacementPickerForLevel)"
-        :limit="1"
+        :known-indices="replacementKnownIndices(showReplacementPickerForLevel!)"
+        :known-spells="activeSpellsBeforeLevel(showReplacementPickerForLevel!).filter(s => s.index !== replacingFromIndex[showReplacementPickerForLevel!])"
+        :max-level="getMaxSpellLevel(builder.draft.classIndex, showReplacementPickerForLevel!)"
+        :limit="activeSpellsBeforeLevel(showReplacementPickerForLevel!).length"
         @close="showReplacementPickerForLevel = null"
         @add="(spells) => onReplacementPickedAtLevel(showReplacementPickerForLevel!, spells)"
       />
@@ -503,7 +503,13 @@ function activeSpellsBeforeLevel(lvl: number): { index: string; name: string; le
 const replacingFromIndex = ref<Record<number, string | null>>({})
 
 function selectReplacementFrom(lvl: number, index: string) {
-  replacingFromIndex.value = { ...replacingFromIndex.value, [lvl]: index }
+  if (replacingFromIndex.value[lvl] === index) {
+    const map = { ...replacingFromIndex.value }
+    delete map[lvl]
+    replacingFromIndex.value = map
+  } else {
+    replacingFromIndex.value = { ...replacingFromIndex.value, [lvl]: index }
+  }
 }
 
 function clearReplacement(lvl: number) {

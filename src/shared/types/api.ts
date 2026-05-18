@@ -128,6 +128,17 @@ export interface ApiSubrace {
   url: string
 }
 
+// ── Subclasses ────────────────────────────────────────────────────────────────
+
+export interface ApiSubclass {
+  index: string
+  name: string
+  class: ApiReference
+  subclass_flavor: string
+  desc: string[]
+  url: string
+}
+
 // ── Backgrounds ───────────────────────────────────────────────────────────────
 
 export interface ApiBackground {
