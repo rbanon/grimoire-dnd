@@ -17,8 +17,8 @@
           v-else
           class="w-full h-full flex flex-col items-center justify-center gap-3"
         >
-          <span class="font-display text-6xl leading-none select-none" style="color: rgba(212,175,55,0.28)">{{ classGlyph }}</span>
-          <p class="font-mono text-2xs tracking-[0.2em] uppercase" style="color: rgba(140,113,109,0.55)">No portrait</p>
+          <span class="font-display text-6xl leading-none select-none text-gold-mid/30">{{ classGlyph }}</span>
+          <p class="font-mono text-2xs tracking-[0.2em] uppercase text-mist/60">No portrait</p>
         </div>
 
         <!-- Level badge -->

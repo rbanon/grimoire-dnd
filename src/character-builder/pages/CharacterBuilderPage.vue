@@ -308,14 +308,14 @@ function isCompleted(stepNumber: number) {
 }
 
 function getStepClass(stepNumber: number) {
-  if (stepNumber === builder.draft.currentStep) return 'bg-arcane-bright/8 border-l-2 border-arcane-bright ml-[-1px]'
+  if (stepNumber === builder.draft.currentStep) return 'bg-arcane-bright/8 dark:bg-arcane-bright/15 border-l-2 border-arcane-bright ml-[-1px]'
   if (stepNumber < builder.draft.currentStep) return 'hover:bg-shadow/40 cursor-pointer'
-  return 'cursor-not-allowed opacity-40'
+  return 'cursor-not-allowed opacity-40 dark:opacity-60'
 }
 
 function getStepBubbleClass(stepNumber: number) {
-  if (isCompleted(stepNumber)) return 'border-gold-mid/60 bg-gold-mid/15 text-gold-dim'
-  if (stepNumber === builder.draft.currentStep) return 'border-arcane-bright/60 bg-arcane-bright/10 text-arcane-base'
+  if (isCompleted(stepNumber)) return 'border-gold-mid/60 bg-gold-mid/15 dark:bg-gold-mid/25 text-gold-dim dark:text-gold-deep'
+  if (stepNumber === builder.draft.currentStep) return 'border-arcane-bright/60 bg-arcane-bright/10 dark:bg-arcane-bright/20 text-arcane-base dark:text-arcane-bright'
   return 'border-shadow text-mist bg-transparent'
 }
 

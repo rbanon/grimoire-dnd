@@ -2,7 +2,7 @@ import { defineConfig, presetWind, presetAttributify, presetIcons } from 'unocss
 
 export default defineConfig({
   presets: [
-    presetWind(),
+    presetWind({ dark: 'class' }),
     presetAttributify(),
     presetIcons({ scale: 1.2, warn: false }),
   ],

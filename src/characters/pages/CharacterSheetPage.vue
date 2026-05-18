@@ -56,14 +56,14 @@
               </h1>
               <p class="font-body text-sm text-ash mt-0.5 truncate">
                 {{ character.identity.race.name }}<span v-if="character.identity.subrace">&nbsp;({{ character.identity.subrace.name }})</span>
-                <span class="text-mist/40 mx-1.5">·</span>
+                <span class="text-dusk mx-1.5">·</span>
                 {{ character.identity.class.name }}<span v-if="character.identity.subclass">&nbsp;— {{ character.identity.subclass.name }}</span>
-                <span class="text-mist/40 mx-1.5">·</span>
+                <span class="text-dusk mx-1.5">·</span>
                 Level {{ character.combat.level }}
               </p>
               <p class="font-body text-xs text-mist mt-0.5">
                 {{ character.identity.background.name }}
-                <span class="mx-1 text-mist/30">·</span>
+                <span class="mx-1 text-dusk">·</span>
                 {{ character.identity.alignment }}
               </p>
               <div class="flex flex-wrap gap-1.5 mt-2">
@@ -74,7 +74,7 @@
                   class="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border text-xs font-heading tracking-wide transition-all"
                   :class="character.combat.inspiration
                     ? 'bg-gold-dim/20 border-gold-mid/50 text-gold-mid'
-                    : 'border-shadow/40 text-mist/40 hover:border-gold-dim/30 hover:text-mist'"
+                    : 'border-dusk text-mist hover:border-gold-dim/60 hover:text-ash'"
                   :disabled="!editMode"
                   @click="editMode && toggleInspiration()"
                 >✦ Inspiration</button>
