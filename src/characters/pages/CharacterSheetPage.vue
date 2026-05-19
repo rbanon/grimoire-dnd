@@ -409,6 +409,8 @@
                   v-for="ab in abilityEntries"
                   :key="ab.key"
                   class="card py-3 px-2 text-center group relative overflow-hidden"
+                  :class="editMode ? 'cursor-pointer' : ''"
+                  @click="editMode && editingAbility !== ab.key && startAbilityEdit(ab.key, ab.score)"
                 >
                   <div
                     class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
@@ -420,9 +422,27 @@
                     class="relative block w-full font-heading text-2xl leading-none mt-1 transition-colors"
                     :class="ab.mod >= 0 ? 'text-gold-mid hover:text-gold-bright' : 'text-blood-bright hover:text-blood-mid'"
                     :title="`Roll ${ab.label} check`"
-                    @click="rollD20(ab.mod, `${ab.label} Check`, $event)"
+                    @click.stop="rollD20(ab.mod, `${ab.label} Check`, $event)"
                   >{{ ab.mod >= 0 ? `+${ab.mod}` : ab.mod }}</button>
-                  <p class="relative text-sm font-body text-ash mt-1 leading-none">{{ ab.score }}</p>
+                  <!-- Score — editable in edit mode -->
+                  <input
+                    v-if="editingAbility === ab.key"
+                    :ref="(el) => { if (el) { (el as HTMLInputElement).focus(); (el as HTMLInputElement).select() } }"
+                    v-model.number="abilityEditValue"
+                    type="number"
+                    min="1"
+                    max="30"
+                    class="relative w-full text-center font-body text-sm text-vellum bg-transparent outline-none border-b border-gold-mid/50 mt-1 leading-none"
+                    @click.stop
+                    @blur="commitAbility"
+                    @keydown.enter.prevent="commitAbility"
+                    @keydown.escape="editingAbility = null"
+                  />
+                  <p
+                    v-else
+                    class="relative text-sm font-body mt-1 leading-none transition-colors"
+                    :class="editMode ? 'text-gold-dim/70 group-hover:text-ash' : 'text-ash'"
+                  >{{ ab.score }}</p>
                 </div>
               </div>
             </section>
@@ -492,6 +512,14 @@
                     @click="rollD20(skillBonus(skill), skill.name, $event)"
                   >{{ fmt(skillBonus(skill)) }}</button>
                   <span class="text-xs font-body text-ash flex-1 truncate">{{ skill.name }}</span>
+                  <span
+                    v-if="hasProficiency(skill.index)"
+                    class="text-2xs font-heading tracking-wide shrink-0 px-1 rounded"
+                    :class="skillOrigin(skill.index) === 'bg'
+                      ? 'text-arcane-pale/70 bg-arcane-deep/20'
+                      : 'text-gold-dim/80 bg-gold-dim/10'"
+                    :title="skillOrigin(skill.index) === 'bg' ? 'From Background' : 'From Class'"
+                  >{{ skillOrigin(skill.index) === 'bg' ? 'BG' : 'C' }}</span>
                   <span class="text-2xs font-heading text-mist/50 shrink-0">{{ skill.ability.toUpperCase() }}</span>
                   <button
                     type="button"
@@ -704,6 +732,28 @@ const abilityEntries = computed(() => {
   ]
 })
 
+// ── Ability score inline editing ─────────────────────────────────────────────
+
+const editingAbility = ref<string | null>(null)
+const abilityEditValue = ref(0)
+
+function startAbilityEdit(key: string, currentScore: number) {
+  if (!editMode.value) return
+  abilityEditValue.value = currentScore
+  editingAbility.value = key
+}
+
+async function commitAbility() {
+  if (!character.value || !editingAbility.value) return
+  const key = editingAbility.value
+  editingAbility.value = null
+  const clamped = Math.max(1, Math.min(30, abilityEditValue.value || 10))
+  if (clamped === (character.value.abilityScores as Record<string, number>)[key]) return
+  await store.update(character.value.id, {
+    abilityScores: { ...character.value.abilityScores, [key]: clamped },
+  })
+}
+
 // ── Class glyph ───────────────────────────────────────────────────────────────
 
 const classGlyphs: Record<string, string> = {
@@ -893,6 +943,11 @@ function profClass(skillIndex: string): string {
   if (p === 'expertise')  return 'bg-arcane-pale border-arcane-pale'
   if (p === 'proficient') return 'bg-gold-mid border-gold-mid'
   return 'bg-transparent border-mist/50'
+}
+
+function skillOrigin(skillIndex: string): 'bg' | 'class' {
+  const bgSkills = character.value?.identity.background.skillProficiencies ?? []
+  return bgSkills.includes(skillIndex) ? 'bg' : 'class'
 }
 
 const passivePerception = computed(() => {
