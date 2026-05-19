@@ -44,7 +44,7 @@
               <GrimoireSpinner label="Cargando cantrips…" />
             </div>
             <p v-else-if="filtered.length === 0" class="text-sm font-body text-mist text-center py-8">
-              No se encontraron cantrips.
+              Cantrips not found.
             </p>
             <template v-else>
               <div
