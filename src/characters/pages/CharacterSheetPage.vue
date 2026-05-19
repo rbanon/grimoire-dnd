@@ -593,6 +593,15 @@
     <RollConfirm />
     <RollResult />
 
+    <!-- ── Long rest modal ───────────────────────────────────────────────────── -->
+    <LongRestModal
+      v-if="character"
+      :show="showLongRest"
+      :character="character"
+      @close="showLongRest = false"
+      @rested="onLongRested"
+    />
+
     <!-- ── Short rest modal ──────────────────────────────────────────────────── -->
     <ShortRestModal
       v-if="character"
@@ -621,7 +630,7 @@ import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
-import { CLASS_META } from '@/character-builder/classMeta'
+import { CLASS_META, getSpellProfile } from '@/character-builder/classMeta'
 import { useDialog } from '@/shared/composables/useDialog'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
@@ -635,6 +644,7 @@ import RollResult from '@/shared/components/RollResult.vue'
 import RollConfirm from '@/shared/components/RollConfirm.vue'
 import ShortRestModal from '@/characters/components/ShortRestModal.vue'
 import LevelUpModal from '@/characters/components/LevelUpModal.vue'
+import LongRestModal from '@/characters/components/LongRestModal.vue'
 
 const props = defineProps<{ id: string }>()
 const store = useCharactersStore()
@@ -645,7 +655,8 @@ const { rollD20 } = useRoll()
 
 const editMode = ref(true)
 const showShortRest = ref(false)
-const showLevelUp = ref(false)
+const showLongRest  = ref(false)
+const showLevelUp   = ref(false)
 const levelUpSaving = ref(false)
 
 const portraitFileInput = ref<HTMLInputElement | null>(null)
@@ -1010,8 +1021,17 @@ function onShortRested(result: { healed: number; diceSpent: number; rolls: numbe
 function longRest() {
   const c = character.value
   if (!c) return
-  const regained = Math.max(1, Math.floor(c.combat.level / 2))
-  const newHitDice = Math.min(c.combat.level, c.combat.hitDiceRemaining + regained)
+  const isPrepared = getSpellProfile(c.identity.class.index)?.castingType === 'prepared'
+  if (isPrepared) {
+    showLongRest.value = true
+  } else {
+    applyLongRest(c, [])
+  }
+}
+
+function applyLongRest(c: Character, newPrepared: import('@/shared/types/character').SpellReference[]) {
+  const regained    = Math.max(1, Math.floor(c.combat.level / 2))
+  const newHitDice  = Math.min(c.combat.level, c.combat.hitDiceRemaining + regained)
   const updates: Partial<Character> = {
     combat: {
       ...c.combat,
@@ -1027,11 +1047,16 @@ function longRest() {
     { label: 'Death Saves', value: 'Reset' },
   ]
   if (c.spellcasting) {
-    updates.spellcasting = {
+    const spellcasting = {
       ...c.spellcasting,
       slotsUsed: { level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0, level7: 0, level8: 0, level9: 0 },
+      ...(newPrepared.length > 0 ? { spellsPrepared: newPrepared } : {}),
     }
+    updates.spellcasting = spellcasting
     items.splice(1, 0, { label: 'Spell Slots', value: 'All recovered' })
+    if (newPrepared.length > 0) {
+      items.splice(2, 0, { label: 'Prepared', value: `${newPrepared.length} spell${newPrepared.length !== 1 ? 's' : ''}` })
+    }
   }
   store.update(c.id, updates)
   dialog.open({
@@ -1040,6 +1065,13 @@ function longRest() {
     items,
     variant: 'success',
   })
+}
+
+function onLongRested(newPrepared: import('@/shared/types/character').SpellReference[]) {
+  const c = character.value
+  if (!c) return
+  showLongRest.value = false
+  applyLongRest(c, newPrepared)
 }
 
 // ── Level Up ──────────────────────────────────────────────────────────────────
