@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel } from './classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel, getFirstSpellLevel } from './classMeta'
 
 describe('getSpellProfile', () => {
   it('returns null for martial classes', () => {
@@ -15,9 +15,29 @@ describe('getSpellProfile', () => {
     expect(getSpellProfile('warlock')?.castingType).toBe('known')
   })
 
-  it('cleric and druid have casting type known in the current implementation', () => {
-    expect(getSpellProfile('cleric')?.castingType).toBe('known')
-    expect(getSpellProfile('druid')?.castingType).toBe('known')
+  it('cleric and druid are prepared casters using Wisdom', () => {
+    expect(getSpellProfile('cleric')?.castingType).toBe('prepared')
+    expect(getSpellProfile('cleric')?.preparedAbility).toBe('wis')
+    expect(getSpellProfile('druid')?.castingType).toBe('prepared')
+    expect(getSpellProfile('druid')?.preparedAbility).toBe('wis')
+  })
+
+  it('cleric and druid retain cantrips at level 1', () => {
+    expect(getSpellProfile('cleric')?.cantripsKnown[0]).toBe(3)
+    expect(getSpellProfile('druid')?.cantripsKnown[0]).toBe(2)
+  })
+})
+
+describe('getFirstSpellLevel', () => {
+  it('returns 2 for paladin and ranger (half-casters)', () => {
+    expect(getFirstSpellLevel('paladin')).toBe(2)
+    expect(getFirstSpellLevel('ranger')).toBe(2)
+  })
+
+  it('returns 1 for full casters (cleric, druid, wizard, bard, sorcerer, warlock)', () => {
+    for (const c of ['cleric', 'druid', 'wizard', 'bard', 'sorcerer', 'warlock']) {
+      expect(getFirstSpellLevel(c)).toBe(1)
+    }
   })
 })
 

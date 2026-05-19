@@ -312,7 +312,7 @@
         </button>
 
         <p
-          v-if="showValidation && builder.draft.level >= 2 && builder.draft.selectedSpells.length < preparedSpellLimit"
+          v-if="showValidation && builder.draft.level >= getFirstSpellLevel(builder.draft.classIndex) && builder.draft.selectedSpells.length < preparedSpellLimit"
           class="text-xs font-body text-blood-bright"
         >
           Select {{ preparedSpellLimit - builder.draft.selectedSpells.length }} more starting spell{{ preparedSpellLimit - builder.draft.selectedSpells.length !== 1 ? 's' : '' }} to continue.
@@ -348,7 +348,7 @@ import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import {
   getSpellProfile, getMaxSpellLevel, getSpellSlots,
-  cantripsGainedAtLevel, spellsGainedAtLevel,
+  cantripsGainedAtLevel, spellsGainedAtLevel, getFirstSpellLevel,
 } from '@/character-builder/classMeta'
 import { computeModifier } from '@/shared/types/character'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
@@ -635,7 +635,7 @@ const noSpellsAtLevel = computed(() => {
   if (!p) return false
   if (p.castingType === 'known') return levelsWithGains.value.length === 0
   const hasCantrips = (p.cantripsKnown[levelIdx.value] ?? 0) > 0
-  return !hasCantrips && builder.draft.level < 2
+  return !hasCantrips && builder.draft.level < getFirstSpellLevel(builder.draft.classIndex)
 })
 
 const preparedSectionLabel = computed(() =>

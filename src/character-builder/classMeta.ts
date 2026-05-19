@@ -143,14 +143,14 @@ export const SPELL_PROFILES: Partial<Record<string, SpellProfile>> = {
     spellsKnown:   [4,5,6,7,8,9,10,11,12,14,15,15,16,18,19,19,20,22,22,22],
   },
   cleric: {
-    castingType: 'known',
-    cantripsKnown:  [3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5],
-    spellsKnown:    [3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22],
+    castingType: 'prepared',
+    preparedAbility: 'wis',
+    cantripsKnown: [3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5],
   },
   druid: {
-    castingType: 'known',
-    cantripsKnown:  [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
-    spellsKnown:    [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21],
+    castingType: 'prepared',
+    preparedAbility: 'wis',
+    cantripsKnown: [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
   },
   paladin: {
     castingType: 'known',
@@ -181,6 +181,11 @@ export const SPELL_PROFILES: Partial<Record<string, SpellProfile>> = {
 
 export function getSpellProfile(classIndex: string): SpellProfile | null {
   return SPELL_PROFILES[classIndex] ?? null
+}
+
+/** Level at which the class first gains spell slots (1 for most casters, 2 for paladin/ranger). */
+export function getFirstSpellLevel(classIndex: string): number {
+  return (classIndex === 'paladin' || classIndex === 'ranger') ? 2 : 1
 }
 
 

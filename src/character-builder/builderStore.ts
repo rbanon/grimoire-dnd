@@ -6,7 +6,7 @@ import { CharacterSchema, computeModifier } from '@/shared/types/character'
 import { storageGet, storageSet, storageRemove } from '@/shared/lib/storage'
 import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 11
@@ -333,7 +333,7 @@ export const useBuilderStore = defineStore('builder', () => {
           const diff = cantripLimit - draft.value.selectedCantrips.length
           errors.push(`Select ${diff} more cantrip${diff > 1 ? 's' : ''} (${draft.value.selectedCantrips.length}/${cantripLimit})`)
         }
-        if (draft.value.level >= 2) {
+        if (draft.value.level >= getFirstSpellLevel(draft.value.classIndex)) {
           const slots = getSpellSlots(draft.value.classIndex, draft.value.level)
           const totalSlots = Object.values(slots).reduce((s: number, v) => s + (v as number), 0)
           const ability = profile.preparedAbility!
