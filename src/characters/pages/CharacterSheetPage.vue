@@ -308,23 +308,69 @@
               >{{ character.combat.armorClass }}</button>
             </div>
 
-            <!-- Initiative (clickable roll) -->
-            <div class="card flex flex-col items-center justify-center p-3 min-w-[60px] group">
+            <!-- Initiative (editable in edit mode, roll on click otherwise) -->
+            <div class="card flex flex-col items-center justify-center p-3 min-w-[60px]">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Init</p>
+              <input
+                v-if="initEditing && editMode"
+                ref="initInputEl"
+                v-model.number="initValue"
+                type="number"
+                class="w-10 text-center font-heading text-xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum mt-0.5"
+                @blur="commitInit"
+                @keydown.enter="commitInit"
+                @keydown.esc="initEditing = false"
+              />
               <button
+                v-else
                 type="button"
-                class="font-heading text-xl text-vellum mt-0.5 leading-none hover:text-gold-mid transition-colors"
-                title="Roll Initiative"
-                @click="rollD20(initiativeMod, 'Initiative', $event)"
+                class="font-heading text-xl text-vellum mt-0.5 leading-none transition-colors"
+                :class="editMode ? 'hover:text-gold-mid cursor-pointer' : 'hover:text-gold-mid cursor-pointer'"
+                :title="editMode ? 'Click to override initiative' : 'Roll Initiative'"
+                @click="editMode ? startInitEdit() : rollD20(initiativeMod, 'Initiative', $event)"
               >{{ initiativeDisplay }}</button>
+              <button
+                v-if="character.overrides.initiative !== undefined && editMode"
+                type="button"
+                class="text-2xs text-mist/40 hover:text-blood-bright transition-colors mt-0.5"
+                title="Reset to DEX mod"
+                @click="resetInit"
+              >reset</button>
             </div>
 
-            <!-- Speed -->
+            <!-- Speed (editable in edit mode) -->
             <div class="card flex flex-col items-center justify-center p-3 min-w-0">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Speed</p>
-              <p class="font-heading text-xl text-vellum mt-0.5 leading-none">
-                {{ speedDisplay }}<span class="text-xs text-mist font-body ml-0.5">ft</span>
-              </p>
+              <div class="flex items-baseline gap-0.5 mt-0.5">
+                <input
+                  v-if="speedEditing && editMode"
+                  ref="speedInputEl"
+                  v-model.number="speedValue"
+                  type="number"
+                  min="0"
+                  step="5"
+                  class="w-12 text-center font-heading text-xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum"
+                  @blur="commitSpeed"
+                  @keydown.enter="commitSpeed"
+                  @keydown.esc="speedEditing = false"
+                />
+                <button
+                  v-else
+                  type="button"
+                  class="font-heading text-xl text-vellum leading-none transition-colors"
+                  :class="editMode ? 'hover:text-gold-mid cursor-pointer' : 'cursor-default'"
+                  :title="editMode ? 'Click to override speed' : ''"
+                  @click="editMode && startSpeedEdit()"
+                >{{ speedDisplay }}</button>
+                <span class="text-xs text-mist font-body">ft</span>
+              </div>
+              <button
+                v-if="character.overrides.speed !== undefined && editMode"
+                type="button"
+                class="text-2xs text-mist/40 hover:text-blood-bright transition-colors mt-0.5"
+                title="Reset to race speed"
+                @click="resetSpeed"
+              >reset</button>
             </div>
 
             <!-- Passive Perception -->
@@ -835,6 +881,61 @@ async function commitAc() {
   const next = Math.max(0, acValue.value || 0)
   if (next === character.value.combat.armorClass) return
   await store.update(character.value.id, { combat: { ...character.value.combat, armorClass: next } })
+}
+
+// ── Initiative override ───────────────────────────────────────────────────────
+
+const initEditing = ref(false)
+const initValue = ref(0)
+const initInputEl = ref<HTMLInputElement | null>(null)
+
+function startInitEdit() {
+  if (!character.value) return
+  initValue.value = initiativeMod.value
+  initEditing.value = true
+  nextTick(() => initInputEl.value?.select())
+}
+
+async function commitInit() {
+  if (!character.value) return
+  initEditing.value = false
+  await store.update(character.value.id, {
+    overrides: { ...character.value.overrides, initiative: initValue.value },
+  })
+}
+
+async function resetInit() {
+  if (!character.value) return
+  const { initiative: _, ...rest } = character.value.overrides
+  await store.update(character.value.id, { overrides: rest })
+}
+
+// ── Speed override ────────────────────────────────────────────────────────────
+
+const speedEditing = ref(false)
+const speedValue = ref(0)
+const speedInputEl = ref<HTMLInputElement | null>(null)
+
+function startSpeedEdit() {
+  if (!character.value) return
+  speedValue.value = character.value.overrides.speed ?? character.value.identity.race.speed
+  speedEditing.value = true
+  nextTick(() => speedInputEl.value?.select())
+}
+
+async function commitSpeed() {
+  if (!character.value) return
+  speedEditing.value = false
+  const next = Math.max(0, speedValue.value || 0)
+  await store.update(character.value.id, {
+    overrides: { ...character.value.overrides, speed: next },
+  })
+}
+
+async function resetSpeed() {
+  if (!character.value) return
+  const { speed: _, ...rest } = character.value.overrides
+  await store.update(character.value.id, { overrides: rest })
 }
 
 // ── Temp HP ───────────────────────────────────────────────────────────────────

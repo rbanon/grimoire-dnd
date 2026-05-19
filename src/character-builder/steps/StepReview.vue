@@ -95,8 +95,13 @@
         </div>
 
         <!-- Spells by level -->
-        <div v-if="builder.isSpellcaster && d.selectedSpells.length" class="card p-4 space-y-3">
-          <p class="label">Spells</p>
+        <div v-if="builder.isSpellcaster && allSpells.length" class="card p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="label">{{ isPreparedCaster ? 'Spell List' : 'Spells' }}</p>
+            <span v-if="isPreparedCaster" class="text-2xs font-body text-mist">
+              <span class="text-gold-mid">◆</span> prepared
+            </span>
+          </div>
           <div v-for="(group, lvl) in spellsByLevel" :key="lvl" class="space-y-1">
             <p class="text-2xs font-heading tracking-wider text-mist uppercase">
               {{ lvl === '1' ? '1st' : lvl === '2' ? '2nd' : lvl === '3' ? '3rd' : `${lvl}th` }} Level
@@ -105,8 +110,12 @@
               <span
                 v-for="s in group"
                 :key="s.index"
-                class="px-2 py-0.5 rounded text-xs font-heading border border-arcane-bright/20 bg-arcane-bright/5 text-arcane-pale/80"
+                class="flex items-center gap-0.5 px-2 py-0.5 rounded text-xs font-heading border transition-colors"
+                :class="isPreparedCaster && !preparedIndices.has(s.index)
+                  ? 'border-shadow/50 text-mist/50'
+                  : 'border-arcane-bright/20 bg-arcane-bright/5 text-arcane-pale/80'"
               >
+                <span v-if="isPreparedCaster && preparedIndices.has(s.index)" class="text-gold-mid text-2xs">◆</span>
                 {{ s.name }}
               </span>
             </div>
@@ -190,7 +199,7 @@ import { useBuilderStore } from '@/character-builder/builderStore'
 import { useAuthStore } from '@/auth/store'
 import { computeModifier } from '@/shared/types/character'
 import { computeProficiencyBonus } from '@/shared/lib/derivedStats'
-import { getClassMeta } from '@/character-builder/classMeta'
+import { getClassMeta, getSpellProfile } from '@/character-builder/classMeta'
 import ReviewSection from '@/character-builder/components/ReviewSection.vue'
 import type { InventoryItem } from '@/shared/types/character'
 
@@ -224,9 +233,17 @@ const keyStats = computed(() => [
 
 const skillLabels = computed(() => d.value.selectedSkills)
 
+const profile = computed(() => getSpellProfile(d.value.classIndex))
+const isPreparedCaster = computed(() => profile.value?.castingType === 'prepared')
+const preparedIndices = computed(() => new Set(d.value.selectedPreparedSpells.map(s => s.index)))
+
+// activeSpells handles all caster types correctly:
+// known → derived from spellsByLevel, prepared/spellbook → selectedSpells directly
+const allSpells = computed(() => builder.activeSpells)
+
 const spellsByLevel = computed(() => {
   const groups: Record<string, { index: string; name: string; level: number }[]> = {}
-  for (const s of d.value.selectedSpells) {
+  for (const s of allSpells.value) {
     const key = String(s.level)
     if (!groups[key]) groups[key] = []
     groups[key].push(s)
