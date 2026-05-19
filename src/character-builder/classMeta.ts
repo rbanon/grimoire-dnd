@@ -261,6 +261,17 @@ export function getAsiLevels(classIndex: string): number[] {
   return [...(ASI_LEVELS[classIndex] ?? [])]
 }
 
+// SRD 5e 2014 — class level at which the subclass is chosen
+const SUBCLASS_LEVEL: Record<string, number> = {
+  barbarian: 3, bard: 3, cleric: 1, druid: 2, fighter: 3,
+  monk: 3, paladin: 3, ranger: 3, rogue: 3, sorcerer: 1, warlock: 1, wizard: 2,
+}
+
+/** Level at which this class chooses a subclass. */
+export function getSubclassLevel(classIndex: string): number {
+  return SUBCLASS_LEVEL[classIndex] ?? 3
+}
+
 export function getClassMeta(index: string): ClassMeta {
   return CLASS_META[index] ?? {
     glyph: '⚔', hitDie: 8, flavor: '', tags: [], primaryAbility: '—', saves: '—',

@@ -148,40 +148,97 @@
               </ul>
             </section>
 
-            <!-- ASI note -->
-            <div
-              v-if="isAsiLevel"
-              class="flex items-start gap-2 px-3 py-2 rounded border border-gold-dim/30 bg-gold-dim/5"
-            >
-              <span class="text-gold-mid shrink-0 mt-px">↑</span>
-              <p class="text-xs font-body text-mist">
-                You gain an <span class="text-vellum font-heading">Ability Score Improvement</span>.
-                Unlock the sheet to edit your scores.
-              </p>
-            </div>
-
-            <!-- Subclass unlock note -->
-            <div
-              v-if="isSubclassLevel"
-              class="flex items-start gap-2 px-3 py-2 rounded border border-gold-dim/30 bg-gold-dim/5"
-            >
-              <span class="text-gold-mid shrink-0 mt-px">★</span>
-              <p class="text-xs font-body text-mist">
-                You unlock your
-                <span class="text-vellum font-heading">{{ character.identity.class.name }} subclass</span>
-                at level 3.
-              </p>
-            </div>
-
-            <!-- Next steps hint -->
+            <!-- Upcoming steps hint -->
             <p v-if="steps.length > 1" class="text-2xs font-body text-mist/40 text-center">
               Next:
-              <span v-if="deltaCantrips > 0">pick {{ deltaCantrips }} cantrip{{ deltaCantrips > 1 ? 's' : '' }}</span>
-              <span v-if="deltaCantrips > 0 && deltaSpells > 0"> · </span>
-              <span v-if="deltaSpells > 0">pick {{ deltaSpells }} spell{{ deltaSpells > 1 ? 's' : '' }}</span>
+              <template v-for="(s, i) in steps.slice(1)" :key="s">
+                <span v-if="i > 0"> · </span>
+                <span v-if="s === 'subclass'">pick subclass</span>
+                <span v-else-if="s === 'asi'">Ability Score Improvement</span>
+                <span v-else-if="s === 'cantrips'">pick {{ deltaCantrips }} cantrip{{ deltaCantrips > 1 ? 's' : '' }}</span>
+                <span v-else-if="s === 'spells'">pick {{ deltaSpells }} spell{{ deltaSpells > 1 ? 's' : '' }}</span>
+              </template>
             </p>
 
           </div>
+
+          <!-- ─────────────────────── STEP: Subclass ─────────────────────── -->
+          <template v-else-if="currentStep === 'subclass'">
+            <div class="px-5 py-4 border-b border-shadow shrink-0">
+              <p class="font-heading text-base text-gold-mid">Choose Subclass</p>
+              <p class="text-2xs font-body text-mist mt-0.5">{{ character.identity.class.name }} · Level {{ newLevel }}</p>
+            </div>
+            <div class="overflow-y-auto flex-1 px-4 py-3 space-y-2">
+              <div v-if="subclassLoading" class="flex justify-center py-10">
+                <GrimoireSpinner label="Loading subclasses…" />
+              </div>
+              <template v-else>
+                <div
+                  v-for="sub in availableSubclasses"
+                  :key="sub.index"
+                  class="flex items-start gap-3 px-4 py-3 rounded border cursor-pointer transition-all"
+                  :class="selectedSubclass?.index === sub.index
+                    ? 'border-gold-mid/60 bg-gold-dim/15'
+                    : 'border-shadow hover:border-gold-dim/30 hover:bg-depths/40'"
+                  @click="selectedSubclass = { index: sub.index, name: sub.name }"
+                >
+                  <div
+                    class="mt-0.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all"
+                    :class="selectedSubclass?.index === sub.index ? 'border-gold-mid bg-gold-mid/30' : 'border-mist/40'"
+                  >
+                    <span v-if="selectedSubclass?.index === sub.index" class="w-1.5 h-1.5 rounded-full bg-gold-mid block" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-heading text-sm" :class="selectedSubclass?.index === sub.index ? 'text-gold-mid' : 'text-ash'">{{ sub.name }}</p>
+                    <p v-if="selectedSubclass?.index === sub.index && subclassDetail" class="text-2xs font-body text-mist/70 mt-1 leading-relaxed">
+                      {{ subclassDetail.subclass_flavor }}
+                    </p>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <!-- ──────────────────────── STEP: ASI ───────────────────────────── -->
+          <template v-else-if="currentStep === 'asi'">
+            <div class="px-5 py-4 border-b border-shadow shrink-0">
+              <p class="font-heading text-base text-gold-mid">Ability Score Improvement</p>
+              <p class="text-2xs font-body text-mist mt-0.5">
+                Allocate {{ asiPointsRemaining }} point{{ asiPointsRemaining !== 1 ? 's' : '' }} remaining
+                <span class="ml-1 text-gold-mid/70" v-if="asiPointsRemaining === 0">✓ Done</span>
+              </p>
+            </div>
+            <div class="overflow-y-auto flex-1 px-5 py-4 space-y-2">
+              <div v-for="key in ASI_ABILITIES" :key="key" class="flex items-center gap-3 py-1">
+                <span class="text-2xs font-heading tracking-[0.15em] uppercase text-mist w-8 shrink-0">{{ ASI_LABELS[key] }}</span>
+                <span class="font-heading text-sm text-stone w-5 text-right">{{ asiCurrentScore(key) }}</span>
+                <span class="font-heading text-sm w-5 text-center" :class="(asiAllocations[key] ?? 0) > 0 ? 'text-gold-mid' : 'text-mist/20'">
+                  {{ (asiAllocations[key] ?? 0) > 0 ? `+${asiAllocations[key]}` : '—' }}
+                </span>
+                <span class="text-2xs font-body text-mist/40">→</span>
+                <span class="font-heading text-sm w-5" :class="(asiAllocations[key] ?? 0) > 0 ? 'text-vellum' : 'text-ash'">
+                  {{ asiCurrentScore(key) + (asiAllocations[key] ?? 0) }}
+                </span>
+                <span v-if="asiCurrentScore(key) + (asiAllocations[key] ?? 0) >= 20" class="text-2xs font-body text-gold-dim/50">max</span>
+                <div class="flex gap-1 ml-auto shrink-0">
+                  <button
+                    type="button"
+                    class="w-7 h-7 flex items-center justify-center rounded border font-heading text-sm transition-all"
+                    :class="canAsiDecrement(key) ? 'border-shadow hover:border-mist/60 text-mist hover:text-ash' : 'border-shadow/30 text-mist/25 cursor-not-allowed'"
+                    :disabled="!canAsiDecrement(key)"
+                    @click="asiDecrement(key)"
+                  >−</button>
+                  <button
+                    type="button"
+                    class="w-7 h-7 flex items-center justify-center rounded border font-heading text-sm transition-all"
+                    :class="canAsiIncrement(key) ? 'border-shadow hover:border-gold-dim/60 text-mist hover:text-gold-dim' : 'border-shadow/30 text-mist/25 cursor-not-allowed'"
+                    :disabled="!canAsiIncrement(key)"
+                    @click="asiIncrement(key)"
+                  >+</button>
+                </div>
+              </div>
+            </div>
+          </template>
 
           <!-- ──────────────────────── STEP: Cantrips ──────────────────────── -->
           <template v-else-if="currentStep === 'cantrips'">
@@ -354,7 +411,7 @@ import { computeModifier } from '@/shared/types/character'
 import type { Character, SpellReference } from '@/shared/types/character'
 import {
   CLASS_META, CLASS_LEVELS,
-  getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel,
+  getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel, getSubclassLevel,
 } from '@/character-builder/classMeta'
 import type { SpellSlotsMax } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
@@ -396,13 +453,76 @@ const deltaSpells = computed(() => {
   )
 })
 
+// ── Subclass ──────────────────────────────────────────────────────────────────
+
+const needsSubclass = computed(() =>
+  newLevel.value === getSubclassLevel(classIndex.value) && !props.character.identity.subclass,
+)
+
+const selectedSubclass = ref<{ index: string; name: string } | null>(null)
+
+const { data: classData, isPending: subclassLoading } = useQuery({
+  queryKey: computed(() => ['class', classIndex.value]),
+  queryFn: () => fiveEApi.getClass(classIndex.value),
+  staleTime: Infinity,
+  enabled: computed(() => props.show && needsSubclass.value),
+})
+
+const availableSubclasses = computed(() => classData.value?.subclasses ?? [])
+
+const { data: subclassDetail } = useQuery({
+  queryKey: computed(() => ['subclass-detail', selectedSubclass.value?.index ?? '']),
+  queryFn: () => fiveEApi.getSubclass(selectedSubclass.value!.index),
+  staleTime: Infinity,
+  enabled: computed(() => !!selectedSubclass.value),
+})
+
+// ── ASI ───────────────────────────────────────────────────────────────────────
+
+const isAsiLevel = computed(() => getAsiLevels(classIndex.value).includes(newLevel.value))
+const ASI_ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const
+type AbilityKey = typeof ASI_ABILITIES[number]
+const ASI_LABELS: Record<AbilityKey, string> = { str: 'STR', dex: 'DEX', con: 'CON', int: 'INT', wis: 'WIS', cha: 'CHA' }
+
+const asiAllocations = ref<Partial<Record<AbilityKey, number>>>({})
+const asiPointsUsed = computed(() => Object.values(asiAllocations.value).reduce((s, v) => s + (v ?? 0), 0))
+const asiPointsRemaining = computed(() => 2 - asiPointsUsed.value)
+
+function asiCurrentScore(key: AbilityKey): number {
+  return props.character.abilityScores[key]
+}
+function canAsiIncrement(key: AbilityKey): boolean {
+  const total = asiCurrentScore(key) + (asiAllocations.value[key] ?? 0)
+  return asiPointsRemaining.value > 0 && total < 20
+}
+function canAsiDecrement(key: AbilityKey): boolean {
+  return (asiAllocations.value[key] ?? 0) > 0
+}
+function asiIncrement(key: AbilityKey) {
+  if (!canAsiIncrement(key)) return
+  asiAllocations.value = { ...asiAllocations.value, [key]: (asiAllocations.value[key] ?? 0) + 1 }
+}
+function asiDecrement(key: AbilityKey) {
+  if (!canAsiDecrement(key)) return
+  const next = (asiAllocations.value[key] ?? 0) - 1
+  const updated = { ...asiAllocations.value }
+  if (next === 0) delete updated[key]
+  else updated[key] = next
+  asiAllocations.value = updated
+}
+const asiCanProceed = computed(() =>
+  asiPointsRemaining.value === 0 || !ASI_ABILITIES.some(k => canAsiIncrement(k)),
+)
+
 // ── Stepper ───────────────────────────────────────────────────────────────────
 
-type Step = 'hp' | 'cantrips' | 'spells'
+type Step = 'hp' | 'subclass' | 'asi' | 'cantrips' | 'spells'
 
 const steps = computed((): Step[] => {
   if (atMaxLevel.value) return ['hp']
   const s: Step[] = ['hp']
+  if (needsSubclass.value) s.push('subclass')
+  if (isAsiLevel.value) s.push('asi')
   if (deltaCantrips.value > 0) s.push('cantrips')
   if (deltaSpells.value > 0) s.push('spells')
   return s
@@ -419,6 +539,8 @@ const canAdvance = computed(() => {
     if (hpChoice.value === 'manual') return (manualHp.value || 0) >= 1
     return true
   }
+  if (currentStep.value === 'subclass') return selectedSubclass.value !== null
+  if (currentStep.value === 'asi') return asiCanProceed.value
   if (currentStep.value === 'cantrips') return remainingCantrips.value === 0
   if (currentStep.value === 'spells') return remainingSpells.value === 0
   return true
@@ -498,9 +620,6 @@ const featuresGained = computed((): string[] =>
   CLASS_LEVELS[classIndex.value]?.[newLevel.value]?.features ?? [],
 )
 
-const isAsiLevel = computed(() => getAsiLevels(classIndex.value).includes(newLevel.value))
-const isSubclassLevel = computed(() => newLevel.value === 3 && !props.character.identity.subclass)
-
 // ── Cantrips step ─────────────────────────────────────────────────────────────
 
 const cantripSearch = ref('')
@@ -578,6 +697,8 @@ watch(() => props.show, (v) => {
   rawDie.value = null
   rolledHp.value = 0
   manualHp.value = 1
+  selectedSubclass.value = null
+  asiAllocations.value = {}
   selectedCantrips.value = []
   selectedSpells.value = []
   cantripSearch.value = ''
@@ -600,6 +721,38 @@ function confirm() {
     },
   }
 
+  // Subclass
+  if (selectedSubclass.value) {
+    updates.identity = {
+      ...c.identity,
+      subclass: { index: selectedSubclass.value.index, name: selectedSubclass.value.name },
+    }
+  }
+
+  // ASI — apply allocations to ability scores
+  if (Object.keys(asiAllocations.value).length > 0) {
+    const newScores = { ...c.abilityScores }
+    for (const [key, delta] of Object.entries(asiAllocations.value) as [AbilityKey, number][]) {
+      newScores[key] = Math.min(20, newScores[key] + delta)
+    }
+    updates.abilityScores = newScores
+  }
+
+  // Features gained at this level
+  const newFeatureList = featuresGained.value.filter(f => f.length > 0)
+  if (newFeatureList.length > 0) {
+    updates.features = [
+      ...c.features,
+      ...newFeatureList.map(name => ({
+        id: crypto.randomUUID(),
+        name,
+        source: `${c.identity.class.name} Level ${newLevel.value}`,
+        description: '',
+      })),
+    ]
+  }
+
+  // Spells
   if (c.spellcasting) {
     const addedCantrips: SpellReference[] = selectedCantrips.value.map(ct => ({
       index: ct.index, name: ct.name, level: 0,
