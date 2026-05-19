@@ -154,7 +154,7 @@
               <template v-for="(s, i) in steps.slice(1)" :key="s">
                 <span v-if="i > 0"> · </span>
                 <span v-if="s === 'subclass'">pick subclass</span>
-                <span v-else-if="s === 'asi'">Ability Score Improvement</span>
+                <span v-else-if="s === 'asi'">ASI or Feat</span>
                 <span v-else-if="s === 'cantrips'">pick {{ deltaCantrips }} cantrip{{ deltaCantrips > 1 ? 's' : '' }}</span>
                 <span v-else-if="s === 'spells'">pick {{ deltaSpells }} spell{{ deltaSpells > 1 ? 's' : '' }}</span>
               </template>
@@ -199,16 +199,45 @@
             </div>
           </template>
 
-          <!-- ──────────────────────── STEP: ASI ───────────────────────────── -->
+          <!-- ──────────────────────── STEP: ASI / Feat ──────────────────── -->
           <template v-else-if="currentStep === 'asi'">
+            <!-- Header -->
             <div class="px-5 py-4 border-b border-shadow shrink-0">
-              <p class="font-heading text-base text-gold-mid">Ability Score Improvement</p>
+              <p class="font-heading text-base text-gold-mid">Improvement — Level {{ newLevel }}</p>
               <p class="text-2xs font-body text-mist mt-0.5">
-                Allocate {{ asiPointsRemaining }} point{{ asiPointsRemaining !== 1 ? 's' : '' }} remaining
-                <span class="ml-1 text-gold-mid/70" v-if="asiPointsRemaining === 0">✓ Done</span>
+                <template v-if="featChoice === 'asi'">
+                  Allocate {{ asiPointsRemaining }} point{{ asiPointsRemaining !== 1 ? 's' : '' }} remaining
+                  <span v-if="asiPointsRemaining === 0" class="ml-1 text-gold-mid/70">✓ Done</span>
+                </template>
+                <template v-else>
+                  Choose a feat
+                  <span v-if="selectedFeat" class="ml-1 text-gold-mid/70">✓ {{ selectedFeat.name }}</span>
+                </template>
               </p>
             </div>
-            <div class="overflow-y-auto flex-1 px-5 py-4 space-y-2">
+
+            <!-- ASI / Feat toggle -->
+            <div class="px-5 pt-4 pb-0 shrink-0 flex gap-2">
+              <button
+                type="button"
+                class="flex-1 px-3 py-2 rounded border text-sm font-heading tracking-wide transition-all"
+                :class="featChoice === 'asi'
+                  ? 'border-gold-mid/50 bg-gold-dim/10 text-gold-deep'
+                  : 'border-shadow text-ash hover:border-gold-dim/20'"
+                @click="setFeatChoice('asi')"
+              >Ability Score Improvement</button>
+              <button
+                type="button"
+                class="flex-1 px-3 py-2 rounded border text-sm font-heading tracking-wide transition-all"
+                :class="featChoice === 'feat'
+                  ? 'border-gold-mid/50 bg-gold-dim/10 text-gold-deep'
+                  : 'border-shadow text-ash hover:border-gold-dim/20'"
+                @click="setFeatChoice('feat')"
+              >Take a Feat</button>
+            </div>
+
+            <!-- ASI allocation -->
+            <div v-if="featChoice === 'asi'" class="overflow-y-auto flex-1 px-5 py-4 space-y-2">
               <div v-for="key in ASI_ABILITIES" :key="key" class="flex items-center gap-3 py-1">
                 <span class="text-2xs font-heading tracking-[0.15em] uppercase text-mist w-8 shrink-0">{{ ASI_LABELS[key] }}</span>
                 <span class="font-heading text-sm text-stone w-5 text-right">{{ asiCurrentScore(key) }}</span>
@@ -238,6 +267,48 @@
                 </div>
               </div>
             </div>
+
+            <!-- Feat picker -->
+            <template v-else>
+              <div class="px-5 py-3 border-b border-shadow shrink-0">
+                <input
+                  v-model="featSearch"
+                  type="text"
+                  placeholder="Search feats…"
+                  class="input-base w-full text-sm"
+                  autofocus
+                />
+              </div>
+              <div class="overflow-y-auto flex-1 px-4 py-3 space-y-1">
+                <div v-if="featsLoading" class="flex justify-center py-10">
+                  <GrimoireSpinner label="Loading feats…" />
+                </div>
+                <p v-else-if="filteredFeats.length === 0" class="text-sm font-body text-mist text-center py-8 italic">
+                  {{ featSearch ? 'No feats match your search.' : 'No feats meet your current prerequisites.' }}
+                </p>
+                <template v-else>
+                  <div
+                    v-for="feat in filteredFeats"
+                    :key="feat.index"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded border cursor-pointer transition-all"
+                    :class="selectedFeat?.index === feat.index
+                      ? 'border-gold-mid/60 bg-gold-dim/15'
+                      : 'border-shadow hover:border-gold-dim/30 hover:bg-depths/40'"
+                    @click="selectedFeat = { index: feat.index, name: feat.name }"
+                  >
+                    <div
+                      class="mt-0.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all"
+                      :class="selectedFeat?.index === feat.index ? 'border-gold-mid bg-gold-mid/30' : 'border-mist/40'"
+                    >
+                      <span v-if="selectedFeat?.index === feat.index" class="w-1.5 h-1.5 rounded-full bg-gold-mid block" />
+                    </div>
+                    <p class="font-heading text-sm flex-1" :class="selectedFeat?.index === feat.index ? 'text-gold-mid' : 'text-ash'">
+                      {{ feat.name }}
+                    </p>
+                  </div>
+                </template>
+              </div>
+            </template>
           </template>
 
           <!-- ──────────────────────── STEP: Cantrips ──────────────────────── -->
@@ -409,7 +480,7 @@ import { ref, computed, watch } from 'vue'
 import { InfoIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { computeModifier } from '@/shared/types/character'
-import type { Character, SpellReference } from '@/shared/types/character'
+import type { Character, SpellReference, AbilityScores } from '@/shared/types/character'
 import {
   CLASS_META, CLASS_LEVELS,
   getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel, getSubclassLevel,
@@ -515,6 +586,51 @@ const asiCanProceed = computed(() =>
   asiPointsRemaining.value === 0 || !ASI_ABILITIES.some(k => canAsiIncrement(k)),
 )
 
+// ── Feat picker ───────────────────────────────────────────────────────────────
+
+const FEAT_PREREQUISITES: Record<string, { ability_score: { index: string; name: string }; minimum_score: number }[]> = {
+  athlete:             [{ ability_score: { index: 'str', name: 'Strength' },     minimum_score: 13 }],
+  'defensive-duelist': [{ ability_score: { index: 'dex', name: 'Dexterity' },   minimum_score: 13 }],
+  grappler:            [{ ability_score: { index: 'str', name: 'Strength' },     minimum_score: 13 }],
+  'inspiring-leader':  [{ ability_score: { index: 'cha', name: 'Charisma' },    minimum_score: 13 }],
+  'keen-mind':         [{ ability_score: { index: 'int', name: 'Intelligence' }, minimum_score: 13 }],
+  linguist:            [{ ability_score: { index: 'int', name: 'Intelligence' }, minimum_score: 13 }],
+  observant:           [{ ability_score: { index: 'int', name: 'Intelligence' }, minimum_score: 13 }],
+  skulker:             [{ ability_score: { index: 'dex', name: 'Dexterity' },   minimum_score: 13 }],
+}
+
+const featChoice   = ref<'asi' | 'feat'>('asi')
+const selectedFeat = ref<{ index: string; name: string } | null>(null)
+const featSearch   = ref('')
+
+const { data: featData, isPending: featsLoading } = useQuery({
+  queryKey: ['feats'],
+  queryFn: () => fiveEApi.listFeats(),
+  staleTime: Infinity,
+  enabled: computed(() => props.show && isAsiLevel.value),
+})
+const allFeats = computed(() => featData.value?.results ?? [])
+
+function featMeetsPrerequisites(featIndex: string): boolean {
+  const prerequisites = FEAT_PREREQUISITES[featIndex]
+  if (!prerequisites || prerequisites.length === 0) return true
+  return prerequisites.every(
+    prereq => props.character.abilityScores[prereq.ability_score.index as keyof AbilityScores] >= prereq.minimum_score,
+  )
+}
+
+const filteredFeats = computed(() => {
+  const q = featSearch.value.toLowerCase().trim()
+  const list = q ? allFeats.value.filter(f => f.name.toLowerCase().includes(q)) : allFeats.value
+  return list.filter(f => featMeetsPrerequisites(f.index))
+})
+
+function setFeatChoice(choice: 'asi' | 'feat') {
+  featChoice.value = choice
+  if (choice === 'feat') asiAllocations.value = {}
+  else selectedFeat.value = null
+}
+
 // ── Stepper ───────────────────────────────────────────────────────────────────
 
 type Step = 'hp' | 'subclass' | 'asi' | 'cantrips' | 'spells'
@@ -541,7 +657,7 @@ const canAdvance = computed(() => {
     return true
   }
   if (currentStep.value === 'subclass') return selectedSubclass.value !== null
-  if (currentStep.value === 'asi') return asiCanProceed.value
+  if (currentStep.value === 'asi') return featChoice.value === 'feat' ? selectedFeat.value !== null : asiCanProceed.value
   if (currentStep.value === 'cantrips') return remainingCantrips.value === 0
   if (currentStep.value === 'spells') return remainingSpells.value === 0
   return true
@@ -701,6 +817,9 @@ watch(() => props.show, (v) => {
   manualHp.value = 1
   selectedSubclass.value = null
   asiAllocations.value = {}
+  featChoice.value = 'asi'
+  selectedFeat.value = null
+  featSearch.value = ''
   selectedCantrips.value = []
   selectedSpells.value = []
   cantripSearch.value = ''
@@ -731,8 +850,8 @@ function confirm() {
     }
   }
 
-  // ASI — apply allocations to ability scores
-  if (Object.keys(asiAllocations.value).length > 0) {
+  // ASI — apply allocations to ability scores (only when not taking a feat)
+  if (featChoice.value === 'asi' && Object.keys(asiAllocations.value).length > 0) {
     const newScores = { ...c.abilityScores }
     for (const [key, delta] of Object.entries(asiAllocations.value) as [AbilityKey, number][]) {
       newScores[key] = Math.min(20, newScores[key] + delta)
@@ -740,18 +859,20 @@ function confirm() {
     updates.abilityScores = newScores
   }
 
-  // Features gained at this level
-  const newFeatureList = featuresGained.value.filter(f => f.length > 0)
-  if (newFeatureList.length > 0) {
-    updates.features = [
-      ...c.features,
-      ...newFeatureList.map(name => ({
-        id: crypto.randomUUID(),
-        name,
-        source: `${c.identity.class.name} Level ${newLevel.value}`,
-        description: '',
-      })),
-    ]
+  // Features — class features at this level + feat (if chosen)
+  const classFeatures = featuresGained.value
+    .filter(f => f.length > 0)
+    .map(name => ({
+      id: crypto.randomUUID(),
+      name,
+      source: `${c.identity.class.name} Level ${newLevel.value}`,
+      description: '',
+    }))
+  const featFeature = featChoice.value === 'feat' && selectedFeat.value
+    ? [{ id: crypto.randomUUID(), name: selectedFeat.value.name, source: `Level ${newLevel.value} Feat`, description: '' }]
+    : []
+  if (classFeatures.length > 0 || featFeature.length > 0) {
+    updates.features = [...c.features, ...classFeatures, ...featFeature]
   }
 
   // Spells
