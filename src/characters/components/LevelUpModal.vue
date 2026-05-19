@@ -50,11 +50,11 @@
             <!-- HP gain -->
             <section v-else class="space-y-2">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-stone">Hit Points Gained</p>
-              <div class="grid grid-cols-2 gap-2">
+              <div class="grid grid-cols-3 gap-2">
                 <!-- Roll -->
                 <button
                   type="button"
-                  class="flex flex-col items-start px-3 py-3 rounded border transition-all"
+                  class="flex flex-col items-start px-2.5 py-3 rounded border transition-all"
                   :class="hpChoice === 'roll'
                     ? 'border-gold-mid/60 bg-depths/60'
                     : 'border-shadow bg-depths/20 hover:border-shadow/80'"
@@ -62,33 +62,54 @@
                 >
                   <span class="text-2xs font-heading uppercase tracking-wider text-mist mb-2">Roll</span>
                   <span
-                    class="font-heading text-3xl leading-none"
+                    class="font-heading text-2xl leading-none"
                     :class="hpChoice === 'roll' ? 'text-gold-mid' : 'text-ash'"
                   >{{ rollDisplay }}</span>
-                  <span class="text-2xs font-body text-mist mt-1.5">
+                  <span class="text-2xs font-body text-mist mt-1.5 leading-tight">
                     {{ rawDie === null
-                      ? `click to roll d${hitDie}`
-                      : `d${hitDie}(${rawDie}) ${conMod >= 0 ? '+' : ''}${conMod} CON` }}
+                      ? `d${hitDie}`
+                      : `${rawDie}${conMod >= 0 ? '+' : ''}${conMod}` }}
                   </span>
                 </button>
                 <!-- Average -->
                 <button
                   type="button"
-                  class="flex flex-col items-start px-3 py-3 rounded border transition-all"
+                  class="flex flex-col items-start px-2.5 py-3 rounded border transition-all"
                   :class="hpChoice === 'average'
                     ? 'border-gold-mid/60 bg-depths/60'
                     : 'border-shadow bg-depths/20 hover:border-shadow/80'"
                   @click="hpChoice = 'average'"
                 >
-                  <span class="text-2xs font-heading uppercase tracking-wider text-mist mb-2">Take Average</span>
+                  <span class="text-2xs font-heading uppercase tracking-wider text-mist mb-2">Average</span>
                   <span
-                    class="font-heading text-3xl leading-none"
+                    class="font-heading text-2xl leading-none"
                     :class="hpChoice === 'average' ? 'text-gold-mid' : 'text-ash'"
                   >+{{ averageHp }}</span>
-                  <span class="text-2xs font-body text-mist mt-1.5">
-                    ⌀{{ Math.floor(hitDie / 2) + 1 }} {{ conMod >= 0 ? '+' : '' }}{{ conMod }} CON
+                  <span class="text-2xs font-body text-mist mt-1.5 leading-tight">
+                    ⌀{{ Math.floor(hitDie / 2) + 1 }}{{ conMod >= 0 ? '+' : '' }}{{ conMod }}
                   </span>
                 </button>
+                <!-- Manual -->
+                <div
+                  class="flex flex-col items-start px-2.5 py-3 rounded border transition-all cursor-pointer"
+                  :class="hpChoice === 'manual'
+                    ? 'border-gold-mid/60 bg-depths/60'
+                    : 'border-shadow bg-depths/20 hover:border-shadow/80'"
+                  @click="hpChoice = 'manual'"
+                >
+                  <span class="text-2xs font-heading uppercase tracking-wider text-mist mb-2">Manual</span>
+                  <input
+                    v-if="hpChoice === 'manual'"
+                    v-model.number="manualHp"
+                    type="number"
+                    min="1"
+                    class="w-full bg-transparent border-b border-gold-mid/50 outline-none font-heading text-2xl text-gold-mid leading-none pb-px"
+                    @click.stop
+                    @keydown.stop
+                  />
+                  <span v-else class="font-heading text-2xl leading-none text-ash">—</span>
+                  <span class="text-2xs font-body text-mist mt-1.5 leading-tight">any value</span>
+                </div>
               </div>
               <p v-if="hpChoice !== null" class="text-center text-xs font-body text-stone">
                 Max HP: {{ character.combat.maxHp }}
@@ -393,7 +414,11 @@ const isLastStep = computed(() => currentStepIndex.value === steps.value.length 
 
 const canAdvance = computed(() => {
   if (atMaxLevel.value) return true
-  if (currentStep.value === 'hp') return hpChoice.value !== null
+  if (currentStep.value === 'hp') {
+    if (hpChoice.value === null) return false
+    if (hpChoice.value === 'manual') return (manualHp.value || 0) >= 1
+    return true
+  }
   if (currentStep.value === 'cantrips') return remainingCantrips.value === 0
   if (currentStep.value === 'spells') return remainingSpells.value === 0
   return true
@@ -417,15 +442,17 @@ function handleEsc() {
 
 // ── HP ────────────────────────────────────────────────────────────────────────
 
-const hpChoice = ref<'roll' | 'average' | null>(null)
+const hpChoice = ref<'roll' | 'average' | 'manual' | null>(null)
 const rawDie = ref<number | null>(null)
 const rolledHp = ref(0)
+const manualHp = ref(1)
 
 const averageHp = computed(() => Math.max(1, Math.floor(hitDie.value / 2) + 1 + conMod.value))
 
 const hpGained = computed(() => {
   if (hpChoice.value === 'average') return averageHp.value
   if (hpChoice.value === 'roll') return rolledHp.value
+  if (hpChoice.value === 'manual') return Math.max(1, manualHp.value || 1)
   return 0
 })
 
@@ -550,6 +577,7 @@ watch(() => props.show, (v) => {
   hpChoice.value = null
   rawDie.value = null
   rolledHp.value = 0
+  manualHp.value = 1
   selectedCantrips.value = []
   selectedSpells.value = []
   cantripSearch.value = ''
