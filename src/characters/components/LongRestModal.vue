@@ -35,7 +35,7 @@
                 Choose up to
                 <span class="font-heading text-vellum">{{ dailyLimit }}</span>
                 spells
-                <span class="text-mist">({{ abilityName }} mod {{ fmt(abilityMod) }} + level {{ character.combat.level }})</span>.
+                <span class="text-mist">({{ abilityName }} mod {{ fmt(abilityMod) }} + level {{ character.combat.level }}, enough to fill all slots)</span>.
               </p>
 
               <!-- Selected counter -->
@@ -145,7 +145,7 @@ import { ref, computed, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { computeAllModifiers } from '@/shared/types/character'
-import { getSpellProfile, getMaxSpellLevel, CLASS_META } from '@/character-builder/classMeta'
+import { getSpellProfile, getMaxSpellLevel, getSpellSlots, CLASS_META } from '@/character-builder/classMeta'
 import type { Character, SpellReference } from '@/shared/types/character'
 
 const props = defineProps<{ show: boolean; character: Character }>()
@@ -166,11 +166,19 @@ const abilityKey = computed(() => profile.value?.preparedAbility ?? 'wis')
 const abilityMod = computed(() => mods.value[abilityKey.value] ?? 0)
 const abilityName = computed(() => ({ wis: 'WIS', int: 'INT', cha: 'CHA' }[abilityKey.value] ?? 'WIS'))
 
+const totalSlotCount = computed(() => {
+  const s = getSpellSlots(classIndex.value, props.character.combat.level)
+  return s.level1 + s.level2 + s.level3 + s.level4 + s.level5 + s.level6 + s.level7 + s.level8 + s.level9
+})
+
 const dailyLimit = computed(() => {
-  const lv = props.character.combat.level
+  const lv  = props.character.combat.level
   const mod = abilityMod.value
-  if (classIndex.value === 'paladin') return Math.max(1, Math.floor(lv / 2) + mod)
-  return Math.max(1, lv + mod)
+  const daily = classIndex.value === 'paladin'
+    ? Math.max(1, Math.floor(lv / 2) + mod)
+    : Math.max(1, lv + mod)
+  // Match the builder: allow max(totalSlots, daily) so all slots can always be filled
+  return Math.max(totalSlotCount.value, daily)
 })
 
 const maxSpellLevel = computed(() =>
