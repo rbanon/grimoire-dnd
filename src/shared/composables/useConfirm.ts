@@ -5,6 +5,7 @@ export interface ConfirmConfig {
   body: string
   confirmLabel?: string
   variant?: 'danger' | 'default'
+  detail?: { label: string; value: string }[]
 }
 
 let _resolve: ((value: boolean) => void) | null = null
