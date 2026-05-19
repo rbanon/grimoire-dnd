@@ -33,8 +33,15 @@
               <div v-else class="w-full h-full flex items-center justify-center bg-depths text-2xl text-gold-dim/30 font-display select-none">
                 {{ classGlyph }}
               </div>
-              <div class="absolute inset-0 bg-abyss/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <ImageIcon :size="14" class="text-stone" />
+              <div
+                class="absolute inset-0 bg-abyss/60 flex items-center justify-center transition-opacity"
+                :class="portraitUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
+              >
+                <svg v-if="portraitUploading" class="animate-spin w-4 h-4 text-gold-mid" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                <ImageIcon v-else :size="14" class="text-stone" />
               </div>
               <div class="absolute top-0 left-0 w-2.5 h-2.5 border-t border-l border-gold-dim/30" />
               <div class="absolute top-0 right-0 w-2.5 h-2.5 border-t border-r border-gold-dim/30" />
@@ -680,6 +687,9 @@ import { CLASS_META, getSpellProfile } from '@/character-builder/classMeta'
 import { useDialog } from '@/shared/composables/useDialog'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
+import { useAuthStore } from '@/auth/store'
+import { useToast } from '@/shared/composables/useToast'
+import { uploadPortrait } from '@/shared/lib/uploadPortrait'
 import ConditionsBar from '@/characters/components/ConditionsBar.vue'
 import FavoritesTab from '@/characters/components/FavoritesTab.vue'
 import EquipmentTab from '@/characters/components/EquipmentTab.vue'
@@ -694,6 +704,8 @@ import LongRestModal from '@/characters/components/LongRestModal.vue'
 
 const props = defineProps<{ id: string }>()
 const store = useCharactersStore()
+const auth = useAuthStore()
+const toast = useToast()
 const character = computed(() => store.getById(props.id))
 const dialog = useDialog()
 const infoPanel = useInfoPanel()
@@ -706,16 +718,35 @@ const showLevelUp   = ref(false)
 const levelUpSaving = ref(false)
 
 const portraitFileInput = ref<HTMLInputElement | null>(null)
+const portraitUploading = ref(false)
 
-function onPortraitChange(event: Event) {
+async function onPortraitChange(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file || !character.value) return
-  if (file.size > 1_048_576) return
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    store.update(props.id, { portrait: { type: 'url', url: e.target?.result as string } })
+  if (file.size > 1_048_576) {
+    toast.error('Portrait must be under 1 MB.')
+    return
   }
-  reader.readAsDataURL(file)
+  portraitUploading.value = true
+  try {
+    if (auth.isAuthenticated && auth.userId) {
+      const url = await uploadPortrait(file, auth.userId, props.id)
+      await store.update(props.id, { portrait: { type: 'url', url } })
+    } else {
+      const url = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = (e) => resolve(e.target?.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+      await store.update(props.id, { portrait: { type: 'url', url } })
+    }
+  } catch {
+    toast.error('Failed to upload portrait. Please try again.')
+  } finally {
+    portraitUploading.value = false
+    if (portraitFileInput.value) portraitFileInput.value.value = ''
+  }
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────

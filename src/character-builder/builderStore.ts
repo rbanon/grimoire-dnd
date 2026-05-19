@@ -6,6 +6,8 @@ import { CharacterSchema, computeModifier } from '@/shared/types/character'
 import { storageGet, storageSet, storageRemove } from '@/shared/lib/storage'
 import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
+import { useAuthStore } from '@/auth/store'
+import { uploadPortrait } from '@/shared/lib/uploadPortrait'
 import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
@@ -567,6 +569,7 @@ export const useBuilderStore = defineStore('builder', () => {
     saving.value = true
     saveError.value = null
     const characterStore = useCharactersStore()
+    const auth = useAuthStore()
     const d = draft.value
     const ts = now()
     const id = generateId()
@@ -574,7 +577,16 @@ export const useBuilderStore = defineStore('builder', () => {
     try {
     let portrait: { type: 'none' } | { type: 'url'; url: string } = { type: 'none' }
     if (d.portraitUrl) {
-      try { new URL(d.portraitUrl); portrait = { type: 'url', url: d.portraitUrl } } catch { /* skip invalid URL */ }
+      let portraitUrl = d.portraitUrl
+      if (portraitUrl.startsWith('data:') && auth.isAuthenticated && auth.userId) {
+        try {
+          const blob = await fetch(portraitUrl).then(r => r.blob())
+          const ext = blob.type.split('/')[1]?.split('+')[0] ?? 'jpg'
+          const file = new File([blob], `portrait.${ext}`, { type: blob.type })
+          portraitUrl = await uploadPortrait(file, auth.userId, id)
+        } catch { /* keep data URL on upload failure */ }
+      }
+      try { new URL(portraitUrl); portrait = { type: 'url', url: portraitUrl } } catch { /* skip invalid URL */ }
     }
 
     const character = CharacterSchema.parse({

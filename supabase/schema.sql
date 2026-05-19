@@ -160,6 +160,33 @@ create policy "campaign_notes: owner access" on campaign_notes
     )
   );
 
+-- ── Storage: portraits bucket ────────────────────────────────────────────────
+
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('portraits', 'portraits', true, 1048576)
+on conflict (id) do nothing;
+
+create policy "portraits: owner upload" on storage.objects
+  for insert with check (
+    bucket_id = 'portraits' and
+    auth.uid()::text = (string_to_array(name, '/'))[1]
+  );
+
+create policy "portraits: owner update" on storage.objects
+  for update using (
+    bucket_id = 'portraits' and
+    auth.uid()::text = (string_to_array(name, '/'))[1]
+  );
+
+create policy "portraits: public read" on storage.objects
+  for select using (bucket_id = 'portraits');
+
+create policy "portraits: owner delete" on storage.objects
+  for delete using (
+    bucket_id = 'portraits' and
+    auth.uid()::text = (string_to_array(name, '/'))[1]
+  );
+
 -- ── updated_at auto-update trigger ───────────────────────────────────────────
 create or replace function set_updated_at()
 returns trigger language plpgsql as $$
