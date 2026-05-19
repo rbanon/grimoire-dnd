@@ -21,17 +21,6 @@
           <p class="font-mono text-2xs tracking-[0.2em] uppercase text-mist/60">No portrait</p>
         </div>
 
-        <!-- Gradient scrim so the level badge is always legible -->
-        <div
-          class="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
-          style="background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%)"
-        />
-
-        <!-- Level badge -->
-        <div class="absolute bottom-2 left-2">
-          <span class="badge-gold">Lv {{ summary.level }}</span>
-        </div>
-
         <!-- Hover actions -->
         <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <button
@@ -54,9 +43,12 @@
 
       <!-- Info -->
       <div class="px-3.5 py-3 border-t border-gold-dim/15">
-        <h3 class="font-display text-base text-vellum leading-snug truncate group-hover:text-arcane-base transition-colors">
-          {{ summary.name }}
-        </h3>
+        <div class="flex items-baseline gap-2 min-w-0">
+          <h3 class="font-display text-base text-vellum leading-snug truncate group-hover:text-arcane-base transition-colors flex-1 min-w-0">
+            {{ summary.name }}
+          </h3>
+          <span class="badge-gold shrink-0">Lv {{ summary.level }}</span>
+        </div>
         <p class="font-body text-sm text-ash mt-0.5 truncate">
           {{ summary.race }}<span class="text-mist mx-1">·</span>{{ summary.className }}
         </p>
