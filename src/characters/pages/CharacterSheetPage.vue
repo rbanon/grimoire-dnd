@@ -78,6 +78,12 @@
                   :disabled="!editMode"
                   @click="editMode && toggleInspiration()"
                 >✦ Inspiration</button>
+                <button
+                  v-if="character.combat.level < 20"
+                  type="button"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border border-dusk text-xs font-heading tracking-wide text-mist transition-all hover:border-gold-dim/60 hover:text-ash"
+                  @click="showLevelUp = true"
+                >↑ Level Up</button>
               </div>
             </div>
 
@@ -564,6 +570,15 @@
       @close="showShortRest = false"
       @rested="onShortRested"
     />
+
+    <!-- ── Level Up modal ────────────────────────────────────────────────────── -->
+    <LevelUpModal
+      v-if="character"
+      :show="showLevelUp"
+      :character="character"
+      @close="showLevelUp = false"
+      @leveled="onLeveled"
+    />
   </div>
 </template>
 
@@ -587,6 +602,7 @@ import BioTab from '@/characters/components/BioTab.vue'
 import RollResult from '@/shared/components/RollResult.vue'
 import RollConfirm from '@/shared/components/RollConfirm.vue'
 import ShortRestModal from '@/characters/components/ShortRestModal.vue'
+import LevelUpModal from '@/characters/components/LevelUpModal.vue'
 
 const props = defineProps<{ id: string }>()
 const store = useCharactersStore()
@@ -597,6 +613,7 @@ const { rollD20 } = useRoll()
 
 const editMode = ref(true)
 const showShortRest = ref(false)
+const showLevelUp = ref(false)
 
 const portraitFileInput = ref<HTMLInputElement | null>(null)
 
@@ -963,6 +980,25 @@ function longRest() {
     items,
     variant: 'success',
   })
+}
+
+// ── Level Up ──────────────────────────────────────────────────────────────────
+
+async function onLeveled(updates: Partial<Character>) {
+  if (!character.value) return
+  const oldMaxHp = character.value.combat.maxHp
+  const newLvl = updates.combat?.level ?? character.value.combat.level
+  const name = character.value.identity.name
+  showLevelUp.value = false
+  await store.update(character.value.id, updates)
+  const hpGained = (updates.combat?.maxHp ?? oldMaxHp) - oldMaxHp
+  const items: { label: string; value: string }[] = [
+    { label: 'Level',   value: String(newLvl) },
+    { label: 'HP gained', value: `+${hpGained}` },
+    { label: 'Max HP',  value: String(updates.combat?.maxHp) },
+  ]
+  if (updates.spellcasting) items.push({ label: 'Spell slots', value: 'Updated' })
+  dialog.open({ title: `Level ${newLvl}!`, body: `${name} has grown in power.`, items, variant: 'success' })
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
