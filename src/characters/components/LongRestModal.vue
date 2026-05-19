@@ -49,51 +49,39 @@
                 >{{ localPrepared.length }} / {{ dailyLimit }}</span>
               </div>
 
-              <!-- Level tabs -->
-              <div class="flex gap-1 mb-3 flex-wrap">
-                <button
-                  v-for="lvl in availableLevels"
-                  :key="lvl"
-                  type="button"
-                  class="px-2.5 py-1 rounded text-xs font-heading tracking-wide transition-all border"
-                  :class="selectedLevel === lvl
-                    ? 'border-arcane-base/50 bg-arcane-deep/20 text-arcane-pale'
-                    : 'border-shadow text-ash hover:border-arcane-base/25'"
-                  @click="selectedLevel = lvl"
-                >Lv {{ lvl }}</button>
+                <!-- Spell list grouped by level -->
+              <div v-if="spellsKnown.length === 0" class="text-xs font-body text-mist/50 italic">
+                No spells in your spell list. Add spells from the character sheet first.
               </div>
-
-              <!-- Spell list -->
-              <div v-if="spellsLoading" class="flex justify-center py-4">
-                <div class="w-5 h-5 rounded-full border-2 border-arcane-base/30 border-t-arcane-pale animate-spin" />
-              </div>
-              <div v-else-if="spellsAtLevel.length === 0" class="text-xs font-body text-mist/50 italic">
-                No spells available at this level.
-              </div>
-              <div v-else class="grid grid-cols-1 gap-1">
-                <button
-                  v-for="spell in spellsAtLevel"
-                  :key="spell.index"
-                  type="button"
-                  class="flex items-center gap-2.5 px-3 py-2 rounded border text-left transition-all duration-100"
-                  :class="isPrepared(spell.index)
-                    ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale'
-                    : atLimit
-                      ? 'border-shadow/40 text-mist/40 cursor-not-allowed'
-                      : 'border-shadow text-ash hover:border-arcane-base/25 hover:text-stone cursor-pointer'"
-                  :disabled="!isPrepared(spell.index) && atLimit"
-                  @click="toggleSpell(spell)"
-                >
-                  <span
-                    class="w-4 h-4 rounded shrink-0 border flex items-center justify-center transition-all"
-                    :class="isPrepared(spell.index)
-                      ? 'border-arcane-base/60 bg-arcane-base/30 text-arcane-pale'
-                      : 'border-shadow/60'"
-                  >
-                    <span v-if="isPrepared(spell.index)" class="text-2xs leading-none">✓</span>
-                  </span>
-                  <span class="font-body text-sm leading-snug">{{ spell.name }}</span>
-                </button>
+              <div v-else class="space-y-4">
+                <div v-for="[lvl, spells] in spellsGrouped" :key="lvl">
+                  <p class="text-xs font-heading text-mist uppercase tracking-wide mb-2">Level {{ lvl }}</p>
+                  <div class="grid grid-cols-1 gap-1">
+                    <button
+                      v-for="spell in spells"
+                      :key="spell.index"
+                      type="button"
+                      class="flex items-center gap-2.5 px-3 py-2 rounded border text-left transition-all duration-100"
+                      :class="isPrepared(spell.index)
+                        ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale'
+                        : atLimit
+                          ? 'border-shadow/40 text-mist/40 cursor-not-allowed'
+                          : 'border-shadow text-ash hover:border-arcane-base/25 hover:text-stone cursor-pointer'"
+                      :disabled="!isPrepared(spell.index) && atLimit"
+                      @click="toggleSpell(spell)"
+                    >
+                      <span
+                        class="w-4 h-4 rounded shrink-0 border flex items-center justify-center transition-all"
+                        :class="isPrepared(spell.index)
+                          ? 'border-arcane-base/60 bg-arcane-base/30 text-arcane-pale'
+                          : 'border-shadow/60'"
+                      >
+                        <span v-if="isPrepared(spell.index)" class="text-2xs leading-none">✓</span>
+                      </span>
+                      <span class="font-body text-sm leading-snug flex-1">{{ spell.name }}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -142,10 +130,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
-import { fiveEApi } from '@/shared/api/fiveE.client'
 import { computeAllModifiers } from '@/shared/types/character'
-import { getSpellProfile, getMaxSpellLevel, getSpellSlots, CLASS_META } from '@/character-builder/classMeta'
+import { getSpellProfile, getSpellSlots, CLASS_META } from '@/character-builder/classMeta'
 import type { Character, SpellReference } from '@/shared/types/character'
 
 const props = defineProps<{ show: boolean; character: Character }>()
@@ -181,12 +167,18 @@ const dailyLimit = computed(() => {
   return Math.max(totalSlotCount.value, daily)
 })
 
-const maxSpellLevel = computed(() =>
-  getMaxSpellLevel(classIndex.value, props.character.combat.level)
-)
-const availableLevels = computed(() =>
-  Array.from({ length: maxSpellLevel.value }, (_, i) => i + 1)
-)
+// Spells the character has in their known pool
+const spellsKnown = computed(() => props.character.spellcasting?.spellsKnown ?? [])
+
+const spellsGrouped = computed((): [number, SpellReference[]][] => {
+  const groups = new Map<number, SpellReference[]>()
+  for (const spell of spellsKnown.value) {
+    const list = groups.get(spell.level) ?? []
+    list.push(spell)
+    groups.set(spell.level, list)
+  }
+  return [...groups.entries()].sort(([a], [b]) => a - b)
+})
 
 // ── Local prepared selection ──────────────────────────────────────────────────
 
@@ -195,7 +187,6 @@ const localPrepared = ref<SpellReference[]>([])
 watch(() => props.show, (open) => {
   if (open) {
     localPrepared.value = [...(props.character.spellcasting?.spellsPrepared ?? [])]
-    selectedLevel.value = 1
   }
 })
 
@@ -205,26 +196,13 @@ function isPrepared(index: string): boolean {
   return localPrepared.value.some(s => s.index === index)
 }
 
-function toggleSpell(spell: { index: string; name: string }) {
+function toggleSpell(spell: SpellReference) {
   if (isPrepared(spell.index)) {
     localPrepared.value = localPrepared.value.filter(s => s.index !== spell.index)
   } else if (!atLimit.value) {
-    localPrepared.value.push({ index: spell.index, name: spell.name, level: selectedLevel.value })
+    localPrepared.value.push({ index: spell.index, name: spell.name, level: spell.level })
   }
 }
-
-// ── Spell fetch ───────────────────────────────────────────────────────────────
-
-const selectedLevel = ref(1)
-
-const { data: spellData, isPending: spellsLoading } = useQuery({
-  queryKey: computed(() => ['spells', classIndex.value, selectedLevel.value]),
-  queryFn: () => fiveEApi.listSpells({ class: classIndex.value, level: selectedLevel.value }),
-  staleTime: Infinity,
-  enabled: computed(() => props.show && isPreparedCaster.value),
-})
-
-const spellsAtLevel = computed(() => spellData.value?.results ?? [])
 
 // ── Rest summary helpers ──────────────────────────────────────────────────────
 

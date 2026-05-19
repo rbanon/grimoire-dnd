@@ -124,6 +124,8 @@ export interface BuilderDraft {
   // Step 6 — Spells
   selectedCantrips: { index: string; name: string }[]
   selectedSpells: { index: string; name: string; level: number }[]
+  // Daily prepared subset for prepared casters (Cleric, Druid, Paladin)
+  selectedPreparedSpells: { index: string; name: string; level: number }[]
   // Per-level spell selection for known casters (Bard, Sorcerer, Warlock, Ranger)
   spellsByLevel: Record<number, SpellsByLevelEntry>
 }
@@ -156,11 +158,11 @@ const defaultDraft = (): BuilderDraft => ({
   levelChoices: {},
   featsByLevel: {},
   asiAllocations: {},
-  selectedCantrips: [], selectedSpells: [], spellsByLevel: {},
+  selectedCantrips: [], selectedSpells: [], selectedPreparedSpells: [], spellsByLevel: {},
 })
 
 const DRAFT_ARRAY_FIELDS = [
-  'selectedCantrips', 'selectedSpells', 'rolledHpPerLevel', 'rolledAbilityScores',
+  'selectedCantrips', 'selectedSpells', 'selectedPreparedSpells', 'rolledHpPerLevel', 'rolledAbilityScores',
   'selectedSkills', 'selectedLanguages', 'startingInventory', 'raceProfOptions',
   'availableSubraces', 'availableSubclasses', 'backgroundSkillProficiencies',
   'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs',
@@ -341,9 +343,17 @@ export const useBuilderStore = defineStore('builder', () => {
           const lv = draft.value.level
           const daily = Math.max(1, draft.value.classIndex === 'paladin' ? Math.floor(lv / 2) + mod : lv + mod)
           const limit = profile.castingType === 'spellbook' ? daily : Math.max(totalSlots, daily)
-          if (limit > 0 && draft.value.selectedSpells.length < limit) {
-            const diff = limit - draft.value.selectedSpells.length
-            errors.push(`Select ${diff} more starting spell${diff > 1 ? 's' : ''} (${draft.value.selectedSpells.length}/${limit})`)
+          if (profile.castingType === 'prepared') {
+            const prepared = draft.value.selectedPreparedSpells.length
+            if (limit > 0 && prepared < limit) {
+              const diff = limit - prepared
+              errors.push(`Prepare ${diff} more spell${diff > 1 ? 's' : ''} (${prepared}/${limit})`)
+            }
+          } else {
+            if (limit > 0 && draft.value.selectedSpells.length < limit) {
+              const diff = limit - draft.value.selectedSpells.length
+              errors.push(`Select ${diff} more starting spell${diff > 1 ? 's' : ''} (${draft.value.selectedSpells.length}/${limit})`)
+            }
           }
         }
       }
@@ -528,6 +538,8 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value.levelChoices = {}
     draft.value.featsByLevel = {}
     draft.value.spellsByLevel = {}
+    draft.value.selectedSpells = []
+    draft.value.selectedPreparedSpells = []
   })
 
   // If class switches from spellcaster to non-spellcaster while on the spells step,
@@ -638,8 +650,9 @@ export const useBuilderStore = defineStore('builder', () => {
           slotsMax:  getSpellSlots(d.classIndex, d.level),
           slotsUsed: { level1:0, level2:0, level3:0, level4:0, level5:0, level6:0, level7:0, level8:0, level9:0 },
           cantripsKnown: finalCantrips.map(c => ({ ...c, level: 0 })),
-          spellsKnown:    castingType === 'known' || castingType === 'spellbook' ? finalSpells : [],
-          spellsPrepared: castingType === 'prepared' || castingType === 'spellbook' ? finalSpells : [],
+          spellsKnown:    castingType === 'prepared' ? d.selectedSpells : finalSpells,
+          spellsPrepared: castingType === 'prepared'  ? d.selectedPreparedSpells
+            : castingType === 'spellbook' ? finalSpells : [],
           ritualCasting: false,
         }
       })() : null,

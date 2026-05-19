@@ -3,7 +3,21 @@
 
     <!-- Name row -->
     <div class="flex items-center gap-2">
-      <span v-if="spell.prepared" class="text-gold-mid text-2xs shrink-0" title="Prepared">◆</span>
+      <!-- Clickable prepare toggle in edit mode for prepared casters -->
+      <button
+        v-if="spellEditMode && canTogglePrepared"
+        type="button"
+        class="shrink-0 w-5 h-5 flex items-center justify-center rounded transition-all"
+        :class="spell.prepared
+          ? 'text-gold-mid hover:text-gold-dim'
+          : 'text-mist/30 hover:text-gold-mid'"
+        :title="spell.prepared ? 'Unprepare' : 'Prepare'"
+        @click.stop="$emit('togglePrepared')"
+      >
+        <span class="text-2xs leading-none">{{ spell.prepared ? '◆' : '◇' }}</span>
+      </button>
+      <!-- Static prepared indicator in view mode -->
+      <span v-else-if="spell.prepared" class="text-gold-mid text-2xs shrink-0" title="Prepared">◆</span>
       <button
         type="button"
         class="font-heading text-sm text-arcane-pale/90 flex-1 min-w-0 truncate text-left hover:text-arcane-pale transition-colors"
@@ -84,8 +98,9 @@ const props = defineProps<{
   spell: SpellReference & { prepared: boolean }
   spellEditMode: boolean
   isFavorite: boolean
+  canTogglePrepared?: boolean
 }>()
-defineEmits<{ remove: []; toggleFavorite: []; cast: [] }>()
+defineEmits<{ remove: []; toggleFavorite: []; cast: []; togglePrepared: [] }>()
 
 const infoPanel = useInfoPanel()
 

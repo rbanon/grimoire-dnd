@@ -280,9 +280,90 @@
         </p>
       </section>
 
-      <!-- Prepared / Spellbook -->
+      <!-- ── Prepared casters: two-step (pool + daily prepared) ── -->
+      <template v-if="profile?.castingType === 'prepared'">
+
+        <!-- Section A: Spell List (known pool) -->
+        <section class="space-y-4">
+          <p class="label">Your Spell List</p>
+
+          <div class="card p-3 border-shadow/30 bg-depths/20 flex items-start gap-2">
+            <span class="text-gold-dim/60 text-xs shrink-0 mt-0.5">ℹ</span>
+            <p class="text-xs font-body text-mist">
+              These are the spells you have access to. Your class spell list is your full library — add any spells you want available. Each day you prepare a subset of these.
+            </p>
+          </div>
+
+          <SelectedSpellList :spells="builder.draft.selectedSpells" @remove="removeSpell" />
+
+          <button
+            type="button"
+            class="btn-secondary text-xs gap-1.5"
+            @click="showSpellPickerFlat = true"
+          >
+            <PlusIcon :size="12" /> Add to Spell List
+          </button>
+        </section>
+
+        <!-- Section B: Daily Preparation -->
+        <section class="space-y-4">
+          <div class="flex items-center justify-between">
+            <p class="label">Prepared Today</p>
+            <span class="text-xs font-body tabular-nums" :class="atPreparedLimit ? 'text-blood-bright' : 'text-mist'">
+              {{ builder.draft.selectedPreparedSpells.length }} / {{ preparedSpellLimit }}
+            </span>
+          </div>
+          <p v-if="atPreparedLimit" class="text-xs font-body text-blood-bright/80 -mt-2">
+            Limit reached for level {{ builder.draft.level }}.
+          </p>
+
+          <div class="card p-3 border-shadow/30 bg-depths/20 flex items-start gap-2">
+            <span class="text-gold-dim/60 text-xs shrink-0 mt-0.5">ℹ</span>
+            <p class="text-xs font-body text-mist">{{ preparedSectionNote }}</p>
+          </div>
+
+          <div v-if="builder.draft.selectedSpells.length === 0" class="text-xs font-body text-mist/50 italic">
+            Add spells to your list above to begin preparing.
+          </div>
+          <div v-else class="grid grid-cols-1 gap-1">
+            <button
+              v-for="spell in builder.draft.selectedSpells"
+              :key="spell.index"
+              type="button"
+              class="flex items-center gap-2.5 px-3 py-2 rounded border text-left transition-all duration-100"
+              :class="isPreparedInBuilder(spell.index)
+                ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale'
+                : atPreparedLimit
+                  ? 'border-shadow/40 text-mist/40 cursor-not-allowed'
+                  : 'border-shadow text-ash hover:border-arcane-base/25 hover:text-stone cursor-pointer'"
+              :disabled="!isPreparedInBuilder(spell.index) && atPreparedLimit"
+              @click="togglePreparedInBuilder(spell)"
+            >
+              <span
+                class="w-4 h-4 rounded shrink-0 border flex items-center justify-center transition-all"
+                :class="isPreparedInBuilder(spell.index)
+                  ? 'border-arcane-base/60 bg-arcane-base/30 text-arcane-pale'
+                  : 'border-shadow/60'"
+              >
+                <span v-if="isPreparedInBuilder(spell.index)" class="text-2xs leading-none">✓</span>
+              </span>
+              <span class="font-body text-sm leading-snug flex-1">{{ spell.name }}</span>
+              <span class="badge-arcane text-2xs">Lv {{ spell.level }}</span>
+            </button>
+          </div>
+
+          <p
+            v-if="showValidation && builder.draft.level >= getFirstSpellLevel(builder.draft.classIndex) && builder.draft.selectedPreparedSpells.length < preparedSpellLimit"
+            class="text-xs font-body text-blood-bright"
+          >
+            Prepare {{ preparedSpellLimit - builder.draft.selectedPreparedSpells.length }} more spell{{ preparedSpellLimit - builder.draft.selectedPreparedSpells.length !== 1 ? 's' : '' }} to continue.
+          </p>
+        </section>
+      </template>
+
+      <!-- ── Spellbook casters: single pool ── -->
       <section
-        v-if="profile?.castingType === 'prepared' || profile?.castingType === 'spellbook'"
+        v-else-if="profile?.castingType === 'spellbook'"
         class="space-y-4"
       >
         <div class="flex items-center justify-between">
@@ -327,7 +408,7 @@
         :known-spells="builder.draft.selectedSpells"
         :slots-per-level="slotsPerLevel"
         :max-level="maxSpellLevel"
-        :limit="activeSpellLimit"
+        :limit="profile?.castingType === 'prepared' ? undefined : activeSpellLimit"
         @close="showSpellPickerFlat = false"
         @add="onAddSpellsFlat"
       />
@@ -628,7 +709,11 @@ const activeSpellLimit = computed(() =>
 )
 
 const atCantripLimit  = computed(() => builder.draft.selectedCantrips.length >= cantripLimit.value)
-const atPreparedLimit = computed(() => builder.draft.selectedSpells.length >= preparedSpellLimit.value)
+const atPreparedLimit = computed(() =>
+  profile.value?.castingType === 'prepared'
+    ? builder.draft.selectedPreparedSpells.length >= preparedSpellLimit.value
+    : builder.draft.selectedSpells.length >= preparedSpellLimit.value
+)
 
 const noSpellsAtLevel = computed(() => {
   const p = profile.value
@@ -687,6 +772,8 @@ const showSpellPickerFlat = ref(false)
 
 function removeSpell(index: string) {
   builder.draft.selectedSpells = builder.draft.selectedSpells.filter(s => s.index !== index)
+  // If removed from known pool, also remove from prepared
+  builder.draft.selectedPreparedSpells = builder.draft.selectedPreparedSpells.filter(s => s.index !== index)
 }
 function onAddSpellsFlat(spells: { index: string; name: string; level: number }[]) {
   showSpellPickerFlat.value = false
@@ -694,6 +781,20 @@ function onAddSpellsFlat(spells: { index: string; name: string; level: number }[
     if (!builder.draft.selectedSpells.some(x => x.index === s.index)) {
       builder.draft.selectedSpells.push(s)
     }
+  }
+}
+
+// ── Prepared toggle (prepared casters only) ───────────────────────────────────
+
+function isPreparedInBuilder(index: string): boolean {
+  return builder.draft.selectedPreparedSpells.some(s => s.index === index)
+}
+
+function togglePreparedInBuilder(spell: { index: string; name: string; level: number }) {
+  if (isPreparedInBuilder(spell.index)) {
+    builder.draft.selectedPreparedSpells = builder.draft.selectedPreparedSpells.filter(s => s.index !== spell.index)
+  } else if (!atPreparedLimit.value) {
+    builder.draft.selectedPreparedSpells.push({ index: spell.index, name: spell.name, level: spell.level })
   }
 }
 </script>
