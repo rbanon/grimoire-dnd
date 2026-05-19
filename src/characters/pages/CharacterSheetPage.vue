@@ -603,6 +603,7 @@
     <LevelUpModal
       v-if="character"
       :show="showLevelUp"
+      :saving="levelUpSaving"
       :character="character"
       @close="showLevelUp = false"
       @leveled="onLeveled"
@@ -642,6 +643,7 @@ const { rollD20 } = useRoll()
 const editMode = ref(true)
 const showShortRest = ref(false)
 const showLevelUp = ref(false)
+const levelUpSaving = ref(false)
 
 const portraitFileInput = ref<HTMLInputElement | null>(null)
 
@@ -1044,8 +1046,10 @@ async function onLeveled(updates: Partial<Character>) {
   const oldMaxHp = character.value.combat.maxHp
   const newLvl = updates.combat?.level ?? character.value.combat.level
   const name = character.value.identity.name
-  showLevelUp.value = false
+  levelUpSaving.value = true
   await store.update(character.value.id, updates)
+  levelUpSaving.value = false
+  showLevelUp.value = false
   const hpGained = (updates.combat?.maxHp ?? oldMaxHp) - oldMaxHp
   const items: { label: string; value: string }[] = [
     { label: 'Level',   value: String(newLvl) },

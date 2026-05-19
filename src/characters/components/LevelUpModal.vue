@@ -6,7 +6,7 @@
         class="fixed inset-0 z-[60] flex items-center justify-center p-4"
         @keydown.esc="handleEsc"
       >
-        <div class="absolute inset-0 bg-black/60" aria-hidden="true" @click="handleEsc" />
+        <div class="absolute inset-0 bg-black/60" aria-hidden="true" @click="!saving && handleEsc()" />
 
         <div
           role="dialog"
@@ -384,16 +384,17 @@
 
           <!-- ──────────────────────────── Footer ──────────────────────────── -->
           <div class="px-5 py-4 border-t border-shadow shrink-0 flex gap-2">
-            <button type="button" class="flex-1 btn-secondary text-sm" @click="back">
+            <button type="button" class="flex-1 btn-secondary text-sm" :disabled="saving" @click="back">
               {{ currentStepIndex === 0 ? 'Cancel' : '← Back' }}
             </button>
             <button
               type="button"
-              class="flex-1 btn-primary text-sm"
-              :disabled="!canAdvance"
+              class="flex-1 btn-primary text-sm flex items-center justify-center gap-2"
+              :disabled="!canAdvance || saving"
               @click="next"
             >
-              {{ isLastStep ? (atMaxLevel ? 'Close' : 'Level Up') : 'Next →' }}
+              <span v-if="saving" class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+              {{ saving ? 'Saving…' : (isLastStep ? (atMaxLevel ? 'Close' : 'Level Up') : 'Next →') }}
             </button>
           </div>
 
@@ -418,7 +419,7 @@ import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
-const props = defineProps<{ show: boolean; character: Character }>()
+const props = defineProps<{ show: boolean; character: Character; saving?: boolean }>()
 const emit = defineEmits<{
   close: []
   leveled: [updates: Partial<Character>]
@@ -558,6 +559,7 @@ function next() {
 }
 
 function handleEsc() {
+  if (props.saving) return
   if (currentStepIndex.value > 0) currentStepIndex.value--
   else emit('close')
 }
