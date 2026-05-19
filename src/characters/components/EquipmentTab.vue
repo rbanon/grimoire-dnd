@@ -29,119 +29,122 @@
         </p>
       </div>
 
-      <!-- Item list -->
-      <div v-if="character.inventory.length > 0" class="space-y-1.5">
-        <div
-          v-for="item in character.inventory"
-          :key="item.id"
-          class="flex items-center gap-3 px-3 py-2.5 rounded border border-shadow bg-abyss/50 group"
-        >
-          <!-- Equipped toggle -->
-          <button
-            type="button"
-            class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
-            :class="item.equipped
-              ? 'bg-gold-mid border-gold-mid'
-              : 'bg-transparent border-mist/40 hover:border-mist'"
-            :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
-            @click="toggleEquipped(item.id)"
-          />
+      <!-- Item list — grouped by type -->
+      <template v-if="character.inventory.length > 0">
 
-          <!-- Type icon -->
-          <SwordIcon v-if="item.itemType === 'weapon'" :size="11" class="text-gold-dim/60 shrink-0" />
-          <ShieldIcon v-else-if="item.itemType === 'armor'" :size="11" class="text-arcane-pale/50 shrink-0" />
-          <PackageIcon v-else :size="11" class="text-mist/40 shrink-0" />
-
-          <!-- Name + info -->
-          <div class="flex-1 min-w-0">
-            <span class="font-heading text-sm text-vellum">{{ item.item.name }}</span>
-            <!-- Weapon stats -->
-            <span v-if="item.itemType === 'weapon' && (item.attackBonus || item.damage)" class="text-xs font-mono text-mist/60 ml-2">
-              <span v-if="item.attackBonus" class="text-gold-mid">{{ item.attackBonus }}</span>
-              <span v-if="item.attackBonus && item.damage" class="mx-1 text-mist/30">·</span>
-              <span v-if="item.damage">{{ item.damage }}</span>
-              <span v-if="item.damageType" class="text-mist/50 font-body text-2xs ml-1">{{ item.damageType }}</span>
-            </span>
-            <!-- Armor AC -->
-            <span v-else-if="item.itemType === 'armor' && item.armorClass" class="text-xs font-heading text-arcane-pale/70 ml-2">
-              AC {{ item.armorClass }}
-              <span v-if="item.armorType" class="text-mist/40 font-body text-2xs ml-1">{{ item.armorType }}</span>
-            </span>
-            <!-- Generic category -->
-            <span v-else-if="item.item.category" class="text-xs font-body text-mist/60 ml-2">{{ item.item.category }}</span>
+        <!-- Weapons -->
+        <div v-if="weapons.length" class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <SwordIcon :size="11" class="text-gold-dim/50 shrink-0" />
+            <p class="text-2xs font-heading tracking-[0.15em] uppercase text-stone">Weapons</p>
+            <span class="text-2xs font-body text-mist/40">{{ weapons.length }}</span>
           </div>
-
-          <!-- Weight -->
-          <span v-if="item.item.weight" class="text-xs font-body text-mist/50 shrink-0 hidden sm:inline">
-            {{ item.item.weight }} lb.
-          </span>
-
-          <!-- Info button -->
-          <button
-            type="button"
-            class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/30 hover:text-gold-mid opacity-0 group-hover:opacity-100 transition-all"
-            title="Item details"
-            @click="infoPanel.open({ kind: 'item', index: item.item.index })"
+          <div
+            v-for="item in weapons"
+            :key="item.id"
+            class="flex items-center gap-3 px-3 py-2.5 rounded border border-shadow bg-abyss/50 group"
           >
-            <InfoIcon :size="12" />
-          </button>
-
-          <!-- Weapon roll buttons + favorite -->
-          <template v-if="item.itemType === 'weapon'">
-            <button
-              type="button"
-              class="px-2 py-0.5 rounded border border-arcane-base/30 bg-arcane-deep/10 text-arcane-pale hover:border-arcane-base/60 hover:bg-arcane-deep/20 transition-all font-heading text-xs shrink-0"
-              title="Roll attack"
-              @click="(e) => rollItemAtk(item, e)"
-            >⚃ Atk</button>
-            <button
-              v-if="item.damage"
-              type="button"
-              class="px-2 py-0.5 rounded border border-blood-base/30 bg-blood-deep/10 text-blood-mid hover:border-blood-base/60 hover:bg-blood-deep/20 transition-all font-heading text-xs shrink-0"
-              title="Roll damage"
-              @click="rollItemDmg(item)"
-            >⚀ Dmg</button>
-            <button
-              type="button"
-              class="w-6 h-6 flex items-center justify-center rounded transition-all shrink-0"
-              :class="isWeaponFav(item.id)
-                ? 'text-gold-mid hover:text-gold-dim'
-                : 'text-mist/30 hover:text-gold-mid hover:bg-gold-dim/10'"
-              :title="isWeaponFav(item.id) ? 'Remove from Favorites' : 'Add to Favorites'"
-              @click="toggleWeaponFav(item)"
-            >
+            <!-- row content injected below via shared slot-like duplication -->
+            <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
+              :class="item.equipped ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/40 hover:border-mist'"
+              :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
+              @click="toggleEquipped(item.id)" />
+            <SwordIcon :size="11" class="text-gold-dim/60 shrink-0" />
+            <div class="flex-1 min-w-0">
+              <span class="font-heading text-sm text-vellum">{{ item.item.name }}</span>
+              <span v-if="item.attackBonus || item.damage" class="text-xs font-mono text-mist/60 ml-2">
+                <span v-if="item.attackBonus" class="text-gold-mid">{{ item.attackBonus }}</span>
+                <span v-if="item.attackBonus && item.damage" class="mx-1 text-mist/30">·</span>
+                <span v-if="item.damage">{{ item.damage }}</span>
+                <span v-if="item.damageType" class="text-mist/50 font-body text-2xs ml-1">{{ item.damageType }}</span>
+              </span>
+            </div>
+            <span v-if="item.item.weight" class="text-xs font-body text-mist/50 shrink-0 hidden sm:inline">{{ item.item.weight }} lb.</span>
+            <button type="button" class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/30 hover:text-gold-mid opacity-0 group-hover:opacity-100 transition-all" @click="infoPanel.open({ kind: 'item', index: item.item.index })"><InfoIcon :size="12" /></button>
+            <button type="button" class="px-2 py-0.5 rounded border border-arcane-base/30 bg-arcane-deep/10 text-arcane-pale hover:border-arcane-base/60 hover:bg-arcane-deep/20 transition-all font-heading text-xs shrink-0" @click="(e) => rollItemAtk(item, e)">⚃ Atk</button>
+            <button v-if="item.damage" type="button" class="px-2 py-0.5 rounded border border-blood-base/30 bg-blood-deep/10 text-blood-mid hover:border-blood-base/60 hover:bg-blood-deep/20 transition-all font-heading text-xs shrink-0" @click="rollItemDmg(item)">⚀ Dmg</button>
+            <button type="button" class="w-6 h-6 flex items-center justify-center rounded transition-all shrink-0" :class="isWeaponFav(item.id) ? 'text-gold-mid hover:text-gold-dim' : 'text-mist/30 hover:text-gold-mid hover:bg-gold-dim/10'" @click="toggleWeaponFav(item)">
               <StarIcon :size="13" :fill="isWeaponFav(item.id) ? 'currentColor' : 'none'" />
             </button>
-          </template>
-
-          <!-- Quantity -->
-          <div class="flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading text-xs transition-colors"
-              @click="adjustQuantity(item.id, -1)"
-            >−</button>
-            <span class="font-heading text-sm text-stone w-5 text-center">{{ item.quantity }}</span>
-            <button
-              type="button"
-              class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading text-xs transition-colors"
-              @click="adjustQuantity(item.id, 1)"
-            >+</button>
+            <div class="flex items-center gap-1 shrink-0">
+              <button type="button" class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading text-xs transition-colors" @click="adjustQuantity(item.id, -1)">−</button>
+              <span class="font-heading text-sm text-stone w-5 text-center">{{ item.quantity }}</span>
+              <button type="button" class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading text-xs transition-colors" @click="adjustQuantity(item.id, 1)">+</button>
+            </div>
+            <button type="button" class="p-1 rounded text-mist/30 hover:text-blood-bright hover:bg-blood-base/10 transition-colors opacity-0 group-hover:opacity-100" @click="removeItem(item.id)"><Trash2Icon :size="13" /></button>
           </div>
-
-          <!-- Delete -->
-          <button
-            type="button"
-            class="p-1 rounded text-mist/30 hover:text-blood-bright hover:bg-blood-base/10 transition-colors opacity-0 group-hover:opacity-100"
-            title="Remove item"
-            @click="removeItem(item.id)"
-          >
-            <Trash2Icon :size="13" />
-          </button>
         </div>
-      </div>
 
-      <div v-else-if="!showForm" class="card p-10 text-center">
+        <!-- Armor -->
+        <div v-if="armorItems.length" class="space-y-1.5" :class="weapons.length ? 'mt-5' : ''">
+          <div class="flex items-center gap-2">
+            <ShieldIcon :size="11" class="text-arcane-pale/50 shrink-0" />
+            <p class="text-2xs font-heading tracking-[0.15em] uppercase text-stone">Armor</p>
+            <span class="text-2xs font-body text-mist/40">{{ armorItems.length }}</span>
+          </div>
+          <div
+            v-for="item in armorItems"
+            :key="item.id"
+            class="flex items-center gap-3 px-3 py-2.5 rounded border border-shadow bg-abyss/50 group"
+          >
+            <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
+              :class="item.equipped ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/40 hover:border-mist'"
+              :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
+              @click="toggleEquipped(item.id)" />
+            <ShieldIcon :size="11" class="text-arcane-pale/50 shrink-0" />
+            <div class="flex-1 min-w-0">
+              <span class="font-heading text-sm text-vellum">{{ item.item.name }}</span>
+              <span v-if="item.armorClass" class="text-xs font-heading text-arcane-pale/70 ml-2">
+                AC {{ item.armorClass }}
+                <span v-if="item.armorType" class="text-mist/40 font-body text-2xs ml-1">{{ item.armorType }}</span>
+              </span>
+            </div>
+            <span v-if="item.item.weight" class="text-xs font-body text-mist/50 shrink-0 hidden sm:inline">{{ item.item.weight }} lb.</span>
+            <button type="button" class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/30 hover:text-gold-mid opacity-0 group-hover:opacity-100 transition-all" @click="infoPanel.open({ kind: 'item', index: item.item.index })"><InfoIcon :size="12" /></button>
+            <div class="flex items-center gap-1 shrink-0">
+              <button type="button" class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading text-xs transition-colors" @click="adjustQuantity(item.id, -1)">−</button>
+              <span class="font-heading text-sm text-stone w-5 text-center">{{ item.quantity }}</span>
+              <button type="button" class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading text-xs transition-colors" @click="adjustQuantity(item.id, 1)">+</button>
+            </div>
+            <button type="button" class="p-1 rounded text-mist/30 hover:text-blood-bright hover:bg-blood-base/10 transition-colors opacity-0 group-hover:opacity-100" @click="removeItem(item.id)"><Trash2Icon :size="13" /></button>
+          </div>
+        </div>
+
+        <!-- Gear -->
+        <div v-if="gearItems.length" class="space-y-1.5" :class="weapons.length || armorItems.length ? 'mt-5' : ''">
+          <div class="flex items-center gap-2">
+            <PackageIcon :size="11" class="text-mist/40 shrink-0" />
+            <p class="text-2xs font-heading tracking-[0.15em] uppercase text-stone">Gear</p>
+            <span class="text-2xs font-body text-mist/40">{{ gearItems.length }}</span>
+          </div>
+          <div
+            v-for="item in gearItems"
+            :key="item.id"
+            class="flex items-center gap-3 px-3 py-2.5 rounded border border-shadow bg-abyss/50 group"
+          >
+            <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
+              :class="item.equipped ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/40 hover:border-mist'"
+              :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
+              @click="toggleEquipped(item.id)" />
+            <PackageIcon :size="11" class="text-mist/40 shrink-0" />
+            <div class="flex-1 min-w-0">
+              <span class="font-heading text-sm text-vellum">{{ item.item.name }}</span>
+              <span v-if="item.item.category" class="text-xs font-body text-mist/60 ml-2">{{ item.item.category }}</span>
+            </div>
+            <span v-if="item.item.weight" class="text-xs font-body text-mist/50 shrink-0 hidden sm:inline">{{ item.item.weight }} lb.</span>
+            <button type="button" class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/30 hover:text-gold-mid opacity-0 group-hover:opacity-100 transition-all" @click="infoPanel.open({ kind: 'item', index: item.item.index })"><InfoIcon :size="12" /></button>
+            <div class="flex items-center gap-1 shrink-0">
+              <button type="button" class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading text-xs transition-colors" @click="adjustQuantity(item.id, -1)">−</button>
+              <span class="font-heading text-sm text-stone w-5 text-center">{{ item.quantity }}</span>
+              <button type="button" class="w-5 h-5 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths/60 font-heading text-xs transition-colors" @click="adjustQuantity(item.id, 1)">+</button>
+            </div>
+            <button type="button" class="p-1 rounded text-mist/30 hover:text-blood-bright hover:bg-blood-base/10 transition-colors opacity-0 group-hover:opacity-100" @click="removeItem(item.id)"><Trash2Icon :size="13" /></button>
+          </div>
+        </div>
+
+      </template>
+
+      <div v-if="!character.inventory.length && !showForm" class="card p-10 text-center">
         <PackageIcon :size="36" class="mx-auto text-mist/25 mb-3" />
         <p class="font-body text-ash text-sm">Inventory is empty.</p>
         <p class="font-body text-mist text-xs mt-1">Add weapons, armor, and gear to track your loadout.</p>
@@ -438,6 +441,10 @@ const totalWeight = computed(() =>
     return sum + (item.item.weight ?? 0) * item.quantity
   }, 0),
 )
+
+const weapons = computed(() => props.character.inventory.filter(i => i.itemType === 'weapon'))
+const armorItems = computed(() => props.character.inventory.filter(i => i.itemType === 'armor'))
+const gearItems = computed(() => props.character.inventory.filter(i => i.itemType === 'gear'))
 
 async function toggleEquipped(itemId: string) {
   await store.update(props.character.id, {
