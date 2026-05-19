@@ -78,12 +78,6 @@
                   :disabled="!editMode"
                   @click="editMode && toggleInspiration()"
                 >✦ Inspiration</button>
-                <button
-                  v-if="character.combat.level < 20"
-                  type="button"
-                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border border-dusk text-xs font-heading tracking-wide text-mist transition-all hover:border-gold-dim/60 hover:text-ash"
-                  @click="showLevelUp = true"
-                >↑ Level Up</button>
               </div>
             </div>
 
@@ -91,6 +85,15 @@
             <div class="flex items-center gap-1 shrink-0">
               <button class="btn-secondary p-1.5" title="Export character" @click="downloadExport">
                 <DownloadIcon :size="14" />
+              </button>
+              <button
+                v-if="character.combat.level < 20"
+                type="button"
+                class="w-8 h-8 flex items-center justify-center rounded border transition-colors border-gold-dim/40 text-gold-mid hover:text-gold-bright hover:border-gold-mid/60"
+                title="Level Up"
+                @click="showLevelUp = true"
+              >
+                <TrendingUpIcon :size="14" />
               </button>
               <button
                 type="button"
@@ -613,7 +616,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { DownloadIcon, ImageIcon, InfoIcon, LockIcon, LockOpenIcon } from 'lucide-vue-next'
+import { DownloadIcon, ImageIcon, InfoIcon, LockIcon, LockOpenIcon, TrendingUpIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName } from '@/shared/types/character'

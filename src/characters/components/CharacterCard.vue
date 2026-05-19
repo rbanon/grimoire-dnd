@@ -21,6 +21,12 @@
           <p class="font-mono text-2xs tracking-[0.2em] uppercase text-mist/60">No portrait</p>
         </div>
 
+        <!-- Gradient scrim so the level badge is always legible -->
+        <div
+          class="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
+          style="background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%)"
+        />
+
         <!-- Level badge -->
         <div class="absolute bottom-2 left-2">
           <span class="badge-gold">Lv {{ summary.level }}</span>
