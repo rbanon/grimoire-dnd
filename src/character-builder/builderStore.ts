@@ -529,6 +529,14 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value.featsByLevel = {}
     draft.value.spellsByLevel = {}
   })
+
+  // If class switches from spellcaster to non-spellcaster while on the spells step,
+  // push back to skills so currentStep never lands on a hidden step.
+  watch(isSpellcaster, (nowCaster) => {
+    if (!nowCaster && draft.value.currentStep === 8) {
+      draft.value.currentStep = 7
+    }
+  })
   watch(() => draft.value.level, (newLevel) => {
     for (const lvl of Object.keys(draft.value.asiAllocations).map(Number)) {
       if (lvl > newLevel) delete draft.value.asiAllocations[lvl]

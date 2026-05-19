@@ -152,7 +152,7 @@
         </div>
 
         <!-- Bottom nav -->
-        <div class="border-t border-shadow bg-abyss px-6 py-4">
+        <div class="shrink-0 border-t border-shadow bg-abyss px-6 py-4">
           <p
             v-if="builder.saveError && visibleCurrentStep === builder.totalSteps"
             role="alert"
@@ -217,7 +217,8 @@
               </button>
               <button
                 v-else
-                class="btn-primary gap-2 px-6"
+                class="btn-primary gap-2 px-6 transition-opacity"
+                :class="{ 'opacity-40': !builder.canAdvance }"
                 @click="handleNext"
               >
                 Next <ChevronRightIcon :size="14" />
