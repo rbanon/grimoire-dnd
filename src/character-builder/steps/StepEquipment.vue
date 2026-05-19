@@ -289,7 +289,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, watchEffect } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import { fiveEApi } from '@/shared/api/fiveE.client'
@@ -681,6 +681,15 @@ const resolvedInventory = computed<InventoryItem[]>(() => {
 watch(resolvedInventory, (items) => {
   builder.draft.startingInventory = items
 }, { deep: true })
+
+watchEffect(() => {
+  if (!builder.draft.useStartingEquipment || classLoading.value || bgLoading.value) {
+    builder.draft.equipmentChoicesDone = true
+    return
+  }
+  const n = optionGroups.value.length
+  builder.draft.equipmentChoicesDone = n === 0 || Object.keys(choices.value).length >= n
+})
 
 // ── Summary helpers ───────────────────────────────────────────────────────────
 

@@ -27,12 +27,32 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="label" for="char-age">Age</label>
-              <input id="char-age" v-model="builder.draft.age" type="text" placeholder="e.g. 127" class="input-base" maxlength="40" />
+              <label class="label" for="char-age">Age *</label>
+              <input
+                id="char-age"
+                v-model="builder.draft.age"
+                type="text"
+                placeholder="e.g. 127"
+                class="input-base"
+                :class="{ '!border-blood-base/60 bg-blood-deep/10': fieldErrors.age }"
+                maxlength="40"
+                @blur="touched.age = true"
+              />
+              <p v-if="fieldErrors.age" class="mt-1 text-xs font-body text-blood-bright">Age is required.</p>
             </div>
             <div>
-              <label class="label" for="char-gender">Gender / Identity</label>
-              <input id="char-gender" v-model="builder.draft.gender" type="text" placeholder="Any" class="input-base" maxlength="80" />
+              <label class="label" for="char-gender">Gender / Identity *</label>
+              <input
+                id="char-gender"
+                v-model="builder.draft.gender"
+                type="text"
+                placeholder="Any"
+                class="input-base"
+                :class="{ '!border-blood-base/60 bg-blood-deep/10': fieldErrors.gender }"
+                maxlength="80"
+                @blur="touched.gender = true"
+              />
+              <p v-if="fieldErrors.gender" class="mt-1 text-xs font-body text-blood-bright">Gender / Identity is required.</p>
             </div>
           </div>
         </div>
@@ -190,10 +210,12 @@ const portraitError = ref('')
 const showAppearance = ref(false)
 const showPersonality = ref(false)
 const showBiography = ref(false)
-const touched = reactive({ name: false })
+const touched = reactive({ name: false, age: false, gender: false })
 
 const fieldErrors = computed(() => ({
-  name: (touched.name || showValidation.value) && !builder.draft.name.trim(),
+  name:   (touched.name   || showValidation.value) && !builder.draft.name.trim(),
+  age:    (touched.age    || showValidation.value) && !builder.draft.age.trim(),
+  gender: (touched.gender || showValidation.value) && !builder.draft.gender.trim(),
 }))
 
 function onFileChange(event: Event) {

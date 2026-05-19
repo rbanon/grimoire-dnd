@@ -107,6 +107,7 @@ export interface BuilderDraft {
   // Step 5 — Equipment (simplified for MVP)
   useStartingEquipment: boolean
   manualGold: number
+  equipmentChoicesDone: boolean
 
   // Step 2 — Level choices (fighting style, pact boon, etc.)
   // Key = class level, value = map of choiceKey → selected option index
@@ -150,7 +151,7 @@ const defaultDraft = (): BuilderDraft => ({
   rolledAbilityScores: [],
   rollAssignments: {},
   selectedSkills: [], selectedLanguages: [],
-  useStartingEquipment: true, manualGold: 0,
+  useStartingEquipment: true, manualGold: 0, equipmentChoicesDone: true,
   startingInventory: [],
   levelChoices: {},
   featsByLevel: {},
@@ -352,7 +353,7 @@ export const useBuilderStore = defineStore('builder', () => {
     return {
       1:  [
         !draft.value.classIndex ? 'Select a class' : '',
-        draft.value.classIndex && draft.value.level >= 3 && draft.value.availableSubclasses.length > 0 && !draft.value.subclassIndex
+        draft.value.classIndex && draft.value.availableSubclasses.length > 0 && !draft.value.subclassIndex
           ? 'Select a subclass' : '',
       ].filter(Boolean),
       2:  (() => {
@@ -399,9 +400,13 @@ export const useBuilderStore = defineStore('builder', () => {
       9: [
         draft.value.hpMethod === 'roll' && draft.value.rolledHpPerLevel.length < draft.value.level
           ? `Roll HP for all ${draft.value.level} level${draft.value.level > 1 ? 's' : ''}` : '',
+        draft.value.useStartingEquipment && !draft.value.equipmentChoicesDone
+          ? 'Complete all equipment choices' : '',
       ].filter(Boolean),
       10: [
         !draft.value.name.trim() ? 'Name is required' : '',
+        !draft.value.age.trim() ? 'Age is required' : '',
+        !draft.value.gender.trim() ? 'Gender / Identity is required' : '',
       ].filter(Boolean),
       11: [],
     }
