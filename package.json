@@ -1,6 +1,6 @@
 {
   "name": "dnd-character-creator",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "D&D 5e character creator web app",
   "type": "module",
   "scripts": {
@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "type-check": "vue-tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "gen-types": "supabase gen types typescript --project-id edontleksqpvbcxdplxl --schema public > src/shared/types/supabase.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.1",
