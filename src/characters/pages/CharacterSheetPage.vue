@@ -712,7 +712,9 @@ const dialog = useDialog()
 const infoPanel = useInfoPanel()
 const { rollD20 } = useRoll()
 
-const editMode = ref(true)
+const EDIT_MODE_KEY = 'grimoire:editMode'
+const editMode = ref(localStorage.getItem(EDIT_MODE_KEY) !== 'false')
+watch(editMode, v => localStorage.setItem(EDIT_MODE_KEY, String(v)))
 const showShortRest = ref(false)
 const showLongRest  = ref(false)
 const showLevelUp   = ref(false)

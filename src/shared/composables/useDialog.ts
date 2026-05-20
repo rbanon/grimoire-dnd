@@ -1,4 +1,4 @@
-import { ref, readonly } from 'vue'
+import { ref, computed } from 'vue'
 
 export interface DialogConfig {
   title: string
@@ -7,12 +7,13 @@ export interface DialogConfig {
   variant?: 'default' | 'success' | 'danger'
 }
 
-const _config = ref<DialogConfig | null>(null)
+const _queue = ref<DialogConfig[]>([])
 
 export function useDialog() {
+  const config = computed(() => _queue.value[0] ?? null)
   return {
-    config: readonly(_config),
-    open(c: DialogConfig) { _config.value = c },
-    close() { _config.value = null },
+    config,
+    open(c: DialogConfig) { _queue.value.push(c) },
+    close() { _queue.value.shift() },
   }
 }

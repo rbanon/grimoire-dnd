@@ -189,7 +189,7 @@ export const useBuilderStore = defineStore('builder', () => {
   const draft = ref<BuilderDraft>(defaultDraft())
   const saving = ref(false)
   const saveError = ref<string | null>(null)
-  let _skipSave = false
+  let _skipCount = 0
   let _saveTimer: ReturnType<typeof setTimeout> | null = null
 
   // ── Computed ──────────────────────────────────────────────────────────────
@@ -269,98 +269,99 @@ export const useBuilderStore = defineStore('builder', () => {
     return [...pool.values()]
   })
 
-  // Step validation
-  const stepErrors = computed<Record<number, string[]>>(() => {
-    // Step 3 ability errors
-    const abilityErrors: string[] = []
+  // ── Step validators ────────────────────────────────────────────────────────
+
+  function validateAbilities(): string[] {
+    const errors: string[] = []
     if (draft.value.abilityMethod === 'pointbuy') {
-      if (pointsRemaining.value < 0) abilityErrors.push('Too many points spent')
-      else if (pointsRemaining.value > 0) abilityErrors.push(`${pointsRemaining.value} point${pointsRemaining.value > 1 ? 's' : ''} left to spend`)
+      if (pointsRemaining.value < 0) errors.push('Too many points spent')
+      else if (pointsRemaining.value > 0) errors.push(`${pointsRemaining.value} point${pointsRemaining.value > 1 ? 's' : ''} left to spend`)
     } else if (draft.value.abilityMethod === 'standard') {
       const assigned = Object.keys(draft.value.standardArrayAssignments).length
-      if (assigned < 6) abilityErrors.push(`Assign all standard array values (${assigned}/6 done)`)
+      if (assigned < 6) errors.push(`Assign all standard array values (${assigned}/6 done)`)
     } else if (draft.value.abilityMethod === 'manual') {
-      if (Object.values(draft.value.baseScores).some(s => s > 20)) {
-        abilityErrors.push('Starting ability scores above 20 are non-standard for player characters')
-      }
+      if (Object.values(draft.value.baseScores).some(s => s > 20))
+        errors.push('Starting ability scores above 20 are non-standard for player characters')
     } else if (draft.value.abilityMethod === 'roll') {
       if (draft.value.rolledAbilityScores.length < 6) {
-        abilityErrors.push('Roll your ability scores first')
+        errors.push('Roll your ability scores first')
       } else {
         const assigned = Object.keys(draft.value.rollAssignments).length
-        if (assigned < 6) abilityErrors.push(`Assign all rolled values (${assigned}/6 done)`)
+        if (assigned < 6) errors.push(`Assign all rolled values (${assigned}/6 done)`)
       }
     }
+    return errors
+  }
 
-    const featErrors = (() => {
-      const errors: string[] = []
-      const activeAsis = getAsiLevels(draft.value.classIndex).filter(l => l <= draft.value.level)
-      for (const asiLevel of activeAsis) {
-        const decision = draft.value.featsByLevel[asiLevel]
-        const type = decision?.type ?? 'asi'
-        if (type === 'feat') {
-          if (!decision?.featIndex) {
-            errors.push(`Level ${asiLevel} improvement: choose a feat`)
-            break
+  function validateFeats(): string[] {
+    const errors: string[] = []
+    const activeAsis = getAsiLevels(draft.value.classIndex).filter(l => l <= draft.value.level)
+    for (const asiLevel of activeAsis) {
+      const decision = draft.value.featsByLevel[asiLevel]
+      const type = decision?.type ?? 'asi'
+      if (type === 'feat') {
+        if (!decision?.featIndex) { errors.push(`Level ${asiLevel} improvement: choose a feat`); break }
+      } else {
+        const spent = Object.values(draft.value.asiAllocations[asiLevel] ?? {}).reduce((s, v) => s + v, 0)
+        if (spent < 2) { errors.push(`Level ${asiLevel} ASI: ${spent}/2 points allocated`); break }
+      }
+    }
+    return errors
+  }
+
+  function validateSpells(): string[] {
+    if (!isSpellcaster.value) return []
+    const profile = getSpellProfile(draft.value.classIndex)
+    if (!profile) return []
+    const levelIdx = draft.value.level - 1
+    const errors: string[] = []
+    if (profile.castingType === 'known') {
+      const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
+      if (cantripLimit > 0 && activeCantrips.value.length < cantripLimit) {
+        const diff = cantripLimit - activeCantrips.value.length
+        errors.push(`Select ${diff} more cantrip${diff > 1 ? 's' : ''} (${activeCantrips.value.length}/${cantripLimit})`)
+      }
+      const spellLimit = profile.spellsKnown?.[levelIdx] ?? 0
+      if (spellLimit > 0 && activeSpells.value.length < spellLimit) {
+        const diff = spellLimit - activeSpells.value.length
+        errors.push(`Select ${diff} more spell${diff > 1 ? 's' : ''} (${activeSpells.value.length}/${spellLimit})`)
+      }
+    } else {
+      const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
+      if (cantripLimit > 0 && draft.value.selectedCantrips.length < cantripLimit) {
+        const diff = cantripLimit - draft.value.selectedCantrips.length
+        errors.push(`Select ${diff} more cantrip${diff > 1 ? 's' : ''} (${draft.value.selectedCantrips.length}/${cantripLimit})`)
+      }
+      if (draft.value.level >= getFirstSpellLevel(draft.value.classIndex)) {
+        const slots = getSpellSlots(draft.value.classIndex, draft.value.level)
+        const totalSlots = Object.values(slots).reduce((s: number, v) => s + (v as number), 0)
+        const ability = profile.preparedAbility!
+        const mod = computeModifier(effectiveScores.value[ability as keyof AbilityScores])
+        const lv = draft.value.level
+        const daily = Math.max(1, draft.value.classIndex === 'paladin' ? Math.floor(lv / 2) + mod : lv + mod)
+        const limit = profile.castingType === 'spellbook' ? daily : Math.max(totalSlots, daily)
+        if (profile.castingType === 'prepared') {
+          const prepared = draft.value.selectedPreparedSpells.length
+          if (limit > 0 && prepared < limit) {
+            const diff = limit - prepared
+            errors.push(`Prepare ${diff} more spell${diff > 1 ? 's' : ''} (${prepared}/${limit})`)
           }
         } else {
-          const spent = Object.values(draft.value.asiAllocations[asiLevel] ?? {}).reduce((s, v) => s + v, 0)
-          if (spent < 2) {
-            errors.push(`Level ${asiLevel} ASI: ${spent}/2 points allocated`)
-            break
+          if (limit > 0 && draft.value.selectedSpells.length < limit) {
+            const diff = limit - draft.value.selectedSpells.length
+            errors.push(`Select ${diff} more starting spell${diff > 1 ? 's' : ''} (${draft.value.selectedSpells.length}/${limit})`)
           }
         }
       }
-      return errors
-    })()
+    }
+    return errors
+  }
 
-    const spellErrors = (() => {
-      if (!isSpellcaster.value) return []
-      const profile = getSpellProfile(draft.value.classIndex)
-      if (!profile) return []
-      const levelIdx = draft.value.level - 1
-      const errors: string[] = []
-      if (profile.castingType === 'known') {
-        const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
-        if (cantripLimit > 0 && activeCantrips.value.length < cantripLimit) {
-          const diff = cantripLimit - activeCantrips.value.length
-          errors.push(`Select ${diff} more cantrip${diff > 1 ? 's' : ''} (${activeCantrips.value.length}/${cantripLimit})`)
-        }
-        const spellLimit = profile.spellsKnown?.[levelIdx] ?? 0
-        if (spellLimit > 0 && activeSpells.value.length < spellLimit) {
-          const diff = spellLimit - activeSpells.value.length
-          errors.push(`Select ${diff} more spell${diff > 1 ? 's' : ''} (${activeSpells.value.length}/${spellLimit})`)
-        }
-      } else {
-        const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
-        if (cantripLimit > 0 && draft.value.selectedCantrips.length < cantripLimit) {
-          const diff = cantripLimit - draft.value.selectedCantrips.length
-          errors.push(`Select ${diff} more cantrip${diff > 1 ? 's' : ''} (${draft.value.selectedCantrips.length}/${cantripLimit})`)
-        }
-        if (draft.value.level >= getFirstSpellLevel(draft.value.classIndex)) {
-          const slots = getSpellSlots(draft.value.classIndex, draft.value.level)
-          const totalSlots = Object.values(slots).reduce((s: number, v) => s + (v as number), 0)
-          const ability = profile.preparedAbility!
-          const mod = computeModifier(effectiveScores.value[ability as keyof AbilityScores])
-          const lv = draft.value.level
-          const daily = Math.max(1, draft.value.classIndex === 'paladin' ? Math.floor(lv / 2) + mod : lv + mod)
-          const limit = profile.castingType === 'spellbook' ? daily : Math.max(totalSlots, daily)
-          if (profile.castingType === 'prepared') {
-            const prepared = draft.value.selectedPreparedSpells.length
-            if (limit > 0 && prepared < limit) {
-              const diff = limit - prepared
-              errors.push(`Prepare ${diff} more spell${diff > 1 ? 's' : ''} (${prepared}/${limit})`)
-            }
-          } else {
-            if (limit > 0 && draft.value.selectedSpells.length < limit) {
-              const diff = limit - draft.value.selectedSpells.length
-              errors.push(`Select ${diff} more starting spell${diff > 1 ? 's' : ''} (${draft.value.selectedSpells.length}/${limit})`)
-            }
-          }
-        }
-      }
-      return errors
-    })()
+  // Step validation
+  const stepErrors = computed<Record<number, string[]>>(() => {
+    const abilityErrors = validateAbilities()
+    const featErrors    = validateFeats()
+    const spellErrors   = validateSpells()
 
     return {
       1:  [
@@ -438,22 +439,22 @@ export const useBuilderStore = defineStore('builder', () => {
   }
 
   function saveDraft() {
-    if (_skipSave) return
+    if (_skipCount > 0) return
     storageSet(DRAFT_KEY, draft.value)
   }
 
   function debouncedSaveDraft() {
-    if (_skipSave) return
+    if (_skipCount > 0) return
     if (_saveTimer) clearTimeout(_saveTimer)
     _saveTimer = setTimeout(saveDraft, 500)
   }
 
   async function clearDraft() {
-    _skipSave = true
+    _skipCount++
     storageRemove(DRAFT_KEY)
     draft.value = defaultDraft()
     await nextTick()
-    _skipSave = false
+    _skipCount--
   }
 
   watch(draft, debouncedSaveDraft, { deep: true })
@@ -565,31 +566,37 @@ export const useBuilderStore = defineStore('builder', () => {
 
   // ── Finalize ──────────────────────────────────────────────────────────────
 
-  async function save(): Promise<string> {
-    saving.value = true
-    saveError.value = null
-    const characterStore = useCharactersStore()
-    const auth = useAuthStore()
+  async function buildCharacterFromDraft(id: string, ts: string, portrait: { type: 'none' } | { type: 'url'; url: string }) {
     const d = draft.value
-    const ts = now()
-    const id = generateId()
-
-    try {
-    let portrait: { type: 'none' } | { type: 'url'; url: string } = { type: 'none' }
-    if (d.portraitUrl) {
-      let portraitUrl = d.portraitUrl
-      if (portraitUrl.startsWith('data:') && auth.isAuthenticated && auth.userId) {
-        try {
-          const blob = await fetch(portraitUrl).then(r => r.blob())
-          const ext = blob.type.split('/')[1]?.split('+')[0] ?? 'jpg'
-          const file = new File([blob], `portrait.${ext}`, { type: blob.type })
-          portraitUrl = await uploadPortrait(file, auth.userId, id)
-        } catch { /* keep data URL on upload failure */ }
-      }
-      try { new URL(portraitUrl); portrait = { type: 'url', url: portraitUrl } } catch { /* skip invalid URL */ }
+    const abbrev: Record<string, keyof AbilityScores> = {
+      STR: 'str', DEX: 'dex', CON: 'con', INT: 'int', WIS: 'wis', CHA: 'cha',
+    }
+    const savingThrows: Record<keyof AbilityScores, boolean> = {
+      str: false, dex: false, con: false, int: false, wis: false, cha: false,
+    }
+    for (const part of (CLASS_META[d.classIndex]?.saves ?? '').split('·')) {
+      const key = abbrev[part.trim()]
+      if (key) savingThrows[key] = true
     }
 
-    const character = CharacterSchema.parse({
+    let spellcasting = null
+    if (d.classSpellcastingAbility) {
+      const castingType = getSpellProfile(d.classIndex)?.castingType ?? 'known'
+      const finalCantrips = castingType === 'known' ? activeCantrips.value : d.selectedCantrips
+      const finalSpells   = castingType === 'known' ? activeSpells.value   : d.selectedSpells
+      spellcasting = {
+        spellcastingAbility: d.classSpellcastingAbility as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha',
+        slotsMax:  getSpellSlots(d.classIndex, d.level),
+        slotsUsed: { level1:0, level2:0, level3:0, level4:0, level5:0, level6:0, level7:0, level8:0, level9:0 },
+        cantripsKnown: finalCantrips.map(c => ({ ...c, level: 0 })),
+        spellsKnown:    castingType === 'prepared' ? d.selectedSpells : finalSpells,
+        spellsPrepared: castingType === 'prepared' ? d.selectedPreparedSpells
+          : castingType === 'spellbook' ? finalSpells : [],
+        ritualCasting: false,
+      }
+    }
+
+    return CharacterSchema.parse({
       id,
       schemaVersion: '1.0',
       createdAt: ts,
@@ -631,19 +638,7 @@ export const useBuilderStore = defineStore('builder', () => {
         useMilestones: d.useMilestones,
       },
       skillProficiencies: d.selectedSkills.reduce((acc, s) => ({ ...acc, [s]: 'proficient' }), {}),
-      savingThrowProficiencies: (() => {
-        const abbrev: Record<string, keyof AbilityScores> = {
-          STR: 'str', DEX: 'dex', CON: 'con', INT: 'int', WIS: 'wis', CHA: 'cha',
-        }
-        const result: Record<keyof AbilityScores, boolean> = {
-          str: false, dex: false, con: false, int: false, wis: false, cha: false,
-        }
-        for (const part of (CLASS_META[d.classIndex]?.saves ?? '').split('·')) {
-          const key = abbrev[part.trim()]
-          if (key) result[key] = true
-        }
-        return result
-      })(),
+      savingThrowProficiencies: savingThrows,
       languages: d.selectedLanguages,
       otherProficiencies: [
         ...d.backgroundToolProficiencies,
@@ -653,21 +648,7 @@ export const useBuilderStore = defineStore('builder', () => {
       attacks: [],
       inventory: d.startingInventory,
       currency: { cp: 0, sp: 0, ep: 0, gp: d.manualGold, pp: 0 },
-      spellcasting: d.classSpellcastingAbility ? (() => {
-        const castingType = getSpellProfile(d.classIndex)?.castingType ?? 'known'
-        const finalCantrips = castingType === 'known' ? activeCantrips.value : d.selectedCantrips
-        const finalSpells   = castingType === 'known' ? activeSpells.value   : d.selectedSpells
-        return {
-          spellcastingAbility: d.classSpellcastingAbility as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha',
-          slotsMax:  getSpellSlots(d.classIndex, d.level),
-          slotsUsed: { level1:0, level2:0, level3:0, level4:0, level5:0, level6:0, level7:0, level8:0, level9:0 },
-          cantripsKnown: finalCantrips.map(c => ({ ...c, level: 0 })),
-          spellsKnown:    castingType === 'prepared' ? d.selectedSpells : finalSpells,
-          spellsPrepared: castingType === 'prepared'  ? d.selectedPreparedSpells
-            : castingType === 'spellbook' ? finalSpells : [],
-          ritualCasting: false,
-        }
-      })() : null,
+      spellcasting,
       favoriteSpells: [],
       features: Object.entries(d.featsByLevel)
         .filter(([, dec]) => dec.type === 'feat' && dec.featIndex)
@@ -679,10 +660,36 @@ export const useBuilderStore = defineStore('builder', () => {
         })),
       overrides: {},
     })
+  }
 
-    await characterStore.create(character)
-    await clearDraft()
-    return id
+  async function save(): Promise<string> {
+    saving.value = true
+    saveError.value = null
+    const characterStore = useCharactersStore()
+    const auth = useAuthStore()
+    const d = draft.value
+    const ts = now()
+    const id = generateId()
+
+    try {
+      let portrait: { type: 'none' } | { type: 'url'; url: string } = { type: 'none' }
+      if (d.portraitUrl) {
+        let portraitUrl = d.portraitUrl
+        if (portraitUrl.startsWith('data:') && auth.isAuthenticated && auth.userId) {
+          try {
+            const blob = await fetch(portraitUrl).then(r => r.blob())
+            const ext = blob.type.split('/')[1]?.split('+')[0] ?? 'jpg'
+            const file = new File([blob], `portrait.${ext}`, { type: blob.type })
+            portraitUrl = await uploadPortrait(file, auth.userId, id)
+          } catch { /* keep data URL on upload failure */ }
+        }
+        try { new URL(portraitUrl); portrait = { type: 'url', url: portraitUrl } } catch { /* skip invalid URL */ }
+      }
+
+      const character = await buildCharacterFromDraft(id, ts, portrait)
+      await characterStore.create(character)
+      await clearDraft()
+      return id
     } catch (err) {
       saveError.value = err instanceof Error ? err.message : 'Could not save character. Please try again.'
       throw err

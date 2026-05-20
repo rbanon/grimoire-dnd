@@ -565,9 +565,11 @@ function removeSpellAtLevel(lvl: number, index: string) {
 
 // ── Active spells before a given level ───────────────────────────────────────
 
-function activeSpellsBeforeLevel(lvl: number): { index: string; name: string; level: number }[] {
+const spellPoolByLevel = computed(() => {
+  const pools = new Map<number, { index: string; name: string; level: number }[]>()
   const pool = new Map<string, { index: string; name: string; level: number }>()
-  for (let l = 1; l < lvl; l++) {
+  for (let l = 1; l <= builder.draft.level + 1; l++) {
+    pools.set(l, [...pool.values()])
     const entry = builder.draft.spellsByLevel[l]
     if (!entry) continue
     for (const s of entry.spellsGained) pool.set(s.index, s)
@@ -576,7 +578,11 @@ function activeSpellsBeforeLevel(lvl: number): { index: string; name: string; le
       pool.set(entry.spellReplaced.to.index, entry.spellReplaced.to)
     }
   }
-  return [...pool.values()]
+  return pools
+})
+
+function activeSpellsBeforeLevel(lvl: number): { index: string; name: string; level: number }[] {
+  return spellPoolByLevel.value.get(lvl) ?? []
 }
 
 // ── Replacement state ─────────────────────────────────────────────────────────
