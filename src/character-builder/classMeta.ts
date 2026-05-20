@@ -1,5 +1,8 @@
 // Local metadata for classes and races — flavor + glyphs, spell limits
 // Supplements the 5e-bits API (which only returns index + name in list responses)
+// SRD numeric data (hit dice, spell slots, cantrips/spells known) is sourced from
+// srd-class-data.json — regenerate with: node scripts/generate-srd-data.mjs
+import srdData from '@/shared/data/srd-class-data.json'
 
 export interface ClassMeta {
   glyph: string
@@ -12,84 +15,84 @@ export interface ClassMeta {
 
 export const CLASS_META: Record<string, ClassMeta> = {
   barbarian: {
-    glyph: '⚔', hitDie: 12,
+    glyph: '⚔', hitDie: srdData.hitDie.barbarian,
     flavor: 'A fierce warrior who can enter a battle rage',
     tags: ['Martial', 'Melee'],
     primaryAbility: 'Strength',
     saves: 'STR · CON',
   },
   bard: {
-    glyph: '♫', hitDie: 8,
+    glyph: '♫', hitDie: srdData.hitDie.bard,
     flavor: 'An inspiring performer whose magic echoes with music',
     tags: ['Spellcaster', 'Support'],
     primaryAbility: 'Charisma',
     saves: 'DEX · CHA',
   },
   cleric: {
-    glyph: '✦', hitDie: 8,
+    glyph: '✦', hitDie: srdData.hitDie.cleric,
     flavor: 'A priestly champion who wields divine magic in service of a higher power',
     tags: ['Spellcaster', 'Support', 'Melee'],
     primaryAbility: 'Wisdom',
     saves: 'WIS · CHA',
   },
   druid: {
-    glyph: '☘', hitDie: 8,
+    glyph: '☘', hitDie: srdData.hitDie.druid,
     flavor: 'A priest of the Old Faith wielding the powers of nature',
     tags: ['Spellcaster', 'Nature'],
     primaryAbility: 'Wisdom',
     saves: 'INT · WIS',
   },
   fighter: {
-    glyph: '⚔', hitDie: 10,
+    glyph: '⚔', hitDie: srdData.hitDie.fighter,
     flavor: 'A master of martial combat, skilled with a variety of weapons and armor',
     tags: ['Martial', 'Versatile'],
     primaryAbility: 'Strength or Dexterity',
     saves: 'STR · CON',
   },
   monk: {
-    glyph: '◎', hitDie: 8,
+    glyph: '◎', hitDie: srdData.hitDie.monk,
     flavor: 'A master of martial arts, harnessing the power of body and ki',
     tags: ['Martial', 'Ki'],
     primaryAbility: 'Dexterity · Wisdom',
     saves: 'STR · DEX',
   },
   paladin: {
-    glyph: '✚', hitDie: 10,
+    glyph: '✚', hitDie: srdData.hitDie.paladin,
     flavor: 'A holy warrior bound to a sacred oath, wielding divine power',
     tags: ['Martial', 'Spellcaster', 'Melee'],
     primaryAbility: 'Strength · Charisma',
     saves: 'WIS · CHA',
   },
   ranger: {
-    glyph: '⌖', hitDie: 10,
+    glyph: '⌖', hitDie: srdData.hitDie.ranger,
     flavor: 'A warrior of the wilderness, skilled hunter and tracker',
     tags: ['Martial', 'Nature', 'Spellcaster'],
     primaryAbility: 'Dexterity · Wisdom',
     saves: 'STR · DEX',
   },
   rogue: {
-    glyph: '◆', hitDie: 8,
+    glyph: '◆', hitDie: srdData.hitDie.rogue,
     flavor: 'A scoundrel who uses stealth and cunning to overcome obstacles',
     tags: ['Skilled', 'Stealth'],
     primaryAbility: 'Dexterity',
     saves: 'DEX · INT',
   },
   sorcerer: {
-    glyph: '✶', hitDie: 6,
+    glyph: '✶', hitDie: srdData.hitDie.sorcerer,
     flavor: 'A spellcaster who draws on inherent magic from a gift or bloodline',
     tags: ['Spellcaster', 'Arcane'],
     primaryAbility: 'Charisma',
     saves: 'CON · CHA',
   },
   warlock: {
-    glyph: '⌬', hitDie: 8,
+    glyph: '⌬', hitDie: srdData.hitDie.warlock,
     flavor: 'A wielder of magic derived from a bargain with an otherworldly patron',
     tags: ['Spellcaster', 'Pact'],
     primaryAbility: 'Charisma',
     saves: 'WIS · CHA',
   },
   wizard: {
-    glyph: '⎊', hitDie: 6,
+    glyph: '⎊', hitDie: srdData.hitDie.wizard,
     flavor: 'A scholarly magic-user capable of manipulating the structures of reality',
     tags: ['Spellcaster', 'Arcane', 'Knowledge'],
     primaryAbility: 'Intelligence',
@@ -137,49 +140,50 @@ export interface SpellProfile {
   preparedAbility?: 'int' | 'wis' | 'cha'
 }
 
-// SRD 5e 2014 data — 20 entries per array, index = level - 1
-const ZERO20 = new Array<number>(20).fill(0)
-
+// Spell profiles — castingType and preparedAbility are editorial (no API equivalent).
+// cantripsKnown/spellsKnown arrays are sourced from srd-class-data.json where available.
+// Paladin spellsKnown (prepared-spell limit per level) and wizard spellsKnown (spellbook
+// size per level) are not returned by the API and remain manually maintained.
 export const SPELL_PROFILES: Partial<Record<string, SpellProfile>> = {
   bard: {
     castingType: 'known',
-    cantripsKnown: [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
-    spellsKnown:   [4,5,6,7,8,9,10,11,12,14,15,15,16,18,19,19,20,22,22,22],
+    cantripsKnown: srdData.cantripsKnown.bard,
+    spellsKnown:   srdData.spellsKnown.bard,
   },
   cleric: {
     castingType: 'prepared',
     preparedAbility: 'wis',
-    cantripsKnown: [3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5],
+    cantripsKnown: srdData.cantripsKnown.cleric,
   },
   druid: {
     castingType: 'prepared',
     preparedAbility: 'wis',
-    cantripsKnown: [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
+    cantripsKnown: srdData.cantripsKnown.druid,
   },
   paladin: {
     castingType: 'known',
-    cantripsKnown:  ZERO20,
+    cantripsKnown: srdData.cantripsKnown.paladin,
     spellsKnown:   [0,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10,11],
   },
   ranger: {
     castingType: 'known',
-    cantripsKnown:  ZERO20, // no cantrips; first spells at level 2
-    spellsKnown:   [0,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10,11],
+    cantripsKnown: srdData.cantripsKnown.ranger,
+    spellsKnown:   srdData.spellsKnown.ranger,
   },
   sorcerer: {
     castingType: 'known',
-    cantripsKnown: [4,4,4,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6],
-    spellsKnown:   [2,3,4,5,6,7,8,9,10,11,12,12,13,13,14,14,15,15,15,15],
+    cantripsKnown: srdData.cantripsKnown.sorcerer,
+    spellsKnown:   srdData.spellsKnown.sorcerer,
   },
   warlock: {
     castingType: 'known',
-    cantripsKnown: [2,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4],
-    spellsKnown:   [2,3,4,5,6,7,8,9,10,10,11,11,12,12,13,13,14,14,14,15],
+    cantripsKnown: srdData.cantripsKnown.warlock,
+    spellsKnown:   srdData.spellsKnown.warlock,
   },
   wizard: {
     castingType: 'known',
-    cantripsKnown:  [3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5],
-    spellsKnown:    [3,5,7,9,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26],
+    cantripsKnown: srdData.cantripsKnown.wizard,
+    spellsKnown:   [3,5,7,9,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26],
   },
 }
 
@@ -195,30 +199,8 @@ export function getFirstSpellLevel(classIndex: string): number {
 
 // ─── Spell slots ──────────────────────────────────────────────────────────────
 
-// SRD 5e slot tables, index = level-1, each row = [l1,l2,l3,l4,l5,l6,l7,l8,l9]
-const FULL_CASTER_SLOTS = [
-  [2,0,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,0],[4,2,0,0,0,0,0,0,0],[4,3,0,0,0,0,0,0,0],
-  [4,3,2,0,0,0,0,0,0],[4,3,3,0,0,0,0,0,0],[4,3,3,1,0,0,0,0,0],[4,3,3,2,0,0,0,0,0],
-  [4,3,3,3,1,0,0,0,0],[4,3,3,3,2,0,0,0,0],[4,3,3,3,2,1,0,0,0],[4,3,3,3,2,1,0,0,0],
-  [4,3,3,3,2,1,1,0,0],[4,3,3,3,2,1,1,0,0],[4,3,3,3,2,1,1,1,0],[4,3,3,3,2,1,1,1,0],
-  [4,3,3,3,2,1,1,1,1],[4,3,3,3,3,1,1,1,1],[4,3,3,3,3,2,1,1,1],[4,3,3,3,3,2,2,1,1],
-] as const
-
-const HALF_CASTER_SLOTS = [
-  [0,0,0,0,0,0,0,0,0],[2,0,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,0],
-  [4,2,0,0,0,0,0,0,0],[4,2,0,0,0,0,0,0,0],[4,3,0,0,0,0,0,0,0],[4,3,0,0,0,0,0,0,0],
-  [4,3,2,0,0,0,0,0,0],[4,3,2,0,0,0,0,0,0],[4,3,3,0,0,0,0,0,0],[4,3,3,0,0,0,0,0,0],
-  [4,3,3,1,0,0,0,0,0],[4,3,3,1,0,0,0,0,0],[4,3,3,2,0,0,0,0,0],[4,3,3,2,0,0,0,0,0],
-  [4,3,3,3,1,0,0,0,0],[4,3,3,3,1,0,0,0,0],[4,3,3,3,2,0,0,0,0],[4,3,3,3,2,0,0,0,0],
-] as const
-
-const WARLOCK_SLOTS = [
-  [1,0,0,0,0,0,0,0,0],[2,0,0,0,0,0,0,0,0],[0,2,0,0,0,0,0,0,0],[0,2,0,0,0,0,0,0,0],
-  [0,0,2,0,0,0,0,0,0],[0,0,2,0,0,0,0,0,0],[0,0,0,2,0,0,0,0,0],[0,0,0,2,0,0,0,0,0],
-  [0,0,0,0,2,0,0,0,0],[0,0,0,0,2,0,0,0,0],[0,0,0,0,3,0,0,0,0],[0,0,0,0,3,0,0,0,0],
-  [0,0,0,0,3,0,0,0,0],[0,0,0,0,3,0,0,0,0],[0,0,0,0,3,0,0,0,0],[0,0,0,0,3,0,0,0,0],
-  [0,0,0,0,4,0,0,0,0],[0,0,0,0,4,0,0,0,0],[0,0,0,0,4,0,0,0,0],[0,0,0,0,4,0,0,0,0],
-] as const
+// Per-class slot rows sourced from srd-class-data.json, index = level-1, each row = [l1..l9]
+const SRD_SPELL_SLOTS = srdData.spellSlots as Record<string, number[][]>
 
 export interface SpellSlotsMax {
   level1: number; level2: number; level3: number; level4: number; level5: number
@@ -228,23 +210,23 @@ export interface SpellSlotsMax {
 export function getSpellSlots(classIndex: string, level: number): SpellSlotsMax {
   const empty: SpellSlotsMax = { level1:0, level2:0, level3:0, level4:0, level5:0, level6:0, level7:0, level8:0, level9:0 }
   if (!getSpellProfile(classIndex)) return empty
-  const idx = Math.min(Math.max(level, 1), 20) - 1
-  const row = classIndex === 'warlock' ? WARLOCK_SLOTS[idx]
-    : (classIndex === 'paladin' || classIndex === 'ranger') ? HALF_CASTER_SLOTS[idx]
-    : FULL_CASTER_SLOTS[idx]
+  const classSlots = SRD_SPELL_SLOTS[classIndex]
+  if (!classSlots) return empty
+  const row = classSlots[Math.min(Math.max(level, 1), 20) - 1]
+  if (!row) return empty
   return { level1:row[0], level2:row[1], level3:row[2], level4:row[3], level5:row[4], level6:row[5], level7:row[6], level8:row[7], level9:row[8] }
 }
-// Max spell level accessible per character level, index = level (1-based, index 0 unused)
-const FULL_CASTER_MAX   = [0, 1,1, 2,2, 3,3, 4,4, 5,5, 6,6, 7,7, 8,8, 9,9,9,9]
-const HALF_CASTER_MAX   = [0, 0,1, 1,1, 2,2, 2,2, 3,3, 3,3, 4,4, 4,4, 5,5,5,5]
-const WARLOCK_MAX       = [0, 1,1, 2,2, 3,3, 4,4, 5,5, 5,5, 5,5, 5,5, 5,5,5,5]
 
 export function getMaxSpellLevel(classIndex: string, level: number): number {
-  const profile = getSpellProfile(classIndex)
-  if (!profile) return 0
-  if (classIndex === 'paladin' || classIndex === 'ranger') return HALF_CASTER_MAX[level] ?? 0
-  if (classIndex === 'warlock') return WARLOCK_MAX[level] ?? 0
-  return FULL_CASTER_MAX[level] ?? 0
+  if (!getSpellProfile(classIndex)) return 0
+  const classSlots = SRD_SPELL_SLOTS[classIndex]
+  if (!classSlots) return 0
+  const row = classSlots[Math.min(Math.max(level, 1), 20) - 1]
+  if (!row) return 0
+  for (let i = 8; i >= 0; i--) {
+    if (row[i] > 0) return i + 1
+  }
+  return 0
 }
 
 // ─── Ability Score Improvements ───────────────────────────────────────────────
