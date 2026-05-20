@@ -97,15 +97,23 @@
       <!-- ── Spell levels 1–9 ───────────────────────────────────────────── -->
       <div v-if="activeLevels.length > 0" class="rule-gold mb-0 flex items-center">
         <span class="flex-1">Spells</span>
-        <button
-          v-if="editMode"
-          type="button"
-          class="text-xs font-heading px-2 py-0.5 rounded border transition-all"
-          :class="spellEditMode
-            ? 'border-blood-base/40 text-blood-mid hover:border-blood-base/70'
-            : 'border-shadow text-mist hover:border-arcane-base/40 hover:text-arcane-pale'"
-          @click="spellEditMode = !spellEditMode"
-        >{{ spellEditMode ? 'Done' : 'Edit' }}</button>
+        <div class="flex items-center gap-2">
+          <button
+            v-if="editMode && isPreparedCaster"
+            type="button"
+            class="text-xs font-heading px-2 py-0.5 rounded border border-shadow text-mist hover:border-arcane-base/40 hover:text-arcane-pale transition-all"
+            @click="showManagePrepared = true"
+          >Manage Prepared</button>
+          <button
+            v-if="editMode"
+            type="button"
+            class="text-xs font-heading px-2 py-0.5 rounded border transition-all"
+            :class="spellEditMode
+              ? 'border-blood-base/40 text-blood-mid hover:border-blood-base/70'
+              : 'border-shadow text-mist hover:border-arcane-base/40 hover:text-arcane-pale'"
+            @click="spellEditMode = !spellEditMode"
+          >{{ spellEditMode ? 'Done' : 'Edit' }}</button>
+        </div>
       </div>
 
       <section
@@ -191,6 +199,19 @@
         @add="onAddSpells"
       />
 
+      <!-- Manage prepared spells modal (prepared casters only) -->
+      <ManagePreparedModal
+        v-if="isPreparedCaster"
+        :show="showManagePrepared"
+        :class-index="props.character.identity.class.index"
+        :class-name="props.character.identity.class.name"
+        :current-prepared="sc.spellsPrepared"
+        :max-spell-level="maxSpellLevel"
+        :daily-limit="preparedLimit ?? 9"
+        @close="showManagePrepared = false"
+        @save="onManagePrepareSaved"
+      />
+
     </template>
 
     <!-- Cast spell modal -->
@@ -220,6 +241,7 @@ import CantripPickerModal from './CantripPickerModal.vue'
 import SpellCard from './SpellCard.vue'
 import SpellPickerModal from './SpellPickerModal.vue'
 import CastSpellModal from './CastSpellModal.vue'
+import ManagePreparedModal from './ManagePreparedModal.vue'
 
 const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
@@ -227,6 +249,7 @@ const { confirm } = useConfirm()
 const cantripEditMode = ref(false)
 const spellEditMode = ref(false)
 const showCantripPicker = ref(false)
+const showManagePrepared = ref(false)
 const spellPickerLevel = ref<number | null>(null)
 const castingSpell = ref<SpellReference | null>(null)
 
@@ -415,6 +438,20 @@ async function togglePrepared(index: string, currentlyPrepared: boolean) {
     updated.spellsPrepared = [...sc.value.spellsPrepared, spell]
   }
   await store.update(props.character.id, { spellcasting: updated })
+}
+
+// ── Manage prepared (prepared casters) ───────────────────────────────────────
+
+async function onManagePrepareSaved(newPrepared: SpellReference[]) {
+  if (!sc.value) return
+  showManagePrepared.value = false
+  const newKnown = [...sc.value.spellsKnown]
+  for (const spell of newPrepared) {
+    if (!newKnown.some(s => s.index === spell.index)) newKnown.push(spell)
+  }
+  await store.update(props.character.id, {
+    spellcasting: { ...sc.value, spellsKnown: newKnown, spellsPrepared: newPrepared },
+  })
 }
 
 // ── Remove spell ──────────────────────────────────────────────────────────────
