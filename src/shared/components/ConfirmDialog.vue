@@ -31,6 +31,21 @@
             <!-- Body -->
             <p class="font-body text-sm text-ash leading-relaxed">{{ confirm.config.value.body }}</p>
 
+            <!-- Detail block (optional structured info) -->
+            <div
+              v-if="confirm.config.value.detail?.length"
+              class="rounded border border-shadow bg-depths px-3 py-2.5 space-y-1.5"
+            >
+              <div
+                v-for="row in confirm.config.value.detail"
+                :key="row.label"
+                class="flex items-baseline gap-3"
+              >
+                <span class="font-mono text-2xs tracking-widest uppercase text-mist w-14 shrink-0">{{ row.label }}</span>
+                <span class="font-body text-sm text-vellum leading-snug">{{ row.value }}</span>
+              </div>
+            </div>
+
             <!-- Actions -->
             <div class="flex gap-2 pt-1">
               <button

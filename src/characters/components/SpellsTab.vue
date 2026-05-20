@@ -57,7 +57,7 @@
               ? 'border-blood-base/40 text-blood-mid hover:border-blood-base/70'
               : 'border-shadow text-mist hover:border-arcane-base/40 hover:text-arcane-pale'"
             @click="cantripEditMode = !cantripEditMode"
-          >{{ cantripEditMode ? 'Listo' : 'Editar' }}</button>
+          >{{ cantripEditMode ? 'Done' : 'Edit' }}</button>
         </div>
 
         <div v-if="sc.cantripsKnown.length > 0" class="space-y-1.5 mb-4">
@@ -146,7 +146,9 @@
             :spell="spell"
             :spell-edit-mode="spellEditMode"
             :is-favorite="isSpellFav(spell.index)"
+            :can-toggle-prepared="isPreparedCaster"
             @remove="removeSpell(spell.index, spell.prepared ? 'prepared' : 'known')"
+            @toggle-prepared="togglePrepared(spell.index, spell.prepared)"
             @toggle-favorite="toggleSpellFav(spell, 'spell')"
             @cast="castingSpell = spell"
           />
@@ -210,7 +212,7 @@ import { useCharactersStore } from '@/characters/store'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
-import { getSpellProfile, getMaxSpellLevel } from '@/character-builder/classMeta'
+import { getSpellProfile, getMaxSpellLevel, getSpellSlots } from '@/character-builder/classMeta'
 import type { Character, SpellReference, CombatFavorite } from '@/shared/types/character'
 import { generateId } from '@/shared/lib/uuid'
 import CantripCard from './CantripCard.vue'
@@ -248,12 +250,32 @@ const spellAbilityMod = computed(() => {
   return mods.value[sc.value.spellcastingAbility]
 })
 
+const isPreparedCaster = computed(() => {
+  const profile = getSpellProfile(props.character.identity.class.index)
+  return profile?.castingType === 'prepared'
+})
+
+// Daily prepared limit for prepared casters (Math.max to always be able to fill all slots)
+const preparedLimit = computed((): number | undefined => {
+  if (!isPreparedCaster.value || !sc.value) return undefined
+  const level = props.character.combat.level
+  const slots = getSpellSlots(props.character.identity.class.index, level)
+  const totalSlots = Object.values(slots).reduce((s, v) => s + v, 0)
+  const mod = spellAbilityMod.value
+  const daily = props.character.identity.class.index === 'paladin'
+    ? Math.max(1, Math.floor(level / 2) + mod)
+    : Math.max(1, level + mod)
+  return Math.max(totalSlots, daily)
+})
+
 // Spell limit enforced in the picker:
 // - known casters  → total spells known from profile table
-// - prepared/spellbook → ability_mod + level (or CHA_mod + floor(level/2) for paladin)
+// - prepared → no limit on the known pool
+// - spellbook → ability_mod + level
 const sheetSpellLimit = computed((): number | undefined => {
   const p = getSpellProfile(props.character.identity.class.index)
   if (!p) return undefined
+  if (p.castingType === 'prepared') return undefined
   const level = props.character.combat.level
   if (p.castingType === 'known') return p.spellsKnown?.[level - 1]
   const mod = spellAbilityMod.value
@@ -370,14 +392,27 @@ async function onAddSpells(spells: { index: string; name: string; level: number 
   spellPickerLevel.value = null
   const castingType = getSpellProfile(props.character.identity.class.index)?.castingType ?? 'known'
   const updated = { ...sc.value }
-  if (castingType === 'prepared') {
-    updated.spellsPrepared = [...sc.value.spellsPrepared, ...spells]
-  } else if (castingType === 'spellbook') {
+  if (castingType === 'spellbook') {
     // Wizard: new spells enter both spellbook and prepared list
     updated.spellsKnown    = [...sc.value.spellsKnown, ...spells]
     updated.spellsPrepared = [...sc.value.spellsPrepared, ...spells]
   } else {
+    // prepared and known: spells go into the known pool only
     updated.spellsKnown = [...sc.value.spellsKnown, ...spells]
+  }
+  await store.update(props.character.id, { spellcasting: updated })
+}
+
+async function togglePrepared(index: string, currentlyPrepared: boolean) {
+  if (!sc.value) return
+  const updated = { ...sc.value }
+  if (currentlyPrepared) {
+    updated.spellsPrepared = sc.value.spellsPrepared.filter(s => s.index !== index)
+  } else {
+    if (preparedLimit.value !== undefined && sc.value.spellsPrepared.length >= preparedLimit.value) return
+    const spell = sc.value.spellsKnown.find(s => s.index === index)
+    if (!spell) return
+    updated.spellsPrepared = [...sc.value.spellsPrepared, spell]
   }
   await store.update(props.character.id, { spellcasting: updated })
 }
@@ -398,8 +433,8 @@ async function removeSpell(index: string, list: 'cantrip' | 'known' | 'prepared'
   const updated = { ...sc.value }
   if (list === 'cantrip') {
     updated.cantripsKnown = sc.value.cantripsKnown.filter(s => s.index !== index)
-  } else if (castingType === 'spellbook') {
-    // Wizard spells live in both lists; always remove from both
+  } else if (castingType === 'spellbook' || castingType === 'prepared') {
+    // Remove from both lists: spell leaves the known pool entirely
     updated.spellsKnown    = sc.value.spellsKnown.filter(s => s.index !== index)
     updated.spellsPrepared = sc.value.spellsPrepared.filter(s => s.index !== index)
   } else if (list === 'known') {

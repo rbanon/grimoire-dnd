@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { z } from 'zod'
 import type { Character, CharacterSummary } from '@/shared/types/character'
 import {
@@ -14,8 +14,10 @@ import { toJsonValue } from '@/shared/lib/toJsonValue'
 import { generateId, now } from '@/shared/lib/uuid'
 import { supabase } from '@/shared/api/supabase.client'
 import { useAuthStore } from '@/auth/store'
+import { useToast } from '@/shared/composables/useToast'
 
 const LOCAL_KEY = 'characters'
+let _persistTimer: ReturnType<typeof setTimeout> | null = null
 
 function makeDefaultCharacter(partial: Partial<Character> = {}): Character {
   const id = generateId()
@@ -100,35 +102,38 @@ export const useCharactersStore = defineStore('characters', () => {
     })
   }
 
-  async function loadFromCloud() {
+  async function loadFromCloud(): Promise<boolean> {
+    if (!auth.userId) { loadFromLocal(); return false }
     const { data, error } = await supabase
       .from('characters')
       .select('data')
-      .eq('user_id', auth.userId!)
+      .eq('user_id', auth.userId)
       .order('updated_at', { ascending: false })
 
     if (error) {
       console.error('[characters] Cloud load failed, falling back to local', error)
       loadFromLocal()
-      return
+      return false
     }
     const rows = (data ?? []) as Array<{ data: unknown }>
     characters.value = rows.flatMap((row) => {
       try { return [migrateCharacter(row.data)] } catch { return [] }
     })
+    return true
   }
 
   // ── Persist ───────────────────────────────────────────────────────────────
 
   function persistLocal() {
-    storageSet(LOCAL_KEY, characters.value)
+    if (_persistTimer) clearTimeout(_persistTimer)
+    _persistTimer = setTimeout(() => storageSet(LOCAL_KEY, characters.value), 500)
   }
 
   async function persistCloud(character: Character) {
-    if (!auth.isAuthenticated) return
+    if (!auth.isAuthenticated || !auth.userId) return
     const { error } = await supabase.from('characters').upsert({
       id: character.id,
-      user_id: auth.userId!,
+      user_id: auth.userId,
       name: character.identity.name,
       level: character.combat.level,
       class_name: character.identity.class.name,
@@ -145,7 +150,13 @@ export const useCharactersStore = defineStore('characters', () => {
     const character = makeDefaultCharacter(partial)
     characters.value.push(character)
     if (auth.isAuthenticated) {
-      await persistCloud(character)
+      try {
+        await persistCloud(character)
+      } catch {
+        characters.value = characters.value.filter(c => c.id !== character.id)
+        useToast().error('Failed to save character to cloud. Check your connection and try again.')
+        throw new Error('Cloud sync failed')
+      }
     } else {
       persistLocal()
     }
@@ -155,19 +166,35 @@ export const useCharactersStore = defineStore('characters', () => {
   async function update(id: string, updates: Partial<Character>): Promise<void> {
     const idx = characters.value.findIndex((c) => c.id === id)
     if (idx === -1) throw new Error(`Character ${id} not found`)
-    const updated: Character = { ...characters.value[idx], ...updates, updatedAt: now() }
+    const previous = characters.value[idx]
+    const updated: Character = { ...previous, ...updates, updatedAt: now() }
     characters.value[idx] = updated
     if (auth.isAuthenticated) {
-      await persistCloud(updated)
+      try {
+        await persistCloud(updated)
+      } catch {
+        characters.value[idx] = previous
+        useToast().error('Changes could not be saved to cloud. Your data has been restored.')
+        throw new Error('Cloud sync failed')
+      }
     } else {
       persistLocal()
     }
   }
 
   async function remove(id: string): Promise<void> {
+    const idx = characters.value.findIndex(c => c.id === id)
+    if (idx === -1) return
+    const removed = characters.value[idx]
     characters.value = characters.value.filter((c) => c.id !== id)
     if (auth.isAuthenticated) {
-      await supabase.from('characters').delete().eq('id', id).eq('user_id', auth.userId!)
+      if (!auth.userId) throw new Error('Not authenticated')
+      const { error } = await supabase.from('characters').delete().eq('id', id).eq('user_id', auth.userId)
+      if (error) {
+        characters.value.splice(idx, 0, removed)
+        useToast().error('Failed to delete character from cloud. Your data has been restored.')
+        throw error
+      }
     } else {
       persistLocal()
     }
@@ -261,6 +288,71 @@ export const useCharactersStore = defineStore('characters', () => {
 
     return { imported: toAdd.length, errors }
   }
+
+  // ── Auth sync ─────────────────────────────────────────────────────────────
+
+  // Called when the user signs in mid-session (not on app boot session restore).
+  // Reads local characters, loads cloud, merges by "newer wins", uploads local-only
+  // or locally-updated chars, clears localStorage (cloud is now source of truth).
+  async function syncOnLogin() {
+    const stored = storageGet(LOCAL_KEY, z.array(z.unknown()))
+    const localChars: Character[] = (stored ?? []).flatMap((raw) => {
+      try { return [migrateCharacter(raw)] } catch { return [] }
+    })
+
+    const cloudLoaded = await loadFromCloud()
+    if (!cloudLoaded) return // cloud unreachable — keep local data as-is
+
+    // Cloud is now source of truth; clear local
+    storageSet(LOCAL_KEY, [])
+
+    if (localChars.length === 0) return
+
+    let syncedCount = 0
+    for (const local of localChars) {
+      const cloudIdx = characters.value.findIndex(c => c.id === local.id)
+      if (cloudIdx === -1) {
+        // Local-only: upload and add to in-memory state
+        try {
+          await persistCloud(local)
+          characters.value.push(local)
+          syncedCount++
+        } catch { /* non-fatal: char stays accessible in memory this session */ }
+      } else {
+        const cloud = characters.value[cloudIdx]
+        if (new Date(local.updatedAt) > new Date(cloud.updatedAt)) {
+          // Local version is newer: overwrite cloud
+          try {
+            await persistCloud(local)
+            characters.value[cloudIdx] = local
+            syncedCount++
+          } catch { /* non-fatal */ }
+        }
+        // else cloud is newer or same — keep cloud version
+      }
+    }
+
+    if (syncedCount > 0) {
+      useToast().success(
+        syncedCount === 1
+          ? '1 local character synced to your account.'
+          : `${syncedCount} local characters synced to your account.`,
+      )
+    }
+  }
+
+  // Called when the user signs out. Persists current (cloud) characters to
+  // localStorage so they remain accessible offline, then switches to local mode.
+  function handleSignOut() {
+    storageSet(LOCAL_KEY, characters.value)
+    loadFromLocal()
+  }
+
+  // React to auth transitions that happen mid-session (not initial session restore).
+  watch(() => auth.lastAuthEvent, async (event) => {
+    if (event === 'SIGNED_IN') await syncOnLogin()
+    else if (event === 'SIGNED_OUT') handleSignOut()
+  })
 
   // ── Favorite spells ───────────────────────────────────────────────────────
 

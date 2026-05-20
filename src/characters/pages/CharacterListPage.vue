@@ -119,7 +119,7 @@
           v-for="summary in store.summaries"
           :key="summary.id"
           :summary="summary"
-          @duplicate="store.duplicate(summary.id)"
+          @duplicate="confirmDuplicate(summary.id)"
           @delete="confirmDelete(summary.id)"
           @export="downloadExport(summary.id)"
         />
@@ -168,6 +168,28 @@ function downloadExport(id: string) {
   a.download = `${store.getById(id)?.identity.name ?? id}.grimoire.json`
   a.click()
   URL.revokeObjectURL(url)
+}
+
+async function confirmDuplicate(id: string) {
+  const c = store.getById(id)
+  if (!c) return
+  const race = c.identity.subrace
+    ? `${c.identity.subrace.name} (${c.identity.race.name})`
+    : c.identity.race.name
+  const cls = c.identity.subclass
+    ? `${c.identity.class.name} — ${c.identity.subclass.name}`
+    : c.identity.class.name
+  const ok = await confirm({
+    title: 'Duplicate Character',
+    body: `Create a copy of "${c.identity.name}"?`,
+    confirmLabel: 'Duplicate',
+    detail: [
+      { label: 'Level', value: String(c.combat.level) },
+      { label: 'Race',  value: race },
+      { label: 'Class', value: cls },
+    ],
+  })
+  if (ok) store.duplicate(id)
 }
 
 async function confirmDelete(id: string) {

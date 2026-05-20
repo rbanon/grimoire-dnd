@@ -7,8 +7,8 @@
     />
     <!-- Dot grid -->
     <div
-      class="absolute inset-0 opacity-[0.02] pointer-events-none"
-      style="background-image: radial-gradient(circle, #c8ccd8 1px, transparent 1px); background-size: 28px 28px"
+      class="absolute inset-0 opacity-[0.025] pointer-events-none"
+      style="background-image: radial-gradient(circle, rgb(var(--c-vellum)) 1px, transparent 1px); background-size: 28px 28px"
     />
 
     <div class="w-full max-w-md relative">

@@ -6,6 +6,9 @@ import { supabase } from '@/shared/api/supabase.client'
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loading = ref(true)
+  // Tracks the last Supabase auth event so other stores can react to transitions.
+  // 'SIGNED_IN' = actual login; 'INITIAL_SESSION' = session restore on boot; 'SIGNED_OUT' = logout.
+  const lastAuthEvent = ref<string | null>(null)
 
   const isAuthenticated = computed(() => user.value !== null)
   const userId = computed(() => user.value?.id ?? null)
@@ -16,8 +19,9 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = data.session?.user ?? null
     loading.value = false
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.onAuthStateChange((event, session) => {
       user.value = session?.user ?? null
+      lastAuthEvent.value = event
     })
   }
 
@@ -45,6 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     user,
     loading,
+    lastAuthEvent,
     isAuthenticated,
     userId,
     userEmail,

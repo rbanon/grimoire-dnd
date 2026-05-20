@@ -17,13 +17,8 @@
           v-else
           class="w-full h-full flex flex-col items-center justify-center gap-3"
         >
-          <span class="font-display text-6xl leading-none select-none" style="color: rgba(212,175,55,0.28)">{{ classGlyph }}</span>
-          <p class="font-mono text-2xs tracking-[0.2em] uppercase" style="color: rgba(140,113,109,0.55)">No portrait</p>
-        </div>
-
-        <!-- Level badge -->
-        <div class="absolute bottom-2 left-2">
-          <span class="badge-gold">Lv {{ summary.level }}</span>
+          <span class="font-display text-6xl leading-none select-none text-gold-mid/30">{{ classGlyph }}</span>
+          <p class="font-mono text-2xs tracking-[0.2em] uppercase text-mist/60">No portrait</p>
         </div>
 
         <!-- Hover actions -->
@@ -48,9 +43,12 @@
 
       <!-- Info -->
       <div class="px-3.5 py-3 border-t border-gold-dim/15">
-        <h3 class="font-display text-base text-vellum leading-snug truncate group-hover:text-arcane-base transition-colors">
-          {{ summary.name }}
-        </h3>
+        <div class="flex items-baseline gap-2 min-w-0">
+          <h3 class="font-display text-base text-vellum leading-snug truncate group-hover:text-arcane-base transition-colors flex-1 min-w-0">
+            {{ summary.name }}
+          </h3>
+          <span class="badge-gold shrink-0">Lv {{ summary.level }}</span>
+        </div>
         <p class="font-body text-sm text-ash mt-0.5 truncate">
           {{ summary.race }}<span class="text-mist mx-1">·</span>{{ summary.className }}
         </p>
@@ -65,17 +63,12 @@
 import { computed } from 'vue'
 import { CopyIcon, DownloadIcon, Trash2Icon } from 'lucide-vue-next'
 import type { CharacterSummary } from '@/shared/types/character'
+import { getClassGlyph } from '@/character-builder/classMeta'
 
 const props = defineProps<{ summary: CharacterSummary }>()
 const emit = defineEmits<{ duplicate: []; delete: []; export: [] }>()
 
-const classGlyphs: Record<string, string> = {
-  barbarian: '⚔', bard: '♪', cleric: '✦', druid: '☘', fighter: '🛡',
-  monk: '◎', paladin: '✚', ranger: '⌖', rogue: '◆', sorcerer: '✶',
-  warlock: '⌬', wizard: '⎊',
-}
-
-const classGlyph = computed(() => classGlyphs[props.summary.className.toLowerCase()] ?? '⚔')
+const classGlyph = computed(() => getClassGlyph(props.summary.className))
 
 const relativeTime = computed(() => {
   const diff = Date.now() - new Date(props.summary.updatedAt).getTime()

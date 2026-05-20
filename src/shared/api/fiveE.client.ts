@@ -3,6 +3,7 @@ import type {
   ApiClass,
   ApiRace,
   ApiSubrace,
+  ApiSubclass,
   ApiBackground,
   ApiSpell,
   ApiEquipment,
@@ -11,6 +12,7 @@ import type {
   ApiSkill,
   ApiFeature,
   ApiTrait,
+  ApiFeat,
   ApiClassLevel,
   SpellQueryParams,
 } from '../types/api'
@@ -38,6 +40,7 @@ export const fiveEApi = {
   listRaces: () => get<ApiReferenceList>('/races'),
   getRace: (index: string) => get<ApiRace>(`/races/${index}`),
   getSubrace: (index: string) => get<ApiSubrace>(`/subraces/${index}`),
+  getSubclass: (index: string) => get<ApiSubclass>(`/subclasses/${index}`),
 
   listBackgrounds: () => get<ApiReferenceList>('/backgrounds'),
   getBackground: (index: string) => get<ApiBackground>(`/backgrounds/${index}`),
@@ -62,6 +65,7 @@ export const fiveEApi = {
   listLanguages: () => get<ApiReferenceList>('/languages'),
   listAlignments: () => get<ApiReferenceList>('/alignments'),
   listFeats: () => get<ApiReferenceList>('/feats'),
+  getFeat: (index: string) => get<ApiFeat>(`/feats/${index}`),
   listTraits: () => get<ApiReferenceList>('/traits'),
 
   listMagicSchools: () => get<ApiReferenceList>('/magic-schools'),

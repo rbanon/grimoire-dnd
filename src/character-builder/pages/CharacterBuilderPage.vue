@@ -26,11 +26,11 @@
           <div class="h-0.5 bg-shadow rounded-full overflow-hidden">
             <div
               class="h-full bg-gold-mid transition-all duration-500"
-              :style="{ width: `${((builder.draft.currentStep - 1) / builder.totalSteps) * 100}%` }"
+              :style="{ width: `${((visibleCurrentStep - 1) / builder.totalSteps) * 100}%` }"
             />
           </div>
           <p class="font-mono text-2xs text-mist tracking-wide">
-            Step {{ builder.draft.currentStep }} of {{ builder.totalSteps }} — {{ currentDraftStepName }}
+            Step {{ visibleCurrentStep }} of {{ builder.totalSteps }} — {{ currentDraftStepName }}
           </p>
         </div>
 
@@ -47,13 +47,13 @@
   </div>
 
   <!-- ── Builder ──────────────────────────────────────────────────────────── -->
-  <div v-else class="min-h-[calc(100vh-60px)] flex flex-col bg-void">
+  <div v-else class="h-full flex flex-col bg-void">
 
     <!-- Mobile progress bar -->
     <div class="md:hidden h-px bg-shadow">
       <div
         class="h-full bg-gold-mid transition-all duration-500"
-        :style="{ width: `${(builder.draft.currentStep / builder.totalSteps) * 100}%` }"
+        :style="{ width: `${(visibleCurrentStep / builder.totalSteps) * 100}%` }"
       />
     </div>
 
@@ -69,7 +69,7 @@
           </RouterLink>
           <h2 class="font-display text-sm text-vellum">New Character</h2>
           <p class="font-mono text-2xs tracking-widest uppercase text-mist mt-0.5">
-            Step {{ builder.draft.currentStep }} of {{ builder.totalSteps }}
+            Step {{ visibleCurrentStep }} of {{ builder.totalSteps }}
           </p>
         </div>
 
@@ -77,7 +77,7 @@
         <div class="h-px bg-shadow">
           <div
             class="h-full bg-gold-mid transition-all duration-500"
-            :style="{ width: `${(builder.draft.currentStep / builder.totalSteps) * 100}%` }"
+            :style="{ width: `${(visibleCurrentStep / builder.totalSteps) * 100}%` }"
           />
         </div>
 
@@ -87,19 +87,19 @@
             v-for="(step, i) in visibleSteps"
             :key="step.id"
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition-all duration-150 relative"
-            :class="getStepClass(i + 1)"
-            @click="tryGoTo(i + 1)"
+            :class="getStepClass(step.number)"
+            @click="tryGoTo(step.number)"
           >
             <!-- Number / check -->
             <div
               class="shrink-0 w-5 h-5 rounded border flex items-center justify-center font-mono text-2xs transition-all"
-              :class="getStepBubbleClass(i + 1)"
+              :class="getStepBubbleClass(step.number)"
             >
-              <CheckIcon v-if="isCompleted(i + 1)" :size="10" />
+              <CheckIcon v-if="isCompleted(step.number)" :size="10" />
               <span v-else class="leading-none">{{ ROMAN[i] }}</span>
             </div>
             <!-- Label -->
-            <span class="font-body text-xs leading-tight" :class="getStepLabelClass(i + 1)">
+            <span class="font-body text-xs leading-tight" :class="getStepLabelClass(step.number)">
               {{ step.label }}
             </span>
           </button>
@@ -121,7 +121,7 @@
         <div class="border-b border-shadow bg-abyss px-6 py-4 flex items-center gap-4">
           <div>
             <p class="font-mono text-2xs tracking-widest uppercase text-mist">
-              {{ ROMAN[builder.draft.currentStep - 1] }} · Step {{ builder.draft.currentStep }}
+              {{ ROMAN[visibleCurrentStep - 1] }} · Step {{ visibleCurrentStep }}
             </p>
             <h1 class="font-display text-xl text-vellum leading-tight mt-0.5">
               {{ currentStepDef?.label }}
@@ -152,9 +152,9 @@
         </div>
 
         <!-- Bottom nav -->
-        <div class="border-t border-shadow bg-abyss px-6 py-4">
+        <div class="shrink-0 border-t border-shadow bg-abyss px-6 py-4">
           <p
-            v-if="builder.saveError && builder.draft.currentStep === builder.totalSteps"
+            v-if="builder.saveError && visibleCurrentStep === builder.totalSteps"
             role="alert"
             class="font-body text-xs text-arcane-bright text-center mb-2"
           >{{ builder.saveError }}</p>
@@ -168,7 +168,7 @@
               <div class="flex items-start gap-2">
                 <AlertCircleIcon :size="13" class="text-blood-bright shrink-0 mt-0.5" />
                 <div class="flex-1 min-w-0">
-                  <p class="text-xs font-heading text-blood-bright mb-1">Obligatorio antes de continuar:</p>
+                  <p class="text-xs font-heading text-blood-bright mb-1">Please complete the required fields to proceed.</p>
                   <ul class="space-y-0.5">
                     <li
                       v-for="err in stepErrors"
@@ -192,7 +192,7 @@
 
           <div class="flex items-center justify-between gap-4">
             <div class="md:hidden font-mono text-xs text-mist tracking-wide">
-              {{ builder.draft.currentStep }} / {{ builder.totalSteps }}
+              {{ visibleCurrentStep }} / {{ builder.totalSteps }}
             </div>
             <div class="hidden md:block" />
 
@@ -206,7 +206,7 @@
               </button>
 
               <button
-                v-if="builder.draft.currentStep === builder.totalSteps"
+                v-if="visibleCurrentStep === builder.totalSteps"
                 class="btn-primary gap-2 px-6"
                 :disabled="builder.saving"
                 @click="handleSave"
@@ -217,7 +217,8 @@
               </button>
               <button
                 v-else
-                class="btn-primary gap-2 px-6"
+                class="btn-primary gap-2 px-6 transition-opacity"
+                :class="{ 'opacity-40': !builder.canAdvance }"
                 @click="handleNext"
               >
                 Next <ChevronRightIcon :size="14" />
@@ -241,12 +242,16 @@ import {
 import { useBuilderStore } from '@/character-builder/builderStore'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
-import StepIdentity from '@/character-builder/steps/StepIdentity.vue'
 import StepClass from '@/character-builder/steps/StepClass.vue'
+import StepLevel from '@/character-builder/steps/StepLevel.vue'
+import StepRace from '@/character-builder/steps/StepRace.vue'
+import StepBackground from '@/character-builder/steps/StepBackground.vue'
 import StepAbilities from '@/character-builder/steps/StepAbilities.vue'
-import StepProficiencies from '@/character-builder/steps/StepProficiencies.vue'
+import StepFeats from '@/character-builder/steps/StepFeats.vue'
+import StepSkills from '@/character-builder/steps/StepProficiencies.vue'
 import StepEquipment from '@/character-builder/steps/StepEquipment.vue'
 import StepSpells from '@/character-builder/steps/StepSpells.vue'
+import StepPersonal from '@/character-builder/steps/StepPersonal.vue'
 import StepReview from '@/character-builder/steps/StepReview.vue'
 
 const builder = useBuilderStore()
@@ -259,25 +264,36 @@ const prevStep = ref(1)
 const resumeScreen = ref(false)
 let _toastTimer: ReturnType<typeof setTimeout> | null = null
 
-const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII']
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI']
 
 const allSteps = [
-  { id: 'identity',      label: 'Identity',       hint: 'Name, race, background', component: StepIdentity },
-  { id: 'class',         label: 'Class & Level',  hint: 'Choose your path',       component: StepClass },
-  { id: 'abilities',     label: 'Ability Scores', hint: 'Point buy or manual',    component: StepAbilities },
-  { id: 'proficiencies', label: 'Proficiencies',  hint: 'Skills and languages',   component: StepProficiencies },
-  { id: 'equipment',     label: 'Equipment',      hint: 'Starting gear',          component: StepEquipment },
-  { id: 'spells',        label: 'Spells',         hint: 'Cantrips and spells',    component: StepSpells },
-  { id: 'review',        label: 'Review',         hint: 'Confirm and create',     component: StepReview },
+  { id: 'class',      number: 1,  label: 'Class & Subclass',      component: StepClass },
+  { id: 'level',      number: 2,  label: 'Level & Features',       component: StepLevel },
+  { id: 'race',       number: 3,  label: 'Race & Subrace',         component: StepRace },
+  { id: 'background', number: 4,  label: 'Background',             component: StepBackground },
+  { id: 'abilities',  number: 5,  label: 'Ability Scores',         component: StepAbilities },
+  { id: 'feats',      number: 6,  label: 'Feats & ASI',            component: StepFeats },
+  { id: 'skills',     number: 7,  label: 'Skills & Proficiencies', component: StepSkills },
+  { id: 'spells',     number: 8,  label: 'Spells',                 component: StepSpells },
+  { id: 'equipment',  number: 9,  label: 'Equipment',              component: StepEquipment },
+  { id: 'personal',   number: 10, label: 'Personal Details',       component: StepPersonal },
+  { id: 'review',     number: 11, label: 'Review',                 component: StepReview },
 ]
 
 const visibleSteps = computed(() =>
   builder.isSpellcaster ? allSteps : allSteps.filter(s => s.id !== 'spells'),
 )
 
-const currentStepDef = computed(() => visibleSteps.value[builder.draft.currentStep - 1])
+const currentStepDef = computed(() =>
+  visibleSteps.value.find(s => s.number === builder.draft.currentStep)
+)
 const currentStepComponent = computed(() => currentStepDef.value?.component ?? StepReview)
-const currentDraftStepName = computed(() => visibleSteps.value[builder.draft.currentStep - 1]?.label ?? '')
+
+// Visible index (1-based) of the current step — used for "Step X of Y" display
+const visibleCurrentStep = computed(() =>
+  visibleSteps.value.findIndex(s => s.number === builder.draft.currentStep) + 1
+)
+const currentDraftStepName = computed(() => currentStepDef.value?.label ?? '')
 const stepErrors = computed(() => builder.stepErrors[builder.draft.currentStep] ?? [])
 const transitionName = computed(() =>
   builder.draft.currentStep > prevStep.value ? 'slide-left' : 'slide-right',
@@ -288,25 +304,25 @@ onMounted(() => {
   if (hasDraft) resumeScreen.value = true
 })
 
-function isCompleted(step: number) {
-  return step < builder.draft.currentStep && (builder.stepErrors[step]?.length === 0)
+function isCompleted(stepNumber: number) {
+  return stepNumber < builder.draft.currentStep && (builder.stepErrors[stepNumber]?.length === 0)
 }
 
-function getStepClass(step: number) {
-  if (step === builder.draft.currentStep) return 'bg-arcane-bright/8 border-l-2 border-arcane-bright ml-[-1px]'
-  if (step < builder.draft.currentStep) return 'hover:bg-shadow/40 cursor-pointer'
-  return 'cursor-not-allowed opacity-40'
+function getStepClass(stepNumber: number) {
+  if (stepNumber === builder.draft.currentStep) return 'bg-arcane-bright/8 dark:bg-arcane-bright/15 border-l-2 border-arcane-bright ml-[-1px]'
+  if (stepNumber < builder.draft.currentStep) return 'hover:bg-shadow/40 cursor-pointer'
+  return 'cursor-not-allowed opacity-40 dark:opacity-60'
 }
 
-function getStepBubbleClass(step: number) {
-  if (isCompleted(step)) return 'border-gold-mid/60 bg-gold-mid/15 text-gold-dim'
-  if (step === builder.draft.currentStep) return 'border-arcane-bright/60 bg-arcane-bright/10 text-arcane-base'
+function getStepBubbleClass(stepNumber: number) {
+  if (isCompleted(stepNumber)) return 'border-gold-mid/60 bg-gold-mid/15 dark:bg-gold-mid/25 text-gold-dim dark:text-gold-deep'
+  if (stepNumber === builder.draft.currentStep) return 'border-arcane-bright/60 bg-arcane-bright/10 dark:bg-arcane-bright/20 text-arcane-base dark:text-arcane-bright'
   return 'border-shadow text-mist bg-transparent'
 }
 
-function getStepLabelClass(step: number) {
-  if (step === builder.draft.currentStep) return 'text-vellum font-medium'
-  if (step < builder.draft.currentStep) return 'text-ash'
+function getStepLabelClass(stepNumber: number) {
+  if (stepNumber === builder.draft.currentStep) return 'text-vellum font-medium'
+  if (stepNumber < builder.draft.currentStep) return 'text-ash'
   return 'text-mist'
 }
 

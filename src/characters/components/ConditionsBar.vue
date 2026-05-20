@@ -33,12 +33,12 @@
         <button
           v-else
           type="button"
-          class="text-2xs text-mist/40 hover:text-mist transition-colors font-body"
+          class="text-2xs text-mist hover:text-ash transition-colors font-body"
           @click="startConcentration"
         >+ Add concentration</button>
       </template>
 
-      <span v-else class="text-2xs text-mist/30 font-body italic">None</span>
+      <span v-else class="text-2xs text-mist font-body italic">None</span>
     </div>
 
     <!-- ── Conditions ──────────────────────────────────────────────────────── -->

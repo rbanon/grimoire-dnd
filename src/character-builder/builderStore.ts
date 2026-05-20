@@ -6,10 +6,12 @@ import { CharacterSchema, computeModifier } from '@/shared/types/character'
 import { storageGet, storageSet, storageRemove } from '@/shared/lib/storage'
 import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
-import { getSpellSlots, getSpellProfile, getAsiLevels } from '@/character-builder/classMeta'
+import { useAuthStore } from '@/auth/store'
+import { uploadPortrait } from '@/shared/lib/uploadPortrait'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
-const TOTAL_STEPS = 7
+const TOTAL_STEPS = 11
 
 // ── Point buy constants ───────────────────────────────────────────────────────
 export const POINT_BUY_BUDGET = 27
@@ -25,6 +27,12 @@ export function pbCostDelta(from: number, to: number): number {
 }
 
 // ── Draft shape ───────────────────────────────────────────────────────────────
+export interface SpellsByLevelEntry {
+  cantripsGained: { index: string; name: string }[]
+  spellsGained: { index: string; name: string; level: number }[]
+  spellReplaced: { fromIndex: string; to: { index: string; name: string; level: number } } | null
+}
+
 export interface BuilderDraft {
   // Internal — holy symbol / emblem descriptions keyed by slot "${gi}_${si}"
   holySymbolDescriptions: Record<string, string>
@@ -64,6 +72,7 @@ export interface BuilderDraft {
   backgroundIndex: string
   backgroundName: string
   backgroundSkillProficiencies: string[]
+  backgroundToolProficiencies: string[]
 
   // Step 2 — Class
   classIndex: string
@@ -82,9 +91,16 @@ export interface BuilderDraft {
   rolledHpPerLevel: number[]
 
   // Step 3 — Abilities
-  abilityMethod: 'pointbuy' | 'standard' | 'manual'
+  abilityMethod: 'pointbuy' | 'standard' | 'manual' | 'roll'
   baseScores: AbilityScores
   standardArrayAssignments: Partial<Record<keyof AbilityScores, number>> // which index in STANDARD_ARRAY
+  rolledAbilityScores: number[]       // 6 values from 4d6-drop-lowest
+  rollAssignments: Partial<Record<keyof AbilityScores, number>> // ability → pool index
+
+  // Race tool proficiency choices (e.g. dwarf picks one artisan tool)
+  raceProfChoices: number
+  raceProfOptions: { index: string; name: string }[]
+  selectedRaceProfs: string[]
 
   // Step 4 — Proficiencies
   selectedSkills: string[]
@@ -93,9 +109,15 @@ export interface BuilderDraft {
   // Step 5 — Equipment (simplified for MVP)
   useStartingEquipment: boolean
   manualGold: number
+  equipmentChoicesDone: boolean
 
-  // Step 3b — Ability Score Improvements (one entry per ASI level unlocked)
-  // Key = class level granting the ASI (e.g. 4, 8, 12…), value = per-ability allocations
+  // Step 2 — Level choices (fighting style, pact boon, etc.)
+  // Key = class level, value = map of choiceKey → selected option index
+  levelChoices: Record<number, Record<string, string>>
+
+  // Step 6 — Feats & ASI decisions, keyed by class level granting the improvement
+  featsByLevel: Record<number, { type: 'asi' | 'feat'; featIndex?: string; featName?: string }>
+  // Ability allocations for levels where type === 'asi'
   asiAllocations: Record<number, Partial<Record<keyof AbilityScores, number>>>
 
   // Step 5b — Starting inventory (resolved from equipment step choices)
@@ -104,6 +126,10 @@ export interface BuilderDraft {
   // Step 6 — Spells
   selectedCantrips: { index: string; name: string }[]
   selectedSpells: { index: string; name: string; level: number }[]
+  // Daily prepared subset for prepared casters (Cleric, Druid, Paladin)
+  selectedPreparedSpells: { index: string; name: string; level: number }[]
+  // Per-level spell selection for known casters (Bard, Sorcerer, Warlock, Ranger)
+  spellsByLevel: Record<number, SpellsByLevelEntry>
 }
 
 const defaultDraft = (): BuilderDraft => ({
@@ -116,7 +142,8 @@ const defaultDraft = (): BuilderDraft => ({
   raceIndex: '', raceName: '', raceSpeed: 30, raceSizeCategory: 'Medium',
   raceAbilityBonuses: {}, raceLanguageCount: 2, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
-  backgroundIndex: '', backgroundName: '', backgroundSkillProficiencies: [],
+  raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [],
+  backgroundIndex: '', backgroundName: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [],
   classIndex: '', className: '', classHitDie: 8, classSpellcastingAbility: null,
   classSkillChoices: 2, classSkillOptions: [],
   subclassIndex: '', subclassName: '', availableSubclasses: [],
@@ -125,20 +152,45 @@ const defaultDraft = (): BuilderDraft => ({
   abilityMethod: 'pointbuy',
   baseScores: { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 },
   standardArrayAssignments: {},
+  rolledAbilityScores: [],
+  rollAssignments: {},
   selectedSkills: [], selectedLanguages: [],
-  useStartingEquipment: true, manualGold: 0,
+  useStartingEquipment: true, manualGold: 0, equipmentChoicesDone: true,
   startingInventory: [],
+  levelChoices: {},
+  featsByLevel: {},
   asiAllocations: {},
-  selectedCantrips: [], selectedSpells: [],
+  selectedCantrips: [], selectedSpells: [], selectedPreparedSpells: [], spellsByLevel: {},
 })
 
-const DraftSchema = z.object({ currentStep: z.number() }).passthrough()
+const DRAFT_ARRAY_FIELDS = [
+  'selectedCantrips', 'selectedSpells', 'selectedPreparedSpells', 'rolledHpPerLevel', 'rolledAbilityScores',
+  'selectedSkills', 'selectedLanguages', 'startingInventory', 'raceProfOptions',
+  'availableSubraces', 'availableSubclasses', 'backgroundSkillProficiencies',
+  'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs',
+] as const
+
+const DRAFT_OBJ_FIELDS = [
+  'baseScores', 'spellsByLevel', 'asiAllocations', 'featsByLevel', 'levelChoices',
+  'standardArrayAssignments', 'rollAssignments', 'raceAbilityBonuses',
+  'subraceAbilityBonuses', 'holySymbolDescriptions',
+] as const
+
+const DraftSchema = z.object({ currentStep: z.number() })
+  .passthrough()
+  .transform((data) => {
+    const d = data as Record<string, unknown>
+    for (const f of DRAFT_ARRAY_FIELDS) if (!Array.isArray(d[f])) delete d[f]
+    for (const f of DRAFT_OBJ_FIELDS) if (typeof d[f] !== 'object' || d[f] === null) delete d[f]
+    return d
+  })
 
 export const useBuilderStore = defineStore('builder', () => {
   const draft = ref<BuilderDraft>(defaultDraft())
   const saving = ref(false)
   const saveError = ref<string | null>(null)
-  let _skipSave = false
+  let _skipCount = 0
+  let _saveTimer: ReturnType<typeof setTimeout> | null = null
 
   // ── Computed ──────────────────────────────────────────────────────────────
 
@@ -188,77 +240,188 @@ export const useBuilderStore = defineStore('builder', () => {
     return draft.value.manualMaxHp
   })
 
-  // Step validation
-  const stepErrors = computed<Record<number, string[]>>(() => {
-    // Step 3 ability errors
-    const abilityErrors: string[] = []
-    if (draft.value.abilityMethod === 'pointbuy') {
-      if (pointsRemaining.value < 0) abilityErrors.push('Too many points spent')
-      else if (pointsRemaining.value > 0) abilityErrors.push(`${pointsRemaining.value} point${pointsRemaining.value > 1 ? 's' : ''} left to spend`)
-    } else if (draft.value.abilityMethod === 'standard') {
-      const assigned = Object.keys(draft.value.standardArrayAssignments).length
-      if (assigned < 6) abilityErrors.push(`Assign all standard array values (${assigned}/6 done)`)
-    }
-    // ASI validation
-    const activeAsis = getAsiLevels(draft.value.classIndex).filter(l => l <= draft.value.level)
-    for (const asiLevel of activeAsis) {
-      const spent = Object.values(draft.value.asiAllocations[asiLevel] ?? {}).reduce((s, v) => s + v, 0)
-      if (spent < 2) {
-        abilityErrors.push(`Level ${asiLevel} ASI: ${spent}/2 points allocated`)
-        break
+  const activeCantrips = computed<{ index: string; name: string }[]>(() => {
+    const profile = getSpellProfile(draft.value.classIndex)
+    if (!profile || profile.castingType !== 'known') return draft.value.selectedCantrips
+    const seen = new Set<string>()
+    const result: { index: string; name: string }[] = []
+    for (let lvl = 1; lvl <= draft.value.level; lvl++) {
+      for (const c of draft.value.spellsByLevel[lvl]?.cantripsGained ?? []) {
+        if (!seen.has(c.index)) { seen.add(c.index); result.push(c) }
       }
     }
+    return result
+  })
+
+  const activeSpells = computed<{ index: string; name: string; level: number }[]>(() => {
+    const profile = getSpellProfile(draft.value.classIndex)
+    if (!profile || profile.castingType !== 'known') return draft.value.selectedSpells
+    const pool = new Map<string, { index: string; name: string; level: number }>()
+    for (let lvl = 1; lvl <= draft.value.level; lvl++) {
+      const entry = draft.value.spellsByLevel[lvl]
+      if (!entry) continue
+      for (const s of entry.spellsGained) pool.set(s.index, s)
+      if (entry.spellReplaced) {
+        pool.delete(entry.spellReplaced.fromIndex)
+        pool.set(entry.spellReplaced.to.index, entry.spellReplaced.to)
+      }
+    }
+    return [...pool.values()]
+  })
+
+  // ── Step validators ────────────────────────────────────────────────────────
+
+  function validateAbilities(): string[] {
+    const errors: string[] = []
+    if (draft.value.abilityMethod === 'pointbuy') {
+      if (pointsRemaining.value < 0) errors.push('Too many points spent')
+      else if (pointsRemaining.value > 0) errors.push(`${pointsRemaining.value} point${pointsRemaining.value > 1 ? 's' : ''} left to spend`)
+    } else if (draft.value.abilityMethod === 'standard') {
+      const assigned = Object.keys(draft.value.standardArrayAssignments).length
+      if (assigned < 6) errors.push(`Assign all standard array values (${assigned}/6 done)`)
+    } else if (draft.value.abilityMethod === 'manual') {
+      if (Object.values(draft.value.baseScores).some(s => s > 20))
+        errors.push('Starting ability scores above 20 are non-standard for player characters')
+    } else if (draft.value.abilityMethod === 'roll') {
+      if (draft.value.rolledAbilityScores.length < 6) {
+        errors.push('Roll your ability scores first')
+      } else {
+        const assigned = Object.keys(draft.value.rollAssignments).length
+        if (assigned < 6) errors.push(`Assign all rolled values (${assigned}/6 done)`)
+      }
+    }
+    return errors
+  }
+
+  function validateFeats(): string[] {
+    const errors: string[] = []
+    const activeAsis = getAsiLevels(draft.value.classIndex).filter(l => l <= draft.value.level)
+    for (const asiLevel of activeAsis) {
+      const decision = draft.value.featsByLevel[asiLevel]
+      const type = decision?.type ?? 'asi'
+      if (type === 'feat') {
+        if (!decision?.featIndex) { errors.push(`Level ${asiLevel} improvement: choose a feat`); break }
+      } else {
+        const spent = Object.values(draft.value.asiAllocations[asiLevel] ?? {}).reduce((s, v) => s + v, 0)
+        if (spent < 2) { errors.push(`Level ${asiLevel} ASI: ${spent}/2 points allocated`); break }
+      }
+    }
+    return errors
+  }
+
+  function validateSpells(): string[] {
+    if (!isSpellcaster.value) return []
+    const profile = getSpellProfile(draft.value.classIndex)
+    if (!profile) return []
+    const levelIdx = draft.value.level - 1
+    const errors: string[] = []
+    if (profile.castingType === 'known') {
+      const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
+      if (cantripLimit > 0 && activeCantrips.value.length < cantripLimit) {
+        const diff = cantripLimit - activeCantrips.value.length
+        errors.push(`Select ${diff} more cantrip${diff > 1 ? 's' : ''} (${activeCantrips.value.length}/${cantripLimit})`)
+      }
+      const spellLimit = profile.spellsKnown?.[levelIdx] ?? 0
+      if (spellLimit > 0 && activeSpells.value.length < spellLimit) {
+        const diff = spellLimit - activeSpells.value.length
+        errors.push(`Select ${diff} more spell${diff > 1 ? 's' : ''} (${activeSpells.value.length}/${spellLimit})`)
+      }
+    } else {
+      const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
+      if (cantripLimit > 0 && draft.value.selectedCantrips.length < cantripLimit) {
+        const diff = cantripLimit - draft.value.selectedCantrips.length
+        errors.push(`Select ${diff} more cantrip${diff > 1 ? 's' : ''} (${draft.value.selectedCantrips.length}/${cantripLimit})`)
+      }
+      if (draft.value.level >= getFirstSpellLevel(draft.value.classIndex)) {
+        const slots = getSpellSlots(draft.value.classIndex, draft.value.level)
+        const totalSlots = Object.values(slots).reduce((s: number, v) => s + (v as number), 0)
+        const ability = profile.preparedAbility!
+        const mod = computeModifier(effectiveScores.value[ability as keyof AbilityScores])
+        const lv = draft.value.level
+        const daily = Math.max(1, draft.value.classIndex === 'paladin' ? Math.floor(lv / 2) + mod : lv + mod)
+        const limit = profile.castingType === 'spellbook' ? daily : Math.max(totalSlots, daily)
+        if (profile.castingType === 'prepared') {
+          const prepared = draft.value.selectedPreparedSpells.length
+          if (limit > 0 && prepared < limit) {
+            const diff = limit - prepared
+            errors.push(`Prepare ${diff} more spell${diff > 1 ? 's' : ''} (${prepared}/${limit})`)
+          }
+        } else {
+          if (limit > 0 && draft.value.selectedSpells.length < limit) {
+            const diff = limit - draft.value.selectedSpells.length
+            errors.push(`Select ${diff} more starting spell${diff > 1 ? 's' : ''} (${draft.value.selectedSpells.length}/${limit})`)
+          }
+        }
+      }
+    }
+    return errors
+  }
+
+  // Step validation
+  const stepErrors = computed<Record<number, string[]>>(() => {
+    const abilityErrors = validateAbilities()
+    const featErrors    = validateFeats()
+    const spellErrors   = validateSpells()
 
     return {
-      1: [
-        !draft.value.name.trim() ? 'Name is required' : '',
-        !draft.value.raceIndex ? 'Select a race' : '',
-        draft.value.availableSubraces.length > 0 && !draft.value.subraceIndex ? 'Select a subrace' : '',
-        !draft.value.backgroundIndex ? 'Select a background' : '',
-      ].filter(Boolean),
-      2: [
+      1:  [
         !draft.value.classIndex ? 'Select a class' : '',
-        draft.value.classIndex && draft.value.level >= 3 && draft.value.availableSubclasses.length > 0 && !draft.value.subclassIndex
+        draft.value.classIndex && draft.value.availableSubclasses.length > 0 && !draft.value.subclassIndex
           ? 'Select a subclass' : '',
       ].filter(Boolean),
-      3: abilityErrors,
-      4: [
-        draft.value.selectedSkills.length < (draft.value.classSkillChoices || 2)
-          ? `Choose ${draft.value.classSkillChoices || 2} skill${(draft.value.classSkillChoices || 2) > 1 ? 's' : ''} (${draft.value.selectedSkills.length} selected)` : '',
-      ].filter(Boolean),
-      5: [],
-      6: (() => {
-        if (!isSpellcaster.value) return []
-        const profile = getSpellProfile(draft.value.classIndex)
-        if (!profile) return []
-        const levelIdx = draft.value.level - 1
-        const errors: string[] = []
-        // Cantrip limit
-        const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
-        if (cantripLimit > 0 && draft.value.selectedCantrips.length < cantripLimit) {
-          errors.push(`Select ${cantripLimit - draft.value.selectedCantrips.length} more cantrip${cantripLimit - draft.value.selectedCantrips.length > 1 ? 's' : ''} (${draft.value.selectedCantrips.length}/${cantripLimit})`)
-        }
-        // Spell limit
-        if (profile.castingType === 'known') {
-          const spellLimit = profile.spellsKnown?.[levelIdx] ?? 0
-          if (spellLimit > 0 && draft.value.selectedSpells.length < spellLimit) {
-            errors.push(`Select ${spellLimit - draft.value.selectedSpells.length} more spell${spellLimit - draft.value.selectedSpells.length > 1 ? 's' : ''} (${draft.value.selectedSpells.length}/${spellLimit})`)
-          }
-        } else if (draft.value.level >= 2) {
-          const slots = getSpellSlots(draft.value.classIndex, draft.value.level)
-          const totalSlots = Object.values(slots).reduce((s: number, v) => s + (v as number), 0)
-          const ability = profile.preparedAbility!
-          const mod = computeModifier(effectiveScores.value[ability as keyof AbilityScores])
-          const lv = draft.value.level
-          const daily = Math.max(1, draft.value.classIndex === 'paladin' ? Math.floor(lv / 2) + mod : lv + mod)
-          const limit = profile.castingType === 'spellbook' ? daily : Math.max(totalSlots, daily)
-          if (limit > 0 && draft.value.selectedSpells.length < limit) {
-            errors.push(`Select ${limit - draft.value.selectedSpells.length} more starting spell${limit - draft.value.selectedSpells.length > 1 ? 's' : ''} (${draft.value.selectedSpells.length}/${limit})`)
+      2:  (() => {
+        if (!draft.value.classIndex) return []
+        const errs: string[] = []
+        for (let lvl = 1; lvl <= draft.value.level; lvl++) {
+          const entry = getLevelEntry(draft.value.classIndex, lvl)
+          if (!entry?.choices) continue
+          for (const [key, choice] of Object.entries(entry.choices)) {
+            if (choice.kind === 'asi') continue
+            if (!draft.value.levelChoices[lvl]?.[key]) {
+              const label = choice.kind === 'fighting-style' ? 'Fighting Style'
+                : choice.kind === 'static' ? choice.label
+                : key
+              errs.push(`Level ${lvl}: choose a ${label}`)
+              break
+            }
           }
         }
-        return errors
+        return errs
       })(),
-      7: [],
+      3:  [
+        !draft.value.raceIndex ? 'Select a race' : '',
+        draft.value.availableSubraces.length > 0 && !draft.value.subraceIndex ? 'Select a subrace' : '',
+      ].filter(Boolean),
+      4:  [
+        !draft.value.backgroundIndex ? 'Select a background' : '',
+      ].filter(Boolean),
+      5:  abilityErrors,
+      6:  featErrors,
+      7:  [
+        (() => {
+          const chosenByClass = draft.value.selectedSkills.filter(
+            s => !draft.value.backgroundSkillProficiencies.includes(s)
+          ).length
+          const max = draft.value.classSkillChoices || 2
+          return chosenByClass < max
+            ? `Choose ${max} skill${max > 1 ? 's' : ''} (${chosenByClass} selected)` : ''
+        })(),
+        draft.value.raceProfChoices > 0 && draft.value.selectedRaceProfs.length < draft.value.raceProfChoices
+          ? `Choose ${draft.value.raceProfChoices} race proficiency tool${draft.value.raceProfChoices > 1 ? 's' : ''} (${draft.value.selectedRaceProfs.length} selected)` : '',
+      ].filter(Boolean),
+      8:  spellErrors,
+      9: [
+        draft.value.hpMethod === 'roll' && draft.value.rolledHpPerLevel.length < draft.value.level
+          ? `Roll HP for all ${draft.value.level} level${draft.value.level > 1 ? 's' : ''}` : '',
+        draft.value.useStartingEquipment && !draft.value.equipmentChoicesDone
+          ? 'Complete all equipment choices' : '',
+      ].filter(Boolean),
+      10: [
+        !draft.value.name.trim() ? 'Name is required' : '',
+        !draft.value.age.trim() ? 'Age is required' : '',
+        !draft.value.gender.trim() ? 'Gender / Identity is required' : '',
+      ].filter(Boolean),
+      11: [],
     }
   })
 
@@ -270,51 +433,60 @@ export const useBuilderStore = defineStore('builder', () => {
     const saved = storageGet(DRAFT_KEY, DraftSchema)
     if (!saved) return false
     const merged = { ...defaultDraft(), ...(saved as Partial<BuilderDraft>) }
-    if (!merged.name && !merged.raceIndex && !merged.classIndex) return false
+    if (!merged.classIndex) return false
     draft.value = merged
     return true
   }
 
   function saveDraft() {
-    if (_skipSave) return
+    if (_skipCount > 0) return
     storageSet(DRAFT_KEY, draft.value)
   }
 
+  function debouncedSaveDraft() {
+    if (_skipCount > 0) return
+    if (_saveTimer) clearTimeout(_saveTimer)
+    _saveTimer = setTimeout(saveDraft, 500)
+  }
+
   async function clearDraft() {
-    _skipSave = true
+    _skipCount++
     storageRemove(DRAFT_KEY)
     draft.value = defaultDraft()
     await nextTick()
-    _skipSave = false
+    _skipCount--
   }
 
-  watch(draft, saveDraft, { deep: true })
+  watch(draft, debouncedSaveDraft, { deep: true })
 
   // ── Navigation ────────────────────────────────────────────────────────────
 
+  const STEP_SKIPS: { step: number; skip: () => boolean }[] = [
+    { step: 8, skip: () => !isSpellcaster.value },
+  ]
+
+  function resolveStep(target: number): number {
+    let s = Math.max(1, Math.min(totalSteps.value, target))
+    while (STEP_SKIPS.some(r => r.step === s && r.skip())) s++
+    return Math.min(s, totalSteps.value)
+  }
+
   function goTo(step: number) {
-    draft.value.currentStep = step
+    draft.value.currentStep = resolveStep(step)
   }
 
   function next() {
-    if (draft.value.currentStep < totalSteps.value) {
-      // Skip spells step if not a spellcaster
-      if (draft.value.currentStep === 5 && !isSpellcaster.value) {
-        draft.value.currentStep = 7
-      } else {
-        draft.value.currentStep++
-      }
-    }
+    if (draft.value.currentStep >= totalSteps.value) return
+    let s = draft.value.currentStep + 1
+    while (s < totalSteps.value && STEP_SKIPS.some(r => r.step === s && r.skip())) s++
+    draft.value.currentStep = s
   }
 
   function back() {
-    if (draft.value.currentStep > 1) {
-      if (draft.value.currentStep === 7 && !isSpellcaster.value) {
-        draft.value.currentStep = 5
-      } else {
-        draft.value.currentStep--
-      }
-    }
+    if (draft.value.currentStep <= 1) return
+    let s = draft.value.currentStep - 1
+    while (s > 1 && STEP_SKIPS.some(r => r.step === s && r.skip())) s--
+    draft.value.currentStep = s
   }
 
   // ── Point buy helpers ─────────────────────────────────────────────────────
@@ -345,6 +517,8 @@ export const useBuilderStore = defineStore('builder', () => {
   function resetScores() {
     draft.value.baseScores = { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 }
     draft.value.standardArrayAssignments = {}
+    draft.value.rolledAbilityScores = []
+    draft.value.rollAssignments = {}
   }
 
   // ── ASI helpers ───────────────────────────────────────────────────────────
@@ -355,34 +529,74 @@ export const useBuilderStore = defineStore('builder', () => {
     else draft.value.asiAllocations[asiLevel][key] = value
   }
 
+  function setFeatDecision(level: number, type: 'asi' | 'feat', feat?: { index: string; name: string }) {
+    draft.value.featsByLevel[level] = { type, featIndex: feat?.index, featName: feat?.name }
+    if (type === 'feat') {
+      // Clear any ASI allocation for this level when switching to feat
+      delete draft.value.asiAllocations[level]
+    }
+  }
+
   // Clear ASI allocations and rolled HP that are no longer valid when class changes
   watch(() => draft.value.classIndex, () => {
     draft.value.asiAllocations = {}
     draft.value.rolledHpPerLevel = []
+    draft.value.levelChoices = {}
+    draft.value.featsByLevel = {}
+    draft.value.spellsByLevel = {}
+    draft.value.selectedSpells = []
+    draft.value.selectedPreparedSpells = []
+  })
+
+  // Re-validate currentStep whenever skippable conditions change
+  watch(isSpellcaster, () => {
+    draft.value.currentStep = resolveStep(draft.value.currentStep)
   })
   watch(() => draft.value.level, (newLevel) => {
     for (const lvl of Object.keys(draft.value.asiAllocations).map(Number)) {
       if (lvl > newLevel) delete draft.value.asiAllocations[lvl]
     }
+    for (const lvl of Object.keys(draft.value.featsByLevel).map(Number)) {
+      if (lvl > newLevel) delete draft.value.featsByLevel[lvl]
+    }
+    for (const lvl of Object.keys(draft.value.spellsByLevel).map(Number)) {
+      if (lvl > newLevel) delete draft.value.spellsByLevel[lvl]
+    }
   })
 
   // ── Finalize ──────────────────────────────────────────────────────────────
 
-  async function save(): Promise<string> {
-    saving.value = true
-    saveError.value = null
-    const characterStore = useCharactersStore()
+  async function buildCharacterFromDraft(id: string, ts: string, portrait: { type: 'none' } | { type: 'url'; url: string }) {
     const d = draft.value
-    const ts = now()
-    const id = generateId()
-
-    try {
-    let portrait: { type: 'none' } | { type: 'url'; url: string } = { type: 'none' }
-    if (d.portraitUrl) {
-      try { new URL(d.portraitUrl); portrait = { type: 'url', url: d.portraitUrl } } catch { /* skip invalid URL */ }
+    const abbrev: Record<string, keyof AbilityScores> = {
+      STR: 'str', DEX: 'dex', CON: 'con', INT: 'int', WIS: 'wis', CHA: 'cha',
+    }
+    const savingThrows: Record<keyof AbilityScores, boolean> = {
+      str: false, dex: false, con: false, int: false, wis: false, cha: false,
+    }
+    for (const part of (CLASS_META[d.classIndex]?.saves ?? '').split('·')) {
+      const key = abbrev[part.trim()]
+      if (key) savingThrows[key] = true
     }
 
-    const character = CharacterSchema.parse({
+    let spellcasting = null
+    if (d.classSpellcastingAbility) {
+      const castingType = getSpellProfile(d.classIndex)?.castingType ?? 'known'
+      const finalCantrips = castingType === 'known' ? activeCantrips.value : d.selectedCantrips
+      const finalSpells   = castingType === 'known' ? activeSpells.value   : d.selectedSpells
+      spellcasting = {
+        spellcastingAbility: d.classSpellcastingAbility as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha',
+        slotsMax:  getSpellSlots(d.classIndex, d.level),
+        slotsUsed: { level1:0, level2:0, level3:0, level4:0, level5:0, level6:0, level7:0, level8:0, level9:0 },
+        cantripsKnown: finalCantrips.map(c => ({ ...c, level: 0 })),
+        spellsKnown:    castingType === 'prepared' ? d.selectedSpells : finalSpells,
+        spellsPrepared: castingType === 'prepared' ? d.selectedPreparedSpells
+          : castingType === 'spellbook' ? finalSpells : [],
+        ritualCasting: false,
+      }
+    }
+
+    return CharacterSchema.parse({
       id,
       schemaVersion: '1.0',
       createdAt: ts,
@@ -424,34 +638,58 @@ export const useBuilderStore = defineStore('builder', () => {
         useMilestones: d.useMilestones,
       },
       skillProficiencies: d.selectedSkills.reduce((acc, s) => ({ ...acc, [s]: 'proficient' }), {}),
-      savingThrowProficiencies: { str: false, dex: false, con: false, int: false, wis: false, cha: false },
+      savingThrowProficiencies: savingThrows,
       languages: d.selectedLanguages,
-      otherProficiencies: [],
+      otherProficiencies: [
+        ...d.backgroundToolProficiencies,
+        ...d.raceProfOptions.filter(p => d.selectedRaceProfs.includes(p.index)).map(p => p.name),
+      ],
       resistances: [], immunities: [], vulnerabilities: [], senses: [],
       attacks: [],
       inventory: d.startingInventory,
       currency: { cp: 0, sp: 0, ep: 0, gp: d.manualGold, pp: 0 },
-      spellcasting: d.classSpellcastingAbility ? (() => {
-        const castingType = getSpellProfile(d.classIndex)?.castingType ?? 'known'
-        return {
-          spellcastingAbility: d.classSpellcastingAbility as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha',
-          slotsMax:  getSpellSlots(d.classIndex, d.level),
-          slotsUsed: { level1:0, level2:0, level3:0, level4:0, level5:0, level6:0, level7:0, level8:0, level9:0 },
-          cantripsKnown: d.selectedCantrips.map(c => ({ ...c, level: 0 })),
-          // known → spellsKnown; prepared → spellsPrepared; spellbook → both (spellbook + prepared)
-          spellsKnown:    castingType === 'known' || castingType === 'spellbook' ? d.selectedSpells : [],
-          spellsPrepared: castingType === 'prepared' || castingType === 'spellbook' ? d.selectedSpells : [],
-          ritualCasting: false,
-        }
-      })() : null,
+      spellcasting,
       favoriteSpells: [],
-      features: [],
+      features: Object.entries(d.featsByLevel)
+        .filter(([, dec]) => dec.type === 'feat' && dec.featIndex)
+        .map(([level, dec]) => ({
+          id: generateId(),
+          name: dec.featName ?? dec.featIndex ?? '',
+          source: `Level ${level} Feat`,
+          description: '',
+        })),
       overrides: {},
     })
+  }
 
-    await characterStore.create(character)
-    await clearDraft()
-    return id
+  async function save(): Promise<string> {
+    saving.value = true
+    saveError.value = null
+    const characterStore = useCharactersStore()
+    const auth = useAuthStore()
+    const d = draft.value
+    const ts = now()
+    const id = generateId()
+
+    try {
+      let portrait: { type: 'none' } | { type: 'url'; url: string } = { type: 'none' }
+      if (d.portraitUrl) {
+        let portraitUrl = d.portraitUrl
+        if (portraitUrl.startsWith('data:') && auth.isAuthenticated && auth.userId) {
+          try {
+            const blob = await fetch(portraitUrl).then(r => r.blob())
+            const ext = blob.type.split('/')[1]?.split('+')[0] ?? 'jpg'
+            const file = new File([blob], `portrait.${ext}`, { type: blob.type })
+            portraitUrl = await uploadPortrait(file, auth.userId, id)
+          } catch { /* keep data URL on upload failure */ }
+        }
+        try { new URL(portraitUrl); portrait = { type: 'url', url: portraitUrl } } catch { /* skip invalid URL */ }
+      }
+
+      const character = await buildCharacterFromDraft(id, ts, portrait)
+      await characterStore.create(character)
+      await clearDraft()
+      return id
     } catch (err) {
       saveError.value = err instanceof Error ? err.message : 'Could not save character. Please try again.'
       throw err
@@ -485,6 +723,9 @@ export const useBuilderStore = defineStore('builder', () => {
     applyStandardArray,
     resetScores,
     setAsiAllocation,
+    setFeatDecision,
+    activeCantrips,
+    activeSpells,
     save,
   }
 })

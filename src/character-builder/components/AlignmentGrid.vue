@@ -5,7 +5,7 @@
       :key="a.value"
       class="group relative flex flex-col items-center justify-center gap-1 py-3 px-2 rounded border text-center transition-all duration-150 cursor-pointer"
       :class="modelValue === a.value
-        ? 'border-gold-mid/60 bg-gold-dim/10 text-gold-pale'
+        ? 'border-gold-mid/60 bg-gold-dim/10 text-gold-deep'
         : 'border-shadow bg-abyss text-mist hover:border-gold-dim/25 hover:text-stone hover:bg-depths'"
       role="radio"
       :aria-checked="modelValue === a.value"

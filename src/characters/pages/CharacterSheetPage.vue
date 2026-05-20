@@ -33,8 +33,15 @@
               <div v-else class="w-full h-full flex items-center justify-center bg-depths text-2xl text-gold-dim/30 font-display select-none">
                 {{ classGlyph }}
               </div>
-              <div class="absolute inset-0 bg-abyss/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <ImageIcon :size="14" class="text-stone" />
+              <div
+                class="absolute inset-0 bg-abyss/60 flex items-center justify-center transition-opacity"
+                :class="portraitUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
+              >
+                <svg v-if="portraitUploading" class="animate-spin w-4 h-4 text-gold-mid" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                <ImageIcon v-else :size="14" class="text-stone" />
               </div>
               <div class="absolute top-0 left-0 w-2.5 h-2.5 border-t border-l border-gold-dim/30" />
               <div class="absolute top-0 right-0 w-2.5 h-2.5 border-t border-r border-gold-dim/30" />
@@ -56,14 +63,14 @@
               </h1>
               <p class="font-body text-sm text-ash mt-0.5 truncate">
                 {{ character.identity.race.name }}<span v-if="character.identity.subrace">&nbsp;({{ character.identity.subrace.name }})</span>
-                <span class="text-mist/40 mx-1.5">·</span>
+                <span class="text-dusk mx-1.5">·</span>
                 {{ character.identity.class.name }}<span v-if="character.identity.subclass">&nbsp;— {{ character.identity.subclass.name }}</span>
-                <span class="text-mist/40 mx-1.5">·</span>
+                <span class="text-dusk mx-1.5">·</span>
                 Level {{ character.combat.level }}
               </p>
               <p class="font-body text-xs text-mist mt-0.5">
                 {{ character.identity.background.name }}
-                <span class="mx-1 text-mist/30">·</span>
+                <span class="mx-1 text-dusk">·</span>
                 {{ character.identity.alignment }}
               </p>
               <div class="flex flex-wrap gap-1.5 mt-2">
@@ -74,7 +81,7 @@
                   class="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border text-xs font-heading tracking-wide transition-all"
                   :class="character.combat.inspiration
                     ? 'bg-gold-dim/20 border-gold-mid/50 text-gold-mid'
-                    : 'border-shadow/40 text-mist/40 hover:border-gold-dim/30 hover:text-mist'"
+                    : 'border-dusk text-mist hover:border-gold-dim/60 hover:text-ash'"
                   :disabled="!editMode"
                   @click="editMode && toggleInspiration()"
                 >✦ Inspiration</button>
@@ -85,6 +92,15 @@
             <div class="flex items-center gap-1 shrink-0">
               <button class="btn-secondary p-1.5" title="Export character" @click="downloadExport">
                 <DownloadIcon :size="14" />
+              </button>
+              <button
+                v-if="character.combat.level < 20"
+                type="button"
+                class="w-8 h-8 flex items-center justify-center rounded border transition-colors border-gold-dim/40 text-gold-mid hover:text-gold-bright hover:border-gold-mid/60"
+                title="Level Up"
+                @click="showLevelUp = true"
+              >
+                <TrendingUpIcon :size="14" />
               </button>
               <button
                 type="button"
@@ -299,23 +315,69 @@
               >{{ character.combat.armorClass }}</button>
             </div>
 
-            <!-- Initiative (clickable roll) -->
-            <div class="card flex flex-col items-center justify-center p-3 min-w-[60px] group">
+            <!-- Initiative (editable in edit mode, roll on click otherwise) -->
+            <div class="card flex flex-col items-center justify-center p-3 min-w-[60px]">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Init</p>
+              <input
+                v-if="initEditing && editMode"
+                ref="initInputEl"
+                v-model.number="initValue"
+                type="number"
+                class="w-10 text-center font-heading text-xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum mt-0.5"
+                @blur="commitInit"
+                @keydown.enter="commitInit"
+                @keydown.esc="initEditing = false"
+              />
               <button
+                v-else
                 type="button"
-                class="font-heading text-xl text-vellum mt-0.5 leading-none hover:text-gold-mid transition-colors"
-                title="Roll Initiative"
-                @click="rollD20(initiativeMod, 'Initiative', $event)"
+                class="font-heading text-xl text-vellum mt-0.5 leading-none transition-colors"
+                :class="editMode ? 'hover:text-gold-mid cursor-pointer' : 'hover:text-gold-mid cursor-pointer'"
+                :title="editMode ? 'Click to override initiative' : 'Roll Initiative'"
+                @click="editMode ? startInitEdit() : rollD20(initiativeMod, 'Initiative', $event)"
               >{{ initiativeDisplay }}</button>
+              <button
+                v-if="character.overrides.initiative !== undefined && editMode"
+                type="button"
+                class="text-2xs text-mist/40 hover:text-blood-bright transition-colors mt-0.5"
+                title="Reset to DEX mod"
+                @click="resetInit"
+              >reset</button>
             </div>
 
-            <!-- Speed -->
+            <!-- Speed (editable in edit mode) -->
             <div class="card flex flex-col items-center justify-center p-3 min-w-0">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Speed</p>
-              <p class="font-heading text-xl text-vellum mt-0.5 leading-none">
-                {{ speedDisplay }}<span class="text-xs text-mist font-body ml-0.5">ft</span>
-              </p>
+              <div class="flex items-baseline gap-0.5 mt-0.5">
+                <input
+                  v-if="speedEditing && editMode"
+                  ref="speedInputEl"
+                  v-model.number="speedValue"
+                  type="number"
+                  min="0"
+                  step="5"
+                  class="w-12 text-center font-heading text-xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum"
+                  @blur="commitSpeed"
+                  @keydown.enter="commitSpeed"
+                  @keydown.esc="speedEditing = false"
+                />
+                <button
+                  v-else
+                  type="button"
+                  class="font-heading text-xl text-vellum leading-none transition-colors"
+                  :class="editMode ? 'hover:text-gold-mid cursor-pointer' : 'cursor-default'"
+                  :title="editMode ? 'Click to override speed' : ''"
+                  @click="editMode && startSpeedEdit()"
+                >{{ speedDisplay }}</button>
+                <span class="text-xs text-mist font-body">ft</span>
+              </div>
+              <button
+                v-if="character.overrides.speed !== undefined && editMode"
+                type="button"
+                class="text-2xs text-mist/40 hover:text-blood-bright transition-colors mt-0.5"
+                title="Reset to race speed"
+                @click="resetSpeed"
+              >reset</button>
             </div>
 
             <!-- Passive Perception -->
@@ -403,6 +465,8 @@
                   v-for="ab in abilityEntries"
                   :key="ab.key"
                   class="card py-3 px-2 text-center group relative overflow-hidden"
+                  :class="editMode ? 'cursor-pointer' : ''"
+                  @click="editMode && editingAbility !== ab.key && startAbilityEdit(ab.key, ab.score)"
                 >
                   <div
                     class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
@@ -414,9 +478,27 @@
                     class="relative block w-full font-heading text-2xl leading-none mt-1 transition-colors"
                     :class="ab.mod >= 0 ? 'text-gold-mid hover:text-gold-bright' : 'text-blood-bright hover:text-blood-mid'"
                     :title="`Roll ${ab.label} check`"
-                    @click="rollD20(ab.mod, `${ab.label} Check`, $event)"
+                    @click.stop="rollD20(ab.mod, `${ab.label} Check`, $event)"
                   >{{ ab.mod >= 0 ? `+${ab.mod}` : ab.mod }}</button>
-                  <p class="relative text-sm font-body text-ash mt-1 leading-none">{{ ab.score }}</p>
+                  <!-- Score — editable in edit mode -->
+                  <input
+                    v-if="editingAbility === ab.key"
+                    :ref="(el) => { if (el) { (el as HTMLInputElement).focus(); (el as HTMLInputElement).select() } }"
+                    v-model.number="abilityEditValue"
+                    type="number"
+                    min="1"
+                    max="30"
+                    class="relative w-full text-center font-body text-sm text-vellum bg-transparent outline-none border-b border-gold-mid/50 mt-1 leading-none"
+                    @click.stop
+                    @blur="commitAbility"
+                    @keydown.enter.prevent="commitAbility"
+                    @keydown.escape="editingAbility = null"
+                  />
+                  <p
+                    v-else
+                    class="relative text-sm font-body mt-1 leading-none transition-colors"
+                    :class="editMode ? 'text-gold-dim/70 group-hover:text-ash' : 'text-ash'"
+                  >{{ ab.score }}</p>
                 </div>
               </div>
             </section>
@@ -475,23 +557,31 @@
                 >
                   <span
                     class="w-2.5 h-2.5 rounded-full border-2 shrink-0 transition-colors"
-                    :class="profClass(skill.index)"
+                    :class="skill.profClass"
                   />
                   <button
                     type="button"
                     class="font-heading text-sm w-8 shrink-0 text-left transition-colors"
-                    :class="hasProficiency(skill.index)
+                    :class="skill.hasProficiency
                       ? 'text-gold-deep hover:text-gold-dim'
                       : 'text-stone hover:text-ash'"
-                    @click="rollD20(skillBonus(skill), skill.name, $event)"
-                  >{{ fmt(skillBonus(skill)) }}</button>
+                    @click="rollD20(skill.bonus, skill.name, $event)"
+                  >{{ fmt(skill.bonus) }}</button>
                   <span class="text-xs font-body text-ash flex-1 truncate">{{ skill.name }}</span>
+                  <span
+                    v-if="skill.hasProficiency"
+                    class="text-2xs font-heading tracking-wide shrink-0 px-1 rounded"
+                    :class="skill.origin === 'bg'
+                      ? 'text-arcane-pale/70 bg-arcane-deep/20'
+                      : 'text-gold-dim/80 bg-gold-dim/10'"
+                    :title="skill.origin === 'bg' ? 'From Background' : 'From Class'"
+                  >{{ skill.origin === 'bg' ? 'BG' : 'C' }}</span>
                   <span class="text-2xs font-heading text-mist/50 shrink-0">{{ skill.ability.toUpperCase() }}</span>
                   <button
                     type="button"
                     class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-mist/40 hover:text-gold-mid shrink-0"
                     :aria-label="`Roll ${skill.name}`"
-                    @click="rollD20(skillBonus(skill), skill.name, $event)"
+                    @click="rollD20(skill.bonus, skill.name, $event)"
                   >⚄</button>
                 </div>
                 <div v-if="filteredSkills.length === 0" class="px-2 py-3 text-xs font-body text-mist/50 italic">
@@ -556,6 +646,15 @@
     <RollConfirm />
     <RollResult />
 
+    <!-- ── Long rest modal ───────────────────────────────────────────────────── -->
+    <LongRestModal
+      v-if="character"
+      :show="showLongRest"
+      :character="character"
+      @close="showLongRest = false"
+      @rested="onLongRested"
+    />
+
     <!-- ── Short rest modal ──────────────────────────────────────────────────── -->
     <ShortRestModal
       v-if="character"
@@ -564,20 +663,35 @@
       @close="showShortRest = false"
       @rested="onShortRested"
     />
+
+    <!-- ── Level Up modal ────────────────────────────────────────────────────── -->
+    <LevelUpModal
+      v-if="character"
+      :show="showLevelUp"
+      :saving="levelUpSaving"
+      :character="character"
+      @close="showLevelUp = false"
+      @leveled="onLeveled"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { DownloadIcon, ImageIcon, InfoIcon, LockIcon, LockOpenIcon } from 'lucide-vue-next'
+import { DownloadIcon, ImageIcon, InfoIcon, LockIcon, LockOpenIcon, TrendingUpIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
-import { CLASS_META } from '@/character-builder/classMeta'
+import { CLASS_META, getSpellProfile } from '@/character-builder/classMeta'
+import { SKILLS } from '@/shared/lib/skillAbilityMap'
 import { useDialog } from '@/shared/composables/useDialog'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
+import { useAuthStore } from '@/auth/store'
+import { useToast } from '@/shared/composables/useToast'
+import { uploadPortrait } from '@/shared/lib/uploadPortrait'
+import { getClassGlyph } from '@/character-builder/classMeta'
 import ConditionsBar from '@/characters/components/ConditionsBar.vue'
 import FavoritesTab from '@/characters/components/FavoritesTab.vue'
 import EquipmentTab from '@/characters/components/EquipmentTab.vue'
@@ -587,28 +701,56 @@ import BioTab from '@/characters/components/BioTab.vue'
 import RollResult from '@/shared/components/RollResult.vue'
 import RollConfirm from '@/shared/components/RollConfirm.vue'
 import ShortRestModal from '@/characters/components/ShortRestModal.vue'
+import LevelUpModal from '@/characters/components/LevelUpModal.vue'
+import LongRestModal from '@/characters/components/LongRestModal.vue'
 
 const props = defineProps<{ id: string }>()
 const store = useCharactersStore()
+const auth = useAuthStore()
+const toast = useToast()
 const character = computed(() => store.getById(props.id))
 const dialog = useDialog()
 const infoPanel = useInfoPanel()
 const { rollD20 } = useRoll()
 
-const editMode = ref(true)
+const EDIT_MODE_KEY = 'grimoire:editMode'
+const editMode = ref(localStorage.getItem(EDIT_MODE_KEY) !== 'false')
+watch(editMode, v => localStorage.setItem(EDIT_MODE_KEY, String(v)))
 const showShortRest = ref(false)
+const showLongRest  = ref(false)
+const showLevelUp   = ref(false)
+const levelUpSaving = ref(false)
 
 const portraitFileInput = ref<HTMLInputElement | null>(null)
+const portraitUploading = ref(false)
 
-function onPortraitChange(event: Event) {
+async function onPortraitChange(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file || !character.value) return
-  if (file.size > 1_048_576) return
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    store.update(props.id, { portrait: { type: 'url', url: e.target?.result as string } })
+  if (file.size > 1_048_576) {
+    toast.error('Portrait must be under 1 MB.')
+    return
   }
-  reader.readAsDataURL(file)
+  portraitUploading.value = true
+  try {
+    if (auth.isAuthenticated && auth.userId) {
+      const url = await uploadPortrait(file, auth.userId, props.id)
+      await store.update(props.id, { portrait: { type: 'url', url } })
+    } else {
+      const url = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = (e) => resolve(e.target?.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+      await store.update(props.id, { portrait: { type: 'url', url } })
+    }
+  } catch {
+    toast.error('Failed to upload portrait. Please try again.')
+  } finally {
+    portraitUploading.value = false
+    if (portraitFileInput.value) portraitFileInput.value.value = ''
+  }
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -687,15 +829,32 @@ const abilityEntries = computed(() => {
   ]
 })
 
+// ── Ability score inline editing ─────────────────────────────────────────────
+
+const editingAbility = ref<string | null>(null)
+const abilityEditValue = ref(0)
+
+function startAbilityEdit(key: string, currentScore: number) {
+  if (!editMode.value) return
+  abilityEditValue.value = currentScore
+  editingAbility.value = key
+}
+
+async function commitAbility() {
+  if (!character.value || !editingAbility.value) return
+  const key = editingAbility.value
+  editingAbility.value = null
+  const clamped = Math.max(1, Math.min(30, abilityEditValue.value || 10))
+  if (clamped === (character.value.abilityScores as Record<string, number>)[key]) return
+  await store.update(character.value.id, {
+    abilityScores: { ...character.value.abilityScores, [key]: clamped },
+  })
+}
+
 // ── Class glyph ───────────────────────────────────────────────────────────────
 
-const classGlyphs: Record<string, string> = {
-  barbarian: '⚔', bard: '♪', cleric: '✦', druid: '☘', fighter: '🛡',
-  monk: '◎', paladin: '✚', ranger: '⌖', rogue: '◆', sorcerer: '✶',
-  warlock: '⌬', wizard: '⎊',
-}
 const classGlyph = computed(() =>
-  classGlyphs[character.value?.identity.class.name.toLowerCase() ?? ''] ?? '⚔',
+  getClassGlyph(character.value?.identity.class.name ?? ''),
 )
 
 // ── HP tracker ────────────────────────────────────────────────────────────────
@@ -752,6 +911,61 @@ async function commitAc() {
   const next = Math.max(0, acValue.value || 0)
   if (next === character.value.combat.armorClass) return
   await store.update(character.value.id, { combat: { ...character.value.combat, armorClass: next } })
+}
+
+// ── Initiative override ───────────────────────────────────────────────────────
+
+const initEditing = ref(false)
+const initValue = ref(0)
+const initInputEl = ref<HTMLInputElement | null>(null)
+
+function startInitEdit() {
+  if (!character.value) return
+  initValue.value = initiativeMod.value
+  initEditing.value = true
+  nextTick(() => initInputEl.value?.select())
+}
+
+async function commitInit() {
+  if (!character.value) return
+  initEditing.value = false
+  await store.update(character.value.id, {
+    overrides: { ...character.value.overrides, initiative: initValue.value },
+  })
+}
+
+async function resetInit() {
+  if (!character.value) return
+  const { initiative: _, ...rest } = character.value.overrides
+  await store.update(character.value.id, { overrides: rest })
+}
+
+// ── Speed override ────────────────────────────────────────────────────────────
+
+const speedEditing = ref(false)
+const speedValue = ref(0)
+const speedInputEl = ref<HTMLInputElement | null>(null)
+
+function startSpeedEdit() {
+  if (!character.value) return
+  speedValue.value = character.value.overrides.speed ?? character.value.identity.race.speed
+  speedEditing.value = true
+  nextTick(() => speedInputEl.value?.select())
+}
+
+async function commitSpeed() {
+  if (!character.value) return
+  speedEditing.value = false
+  const next = Math.max(0, speedValue.value || 0)
+  await store.update(character.value.id, {
+    overrides: { ...character.value.overrides, speed: next },
+  })
+}
+
+async function resetSpeed() {
+  if (!character.value) return
+  const { speed: _, ...rest } = character.value.overrides
+  await store.update(character.value.id, { overrides: rest })
 }
 
 // ── Temp HP ───────────────────────────────────────────────────────────────────
@@ -821,32 +1035,33 @@ const SAVES: { key: AbilityName; label: string }[] = [
   { key: 'cha', label: 'Charisma'     },
 ]
 
-const SKILLS = [
-  { index: 'acrobatics',      name: 'Acrobatics',      ability: 'dex' as AbilityName },
-  { index: 'animal-handling', name: 'Animal Handling',  ability: 'wis' as AbilityName },
-  { index: 'arcana',          name: 'Arcana',           ability: 'int' as AbilityName },
-  { index: 'athletics',       name: 'Athletics',        ability: 'str' as AbilityName },
-  { index: 'deception',       name: 'Deception',        ability: 'cha' as AbilityName },
-  { index: 'history',         name: 'History',          ability: 'int' as AbilityName },
-  { index: 'insight',         name: 'Insight',          ability: 'wis' as AbilityName },
-  { index: 'intimidation',    name: 'Intimidation',     ability: 'cha' as AbilityName },
-  { index: 'investigation',   name: 'Investigation',    ability: 'int' as AbilityName },
-  { index: 'medicine',        name: 'Medicine',         ability: 'wis' as AbilityName },
-  { index: 'nature',          name: 'Nature',           ability: 'int' as AbilityName },
-  { index: 'perception',      name: 'Perception',       ability: 'wis' as AbilityName },
-  { index: 'performance',     name: 'Performance',      ability: 'cha' as AbilityName },
-  { index: 'persuasion',      name: 'Persuasion',       ability: 'cha' as AbilityName },
-  { index: 'religion',        name: 'Religion',         ability: 'int' as AbilityName },
-  { index: 'sleight-of-hand', name: 'Sleight of Hand',  ability: 'dex' as AbilityName },
-  { index: 'stealth',         name: 'Stealth',          ability: 'dex' as AbilityName },
-  { index: 'survival',        name: 'Survival',         ability: 'wis' as AbilityName },
-]
-
 const skillSearch = ref('')
+
+const skillRows = computed(() => {
+  if (!character.value) return []
+  const c = character.value
+  const bgSkills = c.identity.background.skillProficiencies ?? []
+  return SKILLS.map(s => {
+    const prof = c.skillProficiencies[s.index]
+    const base = mods.value[s.ability]
+    const bonus = prof === 'expertise' ? base + profBonus.value * 2
+      : prof === 'proficient' ? base + profBonus.value
+      : base
+    return {
+      ...s,
+      bonus,
+      hasProficiency: prof === 'proficient' || prof === 'expertise',
+      profClass: prof === 'expertise' ? 'bg-arcane-pale border-arcane-pale'
+        : prof === 'proficient' ? 'bg-gold-mid border-gold-mid'
+        : 'bg-transparent border-mist/50',
+      origin: bgSkills.includes(s.index) ? 'bg' as const : 'class' as const,
+    }
+  })
+})
 
 const filteredSkills = computed(() => {
   const q = skillSearch.value.trim().toLowerCase()
-  return q ? SKILLS.filter(s => s.name.toLowerCase().includes(q)) : SKILLS
+  return q ? skillRows.value.filter(s => s.name.toLowerCase().includes(q)) : skillRows.value
 })
 
 function fmt(n: number) { return n >= 0 ? `+${n}` : String(n) }
@@ -857,33 +1072,11 @@ function saveBonus(ability: AbilityName): number {
   return character.value.savingThrowProficiencies[ability] ? base + profBonus.value : base
 }
 
-function skillBonus(skill: (typeof SKILLS)[number]): number {
-  if (!character.value) return 0
-  const base = mods.value[skill.ability]
-  const prof = character.value.skillProficiencies[skill.index]
-  if (prof === 'expertise')  return base + profBonus.value * 2
-  if (prof === 'proficient') return base + profBonus.value
-  return base
-}
-
-function hasProficiency(skillIndex: string): boolean {
-  const p = character.value?.skillProficiencies[skillIndex]
-  return p === 'proficient' || p === 'expertise'
-}
-
-function profClass(skillIndex: string): string {
-  const p = character.value?.skillProficiencies[skillIndex]
-  if (p === 'expertise')  return 'bg-arcane-pale border-arcane-pale'
-  if (p === 'proficient') return 'bg-gold-mid border-gold-mid'
-  return 'bg-transparent border-mist/50'
-}
-
 const passivePerception = computed(() => {
   if (!character.value) return 10
   const override = character.value.overrides.passivePerception
   if (override !== undefined) return override
-  const perc = SKILLS.find(s => s.index === 'perception')!
-  return 10 + skillBonus(perc)
+  return 10 + (skillRows.value.find(s => s.index === 'perception')?.bonus ?? 0)
 })
 
 // ── Notes ─────────────────────────────────────────────────────────────────────
@@ -933,8 +1126,17 @@ function onShortRested(result: { healed: number; diceSpent: number; rolls: numbe
 function longRest() {
   const c = character.value
   if (!c) return
-  const regained = Math.max(1, Math.floor(c.combat.level / 2))
-  const newHitDice = Math.min(c.combat.level, c.combat.hitDiceRemaining + regained)
+  const isPrepared = getSpellProfile(c.identity.class.index)?.castingType === 'prepared'
+  if (isPrepared) {
+    showLongRest.value = true
+  } else {
+    applyLongRest(c, [])
+  }
+}
+
+function applyLongRest(c: Character, newPrepared: import('@/shared/types/character').SpellReference[]) {
+  const regained    = Math.max(1, Math.floor(c.combat.level / 2))
+  const newHitDice  = Math.min(c.combat.level, c.combat.hitDiceRemaining + regained)
   const updates: Partial<Character> = {
     combat: {
       ...c.combat,
@@ -950,11 +1152,16 @@ function longRest() {
     { label: 'Death Saves', value: 'Reset' },
   ]
   if (c.spellcasting) {
-    updates.spellcasting = {
+    const spellcasting = {
       ...c.spellcasting,
       slotsUsed: { level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0, level7: 0, level8: 0, level9: 0 },
+      ...(newPrepared.length > 0 ? { spellsPrepared: newPrepared } : {}),
     }
+    updates.spellcasting = spellcasting
     items.splice(1, 0, { label: 'Spell Slots', value: 'All recovered' })
+    if (newPrepared.length > 0) {
+      items.splice(2, 0, { label: 'Prepared', value: `${newPrepared.length} spell${newPrepared.length !== 1 ? 's' : ''}` })
+    }
   }
   store.update(c.id, updates)
   dialog.open({
@@ -963,6 +1170,34 @@ function longRest() {
     items,
     variant: 'success',
   })
+}
+
+function onLongRested(newPrepared: import('@/shared/types/character').SpellReference[]) {
+  const c = character.value
+  if (!c) return
+  showLongRest.value = false
+  applyLongRest(c, newPrepared)
+}
+
+// ── Level Up ──────────────────────────────────────────────────────────────────
+
+async function onLeveled(updates: Partial<Character>) {
+  if (!character.value) return
+  const oldMaxHp = character.value.combat.maxHp
+  const newLvl = updates.combat?.level ?? character.value.combat.level
+  const name = character.value.identity.name
+  levelUpSaving.value = true
+  await store.update(character.value.id, updates)
+  levelUpSaving.value = false
+  showLevelUp.value = false
+  const hpGained = (updates.combat?.maxHp ?? oldMaxHp) - oldMaxHp
+  const items: { label: string; value: string }[] = [
+    { label: 'Level',   value: String(newLvl) },
+    { label: 'HP gained', value: `+${hpGained}` },
+    { label: 'Max HP',  value: String(updates.combat?.maxHp) },
+  ]
+  if (updates.spellcasting) items.push({ label: 'Spell slots', value: 'Updated' })
+  dialog.open({ title: `Level ${newLvl}!`, body: `${name} has grown in power.`, items, variant: 'success' })
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
