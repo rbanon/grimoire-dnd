@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex flex-col bg-void">
     <AppNav />
-    <main class="flex-1">
+    <main class="flex-1 min-h-0">
       <RouterView />
     </main>
     <AppFooter />

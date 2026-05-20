@@ -15,13 +15,13 @@
           <span class="relative text-gold-mid text-sm leading-none select-none">⚔</span>
         </div>
         <span class="font-display text-base tracking-[0.2em] text-vellum uppercase group-hover:text-gold-dim transition-colors duration-300">
-          Grimoire<span class="tracking-[0.2em]" style="color: red; font-size:small; text-decoration: none;"> v0.1.0</span>
+          Grimoire<span class="tracking-[0.2em]" style="color: red; font-size:small; text-decoration: none;"> v{{ version }}</span>
         </span>
         
       </RouterLink>
       
       <!-- Desktop nav links -->
-      <div class="hidden md:flex items-center gap-1">
+      <div class="hidden lg:flex items-center gap-1">
         <RouterLink
           v-for="link in navLinks"
           :key="link.to"
@@ -68,7 +68,7 @@
 
         <!-- Mobile hamburger -->
         <button
-          class="md:hidden btn-icon"
+          class="lg:hidden btn-icon"
           aria-label="Toggle menu"
           @click="mobileOpen = !mobileOpen"
         >
@@ -82,7 +82,7 @@
     <Transition name="nav-slide">
       <div
         v-if="mobileOpen"
-        class="md:hidden border-t border-shadow bg-abyss px-4 py-3 flex flex-col gap-0.5"
+        class="lg:hidden border-t border-shadow bg-abyss px-4 py-3 flex flex-col gap-0.5"
       >
         <RouterLink
           v-for="link in navLinks"
@@ -110,6 +110,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { version } from '../../package.json'
 import { UsersIcon, SparklesIcon, ShieldIcon, BookOpenIcon, MenuIcon, XIcon, LockIcon } from 'lucide-vue-next'
 import { useAuthStore } from '@/auth/store'
 import ColorModeToggle from './ColorModeToggle.vue'

@@ -47,7 +47,7 @@
   </div>
 
   <!-- ── Builder ──────────────────────────────────────────────────────────── -->
-  <div v-else class="min-h-[calc(100vh-60px)] flex flex-col bg-void">
+  <div v-else class="h-full flex flex-col bg-void">
 
     <!-- Mobile progress bar -->
     <div class="md:hidden h-px bg-shadow">
