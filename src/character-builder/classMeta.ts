@@ -97,6 +97,10 @@ export const CLASS_META: Record<string, ClassMeta> = {
   },
 }
 
+export function getClassGlyph(className: string): string {
+  return CLASS_META[className.toLowerCase()]?.glyph ?? '⚔'
+}
+
 export interface RaceMeta {
   glyph: string
   flavor: string

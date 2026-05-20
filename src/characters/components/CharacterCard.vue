@@ -63,17 +63,12 @@
 import { computed } from 'vue'
 import { CopyIcon, DownloadIcon, Trash2Icon } from 'lucide-vue-next'
 import type { CharacterSummary } from '@/shared/types/character'
+import { getClassGlyph } from '@/character-builder/classMeta'
 
 const props = defineProps<{ summary: CharacterSummary }>()
 const emit = defineEmits<{ duplicate: []; delete: []; export: [] }>()
 
-const classGlyphs: Record<string, string> = {
-  barbarian: '⚔', bard: '♪', cleric: '✦', druid: '☘', fighter: '🛡',
-  monk: '◎', paladin: '✚', ranger: '⌖', rogue: '◆', sorcerer: '✶',
-  warlock: '⌬', wizard: '⎊',
-}
-
-const classGlyph = computed(() => classGlyphs[props.summary.className.toLowerCase()] ?? '⚔')
+const classGlyph = computed(() => getClassGlyph(props.summary.className))
 
 const relativeTime = computed(() => {
   const diff = Date.now() - new Date(props.summary.updatedAt).getTime()

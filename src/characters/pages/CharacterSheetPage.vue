@@ -690,6 +690,7 @@ import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useAuthStore } from '@/auth/store'
 import { useToast } from '@/shared/composables/useToast'
 import { uploadPortrait } from '@/shared/lib/uploadPortrait'
+import { getClassGlyph } from '@/character-builder/classMeta'
 import ConditionsBar from '@/characters/components/ConditionsBar.vue'
 import FavoritesTab from '@/characters/components/FavoritesTab.vue'
 import EquipmentTab from '@/characters/components/EquipmentTab.vue'
@@ -849,13 +850,8 @@ async function commitAbility() {
 
 // ── Class glyph ───────────────────────────────────────────────────────────────
 
-const classGlyphs: Record<string, string> = {
-  barbarian: '⚔', bard: '♪', cleric: '✦', druid: '☘', fighter: '🛡',
-  monk: '◎', paladin: '✚', ranger: '⌖', rogue: '◆', sorcerer: '✶',
-  warlock: '⌬', wizard: '⎊',
-}
 const classGlyph = computed(() =>
-  classGlyphs[character.value?.identity.class.name.toLowerCase() ?? ''] ?? '⚔',
+  getClassGlyph(character.value?.identity.class.name ?? ''),
 )
 
 // ── HP tracker ────────────────────────────────────────────────────────────────
