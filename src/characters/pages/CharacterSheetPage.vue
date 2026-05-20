@@ -557,31 +557,31 @@
                 >
                   <span
                     class="w-2.5 h-2.5 rounded-full border-2 shrink-0 transition-colors"
-                    :class="profClass(skill.index)"
+                    :class="skill.profClass"
                   />
                   <button
                     type="button"
                     class="font-heading text-sm w-8 shrink-0 text-left transition-colors"
-                    :class="hasProficiency(skill.index)
+                    :class="skill.hasProficiency
                       ? 'text-gold-deep hover:text-gold-dim'
                       : 'text-stone hover:text-ash'"
-                    @click="rollD20(skillBonus(skill), skill.name, $event)"
-                  >{{ fmt(skillBonus(skill)) }}</button>
+                    @click="rollD20(skill.bonus, skill.name, $event)"
+                  >{{ fmt(skill.bonus) }}</button>
                   <span class="text-xs font-body text-ash flex-1 truncate">{{ skill.name }}</span>
                   <span
-                    v-if="hasProficiency(skill.index)"
+                    v-if="skill.hasProficiency"
                     class="text-2xs font-heading tracking-wide shrink-0 px-1 rounded"
-                    :class="skillOrigin(skill.index) === 'bg'
+                    :class="skill.origin === 'bg'
                       ? 'text-arcane-pale/70 bg-arcane-deep/20'
                       : 'text-gold-dim/80 bg-gold-dim/10'"
-                    :title="skillOrigin(skill.index) === 'bg' ? 'From Background' : 'From Class'"
-                  >{{ skillOrigin(skill.index) === 'bg' ? 'BG' : 'C' }}</span>
+                    :title="skill.origin === 'bg' ? 'From Background' : 'From Class'"
+                  >{{ skill.origin === 'bg' ? 'BG' : 'C' }}</span>
                   <span class="text-2xs font-heading text-mist/50 shrink-0">{{ skill.ability.toUpperCase() }}</span>
                   <button
                     type="button"
                     class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-mist/40 hover:text-gold-mid shrink-0"
                     :aria-label="`Roll ${skill.name}`"
-                    @click="rollD20(skillBonus(skill), skill.name, $event)"
+                    @click="rollD20(skill.bonus, skill.name, $event)"
                   >⚄</button>
                 </div>
                 <div v-if="filteredSkills.length === 0" class="px-2 py-3 text-xs font-body text-mist/50 italic">
@@ -684,6 +684,7 @@ import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
 import { CLASS_META, getSpellProfile } from '@/character-builder/classMeta'
+import { SKILLS } from '@/shared/lib/skillAbilityMap'
 import { useDialog } from '@/shared/composables/useDialog'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
@@ -1034,32 +1035,33 @@ const SAVES: { key: AbilityName; label: string }[] = [
   { key: 'cha', label: 'Charisma'     },
 ]
 
-const SKILLS = [
-  { index: 'acrobatics',      name: 'Acrobatics',      ability: 'dex' as AbilityName },
-  { index: 'animal-handling', name: 'Animal Handling',  ability: 'wis' as AbilityName },
-  { index: 'arcana',          name: 'Arcana',           ability: 'int' as AbilityName },
-  { index: 'athletics',       name: 'Athletics',        ability: 'str' as AbilityName },
-  { index: 'deception',       name: 'Deception',        ability: 'cha' as AbilityName },
-  { index: 'history',         name: 'History',          ability: 'int' as AbilityName },
-  { index: 'insight',         name: 'Insight',          ability: 'wis' as AbilityName },
-  { index: 'intimidation',    name: 'Intimidation',     ability: 'cha' as AbilityName },
-  { index: 'investigation',   name: 'Investigation',    ability: 'int' as AbilityName },
-  { index: 'medicine',        name: 'Medicine',         ability: 'wis' as AbilityName },
-  { index: 'nature',          name: 'Nature',           ability: 'int' as AbilityName },
-  { index: 'perception',      name: 'Perception',       ability: 'wis' as AbilityName },
-  { index: 'performance',     name: 'Performance',      ability: 'cha' as AbilityName },
-  { index: 'persuasion',      name: 'Persuasion',       ability: 'cha' as AbilityName },
-  { index: 'religion',        name: 'Religion',         ability: 'int' as AbilityName },
-  { index: 'sleight-of-hand', name: 'Sleight of Hand',  ability: 'dex' as AbilityName },
-  { index: 'stealth',         name: 'Stealth',          ability: 'dex' as AbilityName },
-  { index: 'survival',        name: 'Survival',         ability: 'wis' as AbilityName },
-]
-
 const skillSearch = ref('')
+
+const skillRows = computed(() => {
+  if (!character.value) return []
+  const c = character.value
+  const bgSkills = c.identity.background.skillProficiencies ?? []
+  return SKILLS.map(s => {
+    const prof = c.skillProficiencies[s.index]
+    const base = mods.value[s.ability]
+    const bonus = prof === 'expertise' ? base + profBonus.value * 2
+      : prof === 'proficient' ? base + profBonus.value
+      : base
+    return {
+      ...s,
+      bonus,
+      hasProficiency: prof === 'proficient' || prof === 'expertise',
+      profClass: prof === 'expertise' ? 'bg-arcane-pale border-arcane-pale'
+        : prof === 'proficient' ? 'bg-gold-mid border-gold-mid'
+        : 'bg-transparent border-mist/50',
+      origin: bgSkills.includes(s.index) ? 'bg' as const : 'class' as const,
+    }
+  })
+})
 
 const filteredSkills = computed(() => {
   const q = skillSearch.value.trim().toLowerCase()
-  return q ? SKILLS.filter(s => s.name.toLowerCase().includes(q)) : SKILLS
+  return q ? skillRows.value.filter(s => s.name.toLowerCase().includes(q)) : skillRows.value
 })
 
 function fmt(n: number) { return n >= 0 ? `+${n}` : String(n) }
@@ -1070,38 +1072,11 @@ function saveBonus(ability: AbilityName): number {
   return character.value.savingThrowProficiencies[ability] ? base + profBonus.value : base
 }
 
-function skillBonus(skill: (typeof SKILLS)[number]): number {
-  if (!character.value) return 0
-  const base = mods.value[skill.ability]
-  const prof = character.value.skillProficiencies[skill.index]
-  if (prof === 'expertise')  return base + profBonus.value * 2
-  if (prof === 'proficient') return base + profBonus.value
-  return base
-}
-
-function hasProficiency(skillIndex: string): boolean {
-  const p = character.value?.skillProficiencies[skillIndex]
-  return p === 'proficient' || p === 'expertise'
-}
-
-function profClass(skillIndex: string): string {
-  const p = character.value?.skillProficiencies[skillIndex]
-  if (p === 'expertise')  return 'bg-arcane-pale border-arcane-pale'
-  if (p === 'proficient') return 'bg-gold-mid border-gold-mid'
-  return 'bg-transparent border-mist/50'
-}
-
-function skillOrigin(skillIndex: string): 'bg' | 'class' {
-  const bgSkills = character.value?.identity.background.skillProficiencies ?? []
-  return bgSkills.includes(skillIndex) ? 'bg' : 'class'
-}
-
 const passivePerception = computed(() => {
   if (!character.value) return 10
   const override = character.value.overrides.passivePerception
   if (override !== undefined) return override
-  const perc = SKILLS.find(s => s.index === 'perception')!
-  return 10 + skillBonus(perc)
+  return 10 + (skillRows.value.find(s => s.index === 'perception')?.bonus ?? 0)
 })
 
 // ── Notes ─────────────────────────────────────────────────────────────────────

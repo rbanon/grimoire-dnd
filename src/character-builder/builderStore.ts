@@ -433,7 +433,7 @@ export const useBuilderStore = defineStore('builder', () => {
     const saved = storageGet(DRAFT_KEY, DraftSchema)
     if (!saved) return false
     const merged = { ...defaultDraft(), ...(saved as Partial<BuilderDraft>) }
-    if (!merged.name && !merged.raceIndex && !merged.classIndex) return false
+    if (!merged.classIndex) return false
     draft.value = merged
     return true
   }
@@ -461,29 +461,32 @@ export const useBuilderStore = defineStore('builder', () => {
 
   // ── Navigation ────────────────────────────────────────────────────────────
 
+  const STEP_SKIPS: { step: number; skip: () => boolean }[] = [
+    { step: 8, skip: () => !isSpellcaster.value },
+  ]
+
+  function resolveStep(target: number): number {
+    let s = Math.max(1, Math.min(totalSteps.value, target))
+    while (STEP_SKIPS.some(r => r.step === s && r.skip())) s++
+    return Math.min(s, totalSteps.value)
+  }
+
   function goTo(step: number) {
-    draft.value.currentStep = step
+    draft.value.currentStep = resolveStep(step)
   }
 
   function next() {
-    if (draft.value.currentStep < TOTAL_STEPS) {
-      // Skip spells step (8) if not a spellcaster
-      if (draft.value.currentStep === 7 && !isSpellcaster.value) {
-        draft.value.currentStep = 9
-      } else {
-        draft.value.currentStep++
-      }
-    }
+    if (draft.value.currentStep >= totalSteps.value) return
+    let s = draft.value.currentStep + 1
+    while (s < totalSteps.value && STEP_SKIPS.some(r => r.step === s && r.skip())) s++
+    draft.value.currentStep = s
   }
 
   function back() {
-    if (draft.value.currentStep > 1) {
-      if (draft.value.currentStep === 9 && !isSpellcaster.value) {
-        draft.value.currentStep = 7
-      } else {
-        draft.value.currentStep--
-      }
-    }
+    if (draft.value.currentStep <= 1) return
+    let s = draft.value.currentStep - 1
+    while (s > 1 && STEP_SKIPS.some(r => r.step === s && r.skip())) s--
+    draft.value.currentStep = s
   }
 
   // ── Point buy helpers ─────────────────────────────────────────────────────
@@ -545,12 +548,9 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value.selectedPreparedSpells = []
   })
 
-  // If class switches from spellcaster to non-spellcaster while on the spells step,
-  // push back to skills so currentStep never lands on a hidden step.
-  watch(isSpellcaster, (nowCaster) => {
-    if (!nowCaster && draft.value.currentStep === 8) {
-      draft.value.currentStep = 7
-    }
+  // Re-validate currentStep whenever skippable conditions change
+  watch(isSpellcaster, () => {
+    draft.value.currentStep = resolveStep(draft.value.currentStep)
   })
   watch(() => draft.value.level, (newLevel) => {
     for (const lvl of Object.keys(draft.value.asiAllocations).map(Number)) {

@@ -419,9 +419,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, defineComponent, h, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { InfoIcon, PlusIcon, XIcon, ChevronDownIcon } from 'lucide-vue-next'
+import { InfoIcon, PlusIcon, ChevronDownIcon } from 'lucide-vue-next'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import type { SpellsByLevelEntry } from '@/character-builder/builderStore'
 import { fiveEApi } from '@/shared/api/fiveE.client'
@@ -433,38 +433,8 @@ import {
 } from '@/character-builder/classMeta'
 import { computeModifier } from '@/shared/types/character'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
+import SelectedSpellList from '@/character-builder/components/SelectedSpellList.vue'
 import SpellPickerModal from '@/characters/components/SpellPickerModal.vue'
-
-// ── Inline sub-component: selected spell list ─────────────────────────────────
-const SelectedSpellList = defineComponent({
-  props: {
-    spells: { type: Array as () => { index: string; name: string; level: number }[], required: true },
-  },
-  emits: ['remove'],
-  setup(props, { emit }) {
-    return () => {
-      if (props.spells.length === 0) {
-        return h('p', { class: 'text-xs font-body text-mist' }, 'No spells selected yet.')
-      }
-      return h('div', { class: 'space-y-1.5' },
-        props.spells.map(s =>
-          h('div', {
-            key: s.index,
-            class: 'group flex items-center gap-2 px-3 py-2 rounded border border-arcane-base/25 bg-arcane-deep/8',
-          }, [
-            h('span', { class: 'flex-1 text-sm font-heading text-arcane-pale/90' }, s.name),
-            h('span', { class: 'badge-arcane text-2xs' }, `Lv ${s.level}`),
-            h('button', {
-              type: 'button',
-              class: 'shrink-0 w-5 h-5 flex items-center justify-center rounded text-mist/30 hover:text-blood-bright transition-colors opacity-0 group-hover:opacity-100',
-              onClick: () => emit('remove', s.index),
-            }, h(XIcon, { size: 11 })),
-          ])
-        )
-      )
-    }
-  },
-})
 
 // ── Store & composables ───────────────────────────────────────────────────────
 const builder = useBuilderStore()

@@ -187,15 +187,7 @@ import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import type { ApiBackground } from '@/shared/types/api'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
-
-const SKILL_ABILITY: Record<string, string> = {
-  'acrobatics': 'DEX', 'animal-handling': 'WIS', 'arcana': 'INT',
-  'athletics': 'STR', 'deception': 'CHA', 'history': 'INT',
-  'insight': 'WIS', 'intimidation': 'CHA', 'investigation': 'INT',
-  'medicine': 'WIS', 'nature': 'INT', 'perception': 'WIS',
-  'performance': 'CHA', 'persuasion': 'CHA', 'religion': 'INT',
-  'sleight-of-hand': 'DEX', 'stealth': 'DEX', 'survival': 'WIS',
-}
+import { SKILL_ABILITY } from '@/shared/lib/skillAbilityMap'
 
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
