@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { z } from 'zod'
 import type { Character, CharacterSummary } from '@/shared/types/character'
 import {
@@ -102,8 +102,8 @@ export const useCharactersStore = defineStore('characters', () => {
     })
   }
 
-  async function loadFromCloud() {
-    if (!auth.userId) { loadFromLocal(); return }
+  async function loadFromCloud(): Promise<boolean> {
+    if (!auth.userId) { loadFromLocal(); return false }
     const { data, error } = await supabase
       .from('characters')
       .select('data')
@@ -113,12 +113,13 @@ export const useCharactersStore = defineStore('characters', () => {
     if (error) {
       console.error('[characters] Cloud load failed, falling back to local', error)
       loadFromLocal()
-      return
+      return false
     }
     const rows = (data ?? []) as Array<{ data: unknown }>
     characters.value = rows.flatMap((row) => {
       try { return [migrateCharacter(row.data)] } catch { return [] }
     })
+    return true
   }
 
   // ── Persist ───────────────────────────────────────────────────────────────
@@ -287,6 +288,71 @@ export const useCharactersStore = defineStore('characters', () => {
 
     return { imported: toAdd.length, errors }
   }
+
+  // ── Auth sync ─────────────────────────────────────────────────────────────
+
+  // Called when the user signs in mid-session (not on app boot session restore).
+  // Reads local characters, loads cloud, merges by "newer wins", uploads local-only
+  // or locally-updated chars, clears localStorage (cloud is now source of truth).
+  async function syncOnLogin() {
+    const stored = storageGet(LOCAL_KEY, z.array(z.unknown()))
+    const localChars: Character[] = (stored ?? []).flatMap((raw) => {
+      try { return [migrateCharacter(raw)] } catch { return [] }
+    })
+
+    const cloudLoaded = await loadFromCloud()
+    if (!cloudLoaded) return // cloud unreachable — keep local data as-is
+
+    // Cloud is now source of truth; clear local
+    storageSet(LOCAL_KEY, [])
+
+    if (localChars.length === 0) return
+
+    let syncedCount = 0
+    for (const local of localChars) {
+      const cloudIdx = characters.value.findIndex(c => c.id === local.id)
+      if (cloudIdx === -1) {
+        // Local-only: upload and add to in-memory state
+        try {
+          await persistCloud(local)
+          characters.value.push(local)
+          syncedCount++
+        } catch { /* non-fatal: char stays accessible in memory this session */ }
+      } else {
+        const cloud = characters.value[cloudIdx]
+        if (new Date(local.updatedAt) > new Date(cloud.updatedAt)) {
+          // Local version is newer: overwrite cloud
+          try {
+            await persistCloud(local)
+            characters.value[cloudIdx] = local
+            syncedCount++
+          } catch { /* non-fatal */ }
+        }
+        // else cloud is newer or same — keep cloud version
+      }
+    }
+
+    if (syncedCount > 0) {
+      useToast().success(
+        syncedCount === 1
+          ? '1 local character synced to your account.'
+          : `${syncedCount} local characters synced to your account.`,
+      )
+    }
+  }
+
+  // Called when the user signs out. Persists current (cloud) characters to
+  // localStorage so they remain accessible offline, then switches to local mode.
+  function handleSignOut() {
+    storageSet(LOCAL_KEY, characters.value)
+    loadFromLocal()
+  }
+
+  // React to auth transitions that happen mid-session (not initial session restore).
+  watch(() => auth.lastAuthEvent, async (event) => {
+    if (event === 'SIGNED_IN') await syncOnLogin()
+    else if (event === 'SIGNED_OUT') handleSignOut()
+  })
 
   // ── Favorite spells ───────────────────────────────────────────────────────
 
