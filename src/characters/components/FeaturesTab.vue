@@ -4,7 +4,7 @@
     <!-- ── Class Features ─────────────────────────────────────────────────── -->
     <section>
       <div class="rule-gold mb-5">
-        <span class="text-gold-mid">{{ character.identity.class.name }} Features</span>
+        <span>{{ character.identity.class.name }} Features</span>
         <span class="text-mist text-xs ml-2">Level {{ character.combat.level }}</span>
       </div>
 
@@ -46,7 +46,7 @@
     <!-- ── Race & Subrace Traits ──────────────────────────────────────────── -->
     <section>
       <div class="rule-gold mb-5">
-        <span class="text-gold-mid">{{ character.identity.race.name }} Traits</span>
+        <span>{{ character.identity.race.name }} Traits</span>
         <span v-if="character.identity.subrace" class="text-mist text-xs ml-2">
           · {{ character.identity.subrace.name }}
         </span>
@@ -83,7 +83,7 @@
     <!-- ── Background Feature ─────────────────────────────────────────────── -->
     <section v-if="bgData || bgPending">
       <div class="rule-gold mb-5">
-        <span class="text-gold-mid">Background: {{ character.identity.background.name }}</span>
+        <span>Background: {{ character.identity.background.name }}</span>
       </div>
 
       <div v-if="bgPending" class="card p-4 animate-pulse">

@@ -168,6 +168,7 @@ async function selectBackground(index: string, name: string) {
     builder.draft.backgroundToolProficiencies = detail.starting_proficiencies
       .filter(p => !p.index.startsWith('skill-'))
       .map(p => p.name)
+    builder.draft.backgroundLanguageChoices = detail.language_options?.choose ?? 0
   } catch { /* ignore */ }
 }
 </script>

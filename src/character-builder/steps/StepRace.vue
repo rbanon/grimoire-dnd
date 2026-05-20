@@ -265,6 +265,7 @@ async function selectRace(index: string, name: string) {
   builder.draft.raceProfChoices = 0
   builder.draft.raceProfOptions = []
   builder.draft.selectedRaceProfs = []
+  builder.draft.raceSkillProficiencies = []
   try {
     const detail: ApiRace = await fiveEApi.getRace(index)
     builder.draft.raceSpeed = detail.speed
@@ -277,6 +278,9 @@ async function selectRace(index: string, name: string) {
     builder.draft.availableSubraces = detail.subraces.map(s => ({ index: s.index, name: s.name }))
     builder.draft.raceLanguageCount = detail.languages.length || 1
     builder.draft.selectedLanguages = detail.languages.map(l => l.index)
+    builder.draft.raceSkillProficiencies = detail.starting_proficiencies
+      .filter(p => p.index.startsWith('skill-'))
+      .map(p => p.index.replace(/^skill-/, ''))
     if (detail.starting_proficiency_options) {
       builder.draft.raceProfChoices = detail.starting_proficiency_options.choose
       builder.draft.raceProfOptions = detail.starting_proficiency_options.from.options
