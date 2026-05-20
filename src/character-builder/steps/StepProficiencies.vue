@@ -84,7 +84,7 @@
           v-for="skill in skills"
           :key="skill.index"
           class="group flex items-center gap-3 px-3 py-2.5 rounded border transition-all duration-150"
-          :class="isBackgroundSkill(skill.index)
+          :class="isBackgroundSkill(skill.index) || isRaceSkill(skill.index)
             ? 'border-gold-dim/20 bg-gold-dim/4 cursor-default opacity-70'
             : isSkillSelected(skill.index)
               ? 'border-gold-mid/50 bg-gold-dim/8 cursor-pointer'
@@ -95,27 +95,28 @@
           <input
             type="checkbox"
             class="sr-only"
-            :checked="isSkillSelected(skill.index) || isBackgroundSkill(skill.index)"
-            :disabled="isBackgroundSkill(skill.index) || (!canSelectMore && !isSkillSelected(skill.index))"
-            @change="!isBackgroundSkill(skill.index) && toggleSkill(skill.index)"
+            :checked="isSkillSelected(skill.index) || isBackgroundSkill(skill.index) || isRaceSkill(skill.index)"
+            :disabled="isBackgroundSkill(skill.index) || isRaceSkill(skill.index) || (!canSelectMore && !isSkillSelected(skill.index))"
+            @change="!isBackgroundSkill(skill.index) && !isRaceSkill(skill.index) && toggleSkill(skill.index)"
           />
           <div
             class="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all duration-150"
-            :class="isBackgroundSkill(skill.index)
+            :class="isBackgroundSkill(skill.index) || isRaceSkill(skill.index)
               ? 'border-gold-dim/50 bg-gold-dim/20'
               : isSkillSelected(skill.index)
                 ? 'border-gold-mid bg-gold-dim/30'
                 : 'border-mist group-hover:border-ash'"
           >
-            <CheckIcon v-if="isSkillSelected(skill.index) || isBackgroundSkill(skill.index)" :size="10" class="text-gold-mid" />
+            <CheckIcon v-if="isSkillSelected(skill.index) || isBackgroundSkill(skill.index) || isRaceSkill(skill.index)" :size="10" class="text-gold-mid" />
           </div>
           <div class="flex-1 min-w-0 flex items-center gap-2">
-            <p class="text-sm font-heading tracking-wide" :class="isSkillSelected(skill.index) || isBackgroundSkill(skill.index) ? 'text-stone' : 'text-ash'">
+            <p class="text-sm font-heading tracking-wide" :class="isSkillSelected(skill.index) || isBackgroundSkill(skill.index) || isRaceSkill(skill.index) ? 'text-stone' : 'text-ash'">
               {{ skill.name }}
             </p>
             <span class="text-2xs font-heading text-mist/70 shrink-0">{{ SKILL_ABILITY[skill.index] }}</span>
           </div>
           <span v-if="isBackgroundSkill(skill.index)" class="px-1.5 py-0.5 rounded border border-gold-dim/30 text-2xs font-heading text-gold-dim/70 shrink-0">BG</span>
+          <span v-else-if="isRaceSkill(skill.index)" class="px-1.5 py-0.5 rounded border border-shadow text-2xs font-heading text-mist/60 shrink-0">Race</span>
           <span v-else-if="isSkillSelected(skill.index)" class="badge-gold text-2xs shrink-0">Prof</span>
           <button
             type="button"
@@ -140,6 +141,14 @@
           {{ langCount }}/{{ maxLanguages }} selected
         </span>
       </div>
+
+      <p
+        v-if="langCount < maxLanguages"
+        class="text-xs font-body -mt-2"
+        :class="showValidation ? 'text-blood-bright' : 'text-mist'"
+      >
+        Choose {{ maxLanguages - langCount }} more language{{ maxLanguages - langCount > 1 ? 's' : '' }}.
+      </p>
 
       <div class="flex items-start gap-2 px-3 py-2 rounded border border-shadow/40 bg-depths/20">
         <span class="text-gold-dim/60 text-xs shrink-0 mt-0.5">ℹ</span>
@@ -218,7 +227,7 @@ const { data: bgDetail } = useQuery({
   enabled: computed(() => !!builder.draft.backgroundIndex),
 })
 
-const bgLanguageChoices = computed(() => bgDetail.value?.language_options?.choose ?? 0)
+const bgLanguageChoices = computed(() => builder.draft.backgroundLanguageChoices)
 
 // Background auto skills for display (convert stored indices to display names via bgDetail)
 const bgDisplaySkills = computed(() => {
@@ -237,14 +246,18 @@ const langCount = computed(() => builder.draft.selectedLanguages.length)
 const canSelectMoreLang = computed(() => langCount.value < maxLanguages.value)
 
 const maxSkills = computed(() => builder.draft.classSkillChoices || 2)
-// Background skills don't consume class skill picks
+// Background and race skills don't consume class skill picks
 const selectedCount = computed(() =>
-  builder.draft.selectedSkills.filter(s => !isBackgroundSkill(s)).length
+  builder.draft.selectedSkills.filter(s => !isBackgroundSkill(s) && !isRaceSkill(s)).length
 )
 const canSelectMore = computed(() => selectedCount.value < maxSkills.value)
 
 function isBackgroundSkill(index: string): boolean {
   return builder.draft.backgroundSkillProficiencies.includes(index)
+}
+
+function isRaceSkill(index: string): boolean {
+  return builder.draft.raceSkillProficiencies.includes(index)
 }
 
 const canSelectMoreRaceProfs = computed(() =>

@@ -73,6 +73,7 @@ export interface BuilderDraft {
   backgroundName: string
   backgroundSkillProficiencies: string[]
   backgroundToolProficiencies: string[]
+  backgroundLanguageChoices: number
 
   // Step 2 — Class
   classIndex: string
@@ -101,6 +102,8 @@ export interface BuilderDraft {
   raceProfChoices: number
   raceProfOptions: { index: string; name: string }[]
   selectedRaceProfs: string[]
+  // Race auto-granted skill proficiencies (e.g. Half-Orc → Intimidation)
+  raceSkillProficiencies: string[]
 
   // Step 4 — Proficiencies
   selectedSkills: string[]
@@ -142,8 +145,8 @@ const defaultDraft = (): BuilderDraft => ({
   raceIndex: '', raceName: '', raceSpeed: 30, raceSizeCategory: 'Medium',
   raceAbilityBonuses: {}, raceLanguageCount: 2, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
-  raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [],
-  backgroundIndex: '', backgroundName: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [],
+  raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [],
+  backgroundIndex: '', backgroundName: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [], backgroundLanguageChoices: 0,
   classIndex: '', className: '', classHitDie: 8, classSpellcastingAbility: null,
   classSkillChoices: 2, classSkillOptions: [],
   subclassIndex: '', subclassName: '', availableSubclasses: [],
@@ -167,7 +170,7 @@ const DRAFT_ARRAY_FIELDS = [
   'selectedCantrips', 'selectedSpells', 'selectedPreparedSpells', 'rolledHpPerLevel', 'rolledAbilityScores',
   'selectedSkills', 'selectedLanguages', 'startingInventory', 'raceProfOptions',
   'availableSubraces', 'availableSubclasses', 'backgroundSkillProficiencies',
-  'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs',
+  'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs', 'raceSkillProficiencies',
 ] as const
 
 const DRAFT_OBJ_FIELDS = [
@@ -357,11 +360,22 @@ export const useBuilderStore = defineStore('builder', () => {
     return errors
   }
 
+  function validateLanguages(): string[] {
+    const required = draft.value.raceLanguageCount + draft.value.backgroundLanguageChoices
+    const selected = draft.value.selectedLanguages.length
+    if (selected < required) {
+      const diff = required - selected
+      return [`Choose ${diff} more language${diff > 1 ? 's' : ''} (${selected}/${required})`]
+    }
+    return []
+  }
+
   // Step validation
   const stepErrors = computed<Record<number, string[]>>(() => {
-    const abilityErrors = validateAbilities()
-    const featErrors    = validateFeats()
-    const spellErrors   = validateSpells()
+    const abilityErrors  = validateAbilities()
+    const featErrors     = validateFeats()
+    const spellErrors    = validateSpells()
+    const languageErrors = validateLanguages()
 
     return {
       1:  [
@@ -401,6 +415,7 @@ export const useBuilderStore = defineStore('builder', () => {
         (() => {
           const chosenByClass = draft.value.selectedSkills.filter(
             s => !draft.value.backgroundSkillProficiencies.includes(s)
+              && !draft.value.raceSkillProficiencies.includes(s)
           ).length
           const max = draft.value.classSkillChoices || 2
           return chosenByClass < max
@@ -408,6 +423,7 @@ export const useBuilderStore = defineStore('builder', () => {
         })(),
         draft.value.raceProfChoices > 0 && draft.value.selectedRaceProfs.length < draft.value.raceProfChoices
           ? `Choose ${draft.value.raceProfChoices} race proficiency tool${draft.value.raceProfChoices > 1 ? 's' : ''} (${draft.value.selectedRaceProfs.length} selected)` : '',
+        ...languageErrors,
       ].filter(Boolean),
       8:  spellErrors,
       9: [
@@ -637,7 +653,8 @@ export const useBuilderStore = defineStore('builder', () => {
         hitDiceRemaining: d.level,
         useMilestones: d.useMilestones,
       },
-      skillProficiencies: d.selectedSkills.reduce((acc, s) => ({ ...acc, [s]: 'proficient' }), {}),
+      skillProficiencies: [...new Set([...d.selectedSkills, ...d.backgroundSkillProficiencies, ...d.raceSkillProficiencies])]
+        .reduce((acc, s) => ({ ...acc, [s]: 'proficient' }), {}),
       savingThrowProficiencies: savingThrows,
       languages: d.selectedLanguages,
       otherProficiencies: [

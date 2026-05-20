@@ -31,7 +31,7 @@
 
       <!-- ── Favorites ──────────────────────────────────────────────────── -->
       <section v-if="character.favoriteSpells.length > 0">
-        <div class="rule-gold mb-4"><span class="text-gold-mid">★ Favorites</span></div>
+        <div class="rule-gold mb-4"><span>★ Favorites</span></div>
         <div class="flex flex-wrap gap-2">
           <div
             v-for="spell in character.favoriteSpells"

@@ -8,7 +8,7 @@
           class="pointer-events-auto flex items-start gap-3 px-4 py-3 rounded border text-sm font-body max-w-sm"
           :class="{
             'bg-arcane-deep border-arcane-mid/50 text-arcane-pale shadow-glow-arcane': t.type === 'error',
-            'bg-depths border-gold-mid/40 text-gold-pale shadow-card': t.type === 'success',
+            'bg-depths border-gold-mid/40 text-gold-deep dark:text-gold-pale shadow-card': t.type === 'success',
             'bg-depths border-shadow text-stone shadow-card': t.type === 'info',
           }"
         >
