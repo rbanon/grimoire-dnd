@@ -24,7 +24,7 @@
       <button
         type="button"
         class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/20 transition-all"
-        title="Ver detalles"
+        title="View details"
         @click="infoPanel.open({ kind: 'spell', index: cantrip.index })"
       >
         <InfoIcon :size="12" />
@@ -33,7 +33,7 @@
         v-if="cantripEditMode"
         type="button"
         class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/30 hover:text-blood-bright hover:bg-blood-deep/20 transition-all"
-        title="Eliminar"
+        title="Remove"
         @click="$emit('remove')"
       >
         <XIcon :size="12" />
@@ -74,6 +74,15 @@
           <span class="text-mist/25 text-2xs">·</span>
           <span class="text-2xs font-mono text-stone">{{ damageRoll }}</span>
           <span v-if="damageType" class="text-2xs font-body text-mist/70">{{ damageType }}</span>
+        </template>
+
+        <!-- School -->
+        <template v-if="spell.school">
+          <span class="text-mist/25 text-2xs">·</span>
+          <span
+            class="text-2xs font-heading px-1.5 py-px rounded-sm border"
+            :class="schoolClass"
+          >{{ spell.school.name }}</span>
         </template>
       </template>
     </div>
@@ -129,4 +138,19 @@ const damageRoll = computed(() => {
 })
 
 const damageType = computed(() => spell.value?.damage?.damage_type?.name ?? null)
+
+const SCHOOL_CLASSES: Record<string, string> = {
+  abjuration:    'text-blue-300/80 border-blue-500/30',
+  conjuration:   'text-emerald-300/80 border-emerald-500/30',
+  divination:    'text-sky-300/80 border-sky-500/30',
+  enchantment:   'text-pink-300/80 border-pink-500/30',
+  evocation:     'text-orange-300/80 border-orange-500/30',
+  illusion:      'text-violet-300/80 border-violet-500/30',
+  necromancy:    'text-green-400/70 border-green-600/30',
+  transmutation: 'text-amber-300/80 border-amber-500/30',
+}
+const schoolClass = computed(() => {
+  const name = spell.value?.school?.name?.toLowerCase() ?? ''
+  return SCHOOL_CLASSES[name] ?? 'text-mist/50 border-shadow'
+})
 </script>

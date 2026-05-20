@@ -57,7 +57,7 @@
               ? 'border-blood-base/40 text-blood-mid hover:border-blood-base/70'
               : 'border-shadow text-mist hover:border-arcane-base/40 hover:text-arcane-pale'"
             @click="cantripEditMode = !cantripEditMode"
-          >{{ cantripEditMode ? 'Listo' : 'Editar' }}</button>
+          >{{ cantripEditMode ? 'Done' : 'Edit' }}</button>
         </div>
 
         <div v-if="sc.cantripsKnown.length > 0" class="space-y-1.5 mb-4">

@@ -39,7 +39,7 @@
       <button
         type="button"
         class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/20 transition-all"
-        title="Ver detalles"
+        title="View details"
         @click="infoPanel.open({ kind: 'spell', index: spell.index })"
       >
         <InfoIcon :size="12" />
@@ -79,7 +79,10 @@
         </template>
         <template v-if="detail.school">
           <span class="text-mist/25 text-2xs">·</span>
-          <span class="text-2xs font-body text-mist/50">{{ detail.school.name }}</span>
+          <span
+            class="text-2xs font-heading px-1.5 py-px rounded-sm border"
+            :class="schoolClass"
+          >{{ detail.school.name }}</span>
         </template>
       </template>
     </div>
@@ -135,4 +138,19 @@ const damageRoll = computed(() => {
 })
 
 const damageType = computed(() => detail.value?.damage?.damage_type?.name ?? null)
+
+const SCHOOL_CLASSES: Record<string, string> = {
+  abjuration:    'text-blue-300/80 border-blue-500/30',
+  conjuration:   'text-emerald-300/80 border-emerald-500/30',
+  divination:    'text-sky-300/80 border-sky-500/30',
+  enchantment:   'text-pink-300/80 border-pink-500/30',
+  evocation:     'text-orange-300/80 border-orange-500/30',
+  illusion:      'text-violet-300/80 border-violet-500/30',
+  necromancy:    'text-green-400/70 border-green-600/30',
+  transmutation: 'text-amber-300/80 border-amber-500/30',
+}
+const schoolClass = computed(() => {
+  const name = detail.value?.school?.name?.toLowerCase() ?? ''
+  return SCHOOL_CLASSES[name] ?? 'text-mist/50 border-shadow'
+})
 </script>

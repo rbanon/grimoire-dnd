@@ -14,7 +14,7 @@
           <!-- Header -->
           <div class="flex items-center justify-between px-5 py-4 border-b border-shadow shrink-0">
             <div>
-              <p class="font-heading text-base text-arcane-pale">Añadir Cantrips</p>
+              <p class="font-heading text-base text-arcane-pale">Add Cantrips</p>
               <p class="text-2xs font-body text-mist mt-0.5">
                 {{ className }} ·
                 <span :class="remaining === 0 ? 'text-blood-bright' : ''">
@@ -32,7 +32,7 @@
             <input
               v-model="search"
               type="text"
-              placeholder="Buscar cantrip…"
+              placeholder="Search cantrip…"
               class="input-base w-full text-sm"
               autofocus
             />
@@ -41,7 +41,7 @@
           <!-- List -->
           <div class="overflow-y-auto flex-1 px-4 py-3 space-y-1">
             <div v-if="loading" class="flex justify-center py-10">
-              <GrimoireSpinner label="Cargando cantrips…" />
+              <GrimoireSpinner label="Loading cantrips…" />
             </div>
             <p v-else-if="filtered.length === 0" class="text-sm font-body text-mist text-center py-8">
               Cantrips not found.
@@ -72,13 +72,13 @@
                   <p class="font-heading text-sm" :class="isSelected(c.index) ? 'text-arcane-pale' : 'text-ash'">
                     {{ c.name }}
                   </p>
-                  <p v-if="isKnown(c.index)" class="text-2xs font-body text-mist">Ya conocido</p>
+                  <p v-if="isKnown(c.index)" class="text-2xs font-body text-mist">Already known</p>
                 </div>
 
                 <button
                   type="button"
                   class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/30 transition-all"
-                  title="Ver detalles"
+                  title="View details"
                   @click.stop="infoPanel.open({ kind: 'spell', index: c.index })"
                 >
                   <InfoIcon :size="12" />
@@ -90,16 +90,16 @@
           <!-- Footer -->
           <div class="px-5 py-4 border-t border-shadow shrink-0 flex items-center justify-between">
             <span class="text-xs font-body text-mist">
-              {{ selected.length > 0 ? `${selected.length} seleccionado${selected.length > 1 ? 's' : ''}` : 'Ninguno seleccionado' }}
+              {{ selected.length > 0 ? `${selected.length} selected` : 'None selected' }}
             </span>
             <div class="flex gap-2">
-              <button type="button" class="btn-secondary text-sm" @click="$emit('close')">Cancelar</button>
+              <button type="button" class="btn-secondary text-sm" @click="$emit('close')">Cancel</button>
               <button
                 type="button"
                 class="btn-primary text-sm"
                 :disabled="selected.length === 0"
                 @click="confirm"
-              >Añadir</button>
+              >Add</button>
             </div>
           </div>
         </div>
