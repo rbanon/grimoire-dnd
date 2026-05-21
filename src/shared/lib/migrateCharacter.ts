@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { CharacterSchema, CURRENT_SCHEMA_VERSION, type Character } from '@/shared/types/character'
+import { CharacterSchema, CURRENT_SCHEMA_VERSION, computeAllModifiers, type Character } from '@/shared/types/character'
+import { getClassResources } from '@/character-builder/classMeta'
 
 const VersionedSchema = z
   .object({ schemaVersion: z.string().default(CURRENT_SCHEMA_VERSION) })
@@ -27,5 +28,15 @@ export function migrateCharacter(raw: unknown): Character {
   // ─────────────────────────────────────────────────────────────────────────
 
   data = { ...data, schemaVersion: CURRENT_SCHEMA_VERSION }
-  return CharacterSchema.parse(data)
+  const char = CharacterSchema.parse(data)
+
+  // Soft-populate resources for characters created before the resource tracker.
+  // Runs every load; once resources are spent/modified they are no longer empty.
+  if (char.resources.length === 0) {
+    const mods = computeAllModifiers(char.abilityScores)
+    const populated = getClassResources(char.identity.class.index, char.combat.level, mods)
+    if (populated.length > 0) return { ...char, resources: populated }
+  }
+
+  return char
 }

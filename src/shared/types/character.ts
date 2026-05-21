@@ -295,6 +295,17 @@ export const SpellcastingStateSchema = z.object({
 })
 export type SpellcastingState = z.infer<typeof SpellcastingStateSchema>
 
+// ─── Class Resources ──────────────────────────────────────────────────────────
+
+export const ResourcePoolSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  current: z.number().int().min(0),
+  max: z.number().int().min(0),
+  refreshOn: z.enum(['short', 'long', 'manual']),
+})
+export type ResourcePool = z.infer<typeof ResourcePoolSchema>
+
 // ─── Features & Traits ────────────────────────────────────────────────────────
 
 export const TraitFeatureSchema = z.object({
@@ -335,6 +346,7 @@ export const CharacterSchema = z.object({
   inventory: z.array(InventoryItemSchema),
   currency: CurrencySchema,
   spellcasting: SpellcastingStateSchema.nullable(),
+  resources: z.array(ResourcePoolSchema).default([]),
   favoriteSpells: z.array(FavoriteSpellEntrySchema),
   features: z.array(TraitFeatureSchema),
   notes: z.string().max(10000).optional(),
