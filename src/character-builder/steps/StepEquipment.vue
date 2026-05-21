@@ -349,7 +349,7 @@ const { data: classData, isPending: classLoading } = useQuery({
 const { data: bgData, isPending: bgLoading } = useQuery({
   queryKey: computed(() => ['background', builder.draft.backgroundIndex]),
   queryFn: () => fiveEApi.getBackground(builder.draft.backgroundIndex),
-  enabled: computed(() => !!builder.draft.backgroundIndex),
+  enabled: computed(() => !!builder.draft.backgroundIndex && builder.draft.backgroundIndex !== 'custom'),
   staleTime: Infinity,
 })
 
