@@ -337,6 +337,24 @@
             >{{ note }}</p>
           </template>
 
+          <!-- Feature -->
+          <template v-else-if="panel.target.value?.kind === 'feature' && featureData">
+            <div class="flex flex-wrap gap-2">
+              <span class="badge-gold text-xs">Level {{ featureData.level }}</span>
+              <span class="px-2 py-0.5 rounded text-xs font-heading text-stone bg-depths/60 border border-shadow capitalize">
+                {{ featureData.class.name }}
+              </span>
+              <span v-if="featureData.subclass" class="px-2 py-0.5 rounded text-xs font-heading text-mist bg-depths/40 border border-shadow">
+                {{ featureData.subclass.name }}
+              </span>
+            </div>
+            <p
+              v-for="(para, i) in featureData.desc"
+              :key="i"
+              class="text-sm font-body text-ash leading-relaxed"
+            >{{ para }}</p>
+          </template>
+
           <!-- Alignment -->
           <template v-else-if="panel.target.value?.kind === 'alignment' && alignmentInfo">
             <p class="text-xs font-heading tracking-widest text-mist uppercase">{{ alignmentInfo.nickname }}</p>
@@ -399,13 +417,15 @@ const isBackground = computed(() => panel.target.value?.kind === 'background')
 const isSpell      = computed(() => panel.target.value?.kind === 'spell')
 const isSkill      = computed(() => panel.target.value?.kind === 'skill')
 const isItem       = computed(() => panel.target.value?.kind === 'item')
+const isFeature    = computed(() => panel.target.value?.kind === 'feature')
 
-const raceIndex  = computed(() => isRace.value  ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'race' }>)!.index : '')
-const classIndex = computed(() => isClass.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'class' }>)!.index : '')
-const bgIndex    = computed(() => isBackground.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'background' }>)!.index : '')
-const spellIndex = computed(() => isSpell.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'spell' }>)!.index : '')
-const skillIndex = computed(() => isSkill.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'skill' }>)!.index : '')
-const itemIndex  = computed(() => isItem.value  ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'item' }>)!.index : '')
+const raceIndex    = computed(() => isRace.value    ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'race' }>)!.index : '')
+const classIndex   = computed(() => isClass.value   ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'class' }>)!.index : '')
+const bgIndex      = computed(() => isBackground.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'background' }>)!.index : '')
+const spellIndex   = computed(() => isSpell.value   ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'spell' }>)!.index : '')
+const skillIndex   = computed(() => isSkill.value   ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'skill' }>)!.index : '')
+const itemIndex    = computed(() => isItem.value    ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'item' }>)!.index : '')
+const featureIndex = computed(() => isFeature.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'feature' }>)!.index : '')
 
 const { data: raceData,  isFetching: raceFetching,  isError: raceError  } = useQuery({
   queryKey: computed(() => ['race-detail',  raceIndex.value]),
@@ -443,6 +463,12 @@ const { data: itemData, isFetching: itemFetching, isError: itemError } = useQuer
   staleTime: Infinity,
   enabled:  isItem,
 })
+const { data: featureData, isFetching: featureFetching, isError: featureError } = useQuery({
+  queryKey: computed(() => ['feature-detail', featureIndex.value]),
+  queryFn:  () => fiveEApi.getFeature(featureIndex.value),
+  staleTime: Infinity,
+  enabled:  isFeature,
+})
 
 const isLoading = computed(() => {
   const k = panel.target.value?.kind
@@ -452,6 +478,7 @@ const isLoading = computed(() => {
   if (k === 'spell')      return spellFetching.value
   if (k === 'skill')      return skillFetching.value
   if (k === 'item')       return itemFetching.value
+  if (k === 'feature')    return featureFetching.value
   return false
 })
 
@@ -463,6 +490,7 @@ const isError = computed(() => {
   if (k === 'spell')      return spellError.value
   if (k === 'skill')      return skillError.value
   if (k === 'item')       return itemError.value
+  if (k === 'feature')    return featureError.value
   return false
 })
 
@@ -575,6 +603,7 @@ const entityGlyph = computed(() => {
   if (t.kind === 'skill')       return '🎯'
   if (t.kind === 'alignment')   return ALIGNMENT_INFO[t.value]?.glyph ?? '◎'
   if (t.kind === 'item')        return ITEM_CATEGORY_GLYPH[itemData.value?.equipment_category.index ?? ''] ?? '⚙'
+  if (t.kind === 'feature')     return getClassMeta(featureData.value?.class.index ?? '').glyph
   if (t.kind === 'exhaustion')  return '😵'
   return ''
 })
@@ -582,12 +611,13 @@ const entityGlyph = computed(() => {
 const entityName = computed(() => {
   const t = panel.target.value
   if (!t) return ''
-  if (t.kind === 'race')        return raceData.value?.name  ?? t.index
-  if (t.kind === 'class')       return classData.value?.name ?? t.index
-  if (t.kind === 'background')  return bgData.value?.name    ?? t.index
-  if (t.kind === 'spell')       return spellData.value?.name ?? t.index
-  if (t.kind === 'skill')       return skillData.value?.name ?? t.index
-  if (t.kind === 'item')        return itemData.value?.name  ?? t.index
+  if (t.kind === 'race')        return raceData.value?.name    ?? t.index
+  if (t.kind === 'class')       return classData.value?.name   ?? t.index
+  if (t.kind === 'background')  return bgData.value?.name      ?? t.index
+  if (t.kind === 'spell')       return spellData.value?.name   ?? t.index
+  if (t.kind === 'skill')       return skillData.value?.name   ?? t.index
+  if (t.kind === 'item')        return itemData.value?.name    ?? t.index
+  if (t.kind === 'feature')     return featureData.value?.name ?? t.name
   if (t.kind === 'alignment')   return t.value
   if (t.kind === 'exhaustion')  return 'Exhaustion'
   return ''
@@ -596,6 +626,7 @@ const entityName = computed(() => {
 const kindBadge = computed(() => {
   const k = panel.target.value?.kind
   if (k === 'exhaustion') return 'condition'
+  if (k === 'feature')    return 'feature'
   return k ?? ''
 })
 </script>

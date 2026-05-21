@@ -674,7 +674,8 @@ interface ResourceDef {
 
 const RESOURCE_DEFINITIONS: Partial<Record<string, ResourceDef[]>> = {
   barbarian: [{
-    id: 'rage', name: 'Rage', refreshOn: 'long',
+    id: 'rage', name: 'Rage',
+    refreshOn: 'long',
     max: (level) => level >= 17 ? 6 : level >= 12 ? 5 : level >= 6 ? 4 : level >= 3 ? 3 : 2,
   }],
   bard: [{
@@ -683,11 +684,13 @@ const RESOURCE_DEFINITIONS: Partial<Record<string, ResourceDef[]>> = {
     max: (_, mods) => Math.max(1, mods.cha),
   }],
   cleric: [{
-    id: 'channel-divinity', name: 'Channel Divinity', refreshOn: 'short',
+    id: 'channel-divinity', name: 'Channel Divinity',
+    refreshOn: 'short',
     max: (level) => level >= 18 ? 3 : level >= 6 ? 2 : 1,
   }],
   druid: [{
-    id: 'wild-shape', name: 'Wild Shape', refreshOn: 'short',
+    id: 'wild-shape', name: 'Wild Shape',
+    refreshOn: 'short',
     max: () => 2,
   }],
   fighter: [
@@ -697,23 +700,27 @@ const RESOURCE_DEFINITIONS: Partial<Record<string, ResourceDef[]>> = {
       max: (level) => level >= 17 ? 3 : level >= 13 ? 2 : level >= 9 ? 1 : 0 },
   ],
   monk: [{
-    id: 'ki-points', name: 'Ki Points', refreshOn: 'short',
+    id: 'ki-points', name: 'Ki Points',
+    refreshOn: 'short',
     max: (level) => level,
   }],
   paladin: [
-    { id: 'channel-divinity', name: 'Channel Divinity',   refreshOn: 'short', max: () => 1 },
-    { id: 'lay-on-hands',     name: 'Lay on Hands (HP)',  refreshOn: 'long',  max: (level) => level * 5 },
+    { id: 'channel-divinity', name: 'Channel Divinity', refreshOn: 'short', max: () => 1 },
+    { id: 'lay-on-hands',     name: 'Lay on Hands',     refreshOn: 'long',  max: (level) => level * 5 },
   ],
   sorcerer: [{
-    id: 'sorcery-points', name: 'Sorcery Points', refreshOn: 'long',
+    id: 'sorcery-points', name: 'Sorcery Points',
+    refreshOn: 'long',
     max: (level) => level >= 2 ? level : 0,
   }],
   warlock: [{
-    id: 'pact-slots', name: 'Pact Magic Slots', refreshOn: 'short',
+    id: 'pact-slots', name: 'Pact Magic Slots',
+    refreshOn: 'short',
     max: (level) => level >= 17 ? 4 : level >= 11 ? 3 : level >= 2 ? 2 : 1,
   }],
   wizard: [{
-    id: 'arcane-recovery', name: 'Arcane Recovery', refreshOn: 'long',
+    id: 'arcane-recovery', name: 'Arcane Recovery',
+    refreshOn: 'long',
     max: () => 1,
   }],
 }

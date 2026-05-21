@@ -20,6 +20,7 @@
       <ResourceTracker
         :resources="character.resources"
         :edit-mode="editMode"
+        :class-index="character.identity.class.index"
         @change="onResourceChange"
       />
     </section>

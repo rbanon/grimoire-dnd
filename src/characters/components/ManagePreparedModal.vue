@@ -75,18 +75,17 @@
               No spells found.
             </p>
             <template v-else>
-              <button
+              <div
                 v-for="spell in filtered"
                 :key="spell.index"
-                type="button"
                 class="w-full flex items-center gap-3 px-3 py-2.5 rounded border text-left transition-all duration-100"
                 :class="isPrepared(spell.index)
                   ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale'
                   : atLimit
                     ? 'border-shadow/40 text-mist/40 cursor-not-allowed'
                     : 'border-shadow text-ash hover:border-arcane-base/25 hover:text-stone cursor-pointer'"
-                :disabled="!isPrepared(spell.index) && atLimit"
-                @click="toggle(spell)"
+                :role="(!isPrepared(spell.index) && atLimit) ? undefined : 'button'"
+                @click="(!isPrepared(spell.index) && atLimit) || toggle(spell)"
               >
                 <span
                   class="w-4 h-4 rounded shrink-0 border-2 flex items-center justify-center transition-all"
@@ -105,7 +104,7 @@
                 >
                   <InfoIcon :size="12" />
                 </button>
-              </button>
+              </div>
             </template>
           </div>
 

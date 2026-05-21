@@ -15,6 +15,15 @@
               : 'border-gold-dim/30 text-gold-dim/60'"
             :title="pool.refreshOn === 'short' ? 'Recovers on short rest' : 'Recovers on long rest'"
           >{{ pool.refreshOn === 'short' ? 'S' : 'L' }}</span>
+          <button
+            v-if="featureIndexFor(pool.name)"
+            type="button"
+            class="shrink-0 w-5 h-5 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/30 transition-all"
+            title="Feature details"
+            @click="infoPanel.open({ kind: 'feature', index: featureIndexFor(pool.name)!, name: pool.name })"
+          >
+            <InfoIcon :size="11" />
+          </button>
         </div>
         <span class="font-heading tabular-nums text-xs text-mist shrink-0">{{ pool.current }}/{{ pool.max }}</span>
       </div>
@@ -72,16 +81,45 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { InfoIcon } from 'lucide-vue-next'
+import { useQuery } from '@tanstack/vue-query'
+import { fiveEApi } from '@/shared/api/fiveE.client'
+import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import type { ResourcePool } from '@/shared/types/character'
+
+const infoPanel = useInfoPanel()
 
 const props = defineProps<{
   resources: ResourcePool[]
   editMode: boolean
+  classIndex: string
 }>()
 
 const emit = defineEmits<{
   change: [pools: ResourcePool[]]
 }>()
+
+const { data: levelsData } = useQuery({
+  queryKey: computed(() => ['class-levels', props.classIndex]),
+  queryFn: () => fiveEApi.getClassLevels(props.classIndex),
+  staleTime: Infinity,
+  enabled: computed(() => !!props.classIndex),
+})
+
+const featureMap = computed(() => {
+  const map = new Map<string, string>()
+  for (const lvl of levelsData.value ?? []) {
+    for (const feature of lvl.features) {
+      map.set(feature.name, feature.index)
+    }
+  }
+  return map
+})
+
+function featureIndexFor(name: string): string | undefined {
+  return featureMap.value.get(name)
+}
 
 function togglePip(pool: ResourcePool, pip: number) {
   const next = pip <= pool.current ? pip - 1 : pip

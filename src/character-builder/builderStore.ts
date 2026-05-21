@@ -360,22 +360,11 @@ export const useBuilderStore = defineStore('builder', () => {
     return errors
   }
 
-  function validateLanguages(): string[] {
-    const required = draft.value.raceLanguageCount + draft.value.backgroundLanguageChoices
-    const selected = draft.value.selectedLanguages.length
-    if (selected < required) {
-      const diff = required - selected
-      return [`Choose ${diff} more language${diff > 1 ? 's' : ''} (${selected}/${required})`]
-    }
-    return []
-  }
-
   // Step validation
   const stepErrors = computed<Record<number, string[]>>(() => {
     const abilityErrors  = validateAbilities()
     const featErrors     = validateFeats()
     const spellErrors    = validateSpells()
-    const languageErrors = validateLanguages()
 
     return {
       1:  [
@@ -423,7 +412,6 @@ export const useBuilderStore = defineStore('builder', () => {
         })(),
         draft.value.raceProfChoices > 0 && draft.value.selectedRaceProfs.length < draft.value.raceProfChoices
           ? `Choose ${draft.value.raceProfChoices} race proficiency tool${draft.value.raceProfChoices > 1 ? 's' : ''} (${draft.value.selectedRaceProfs.length} selected)` : '',
-        ...languageErrors,
       ].filter(Boolean),
       8:  spellErrors,
       9: [
