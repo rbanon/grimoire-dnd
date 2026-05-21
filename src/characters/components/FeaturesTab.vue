@@ -221,5 +221,6 @@ const { isPending: bgPending, data: bgData } = useQuery({
   queryKey: computed(() => ['background', bgIndex.value]),
   queryFn: () => fiveEApi.getBackground(bgIndex.value),
   staleTime: Infinity,
+  enabled: computed(() => !!bgIndex.value && bgIndex.value !== 'custom'),
 })
 </script>

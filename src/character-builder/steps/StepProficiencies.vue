@@ -224,7 +224,7 @@ const { data: bgDetail } = useQuery({
   queryKey: computed(() => ['background-detail', builder.draft.backgroundIndex]),
   queryFn: () => fiveEApi.getBackground(builder.draft.backgroundIndex) as Promise<ApiBackground>,
   staleTime: Infinity,
-  enabled: computed(() => !!builder.draft.backgroundIndex),
+  enabled: computed(() => !!builder.draft.backgroundIndex && builder.draft.backgroundIndex !== 'custom'),
 })
 
 const bgLanguageChoices = computed(() => builder.draft.backgroundLanguageChoices)
