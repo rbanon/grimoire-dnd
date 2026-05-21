@@ -29,15 +29,84 @@
             <InfoIcon :size="12" />
           </button>
         </div>
+
+        <!-- Custom background tile -->
+        <div
+          class="flex items-center rounded border text-sm font-heading tracking-wide transition-all duration-150 cursor-pointer"
+          :class="isCustom
+            ? 'border-arcane-base/60 bg-arcane-deep/10 text-arcane-pale'
+            : 'border-shadow border-dashed bg-abyss text-mist hover:border-arcane-base/30 hover:text-ash hover:bg-depths'"
+          @click="selectCustom"
+        >
+          <span class="flex-1 px-4 py-3 text-left flex items-center gap-2">
+            <PencilIcon :size="12" class="shrink-0 opacity-60" />
+            Custom
+          </span>
+        </div>
       </div>
       <p v-if="fieldErrors.background" class="text-xs font-body text-blood-bright">
-        Select a background to continue.
+        {{ fieldErrors.backgroundMessage }}
       </p>
     </section>
 
-    <!-- Background detail panel -->
+    <!-- Custom background form -->
     <Transition name="expand">
-      <section v-if="builder.draft.backgroundIndex" class="space-y-5">
+      <section v-if="isCustom" class="space-y-5">
+        <div class="rule-gold"><span>Custom Background</span></div>
+
+        <!-- Name -->
+        <div class="space-y-1.5">
+          <label class="text-2xs font-heading tracking-wide uppercase text-mist">Background Name</label>
+          <input
+            v-model.trim="builder.draft.backgroundName"
+            type="text"
+            maxlength="80"
+            placeholder="e.g. Haunted Wanderer"
+            class="input-base w-full text-sm"
+          />
+        </div>
+
+        <!-- Skill picker (choose 2) -->
+        <div class="space-y-2">
+          <div class="flex items-baseline gap-2">
+            <p class="text-2xs font-heading tracking-wide uppercase text-mist">Skill Proficiencies</p>
+            <span class="text-2xs font-body text-mist/50">Choose 2</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            <button
+              v-for="skill in SKILLS"
+              :key="skill.index"
+              type="button"
+              class="text-left px-3 py-2 rounded border text-xs font-heading tracking-wide transition-all duration-100"
+              :class="isSkillSelected(skill.index)
+                ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale'
+                : customSkillCount >= 2
+                  ? 'border-shadow/40 text-mist/40 cursor-not-allowed'
+                  : 'border-shadow text-ash hover:border-arcane-base/25 hover:text-stone'"
+              :disabled="!isSkillSelected(skill.index) && customSkillCount >= 2"
+              @click="toggleCustomSkill(skill.index)"
+            >
+              {{ skill.name }}
+              <span class="text-mist/40 font-body normal-case">{{ skill.ability.toUpperCase() }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Languages note -->
+        <div class="flex items-start gap-2 px-3 py-2 rounded border border-shadow/40 bg-depths/20">
+          <span class="text-gold-dim/60 text-xs shrink-0 mt-0.5">ℹ</span>
+          <p class="text-xs font-body text-mist">
+            Custom backgrounds grant
+            <span class="text-stone font-heading">2</span>
+            languages of your choice. You will select them in Step VII — Proficiencies.
+          </p>
+        </div>
+      </section>
+    </Transition>
+
+    <!-- Standard background detail panel -->
+    <Transition name="expand">
+      <section v-if="builder.draft.backgroundIndex && !isCustom" class="space-y-5">
         <div class="rule-gold"><span>Background Details</span></div>
 
         <div v-if="bgDetailLoading" class="flex justify-center py-4">
@@ -110,12 +179,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { InfoIcon } from 'lucide-vue-next'
+import { InfoIcon, PencilIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
+import { SKILLS } from '@/shared/lib/skillAbilityMap'
 import type { ApiBackground } from '@/shared/types/api'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
@@ -123,8 +193,18 @@ const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
 const { showValidation } = useBuilderValidation()
 
+const isCustom = computed(() => builder.draft.backgroundIndex === 'custom')
+
 const fieldErrors = computed(() => ({
-  background: showValidation.value && !builder.draft.backgroundIndex,
+  background: showValidation.value && (
+    !builder.draft.backgroundIndex ||
+    (isCustom.value && (!builder.draft.backgroundName.trim() || builder.draft.backgroundSkillProficiencies.length < 2))
+  ),
+  backgroundMessage: !builder.draft.backgroundIndex
+    ? 'Select a background to continue.'
+    : !builder.draft.backgroundName.trim()
+      ? 'Enter a name for your custom background.'
+      : 'Choose 2 skills for your custom background.',
 }))
 
 const { data: bgList, isPending: backgroundsLoading, isError: backgroundsError } = useQuery({
@@ -134,9 +214,9 @@ const { data: bgList, isPending: backgroundsLoading, isError: backgroundsError }
 })
 const backgrounds = computed(() => bgList.value?.results ?? [])
 
-// ── Background detail (for display panel) ────────────────────────────────────
+// ── Background detail (standard only) ────────────────────────────────────────
 
-const bgIndex = computed(() => builder.draft.backgroundIndex)
+const bgIndex = computed(() => isCustom.value ? '' : builder.draft.backgroundIndex)
 
 const { data: bgDetail, isPending: bgDetailLoading } = useQuery({
   queryKey: computed(() => ['background-detail', bgIndex.value]),
@@ -152,7 +232,32 @@ const toolProfs = computed(() =>
   bgDetail.value?.starting_proficiencies.filter(p => !p.index.startsWith('skill-')) ?? [],
 )
 
-// ── Select handler ────────────────────────────────────────────────────────────
+// ── Custom skill picker ───────────────────────────────────────────────────────
+
+const customSkillCount = computed(() => builder.draft.backgroundSkillProficiencies.length)
+
+function isSkillSelected(index: string): boolean {
+  return builder.draft.backgroundSkillProficiencies.includes(index)
+}
+
+function toggleCustomSkill(index: string) {
+  const current = builder.draft.backgroundSkillProficiencies
+  if (current.includes(index)) {
+    builder.draft.backgroundSkillProficiencies = current.filter(s => s !== index)
+  } else if (current.length < 2) {
+    builder.draft.backgroundSkillProficiencies = [...current, index]
+  }
+}
+
+// ── Select handlers ───────────────────────────────────────────────────────────
+
+function selectCustom() {
+  builder.draft.backgroundIndex = 'custom'
+  builder.draft.backgroundName = ''
+  builder.draft.backgroundSkillProficiencies = []
+  builder.draft.backgroundToolProficiencies = []
+  builder.draft.backgroundLanguageChoices = 2
+}
 
 async function selectBackground(index: string, name: string) {
   builder.draft.backgroundIndex = index

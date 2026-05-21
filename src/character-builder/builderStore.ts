@@ -397,6 +397,8 @@ export const useBuilderStore = defineStore('builder', () => {
       ].filter(Boolean),
       4:  [
         !draft.value.backgroundIndex ? 'Select a background' : '',
+        draft.value.backgroundIndex === 'custom' && !draft.value.backgroundName.trim() ? 'Enter a background name' : '',
+        draft.value.backgroundIndex === 'custom' && draft.value.backgroundSkillProficiencies.length < 2 ? 'Choose 2 skills for your custom background' : '',
       ].filter(Boolean),
       5:  abilityErrors,
       6:  featErrors,
