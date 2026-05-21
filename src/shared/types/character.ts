@@ -95,6 +95,7 @@ export const BackgroundSnapshotSchema = z.object({
   index: z.string(),
   name: z.string(),
   skillProficiencies: z.array(z.string()).optional(),
+  description: z.string().optional(),
 })
 export type BackgroundSnapshot = z.infer<typeof BackgroundSnapshotSchema>
 

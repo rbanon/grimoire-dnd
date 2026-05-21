@@ -71,6 +71,7 @@ export interface BuilderDraft {
   // Step 1c — Background
   backgroundIndex: string
   backgroundName: string
+  backgroundDescription: string
   backgroundSkillProficiencies: string[]
   backgroundToolProficiencies: string[]
   backgroundLanguageChoices: number
@@ -146,7 +147,7 @@ const defaultDraft = (): BuilderDraft => ({
   raceAbilityBonuses: {}, raceLanguageCount: 2, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
   raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [],
-  backgroundIndex: '', backgroundName: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [], backgroundLanguageChoices: 0,
+  backgroundIndex: '', backgroundName: '', backgroundDescription: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [], backgroundLanguageChoices: 0,
   classIndex: '', className: '', classHitDie: 8, classSpellcastingAbility: null,
   classSkillChoices: 2, classSkillOptions: [],
   subclassIndex: '', subclassName: '', availableSubclasses: [],
@@ -614,7 +615,7 @@ export const useBuilderStore = defineStore('builder', () => {
         subrace: d.subraceIndex ? { index: d.subraceIndex, name: d.subraceName } : null,
         class: { index: d.classIndex, name: d.className, hitDie: d.classHitDie, spellcastingAbility: d.classSpellcastingAbility },
         subclass: d.subclassIndex ? { index: d.subclassIndex, name: d.subclassName } : null,
-        background: { index: d.backgroundIndex, name: d.backgroundName, skillProficiencies: d.backgroundSkillProficiencies },
+        background: { index: d.backgroundIndex, name: d.backgroundName, skillProficiencies: d.backgroundSkillProficiencies, description: d.backgroundDescription || undefined },
         alignment: d.alignment,
         age: d.age || undefined,
         gender: d.gender || undefined,

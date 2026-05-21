@@ -66,6 +66,18 @@
           />
         </div>
 
+        <!-- Description -->
+        <div class="space-y-1.5">
+          <label class="text-2xs font-heading tracking-wide uppercase text-mist">Description <span class="normal-case font-body text-mist/50">(optional)</span></label>
+          <textarea
+            v-model.trim="builder.draft.backgroundDescription"
+            rows="4"
+            maxlength="1000"
+            placeholder="Describe your character's background story, feature, or special ability…"
+            class="input-base w-full text-sm resize-none"
+          />
+        </div>
+
         <!-- Skill picker (choose 2) -->
         <div class="space-y-2">
           <div class="flex items-baseline gap-2">
@@ -254,6 +266,7 @@ function toggleCustomSkill(index: string) {
 function selectCustom() {
   builder.draft.backgroundIndex = 'custom'
   builder.draft.backgroundName = ''
+  builder.draft.backgroundDescription = ''
   builder.draft.backgroundSkillProficiencies = []
   builder.draft.backgroundToolProficiencies = []
   builder.draft.backgroundLanguageChoices = 2
@@ -262,6 +275,7 @@ function selectCustom() {
 async function selectBackground(index: string, name: string) {
   builder.draft.backgroundIndex = index
   builder.draft.backgroundName = name
+  builder.draft.backgroundDescription = ''
   builder.draft.backgroundSkillProficiencies = []
   builder.draft.backgroundToolProficiencies = []
 
