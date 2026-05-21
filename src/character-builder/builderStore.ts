@@ -425,8 +425,6 @@ export const useBuilderStore = defineStore('builder', () => {
       ].filter(Boolean),
       10: [
         !draft.value.name.trim() ? 'Name is required' : '',
-        !draft.value.age.trim() ? 'Age is required' : '',
-        !draft.value.gender.trim() ? 'Gender / Identity is required' : '',
       ].filter(Boolean),
       11: [],
     }
