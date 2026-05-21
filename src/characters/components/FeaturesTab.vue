@@ -217,7 +217,7 @@ function traitSource(trait: ApiTrait): string {
 
 const bgIndex = computed(() => props.character.identity.background.index)
 
-const { isPending: bgPending, data: bgData } = useQuery({
+const { isLoading: bgPending, data: bgData } = useQuery({
   queryKey: computed(() => ['background', bgIndex.value]),
   queryFn: () => fiveEApi.getBackground(bgIndex.value),
   staleTime: Infinity,
