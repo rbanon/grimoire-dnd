@@ -118,7 +118,9 @@ const featureMap = computed(() => {
   const map = new Map<string, string>()
   for (const pool of props.resources) {
     const match = allFeatures.value.find(
-      f => f.name === pool.name || f.name.startsWith(pool.name + ' (')
+      f => f.name === pool.name ||
+           f.name.startsWith(pool.name + ' (') ||
+           pool.name.startsWith(f.name)
     )
     if (match) map.set(pool.name, match.index)
   }
