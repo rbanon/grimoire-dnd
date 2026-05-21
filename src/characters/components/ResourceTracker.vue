@@ -16,11 +16,11 @@
             :title="pool.refreshOn === 'short' ? 'Recovers on short rest' : 'Recovers on long rest'"
           >{{ pool.refreshOn === 'short' ? 'S' : 'L' }}</span>
           <button
-            v-if="featureIndexFor(pool.name)"
+            v-if="featureMap.get(pool.name)"
             type="button"
             class="shrink-0 w-5 h-5 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/30 transition-all"
             title="Feature details"
-            @click="infoPanel.open({ kind: 'feature', index: featureIndexFor(pool.name)!, name: pool.name })"
+            @click="infoPanel.open({ kind: 'feature', index: featureMap.get(pool.name)!, name: pool.name })"
           >
             <InfoIcon :size="11" />
           </button>
@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toRef } from 'vue'
 import { InfoIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
@@ -100,26 +100,30 @@ const emit = defineEmits<{
   change: [pools: ResourcePool[]]
 }>()
 
+const classIndexRef = toRef(props, 'classIndex')
+
 const { data: levelsData } = useQuery({
-  queryKey: computed(() => ['class-levels', props.classIndex]),
-  queryFn: () => fiveEApi.getClassLevels(props.classIndex),
+  queryKey: computed(() => ['class-levels', classIndexRef.value]),
+  queryFn: () => fiveEApi.getClassLevels(classIndexRef.value),
   staleTime: Infinity,
-  enabled: computed(() => !!props.classIndex),
 })
 
+// Flat list of all features across all class levels
+const allFeatures = computed(() => levelsData.value?.flatMap(l => l.features) ?? [])
+
+// Map pool.name → API feature index using prefix match
+// The API appends level-specific details in parens, e.g. "Wild Shape (CR 1/4...)"
+// so we match "Wild Shape" against names that start with "Wild Shape ("
 const featureMap = computed(() => {
   const map = new Map<string, string>()
-  for (const lvl of levelsData.value ?? []) {
-    for (const feature of lvl.features) {
-      map.set(feature.name, feature.index)
-    }
+  for (const pool of props.resources) {
+    const match = allFeatures.value.find(
+      f => f.name === pool.name || f.name.startsWith(pool.name + ' (')
+    )
+    if (match) map.set(pool.name, match.index)
   }
   return map
 })
-
-function featureIndexFor(name: string): string | undefined {
-  return featureMap.value.get(name)
-}
 
 function togglePip(pool: ResourcePool, pip: number) {
   const next = pip <= pool.current ? pip - 1 : pip
