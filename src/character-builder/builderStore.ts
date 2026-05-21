@@ -2,13 +2,13 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch, nextTick } from 'vue'
 import { z } from 'zod'
 import type { Alignment, AbilityScores, InventoryItem } from '@/shared/types/character'
-import { CharacterSchema, computeModifier } from '@/shared/types/character'
+import { CharacterSchema, computeModifier, computeAllModifiers } from '@/shared/types/character'
 import { storageGet, storageSet, storageRemove } from '@/shared/lib/storage'
 import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
 import { uploadPortrait } from '@/shared/lib/uploadPortrait'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 11
@@ -666,6 +666,7 @@ export const useBuilderStore = defineStore('builder', () => {
       inventory: d.startingInventory,
       currency: { cp: 0, sp: 0, ep: 0, gp: d.manualGold, pp: 0 },
       spellcasting,
+      resources: getClassResources(d.classIndex, d.level, computeAllModifiers(effectiveScores.value)),
       favoriteSpells: [],
       features: Object.entries(d.featsByLevel)
         .filter(([, dec]) => dec.type === 'feat' && dec.featIndex)

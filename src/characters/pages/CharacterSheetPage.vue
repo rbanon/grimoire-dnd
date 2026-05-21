@@ -683,7 +683,7 @@ import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
-import { CLASS_META, getSpellProfile } from '@/character-builder/classMeta'
+import { CLASS_META, getSpellProfile, getClassResources } from '@/character-builder/classMeta'
 import { SKILLS } from '@/shared/lib/skillAbilityMap'
 import { useDialog } from '@/shared/composables/useDialog'
 import { useRoll } from '@/shared/composables/useRoll'
@@ -1099,8 +1099,12 @@ function onShortRested(result: { healed: number; diceSpent: number; rolls: numbe
   const c = character.value
   if (!c) return
   showShortRest.value = false
+  const shortRestedResources = c.resources.map(r =>
+    r.refreshOn === 'short' ? { ...r, current: r.max } : r,
+  )
   store.update(c.id, {
     combat: { ...c.combat, currentHp: result.newHp, hitDiceRemaining: result.newHitDice },
+    resources: shortRestedResources,
   })
   const items: { label: string; value: string }[] = []
   if (result.diceSpent > 0) {
@@ -1137,6 +1141,8 @@ function longRest() {
 function applyLongRest(c: Character, newPrepared: import('@/shared/types/character').SpellReference[]) {
   const regained    = Math.max(1, Math.floor(c.combat.level / 2))
   const newHitDice  = Math.min(c.combat.level, c.combat.hitDiceRemaining + regained)
+  // Long rest restores all resources (short-rest and long-rest)
+  const restedResources = c.resources.map(r => ({ ...r, current: r.max }))
   const updates: Partial<Character> = {
     combat: {
       ...c.combat,
@@ -1145,6 +1151,7 @@ function applyLongRest(c: Character, newPrepared: import('@/shared/types/charact
       hitDiceRemaining: newHitDice,
       deathSaves: { successes: 0, failures: 0 },
     },
+    resources: restedResources,
   }
   const items: { label: string; value: string }[] = [
     { label: 'HP',          value: `Restored to ${c.combat.maxHp} / ${c.combat.maxHp}` },
@@ -1183,11 +1190,19 @@ function onLongRested(newPrepared: import('@/shared/types/character').SpellRefer
 
 async function onLeveled(updates: Partial<Character>) {
   if (!character.value) return
-  const oldMaxHp = character.value.combat.maxHp
-  const newLvl = updates.combat?.level ?? character.value.combat.level
-  const name = character.value.identity.name
+  const c = character.value
+  const oldMaxHp = c.combat.maxHp
+  const newLvl = updates.combat?.level ?? c.combat.level
+  const name = c.identity.name
+  // Recalculate resource maxes; preserve current if it's still within bounds
+  const newMods = computeAllModifiers(updates.abilityScores ?? c.abilityScores)
+  const newDefs = getClassResources(c.identity.class.index, newLvl, newMods)
+  updates.resources = newDefs.map(newPool => {
+    const existing = c.resources.find(r => r.id === newPool.id)
+    return existing ? { ...newPool, current: Math.min(existing.current, newPool.max) } : newPool
+  })
   levelUpSaving.value = true
-  await store.update(character.value.id, updates)
+  await store.update(c.id, updates)
   levelUpSaving.value = false
   showLevelUp.value = false
   const hpGained = (updates.combat?.maxHp ?? oldMaxHp) - oldMaxHp

@@ -14,8 +14,18 @@
       </button>
     </div>
 
+    <!-- ── Class resources ──────────────────────────────────────────────────── -->
+    <section v-if="character.resources.length > 0" class="space-y-2">
+      <p class="label">Class Resources</p>
+      <ResourceTracker
+        :resources="character.resources"
+        :edit-mode="editMode"
+        @change="onResourceChange"
+      />
+    </section>
+
     <!-- Empty state -->
-    <div v-if="favorites.length === 0" class="card p-12 text-center">
+    <div v-if="favorites.length === 0 && character.resources.length === 0" class="card p-12 text-center">
       <StarIcon :size="40" class="mx-auto text-mist/20 mb-4" />
       <p class="font-heading text-base text-ash">No favorites yet.</p>
       <p class="font-body text-sm text-mist/50 mt-1 mb-4">
@@ -182,9 +192,10 @@ import { PlusIcon, XIcon, SwordIcon, StarIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useConfirm } from '@/shared/composables/useConfirm'
-import type { Character, CombatFavorite, InventoryItem } from '@/shared/types/character'
+import type { Character, CombatFavorite, InventoryItem, ResourcePool } from '@/shared/types/character'
 import AddToCombatModal from './AddToCombatModal.vue'
 import FavoriteSpellCard from './FavoriteSpellCard.vue'
+import ResourceTracker from './ResourceTracker.vue'
 
 const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
@@ -250,6 +261,10 @@ function rollWeaponDmg(fav: CombatFavorite) {
   const item = resolvedWeapon(fav)
   if (!item?.damage) return
   rollDamage(item.damage, `${fav.weaponName} Damage`)
+}
+
+async function onResourceChange(pools: ResourcePool[]) {
+  await store.update(props.character.id, { resources: pools })
 }
 
 async function removeFavorite(id: string) {
