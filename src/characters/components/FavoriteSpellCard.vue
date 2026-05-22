@@ -62,6 +62,25 @@
       </template>
     </div>
 
+    <!-- Roll buttons -->
+    <div
+      v-if="(hasAttackRoll || damageRoll) && !loading"
+      class="flex justify-end gap-1.5 pt-1.5 border-t border-shadow/30"
+    >
+      <button
+        v-if="hasAttackRoll"
+        type="button"
+        class="px-3 py-1.5 rounded border border-arcane-base/40 bg-arcane-deep/10 text-arcane-pale hover:border-arcane-base/70 hover:bg-arcane-deep/20 transition-all font-heading text-xs"
+        @click="(e) => rollD20(spellAttackBonus, fav.spellName ?? 'Spell', e)"
+      >⚃ Roll Attack</button>
+      <button
+        v-if="damageRoll"
+        type="button"
+        class="px-3 py-1.5 rounded border border-blood-base/40 bg-blood-deep/10 text-blood-mid hover:border-blood-base/70 hover:bg-blood-deep/20 transition-all font-heading text-xs"
+        @click="rollDamage(damageRoll!, fav.spellName ?? 'Spell')"
+      >⚀ Roll Damage</button>
+    </div>
+
   </div>
 </template>
 
@@ -71,15 +90,19 @@ import { InfoIcon, XIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
+import { useRoll } from '@/shared/composables/useRoll'
 import type { CombatFavorite } from '@/shared/types/character'
 
 const props = defineProps<{
   fav: CombatFavorite
   editMode: boolean
+  spellAttackBonus: number
+  characterLevel: number
 }>()
 defineEmits<{ remove: [] }>()
 
 const infoPanel = useInfoPanel()
+const { rollD20, rollDamage } = useRoll()
 
 const { data: detail, isPending: loading } = useQuery({
   queryKey: computed(() => ['spell', props.fav.spellIndex]),
@@ -101,8 +124,10 @@ const damageRoll = computed(() => {
   if (!d) return null
   const byChar = d.damage_at_character_level
   if (byChar) {
-    const key = Object.keys(byChar).sort((a, b) => Number(a) - Number(b))[0]
-    return key ? byChar[key] : null
+    // Cantrip scaling: pick highest breakpoint <= character level
+    const validKeys = Object.keys(byChar).map(Number).filter(k => k <= props.characterLevel).sort((a, b) => b - a)
+    const key = validKeys[0]
+    return key != null ? byChar[String(key)] : null
   }
   const bySlot = d.damage_at_slot_level
   if (bySlot) {
@@ -111,6 +136,8 @@ const damageRoll = computed(() => {
   }
   return null
 })
+
+const hasAttackRoll = computed(() => !!detail.value?.attack_type)
 
 const damageType = computed(() => detail.value?.damage?.damage_type?.name ?? null)
 

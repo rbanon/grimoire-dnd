@@ -128,6 +128,8 @@
           :key="fav.id"
           :fav="fav"
           :edit-mode="editMode"
+          :spell-attack-bonus="spellAttackBonus"
+          :character-level="character.combat.level"
           @remove="removeFavorite(fav.id)"
         />
       </div>
@@ -168,6 +170,8 @@
           :key="fav.id"
           :fav="fav"
           :edit-mode="editMode"
+          :spell-attack-bonus="spellAttackBonus"
+          :character-level="character.combat.level"
           @remove="removeFavorite(fav.id)"
         />
       </div>
@@ -189,6 +193,8 @@ import { PlusIcon, XIcon, SwordIcon, StarIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useConfirm } from '@/shared/composables/useConfirm'
+import { computeAllModifiers } from '@/shared/types/character'
+import { computeProficiencyBonus, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
 import type { Character, CombatFavorite, InventoryItem, ResourcePool } from '@/shared/types/character'
 import AddToCombatModal from './AddToCombatModal.vue'
 import FavoriteSpellCard from './FavoriteSpellCard.vue'
@@ -198,6 +204,15 @@ const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
 const { confirm } = useConfirm()
 const { rollD20, rollDamage } = useRoll()
+
+const mods = computed(() => computeAllModifiers(props.character.abilityScores))
+const profBonus = computed(() => computeProficiencyBonus(props.character.combat.level))
+const spellAbilityMod = computed(() => {
+  const ability = props.character.spellcasting?.spellcastingAbility
+  if (!ability) return 0
+  return mods.value[ability as keyof typeof mods.value] ?? 0
+})
+const spellAttackBonus = computed(() => computeSpellAttackBonus(spellAbilityMod.value, profBonus.value))
 
 const showModal = ref(false)
 
