@@ -34,24 +34,18 @@
           v-for="pip in pool.max"
           :key="pip"
           type="button"
-          class="w-4 h-4 rounded-full border-2 transition-all duration-100"
-          :class="[
-            pip <= pool.current
-              ? 'bg-gold-mid/70 border-gold-mid/70'
-              : 'bg-transparent border-shadow/60',
-            editMode
-              ? 'hover:border-gold-dim/80 cursor-pointer'
-              : 'cursor-default',
-          ]"
-          :title="editMode ? (pip <= pool.current ? 'Click to spend' : 'Click to recover') : ''"
-          @click="editMode && togglePip(pool, pip)"
+          class="w-4 h-4 rounded-full border-2 transition-all duration-100 cursor-pointer hover:border-gold-dim/80"
+          :class="pip <= pool.current
+            ? 'bg-gold-mid/70 border-gold-mid/70'
+            : 'bg-transparent border-shadow/60'"
+          :title="pip <= pool.current ? 'Click to spend' : 'Click to recover'"
+          @click="togglePip(pool, pip)"
         />
       </div>
 
       <!-- Stepper for max > 6 -->
       <div v-else class="flex items-center gap-2">
         <button
-          v-if="editMode"
           type="button"
           class="w-6 h-6 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths font-heading text-base leading-none transition-colors"
           :disabled="pool.current <= 0"
@@ -69,7 +63,6 @@
           <span class="font-heading tabular-nums text-sm text-vellum w-12 text-right">{{ pool.current }}</span>
         </div>
         <button
-          v-if="editMode"
           type="button"
           class="w-6 h-6 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths font-heading text-base leading-none transition-colors"
           :disabled="pool.current >= pool.max"
@@ -92,7 +85,6 @@ const infoPanel = useInfoPanel()
 
 const props = defineProps<{
   resources: ResourcePool[]
-  editMode: boolean
   classIndex: string
 }>()
 

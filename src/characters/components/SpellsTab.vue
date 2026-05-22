@@ -130,13 +130,10 @@
               v-for="pip in maxSlots(lvl)"
               :key="pip"
               type="button"
-              class="w-4 h-4 rounded border-2 transition-all duration-100"
-              :class="[
-                pip <= usedSlots(lvl) ? 'bg-arcane-base/60 border-arcane-base/60' : 'bg-transparent border-arcane-base/40',
-                editMode ? 'hover:border-arcane-pale/60 cursor-pointer' : 'cursor-default',
-              ]"
-              :title="editMode ? (pip <= usedSlots(lvl) ? 'Slot used — click to recover' : 'Click to spend slot') : ''"
-              @click="editMode && toggleSlot(lvl, pip)"
+              class="w-4 h-4 rounded border-2 transition-all duration-100 cursor-pointer hover:border-arcane-pale/60"
+              :class="pip <= usedSlots(lvl) ? 'bg-arcane-base/60 border-arcane-base/60' : 'bg-transparent border-arcane-base/40'"
+              :title="pip <= usedSlots(lvl) ? 'Slot used — click to recover' : 'Click to spend slot'"
+              @click="toggleSlot(lvl, pip)"
             />
             <span class="text-2xs font-body text-mist ml-1">
               {{ maxSlots(lvl) - usedSlots(lvl) }}/{{ maxSlots(lvl) }}

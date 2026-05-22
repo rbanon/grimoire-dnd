@@ -19,7 +19,6 @@
       <p class="label">Class Resources</p>
       <ResourceTracker
         :resources="character.resources"
-        :edit-mode="editMode"
         :class-index="character.identity.class.index"
         @change="onResourceChange"
       />
@@ -149,13 +148,10 @@
               v-for="pip in maxSlots(lvl)"
               :key="pip"
               type="button"
-              class="w-3.5 h-3.5 rounded border-2 transition-all duration-100"
-              :class="[
-                pip <= usedSlots(lvl) ? 'bg-arcane-base/60 border-arcane-base/60' : 'bg-transparent border-arcane-base/40',
-                editMode ? 'hover:border-arcane-pale/60 cursor-pointer' : 'cursor-default',
-              ]"
-              :title="editMode ? (pip <= usedSlots(lvl) ? 'Recover slot' : 'Spend slot') : ''"
-              @click="editMode && toggleSlot(lvl, pip)"
+              class="w-3.5 h-3.5 rounded border-2 transition-all duration-100 cursor-pointer hover:border-arcane-pale/60"
+              :class="pip <= usedSlots(lvl) ? 'bg-arcane-base/60 border-arcane-base/60' : 'bg-transparent border-arcane-base/40'"
+              :title="pip <= usedSlots(lvl) ? 'Recover slot' : 'Spend slot'"
+              @click="toggleSlot(lvl, pip)"
             />
           </div>
           <span class="text-2xs font-body text-mist/50">{{ maxSlots(lvl) - usedSlots(lvl) }}/{{ maxSlots(lvl) }}</span>

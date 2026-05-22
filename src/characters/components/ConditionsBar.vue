@@ -11,14 +11,13 @@
       >
         ◆ {{ character.combat.concentrationSpell }}
         <button
-          v-if="editMode"
           type="button"
           class="opacity-60 hover:opacity-100 transition-opacity leading-none"
           @click="clearConcentration"
         >×</button>
       </span>
 
-      <template v-else-if="editMode">
+      <template v-else>
         <input
           v-if="showConcentrationInput"
           ref="concentrationInputEl"
@@ -37,8 +36,6 @@
           @click="startConcentration"
         >+ Add concentration</button>
       </template>
-
-      <span v-else class="text-2xs text-mist font-body italic">None</span>
     </div>
 
     <!-- ── Conditions ──────────────────────────────────────────────────────── -->
@@ -55,7 +52,6 @@
         >
           {{ cond }}
           <button
-            v-if="editMode"
             type="button"
             class="opacity-60 hover:opacity-100 transition-opacity leading-none ml-0.5"
             @click="removeCondition(cond)"
@@ -68,7 +64,6 @@
         >None</span>
 
         <button
-          v-if="editMode"
           type="button"
           class="w-5 h-5 rounded border border-shadow/40 text-mist/40 hover:border-gold-mid/50 hover:text-gold-mid transition-colors text-xs font-heading flex items-center justify-center shrink-0"
           @click="showPicker = !showPicker"
@@ -76,7 +71,7 @@
       </div>
 
       <!-- Condition picker -->
-      <div v-if="showPicker && editMode" class="mt-2 flex flex-wrap gap-1.5 p-3 rounded-md bg-abyss/60 border border-shadow/40">
+      <div v-if="showPicker" class="mt-2 flex flex-wrap gap-1.5 p-3 rounded-md bg-abyss/60 border border-shadow/40">
         <button
           v-for="cond in CONDITION_LIST"
           :key="cond.name"
@@ -101,7 +96,6 @@ import { useCharactersStore } from '@/characters/store'
 
 const props = defineProps<{
   character: Character
-  editMode: boolean
 }>()
 
 const store = useCharactersStore()

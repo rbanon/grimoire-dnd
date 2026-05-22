@@ -82,8 +82,7 @@
                   :class="character.combat.inspiration
                     ? 'bg-gold-dim/20 border-gold-mid/50 text-gold-mid'
                     : 'border-dusk text-mist hover:border-gold-dim/60 hover:text-ash'"
-                  :disabled="!editMode"
-                  @click="editMode && toggleInspiration()"
+                  @click="toggleInspiration()"
                 >✦ Inspiration</button>
               </div>
             </div>
@@ -142,14 +141,13 @@
 
               <div class="flex items-center gap-1 mt-0.5">
                 <button
-                  v-show="editMode"
                   type="button"
                   class="w-6 h-6 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths font-heading text-lg leading-none transition-colors"
                   @click="adjustHp(-1)"
                 >−</button>
 
                 <input
-                  v-if="hpEditing && editMode"
+                  v-if="hpEditing"
                   ref="hpInputEl"
                   v-model.number="hpInputValue"
                   type="number"
@@ -164,16 +162,12 @@
                 <button
                   v-else
                   type="button"
-                  class="font-heading text-xl leading-none transition-colors"
-                  :class="[
-                    hpPercent < 0.25 ? 'text-blood-bright' : 'text-vellum',
-                    editMode ? 'hover:text-gold-mid cursor-pointer' : 'cursor-default',
-                  ]"
-                  @click="editMode && startHpEdit()"
+                  class="font-heading text-xl leading-none transition-colors cursor-pointer hover:text-gold-mid"
+                  :class="hpPercent < 0.25 ? 'text-blood-bright' : 'text-vellum'"
+                  @click="startHpEdit()"
                 >{{ character.combat.currentHp }}</button>
 
                 <button
-                  v-show="editMode"
                   type="button"
                   class="w-6 h-6 flex items-center justify-center rounded text-mist hover:text-ash hover:bg-depths font-heading text-lg leading-none transition-colors"
                   @click="adjustHp(1)"
@@ -185,14 +179,13 @@
               <!-- Temp HP -->
               <div class="flex items-center gap-1 mt-1 pt-1 border-t border-shadow/30 w-full justify-center">
                 <button
-                  v-show="editMode"
                   type="button"
                   class="w-4 h-4 flex items-center justify-center text-mist/50 hover:text-ash font-heading text-xs transition-colors"
                   @click="adjustTempHp(-1)"
                 >−</button>
                 <span class="text-2xs font-heading text-mist/50">THP</span>
                 <button
-                  v-if="tempHpEditing && editMode"
+                  v-if="tempHpEditing"
                   type="button"
                   class="w-8 text-center bg-transparent border-b border-arcane-base/50 outline-none text-arcane-pale font-heading text-xs"
                 >
@@ -210,15 +203,11 @@
                 <button
                   v-else
                   type="button"
-                  class="font-heading text-xs transition-colors"
-                  :class="[
-                    character.combat.tempHp > 0 ? 'text-arcane-pale' : 'text-mist/30',
-                    editMode ? 'cursor-pointer hover:text-arcane-pale/70' : 'cursor-default',
-                  ]"
-                  @click="editMode && startTempHpEdit()"
+                  class="font-heading text-xs transition-colors cursor-pointer hover:text-arcane-pale/70"
+                  :class="character.combat.tempHp > 0 ? 'text-arcane-pale' : 'text-mist/30'"
+                  @click="startTempHpEdit()"
                 >{{ character.combat.tempHp }}</button>
                 <button
-                  v-show="editMode"
                   type="button"
                   class="w-4 h-4 flex items-center justify-center text-mist/50 hover:text-ash font-heading text-xs transition-colors"
                   @click="adjustTempHp(1)"
@@ -237,12 +226,9 @@
                       v-for="pip in 3"
                       :key="`s${pip}`"
                       type="button"
-                      class="w-3 h-3 rounded-full border-2 transition-all duration-100"
-                      :class="[
-                        pip <= deathSaves.successes ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/30',
-                        editMode ? 'cursor-pointer hover:border-gold-dim/60' : 'cursor-default',
-                      ]"
-                      @click="editMode && toggleDeathSave('successes', pip)"
+                      class="w-3 h-3 rounded-full border-2 transition-all duration-100 cursor-pointer hover:border-gold-dim/60"
+                      :class="pip <= deathSaves.successes ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/30'"
+                      @click="toggleDeathSave('successes', pip)"
                     />
                   </div>
                   <span class="text-mist/20 text-xs">|</span>
@@ -251,12 +237,9 @@
                       v-for="pip in 3"
                       :key="`f${pip}`"
                       type="button"
-                      class="w-3 h-3 rounded-full border-2 transition-all duration-100"
-                      :class="[
-                        pip <= deathSaves.failures ? 'bg-blood-bright border-blood-bright' : 'bg-transparent border-mist/30',
-                        editMode ? 'cursor-pointer hover:border-blood-base/60' : 'cursor-default',
-                      ]"
-                      @click="editMode && toggleDeathSave('failures', pip)"
+                      class="w-3 h-3 rounded-full border-2 transition-all duration-100 cursor-pointer hover:border-blood-base/60"
+                      :class="pip <= deathSaves.failures ? 'bg-blood-bright border-blood-bright' : 'bg-transparent border-mist/30'"
+                      @click="toggleDeathSave('failures', pip)"
                     />
                   </div>
                 </div>
@@ -265,7 +248,6 @@
               <!-- Exhaustion -->
               <div class="flex items-center justify-center gap-1 mt-1.5 pt-1 border-t border-shadow/30 w-full">
                 <button
-                  v-show="editMode"
                   type="button"
                   class="w-4 h-4 flex items-center justify-center text-mist/40 hover:text-ash font-heading text-xs transition-colors"
                   @click="adjustExhaustion(-1)"
@@ -276,7 +258,6 @@
                   :class="(character.combat.exhaustion ?? 0) > 0 ? 'text-blood-bright' : 'text-mist/30'"
                 >{{ character.combat.exhaustion ?? 0 }}</span>
                 <button
-                  v-show="editMode"
                   type="button"
                   class="w-4 h-4 flex items-center justify-center text-mist/40 hover:text-ash font-heading text-xs transition-colors"
                   @click="adjustExhaustion(1)"
@@ -446,7 +427,7 @@
       <!-- ══ CONDITIONS BAR ════════════════════════════════════════════════════ -->
       <section class="border-b border-shadow/40 bg-depths/20">
         <div class="app-container py-2">
-          <ConditionsBar :character="character" :edit-mode="editMode" />
+          <ConditionsBar :character="character" />
         </div>
       </section>
 
@@ -459,14 +440,22 @@
 
             <!-- Ability Scores -->
             <section>
-              <p class="label mb-3">Ability Scores</p>
+              <div class="flex items-center justify-between mb-3">
+                <p class="label">Ability Scores</p>
+                <button
+                  type="button"
+                  class="flex items-center gap-1 text-2xs font-heading tracking-wide text-mist hover:text-gold-mid transition-colors"
+                  title="Edit ability scores"
+                  @click="showAbilityModal = true"
+                >
+                  <PencilIcon :size="11" /> Edit
+                </button>
+              </div>
               <div class="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-3 gap-2">
                 <div
                   v-for="ab in abilityEntries"
                   :key="ab.key"
                   class="card py-3 px-2 text-center group relative overflow-hidden"
-                  :class="editMode ? 'cursor-pointer' : ''"
-                  @click="editMode && editingAbility !== ab.key && startAbilityEdit(ab.key, ab.score)"
                 >
                   <div
                     class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
@@ -478,27 +467,9 @@
                     class="relative block w-full font-heading text-2xl leading-none mt-1 transition-colors"
                     :class="ab.mod >= 0 ? 'text-gold-mid hover:text-gold-bright' : 'text-blood-bright hover:text-blood-mid'"
                     :title="`Roll ${ab.label} check`"
-                    @click.stop="rollD20(ab.mod, `${ab.label} Check`, $event)"
+                    @click="rollD20(ab.mod, `${ab.label} Check`, $event)"
                   >{{ ab.mod >= 0 ? `+${ab.mod}` : ab.mod }}</button>
-                  <!-- Score — editable in edit mode -->
-                  <input
-                    v-if="editingAbility === ab.key"
-                    :ref="(el) => { if (el) { (el as HTMLInputElement).focus(); (el as HTMLInputElement).select() } }"
-                    v-model.number="abilityEditValue"
-                    type="number"
-                    min="1"
-                    max="30"
-                    class="relative w-full text-center font-body text-sm text-vellum bg-transparent outline-none border-b border-gold-mid/50 mt-1 leading-none"
-                    @click.stop
-                    @blur="commitAbility"
-                    @keydown.enter.prevent="commitAbility"
-                    @keydown.escape="editingAbility = null"
-                  />
-                  <p
-                    v-else
-                    class="relative text-sm font-body mt-1 leading-none transition-colors"
-                    :class="editMode ? 'text-gold-dim/70 group-hover:text-ash' : 'text-ash'"
-                  >{{ ab.score }}</p>
+                  <p class="relative text-sm font-body mt-1 leading-none text-ash">{{ ab.score }}</p>
                 </div>
               </div>
             </section>
@@ -673,15 +644,24 @@
       @close="showLevelUp = false"
       @leveled="onLeveled"
     />
+
+    <!-- ── Ability Scores modal ──────────────────────────────────────────────── -->
+    <AbilityScoresModal
+      v-if="character"
+      :show="showAbilityModal"
+      :character="character"
+      @close="showAbilityModal = false"
+      @save="onAbilitiesSaved"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { DownloadIcon, ImageIcon, InfoIcon, LockIcon, LockOpenIcon, TrendingUpIcon } from 'lucide-vue-next'
+import { DownloadIcon, ImageIcon, InfoIcon, LockIcon, LockOpenIcon, PencilIcon, TrendingUpIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
-import type { Character, AbilityName } from '@/shared/types/character'
+import type { Character, AbilityName, AbilityScores } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
 import { CLASS_META, getSpellProfile, getClassResources } from '@/character-builder/classMeta'
 import { SKILLS } from '@/shared/lib/skillAbilityMap'
@@ -703,6 +683,7 @@ import RollConfirm from '@/shared/components/RollConfirm.vue'
 import ShortRestModal from '@/characters/components/ShortRestModal.vue'
 import LevelUpModal from '@/characters/components/LevelUpModal.vue'
 import LongRestModal from '@/characters/components/LongRestModal.vue'
+import AbilityScoresModal from '@/characters/components/AbilityScoresModal.vue'
 
 const props = defineProps<{ id: string }>()
 const store = useCharactersStore()
@@ -714,7 +695,7 @@ const infoPanel = useInfoPanel()
 const { rollD20 } = useRoll()
 
 const EDIT_MODE_KEY = 'grimoire:editMode'
-const editMode = ref(localStorage.getItem(EDIT_MODE_KEY) !== 'false')
+const editMode = ref(localStorage.getItem(EDIT_MODE_KEY) === 'true')
 watch(editMode, v => localStorage.setItem(EDIT_MODE_KEY, String(v)))
 const showShortRest = ref(false)
 const showLongRest  = ref(false)
@@ -829,26 +810,23 @@ const abilityEntries = computed(() => {
   ]
 })
 
-// ── Ability score inline editing ─────────────────────────────────────────────
+// ── Ability scores editing ───────────────────────────────────────────────────
 
-const editingAbility = ref<string | null>(null)
-const abilityEditValue = ref(0)
+const showAbilityModal = ref(false)
 
-function startAbilityEdit(key: string, currentScore: number) {
-  if (!editMode.value) return
-  abilityEditValue.value = currentScore
-  editingAbility.value = key
-}
-
-async function commitAbility() {
-  if (!character.value || !editingAbility.value) return
-  const key = editingAbility.value
-  editingAbility.value = null
-  const clamped = Math.max(1, Math.min(30, abilityEditValue.value || 10))
-  if (clamped === (character.value.abilityScores as Record<string, number>)[key]) return
-  await store.update(character.value.id, {
-    abilityScores: { ...character.value.abilityScores, [key]: clamped },
+async function onAbilitiesSaved(scores: AbilityScores) {
+  const c = character.value
+  if (!c) return
+  showAbilityModal.value = false
+  // Recalculate resource pools whose size depends on an ability modifier,
+  // preserving the current value within the new bounds.
+  const newMods = computeAllModifiers(scores)
+  const newDefs = getClassResources(c.identity.class.index, c.combat.level, newMods)
+  const resources = newDefs.map(newPool => {
+    const existing = c.resources.find(r => r.id === newPool.id)
+    return existing ? { ...newPool, current: Math.min(existing.current, newPool.max) } : newPool
   })
+  await store.update(c.id, { abilityScores: scores, resources })
 }
 
 // ── Class glyph ───────────────────────────────────────────────────────────────
