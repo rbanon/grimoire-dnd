@@ -641,6 +641,9 @@
             <div v-else-if="activeTab === 'features'">
               <FeaturesTab :character="character" />
             </div>
+            <div v-else-if="activeTab === 'traits'">
+              <TraitsTab :character="character" :edit-mode="editMode" />
+            </div>
             <div v-else-if="activeTab === 'bio'">
               <BioTab :character="character" :edit-mode="editMode" />
             </div>
@@ -725,6 +728,7 @@ import EquipmentTab from '@/characters/components/EquipmentTab.vue'
 import SpellsTab from '@/characters/components/SpellsTab.vue'
 import FeaturesTab from '@/characters/components/FeaturesTab.vue'
 import BioTab from '@/characters/components/BioTab.vue'
+import TraitsTab from '@/characters/components/TraitsTab.vue'
 import RollResult from '@/shared/components/RollResult.vue'
 import RollConfirm from '@/shared/components/RollConfirm.vue'
 import ShortRestModal from '@/characters/components/ShortRestModal.vue'
@@ -791,6 +795,7 @@ const tabs = [
   { id: 'spells',    label: 'Spells'    },
   { id: 'equipment', label: 'Equipment' },
   { id: 'features',  label: 'Features'  },
+  { id: 'traits',    label: 'Traits'    },
   { id: 'bio',       label: 'Biography' },
   { id: 'notes',     label: 'Notes'     },
 ]
