@@ -119,10 +119,10 @@ export default defineConfig({
 
     // ── Buttons
     'btn-base':
-      'inline-flex items-center justify-center gap-2 font-heading text-sm tracking-wide transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arcane-mid focus-visible:ring-offset-2 focus-visible:ring-offset-void disabled:opacity-40 disabled:pointer-events-none select-none',
+      'inline-flex items-center justify-center gap-2 font-heading text-sm tracking-wide transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-mid focus-visible:ring-offset-2 focus-visible:ring-offset-void disabled:opacity-40 disabled:pointer-events-none select-none',
 
     'btn-primary':
-      'btn-base px-5 py-2 rounded bg-arcane-bright text-white font-semibold hover:bg-arcane-mid active:bg-arcane-base',
+      'btn-base px-5 py-2 rounded bg-gold-base text-void font-semibold hover:bg-gold-mid active:bg-gold-dim',
 
     'btn-secondary':
       'btn-base px-5 py-2 rounded border border-gold-dim/60 bg-transparent text-stone hover:border-gold-mid hover:text-vellum',
@@ -138,7 +138,7 @@ export default defineConfig({
 
     // ── Form controls
     'input-base':
-      'w-full rounded border border-shadow bg-abyss px-3.5 py-2 text-base font-body text-vellum placeholder:text-mist/60 focus:outline-none focus:border-arcane-bright/60 focus:ring-1 focus:ring-arcane-bright/20 transition-colors',
+      'w-full rounded border border-shadow bg-abyss px-3.5 py-2 text-base font-body text-vellum placeholder:text-mist/60 focus:outline-none focus:border-gold-mid/60 focus:ring-1 focus:ring-gold-mid/20 transition-colors',
 
     'label':
       'block text-xs font-mono tracking-widest uppercase text-mist mb-1.5',
@@ -177,8 +177,8 @@ export default defineConfig({
 
     // ── Navigation
     'nav-link':
-      'flex items-center gap-2 px-3 py-1.5 rounded text-sm font-body tracking-wide text-stone hover:text-vellum hover:bg-dusk/20 transition-all duration-150',
+      'flex items-center gap-2 px-3 py-1.5 rounded text-sm font-heading tracking-wider text-stone hover:text-vellum hover:bg-dusk/20 transition-all duration-150',
     'nav-link-active':
-      'nav-link text-arcane-bright hover:text-arcane-bright font-semibold',
+      'nav-link text-gold-mid hover:text-gold-mid font-semibold border-b-2 border-gold-mid rounded-none',
   },
 })

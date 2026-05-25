@@ -374,6 +374,9 @@ export interface CharacterSummary {
   level: number
   portraitUrl: string | null
   updatedAt: string
+  currentHp: number
+  maxHp: number
+  armorClass: number
 }
 
 export function toCharacterSummary(c: Character): CharacterSummary {
@@ -385,6 +388,9 @@ export function toCharacterSummary(c: Character): CharacterSummary {
     level: c.combat.level,
     portraitUrl: c.portrait.type === 'url' ? c.portrait.url : null,
     updatedAt: c.updatedAt,
+    currentHp: c.combat.currentHp,
+    maxHp: c.combat.maxHp,
+    armorClass: c.combat.armorClass,
   }
 }
 

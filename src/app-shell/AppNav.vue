@@ -1,9 +1,9 @@
 <template>
   <header class="sticky top-0 z-40 border-b border-shadow/80 bg-abyss/90 backdrop-blur-md">
-    <!-- Subtle gold top border line -->
-    <div class="h-px bg-gradient-to-r from-transparent via-gold-dim/50 to-transparent" />
+    <!-- Gold top accent line -->
+    <div class="h-0.5 bg-gradient-to-r from-transparent via-gold-mid/60 to-transparent" />
 
-    <nav class="app-container h-[60px] flex items-center justify-between gap-4">
+    <nav class="app-container h-[64px] flex items-center justify-between gap-4">
       <!-- Logo -->
       <RouterLink to="/" class="flex items-center gap-3 group shrink-0">
         <div class="relative w-7 h-7 flex items-center justify-center">
@@ -15,7 +15,7 @@
           <span class="relative text-gold-mid text-sm leading-none select-none">⚔</span>
         </div>
         <span class="font-display text-base tracking-[0.2em] text-vellum uppercase group-hover:text-gold-dim transition-colors duration-300">
-          Grimoire<span class="tracking-[0.2em]" style="color: red; font-size:small; text-decoration: none;"> v{{ version }}</span>
+          Grimoire<span class="tracking-[0.2em] text-gold-dim/70 text-xs"> v{{ version }}</span>
         </span>
         
       </RouterLink>
@@ -61,7 +61,7 @@
           </button>
         </template>
         <template v-else>
-          <RouterLink to="/login" class="btn-primary px-4 py-1.5 text-xs">
+          <RouterLink to="/login" class="btn-secondary px-4 py-1.5 text-xs">
             Sign in
           </RouterLink>
         </template>

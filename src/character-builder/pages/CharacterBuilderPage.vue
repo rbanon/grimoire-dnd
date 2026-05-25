@@ -8,7 +8,7 @@
     <div class="w-full max-w-sm border border-gold-dim/25 rounded bg-abyss overflow-hidden">
 
       <!-- Header stripe -->
-      <div class="h-0.5 bg-arcane-bright" />
+      <div class="h-0.5 bg-gold-mid" />
 
       <div class="p-7 space-y-5">
         <div>
@@ -38,7 +38,7 @@
           <button class="btn-primary w-full justify-center gap-2" @click="resumeScreen = false">
             <BookOpenIcon :size="14" /> Continue Draft
           </button>
-          <button class="btn-secondary w-full justify-center gap-2 text-arcane-bright border-arcane-bright/30 hover:border-arcane-bright/60" @click="startFresh">
+          <button class="btn-secondary w-full justify-center gap-2" @click="startFresh">
             <PlusIcon :size="14" /> Start Fresh
           </button>
         </div>
@@ -108,7 +108,7 @@
         <!-- Sidebar footer -->
         <div class="px-4 py-3 border-t border-shadow">
           <button
-            class="font-mono text-2xs tracking-wide text-mist hover:text-arcane-bright transition-colors uppercase"
+            class="font-mono text-2xs tracking-wide text-mist hover:text-blood-bright transition-colors uppercase"
             @click="confirmDiscard"
           >Discard draft</button>
         </div>
@@ -309,14 +309,14 @@ function isCompleted(stepNumber: number) {
 }
 
 function getStepClass(stepNumber: number) {
-  if (stepNumber === builder.draft.currentStep) return 'bg-arcane-bright/8 dark:bg-arcane-bright/15 border-l-2 border-arcane-bright ml-[-1px]'
+  if (stepNumber === builder.draft.currentStep) return 'bg-gold-mid/8 border-l-2 border-gold-mid ml-[-1px]'
   if (stepNumber < builder.draft.currentStep) return 'hover:bg-shadow/40 cursor-pointer'
-  return 'cursor-not-allowed opacity-40 dark:opacity-60'
+  return 'cursor-not-allowed opacity-40'
 }
 
 function getStepBubbleClass(stepNumber: number) {
-  if (isCompleted(stepNumber)) return 'border-gold-mid/60 bg-gold-mid/15 dark:bg-gold-mid/25 text-gold-dim dark:text-gold-deep'
-  if (stepNumber === builder.draft.currentStep) return 'border-arcane-bright/60 bg-arcane-bright/10 dark:bg-arcane-bright/20 text-arcane-base dark:text-arcane-bright'
+  if (isCompleted(stepNumber)) return 'border-gold-mid/60 bg-gold-mid/15 text-gold-dim'
+  if (stepNumber === builder.draft.currentStep) return 'border-gold-mid bg-gold-mid/20 text-gold-mid ring-2 ring-gold-mid/25'
   return 'border-shadow text-mist bg-transparent'
 }
 

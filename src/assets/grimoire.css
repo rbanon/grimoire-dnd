@@ -4,15 +4,15 @@
 
   /* Parchment palette — light mode only (dark disabled) */
   html {
-    --c-void:    254 249 241;   /* #fef9f1 background */
-    --c-abyss:   248 243 235;   /* #f8f3eb surface-container-low (cards) */
-    --c-depths:  242 237 229;   /* #f2ede5 surface-container (inputs, nested) */
-    --c-shadow:  224 191 186;   /* #e0bfba outline-variant (default borders) */
-    --c-dusk:    200 168 164;
-    --c-mist:    120 96 96;     /* #786060 outline (muted text, emphasis borders) — darkened for WCAG AA */
-    --c-ash:     88 65 62;      /* #58413e on-surface-variant (secondary text) */
-    --c-stone:   54 48 46;
-    --c-vellum:  29 28 23;      /* #1d1c17 on-surface (primary text) */
+    --c-void:    253 248 240;   /* #fdf8f0 background — crema cálido */
+    --c-abyss:   245 237 224;   /* #f5ede0 surface-container-low (cards, pergamino) */
+    --c-depths:  237 224 204;   /* #ede0cc surface-container (inputs, papel antiguo) */
+    --c-shadow:  210 185 155;   /* #d2b99b outline-variant (borders, marrón dorado sutil) */
+    --c-dusk:    188 162 130;   /* #bca282 dividers */
+    --c-mist:    120  88  64;   /* #785840 outline (muted text) */
+    --c-ash:      88  60  40;   /* #583c28 on-surface-variant (secondary text) */
+    --c-stone:    56  40  24;   /* #382818 */
+    --c-vellum:   28  20  10;   /* #1c140a on-surface (primary text, tinta oscura) */
 
     /* Gold Leaf — #D4AF37 */
     --c-gold-dim:    160 120 32;

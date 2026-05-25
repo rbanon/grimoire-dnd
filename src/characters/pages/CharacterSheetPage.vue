@@ -19,7 +19,7 @@
 
             <!-- Portrait -->
             <div
-              class="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded border border-shadow overflow-hidden relative group cursor-pointer"
+              class="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 shrink-0 rounded border border-shadow overflow-hidden relative group cursor-pointer"
               style="box-shadow: 0 0 0 1px rgba(212,168,67,0.08) inset"
               title="Change portrait"
               @click="portraitFileInput?.click()"
@@ -65,14 +65,14 @@
                 v-model="nameValue"
                 type="text"
                 maxlength="120"
-                class="font-display text-2xl sm:text-3xl leading-tight text-vellum bg-transparent border-b border-gold-mid/60 outline-none w-full pb-0.5"
+                class="font-display text-3xl sm:text-4xl leading-tight text-vellum bg-transparent border-b border-gold-mid/60 outline-none w-full pb-0.5"
                 @blur="commitName"
                 @keydown.enter="commitName"
                 @keydown.esc="nameEditing = false"
               />
               <h1
                 v-else
-                class="font-display text-2xl sm:text-3xl leading-tight text-vellum truncate"
+                class="font-display text-3xl sm:text-4xl leading-tight text-vellum truncate"
                 :class="editMode ? 'cursor-pointer hover:text-gold-mid transition-colors' : ''"
                 :title="editMode ? 'Click to edit name' : undefined"
                 @click="editMode && startNameEdit()"
@@ -149,8 +149,8 @@
       <section class="border-b border-shadow bg-depths/60">
         <div class="app-container py-3">
 
-          <!-- Stat boxes row -->
-          <div class="flex items-start gap-2">
+          <!-- Stat boxes row — horizontally scrollable on mobile -->
+          <div class="flex items-start gap-2 overflow-x-auto pb-1 -mb-1 sm:overflow-x-visible sm:pb-0 sm:mb-0">
             <!-- Stat grid -->
             <div
               class="grid gap-2 flex-1 min-w-0 items-start"
@@ -180,7 +180,7 @@
                   type="number"
                   :min="0"
                   :max="character.combat.maxHp"
-                  class="w-12 text-center font-heading text-xl bg-transparent border-b border-gold-mid/50 outline-none"
+                  class="w-14 text-center font-heading text-2xl bg-transparent border-b border-gold-mid/50 outline-none"
                   :class="hpPercent < 0.25 ? 'text-blood-bright' : 'text-vellum'"
                   @blur="commitHp"
                   @keydown.enter="commitHp"
@@ -189,7 +189,7 @@
                 <button
                   v-else
                   type="button"
-                  class="font-heading text-xl leading-none transition-colors cursor-pointer hover:text-gold-mid"
+                  class="font-heading text-2xl leading-none transition-colors cursor-pointer hover:text-gold-mid"
                   :class="hpPercent < 0.25 ? 'text-blood-bright' : 'text-vellum'"
                   @click="startHpEdit()"
                 >{{ character.combat.currentHp }}</button>
@@ -202,6 +202,15 @@
               </div>
 
               <p class="text-xs text-mist leading-none">/ {{ character.combat.maxHp }}</p>
+
+              <!-- HP progress bar -->
+              <div class="w-full mt-1.5 h-1 rounded-full bg-shadow/40 overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all duration-300"
+                  :class="hpPercent < 0.25 ? 'bg-blood-bright' : hpPercent < 0.5 ? 'bg-gold-mid' : 'bg-verdant-mid'"
+                  :style="{ width: `${Math.max(0, Math.min(100, hpPercent * 100))}%` }"
+                />
+              </div>
 
               <!-- Temp HP -->
               <div class="flex items-center gap-1 mt-1 pt-1 border-t border-shadow/30 w-full justify-center">
@@ -309,7 +318,7 @@
                 v-model.number="acValue"
                 type="number"
                 min="0"
-                class="w-10 text-center font-heading text-xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum mt-0.5"
+                class="w-12 text-center font-heading text-2xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum mt-0.5"
                 @blur="commitAc"
                 @keydown.enter="commitAc"
                 @keydown.esc="acEditing = false"
@@ -317,7 +326,7 @@
               <button
                 v-else
                 type="button"
-                class="font-heading text-xl text-vellum mt-0.5 leading-none transition-colors"
+                class="font-heading text-2xl text-vellum mt-0.5 leading-none transition-colors"
                 :class="editMode ? 'hover:text-gold-mid cursor-pointer' : 'cursor-default'"
                 @click="editMode && startAcEdit()"
               >{{ character.combat.armorClass }}</button>
@@ -331,7 +340,7 @@
                 ref="initInputEl"
                 v-model.number="initValue"
                 type="number"
-                class="w-10 text-center font-heading text-xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum mt-0.5"
+                class="w-12 text-center font-heading text-2xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum mt-0.5"
                 @blur="commitInit"
                 @keydown.enter="commitInit"
                 @keydown.esc="initEditing = false"
@@ -339,7 +348,7 @@
               <button
                 v-else
                 type="button"
-                class="font-heading text-xl text-vellum mt-0.5 leading-none transition-colors"
+                class="font-heading text-2xl text-vellum mt-0.5 leading-none transition-colors"
                 :class="editMode ? 'hover:text-gold-mid cursor-pointer' : 'hover:text-gold-mid cursor-pointer'"
                 :title="editMode ? 'Click to override initiative' : 'Roll Initiative'"
                 @click="editMode ? startInitEdit() : rollD20(initiativeMod, 'Initiative', $event)"
@@ -364,7 +373,7 @@
                   type="number"
                   min="0"
                   step="5"
-                  class="w-12 text-center font-heading text-xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum"
+                  class="w-12 text-center font-heading text-2xl bg-transparent border-b border-gold-mid/50 outline-none text-vellum"
                   @blur="commitSpeed"
                   @keydown.enter="commitSpeed"
                   @keydown.esc="speedEditing = false"
@@ -372,7 +381,7 @@
                 <button
                   v-else
                   type="button"
-                  class="font-heading text-xl text-vellum leading-none transition-colors"
+                  class="font-heading text-2xl text-vellum leading-none transition-colors"
                   :class="editMode ? 'hover:text-gold-mid cursor-pointer' : 'cursor-default'"
                   :title="editMode ? 'Click to override speed' : ''"
                   @click="editMode && startSpeedEdit()"
@@ -391,19 +400,19 @@
             <!-- Passive Perception -->
             <div class="card flex flex-col items-center justify-center p-3 min-w-0">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Pass. Perc</p>
-              <p class="font-heading text-xl text-vellum mt-0.5 leading-none">{{ passivePerception }}</p>
+              <p class="font-heading text-2xl text-vellum mt-0.5 leading-none">{{ passivePerception }}</p>
             </div>
 
             <!-- Prof Bonus -->
             <div class="card flex flex-col items-center justify-center p-3 min-w-0">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Prof</p>
-              <p class="font-heading text-xl text-vellum mt-0.5 leading-none">+{{ profBonus }}</p>
+              <p class="font-heading text-2xl text-vellum mt-0.5 leading-none">+{{ profBonus }}</p>
             </div>
 
             <!-- Spell Save DC -->
             <div v-if="character.spellcasting" class="card flex flex-col items-center justify-center p-3 min-w-0">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Spell DC</p>
-              <p class="font-heading text-xl text-arcane-pale mt-0.5 leading-none">{{ spellSaveDC }}</p>
+              <p class="font-heading text-2xl text-gold-mid mt-0.5 leading-none">{{ spellSaveDC }}</p>
             </div>
 
             <!-- Spell Attack Bonus (clickable roll) -->
@@ -411,7 +420,7 @@
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Spell Atk</p>
               <button
                 type="button"
-                class="font-heading text-xl text-arcane-pale mt-0.5 leading-none hover:text-arcane-bright transition-colors"
+                class="font-heading text-2xl text-gold-mid mt-0.5 leading-none hover:text-gold-bright transition-colors"
                 title="Roll Spell Attack"
                 @click="rollD20(spellAttackBonus, 'Spell Attack', $event)"
               >{{ fmt(spellAttackBonus) }}</button>
@@ -491,12 +500,12 @@
                   <p class="relative text-2xs font-heading tracking-[0.2em] uppercase text-mist">{{ ab.label }}</p>
                   <button
                     type="button"
-                    class="relative block w-full font-heading text-2xl leading-none mt-1 transition-colors"
+                    class="relative block w-full font-heading text-3xl leading-none mt-1 transition-colors"
                     :class="ab.mod >= 0 ? 'text-gold-mid hover:text-gold-bright' : 'text-blood-bright hover:text-blood-mid'"
                     :title="`Roll ${ab.label} check`"
                     @click="rollD20(ab.mod, `${ab.label} Check`, $event)"
                   >{{ ab.mod >= 0 ? `+${ab.mod}` : ab.mod }}</button>
-                  <p class="relative text-sm font-body mt-1 leading-none text-ash">{{ ab.score }}</p>
+                  <p class="relative text-base font-body mt-1 leading-none text-ash">{{ ab.score }}</p>
                 </div>
               </div>
             </section>
@@ -619,10 +628,10 @@
                 <button
                   v-for="tab in tabs"
                   :key="tab.id"
-                  class="px-4 py-2.5 text-sm font-heading tracking-wide border-b-2 transition-all duration-150 whitespace-nowrap shrink-0"
+                  class="px-4 py-3 text-sm font-heading tracking-wide border-b-[3px] transition-all duration-150 whitespace-nowrap shrink-0"
                   :class="activeTab === tab.id
                     ? 'border-gold-mid text-gold-mid'
-                    : 'border-transparent text-ash hover:text-stone hover:border-shadow'"
+                    : 'border-transparent text-ash hover:text-stone hover:border-shadow/60'"
                   @click="activeTab = tab.id"
                 >{{ tab.label }}</button>
               </div>

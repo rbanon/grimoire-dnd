@@ -2,8 +2,10 @@
   <div>
 
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
-    <header class="border-b border-shadow bg-void">
-      <div class="app-container py-8 sm:py-10">
+    <header class="border-b border-shadow bg-void relative overflow-hidden">
+      <!-- Atmospheric gradient -->
+      <div class="absolute inset-0 bg-gradient-to-b from-gold-dim/5 to-transparent pointer-events-none" />
+      <div class="app-container py-8 sm:py-10 relative">
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
 
           <div>
@@ -47,7 +49,7 @@
         <CloudIcon :size="16" class="text-mist shrink-0" />
         <p class="font-body text-sm text-ash">
           Characters are saved in your browser only.
-          <RouterLink to="/login" class="text-arcane-bright hover:underline underline-offset-2 transition-colors">
+          <RouterLink to="/login" class="text-gold-mid hover:underline underline-offset-2 transition-colors">
             Sign in to sync to the cloud.
           </RouterLink>
         </p>
