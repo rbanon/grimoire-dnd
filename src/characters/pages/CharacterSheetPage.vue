@@ -58,7 +58,25 @@
 
             <!-- Identity -->
             <div class="flex-1 min-w-0">
-              <h1 class="font-display text-2xl sm:text-3xl leading-tight text-vellum truncate">
+              <!-- Name — inline edit in edit mode -->
+              <input
+                v-if="nameEditing && editMode"
+                ref="nameInputEl"
+                v-model="nameValue"
+                type="text"
+                maxlength="120"
+                class="font-display text-2xl sm:text-3xl leading-tight text-vellum bg-transparent border-b border-gold-mid/60 outline-none w-full pb-0.5"
+                @blur="commitName"
+                @keydown.enter="commitName"
+                @keydown.esc="nameEditing = false"
+              />
+              <h1
+                v-else
+                class="font-display text-2xl sm:text-3xl leading-tight text-vellum truncate"
+                :class="editMode ? 'cursor-pointer hover:text-gold-mid transition-colors' : ''"
+                :title="editMode ? 'Click to edit name' : undefined"
+                @click="editMode && startNameEdit()"
+              >
                 {{ character.identity.name }}
               </h1>
               <p class="font-body text-sm text-ash mt-0.5 truncate">
@@ -68,10 +86,19 @@
                 <span class="text-dusk mx-1.5">·</span>
                 Level {{ character.combat.level }}
               </p>
-              <p class="font-body text-xs text-mist mt-0.5">
+              <p class="font-body text-xs text-mist mt-0.5 flex items-center gap-1 flex-wrap">
                 {{ character.identity.background.name }}
                 <span class="mx-1 text-dusk">·</span>
-                {{ character.identity.alignment }}
+                <!-- Alignment — select in edit mode, plain text otherwise -->
+                <select
+                  v-if="editMode"
+                  :value="character.identity.alignment"
+                  class="bg-abyss border border-shadow rounded px-1 py-0 text-xs font-body text-mist focus:border-gold-mid/60 outline-none cursor-pointer"
+                  @change="commitAlignment(($event.target as HTMLSelectElement).value)"
+                >
+                  <option v-for="a in ALIGNMENTS" :key="a" :value="a">{{ a }}</option>
+                </select>
+                <span v-else>{{ character.identity.alignment }}</span>
               </p>
               <div class="flex flex-wrap gap-1.5 mt-2">
                 <span class="badge-gold">Lv {{ character.combat.level }}</span>
@@ -746,8 +773,10 @@ async function onPortraitChange(event: Event) {
       })
       await store.update(props.id, { portrait: { type: 'url', url } })
     }
-  } catch {
-    toast.error('Failed to upload portrait. Please try again.')
+  } catch (err: unknown) {
+    const msg = (err as { message?: string })?.message ?? 'Unknown error'
+    console.error('[portrait upload]', err)
+    toast.error(`Portrait upload failed: ${msg}`)
   } finally {
     portraitUploading.value = false
     if (portraitFileInput.value) portraitFileInput.value.value = ''
@@ -887,6 +916,44 @@ async function toggleInspiration() {
   if (!character.value) return
   await store.update(character.value.id, {
     combat: { ...character.value.combat, inspiration: !character.value.combat.inspiration },
+  })
+}
+
+// ── Name & Alignment editable ────────────────────────────────────────────────
+
+const ALIGNMENTS: import('@/shared/types/character').Alignment[] = [
+  'Lawful Good', 'Neutral Good', 'Chaotic Good',
+  'Lawful Neutral', 'True Neutral', 'Chaotic Neutral',
+  'Lawful Evil', 'Neutral Evil', 'Chaotic Evil',
+]
+
+const nameEditing = ref(false)
+const nameValue = ref('')
+const nameInputEl = ref<HTMLInputElement | null>(null)
+
+function startNameEdit() {
+  if (!character.value) return
+  nameValue.value = character.value.identity.name
+  nameEditing.value = true
+  nextTick(() => nameInputEl.value?.select())
+}
+
+async function commitName() {
+  if (!character.value) return
+  nameEditing.value = false
+  const next = nameValue.value.trim().slice(0, 120)
+  if (!next || next === character.value.identity.name) return
+  await store.update(character.value.id, {
+    identity: { ...character.value.identity, name: next },
+  })
+}
+
+async function commitAlignment(value: string) {
+  if (!character.value) return
+  const next = value as import('@/shared/types/character').Alignment
+  if (next === character.value.identity.alignment) return
+  await store.update(character.value.id, {
+    identity: { ...character.value.identity, alignment: next },
   })
 }
 
