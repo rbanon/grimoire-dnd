@@ -48,13 +48,9 @@
           >
             <!-- row content injected below via shared slot-like duplication -->
             <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
-              :class="[
-                item.equipped ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/40',
-                editMode ? 'cursor-pointer hover:border-mist' : 'cursor-default',
-              ]"
-              :title="editMode ? (item.equipped ? 'Equipped — click to unequip' : 'Click to equip') : (item.equipped ? 'Equipped' : 'Not equipped')"
-              :disabled="!editMode"
-              @click="editMode && toggleEquipped(item.id)" />
+              :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-transparent border-mist/40 hover:border-mist'"
+              :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
+              @click="toggleEquipped(item.id)" />
             <SwordIcon :size="11" class="text-gold-dim/60 shrink-0" />
             <div class="flex-1 min-w-0">
               <span class="font-heading text-sm text-vellum">{{ item.item.name }}</span>
@@ -94,13 +90,9 @@
             class="flex items-center gap-3 px-3 py-2.5 rounded border border-shadow bg-abyss/50 group"
           >
             <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
-              :class="[
-                item.equipped ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/40',
-                editMode ? 'cursor-pointer hover:border-mist' : 'cursor-default',
-              ]"
-              :title="editMode ? (item.equipped ? 'Equipped — click to unequip' : 'Click to equip') : (item.equipped ? 'Equipped' : 'Not equipped')"
-              :disabled="!editMode"
-              @click="editMode && toggleEquipped(item.id)" />
+              :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-transparent border-mist/40 hover:border-mist'"
+              :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
+              @click="toggleEquipped(item.id)" />
             <ShieldIcon :size="11" class="text-arcane-pale/50 shrink-0" />
             <div class="flex-1 min-w-0">
               <span class="font-heading text-sm text-vellum">{{ item.item.name }}</span>
@@ -133,13 +125,9 @@
             class="flex items-center gap-3 px-3 py-2.5 rounded border border-shadow bg-abyss/50 group"
           >
             <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
-              :class="[
-                item.equipped ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/40',
-                editMode ? 'cursor-pointer hover:border-mist' : 'cursor-default',
-              ]"
-              :title="editMode ? (item.equipped ? 'Equipped — click to unequip' : 'Click to equip') : (item.equipped ? 'Equipped' : 'Not equipped')"
-              :disabled="!editMode"
-              @click="editMode && toggleEquipped(item.id)" />
+              :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-transparent border-mist/40 hover:border-mist'"
+              :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
+              @click="toggleEquipped(item.id)" />
             <PackageIcon :size="11" class="text-mist/40 shrink-0" />
             <div class="flex-1 min-w-0">
               <span class="font-heading text-sm text-vellum">{{ item.item.name }}</span>
@@ -164,15 +152,23 @@
         <p class="font-body text-mist text-xs mt-1">Add weapons, armor, and gear to track your loadout.</p>
       </div>
 
-      <!-- Add button -->
-      <button
-        v-if="!showForm && editMode"
-        type="button"
-        class="btn-secondary text-xs gap-1.5 w-full justify-center"
-        @click="openForm('gear')"
-      >
-        <PlusIcon :size="13" /> Add Item
-      </button>
+      <!-- Add buttons (empty state) -->
+      <div v-if="!showForm && editMode && !character.inventory.length" class="flex gap-2 flex-wrap">
+        <button
+          type="button"
+          class="btn-secondary text-xs gap-1.5 flex-1 justify-center"
+          @click="openForm('gear')"
+        >
+          <PlusIcon :size="13" /> Add Item
+        </button>
+        <button
+          type="button"
+          class="btn-secondary text-xs gap-1.5 flex-1 justify-center"
+          @click="showPicker = true"
+        >
+          <BookOpenIcon :size="13" /> From SRD
+        </button>
+      </div>
 
       <!-- ── Add item form ────────────────────────────────────────────────── -->
       <div v-if="showForm && editMode" class="card p-5 space-y-4">
@@ -354,7 +350,23 @@
         >
           <PlusIcon :size="13" /> Add {{ t.label }}
         </button>
+        <button
+          type="button"
+          class="btn-secondary text-xs gap-1.5"
+          @click="showPicker = true"
+        >
+          <BookOpenIcon :size="13" /> From SRD
+        </button>
       </div>
+
+      <!-- Item picker modal -->
+      <ItemPickerModal
+        :show="showPicker"
+        :character="character"
+        :prof-bonus="profBonus"
+        @close="showPicker = false"
+        @add="onPickerAdd"
+      />
     </section>
 
   </div>
@@ -362,13 +374,15 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive, watch, nextTick } from 'vue'
-import { PackageIcon, PlusIcon, Trash2Icon, XIcon, SwordIcon, ShieldIcon, StarIcon, InfoIcon } from 'lucide-vue-next'
+import { PackageIcon, PlusIcon, Trash2Icon, XIcon, SwordIcon, ShieldIcon, StarIcon, InfoIcon, BookOpenIcon } from 'lucide-vue-next'
+import ItemPickerModal from './ItemPickerModal.vue'
 import { useCharactersStore } from '@/characters/store'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus } from '@/shared/lib/derivedStats'
 import { useRoll } from '@/shared/composables/useRoll'
+import { useToast } from '@/shared/composables/useToast'
 import type { Character, AbilityName, InventoryItem, CombatFavorite } from '@/shared/types/character'
 import { generateId } from '@/shared/lib/uuid'
 
@@ -377,6 +391,7 @@ const store = useCharactersStore()
 const { confirm } = useConfirm()
 const infoPanel = useInfoPanel()
 const { rollD20, rollDamage } = useRoll()
+const toast = useToast()
 
 // ── Derived stats ─────────────────────────────────────────────────────────────
 
@@ -393,11 +408,19 @@ function parseBonus(str: string | undefined): number {
 }
 
 function rollItemAtk(item: InventoryItem, event: MouseEvent) {
+  if (!item.equipped) {
+    toast.info(`${item.item.name} is not equipped.`)
+    return
+  }
   rollD20(parseBonus(item.attackBonus), `${item.item.name} Attack`, event)
 }
 
 function rollItemDmg(item: InventoryItem) {
   if (!item.damage) return
+  if (!item.equipped) {
+    toast.info(`${item.item.name} is not equipped.`)
+    return
+  }
   rollDamage(item.damage, `${item.item.name} Damage`)
 }
 
@@ -513,6 +536,16 @@ async function toggleWeaponFav(item: InventoryItem) {
         },
       ]
   await store.update(props.character.id, { combatFavorites: next })
+}
+
+// ── SRD item picker ───────────────────────────────────────────────────────────
+
+const showPicker = ref(false)
+
+function onPickerAdd(items: InventoryItem[]) {
+  store.update(props.character.id, {
+    inventory: [...props.character.inventory, ...items],
+  })
 }
 
 // ── Add item form ─────────────────────────────────────────────────────────────
