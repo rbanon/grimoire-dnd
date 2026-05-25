@@ -483,7 +483,18 @@
                   :key="save.key"
                   class="flex items-center gap-2 px-2 py-1.5 rounded group hover:bg-depths/50 transition-colors"
                 >
+                  <button
+                    v-if="editMode"
+                    type="button"
+                    class="w-2.5 h-2.5 rounded-full border-2 shrink-0 transition-colors hover:scale-125"
+                    :class="character.savingThrowProficiencies[save.key]
+                      ? 'bg-gold-mid border-gold-mid'
+                      : 'bg-transparent border-mist/40'"
+                    :title="character.savingThrowProficiencies[save.key] ? 'Remove proficiency' : 'Add proficiency'"
+                    @click="toggleSaveProficiency(save.key)"
+                  />
                   <span
+                    v-else
                     class="w-2.5 h-2.5 rounded-full border-2 shrink-0 transition-colors"
                     :class="character.savingThrowProficiencies[save.key]
                       ? 'bg-gold-mid border-gold-mid'
@@ -526,7 +537,16 @@
                   :key="skill.index"
                   class="flex items-center gap-2 px-2 py-1 rounded group hover:bg-depths/50 transition-colors"
                 >
+                  <button
+                    v-if="editMode"
+                    type="button"
+                    class="w-2.5 h-2.5 rounded-full border-2 shrink-0 transition-colors hover:scale-125"
+                    :class="skill.profClass"
+                    :title="skill.profLevel === 'expertise' ? 'Remove expertise → none' : skill.profLevel === 'proficient' ? 'Upgrade to expertise' : 'Add proficiency'"
+                    @click="cycleSkillProficiency(skill.index)"
+                  />
                   <span
+                    v-else
                     class="w-2.5 h-2.5 rounded-full border-2 shrink-0 transition-colors"
                     :class="skill.profClass"
                   />
@@ -540,7 +560,7 @@
                   >{{ fmt(skill.bonus) }}</button>
                   <span class="text-xs font-body text-ash flex-1 truncate">{{ skill.name }}</span>
                   <span
-                    v-if="skill.hasProficiency"
+                    v-if="skill.hasProficiency && !editMode"
                     class="text-2xs font-heading tracking-wide shrink-0 px-1 rounded"
                     :class="skill.origin === 'bg'
                       ? 'text-arcane-pale/70 bg-arcane-deep/20'
@@ -1028,6 +1048,7 @@ const skillRows = computed(() => {
     return {
       ...s,
       bonus,
+      profLevel: prof as 'none' | 'proficient' | 'expertise',
       hasProficiency: prof === 'proficient' || prof === 'expertise',
       profClass: prof === 'expertise' ? 'bg-arcane-pale border-arcane-pale'
         : prof === 'proficient' ? 'bg-gold-mid border-gold-mid'
@@ -1043,6 +1064,27 @@ const filteredSkills = computed(() => {
 })
 
 function fmt(n: number) { return n >= 0 ? `+${n}` : String(n) }
+
+function toggleSaveProficiency(ability: AbilityName) {
+  const c = character.value
+  if (!c) return
+  store.update(c.id, {
+    savingThrowProficiencies: {
+      ...c.savingThrowProficiencies,
+      [ability]: !c.savingThrowProficiencies[ability],
+    },
+  })
+}
+
+function cycleSkillProficiency(skillIndex: string) {
+  const c = character.value
+  if (!c) return
+  const current = c.skillProficiencies[skillIndex] ?? 'none'
+  const next = current === 'none' ? 'proficient' : current === 'proficient' ? 'expertise' : 'none'
+  store.update(c.id, {
+    skillProficiencies: { ...c.skillProficiencies, [skillIndex]: next },
+  })
+}
 
 function saveBonus(ability: AbilityName): number {
   if (!character.value) return 0
