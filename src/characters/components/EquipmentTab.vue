@@ -69,7 +69,7 @@
             <button type="button" class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/30 hover:text-gold-mid opacity-0 group-hover:opacity-100 transition-all" @click="infoPanel.open({ kind: 'item', index: item.item.index })"><InfoIcon :size="12" /></button>
             <button type="button" class="px-2 py-0.5 rounded border border-arcane-base/30 bg-arcane-deep/10 text-arcane-pale hover:border-arcane-base/60 hover:bg-arcane-deep/20 transition-all font-heading text-xs shrink-0" @click="(e) => rollItemAtk(item, e)">⚃ Atk</button>
             <button v-if="item.damage" type="button" class="px-2 py-0.5 rounded border border-blood-base/30 bg-blood-deep/10 text-blood-mid hover:border-blood-base/60 hover:bg-blood-deep/20 transition-all font-heading text-xs shrink-0" @click="rollItemDmg(item)">⚀ Dmg</button>
-            <button v-if="editMode" type="button" class="w-6 h-6 flex items-center justify-center rounded transition-all shrink-0" :class="isWeaponFav(item.id) ? 'text-gold-mid hover:text-gold-dim' : 'text-mist/30 hover:text-gold-mid hover:bg-gold-dim/10'" @click="toggleWeaponFav(item)">
+            <button type="button" class="w-6 h-6 flex items-center justify-center rounded transition-all shrink-0" :class="isWeaponFav(item.id) ? 'text-gold-mid hover:text-gold-dim' : 'text-mist/30 hover:text-gold-mid hover:bg-gold-dim/10'" @click="toggleWeaponFav(item)">
               <StarIcon :size="13" :fill="isWeaponFav(item.id) ? 'currentColor' : 'none'" />
             </button>
             <div class="flex items-center gap-1 shrink-0">

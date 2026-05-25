@@ -62,11 +62,16 @@
       </template>
     </div>
 
-    <!-- Roll buttons -->
+    <!-- Roll / cast buttons -->
     <div
-      v-if="(hasAttackRoll || damageRoll) && !loading"
+      v-if="!loading && detail"
       class="flex justify-end gap-1.5 pt-1.5 border-t border-shadow/30"
     >
+      <button
+        type="button"
+        class="px-3 py-1.5 rounded border border-arcane-base/30 bg-arcane-deep/5 text-arcane-pale/80 hover:border-arcane-base/60 hover:bg-arcane-deep/15 transition-all font-heading text-xs"
+        @click="$emit('cast')"
+      >Cast</button>
       <button
         v-if="hasAttackRoll"
         type="button"
@@ -99,7 +104,7 @@ const props = defineProps<{
   spellAttackBonus: number
   characterLevel: number
 }>()
-defineEmits<{ remove: [] }>()
+defineEmits<{ remove: []; cast: [] }>()
 
 const infoPanel = useInfoPanel()
 const { rollD20, rollDamage } = useRoll()

@@ -131,6 +131,7 @@
           :spell-attack-bonus="spellAttackBonus"
           :character-level="character.combat.level"
           @remove="removeFavorite(fav.id)"
+          @cast="castingFav = fav"
         />
       </div>
     </section>
@@ -173,15 +174,26 @@
           :spell-attack-bonus="spellAttackBonus"
           :character-level="character.combat.level"
           @remove="removeFavorite(fav.id)"
+          @cast="castingFav = fav"
         />
       </div>
     </section>
 
-    <!-- Modal -->
+    <!-- Add to Favorites modal -->
     <AddToCombatModal
       v-if="showModal"
       :character="character"
       @close="showModal = false"
+    />
+
+    <!-- Cast spell modal -->
+    <CastSpellModal
+      v-if="castingSpell"
+      :show="!!castingSpell"
+      :spell="castingSpell"
+      :character="character"
+      @cast="onCastSpell"
+      @close="castingFav = null"
     />
 
   </div>
@@ -195,8 +207,9 @@ import { useRoll } from '@/shared/composables/useRoll'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
-import type { Character, CombatFavorite, InventoryItem, ResourcePool } from '@/shared/types/character'
+import type { Character, CombatFavorite, InventoryItem, ResourcePool, SpellReference } from '@/shared/types/character'
 import AddToCombatModal from './AddToCombatModal.vue'
+import CastSpellModal from './CastSpellModal.vue'
 import FavoriteSpellCard from './FavoriteSpellCard.vue'
 import ResourceTracker from './ResourceTracker.vue'
 
@@ -215,6 +228,13 @@ const spellAbilityMod = computed(() => {
 const spellAttackBonus = computed(() => computeSpellAttackBonus(spellAbilityMod.value, profBonus.value))
 
 const showModal = ref(false)
+const castingFav = ref<CombatFavorite | null>(null)
+
+const castingSpell = computed((): SpellReference | null => {
+  const fav = castingFav.value
+  if (!fav || (fav.type !== 'cantrip' && fav.type !== 'spell')) return null
+  return { index: fav.spellIndex!, name: fav.spellName!, level: fav.spellLevel!, school: fav.spellSchool }
+})
 
 const favorites = computed(() => props.character.combatFavorites ?? [])
 const weapons   = computed(() => favorites.value.filter(f => f.type === 'weapon'))
@@ -277,6 +297,18 @@ function rollWeaponDmg(fav: CombatFavorite) {
 
 async function onResourceChange(pools: ResourcePool[]) {
   await store.update(props.character.id, { resources: pools })
+}
+
+async function onCastSpell(slotLevel: number) {
+  const sc = props.character.spellcasting
+  if (!sc || slotLevel === 0) return
+  const key = slotKey(slotLevel)
+  const current = sc.slotsUsed[key]
+  const max = sc.slotsMax[key]
+  if (current >= max) return
+  await store.update(props.character.id, {
+    spellcasting: { ...sc, slotsUsed: { ...sc.slotsUsed, [key]: current + 1 } },
+  })
 }
 
 async function removeFavorite(id: string) {
