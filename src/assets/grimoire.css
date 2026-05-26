@@ -162,6 +162,27 @@
   }
 }
 
+/* ── Skeleton shimmer — thematic loading placeholder ────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--c-shadow) / 0.25) 25%,
+    rgb(var(--c-shadow) / 0.45) 50%,
+    rgb(var(--c-shadow) / 0.25) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background: rgb(var(--c-shadow) / 0.30); }
+}
+
 /* ── Card entrance animation ─────────────────────────────────────────────── */
 @keyframes card-in {
   from { opacity: 0; transform: translateY(6px); }

@@ -33,7 +33,7 @@
     <!-- Detail row -->
     <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 pl-5">
       <template v-if="loading">
-        <div class="h-2.5 w-40 rounded bg-shadow/40 animate-pulse" />
+        <div class="h-2.5 w-40 skeleton rounded-sm" />
       </template>
       <template v-else-if="detail">
         <span class="text-2xs font-heading tracking-wide text-mist">{{ castingTime }}</span>

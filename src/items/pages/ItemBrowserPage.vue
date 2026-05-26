@@ -52,9 +52,21 @@
     </div>
 
     <!-- States -->
-    <div v-if="isPending" class="flex flex-col items-center gap-3 py-16">
-      <div class="animate-spin w-8 h-8 border-2 border-arcane-base border-t-transparent rounded-full" />
-      <p class="text-muted text-sm">Loading items…</p>
+    <!-- Skeleton — matches grid layout -->
+    <div
+      v-if="isPending"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+      aria-label="Loading items…"
+      aria-busy="true"
+    >
+      <div v-for="i in 12" :key="i" class="card p-4 flex flex-col gap-2">
+        <div class="h-4 w-3/4 skeleton rounded-sm" />
+        <div class="flex gap-1.5 mt-1">
+          <div class="h-4 w-16 skeleton rounded-sm" />
+          <div class="h-4 w-12 skeleton rounded-sm" />
+        </div>
+        <div class="h-3 w-1/3 skeleton rounded-sm mt-1" />
+      </div>
     </div>
     <div v-else-if="isError" class="text-center py-16 text-danger">Failed to load items.</div>
     <div v-else-if="filteredItems.length === 0" class="text-center py-16 text-muted">No items match your filters.</div>

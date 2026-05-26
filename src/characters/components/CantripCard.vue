@@ -45,7 +45,7 @@
 
       <!-- Loading skeleton -->
       <template v-if="loading">
-        <div class="h-2.5 w-32 rounded bg-shadow/40 animate-pulse" />
+        <div class="h-2.5 w-32 skeleton rounded-sm" />
       </template>
 
       <template v-else-if="spell">
