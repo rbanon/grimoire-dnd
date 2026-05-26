@@ -108,7 +108,7 @@
                   class="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border text-xs font-heading tracking-wide transition-all"
                   :class="character.combat.inspiration
                     ? 'bg-gold-dim/20 border-gold-mid/50 text-gold-mid'
-                    : 'border-dusk text-mist hover:border-gold-dim/60 hover:text-ash'"
+                    : 'border-shadow text-mist hover:border-gold-dim/60 hover:text-ash'"
                   @click="toggleInspiration()"
                 >✦ Inspiration</button>
               </div>
@@ -198,7 +198,7 @@
                 v-else
                 type="button"
                 class="font-heading text-sm transition-colors cursor-pointer"
-                :class="character.combat.tempHp > 0 ? 'text-arcane-pale hover:text-arcane-bright' : 'text-mist/30 hover:text-mist/60'"
+                :class="character.combat.tempHp > 0 ? 'text-arcane-pale hover:text-arcane-bright' : 'text-mist/60 hover:text-mist'"
                 title="Set temporary HP"
                 @click="startTempHpEdit()"
               >(+{{ character.combat.tempHp }} THP)</button>
@@ -454,7 +454,7 @@
 
             <!-- Mobile/tablet toggle -->
             <button
-              class="lg:hidden w-full flex items-center justify-between px-3 py-2.5 rounded border border-shadow bg-abyss hover:border-gold-dim/40 transition-colors mb-4"
+              class="lg:hidden w-full flex items-center justify-between px-3 py-2.5 rounded border border-shadow bg-depths/50 hover:border-gold-dim/40 transition-colors mb-4"
               @click="leftPanelOpen = !leftPanelOpen"
             >
               <span class="text-xs font-heading tracking-wide uppercase text-stone">Stats &amp; Skills</span>

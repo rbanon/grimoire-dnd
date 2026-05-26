@@ -60,7 +60,7 @@
 
         <span
           v-if="!character.combat.conditions.length"
-          class="text-2xs text-mist/30 font-body italic"
+          class="text-2xs text-mist font-body italic"
         >None</span>
 
         <button
@@ -79,7 +79,7 @@
           class="px-2 py-0.5 rounded border text-2xs font-heading tracking-wide transition-all"
           :class="isActive(cond.name)
             ? cond.activeClass
-            : 'border-shadow/30 text-mist/50 hover:border-shadow hover:text-mist'"
+            : 'border-shadow/50 text-mist hover:border-shadow hover:text-vellum'"
           @click="toggleCondition(cond.name)"
         >{{ cond.name }}</button>
 
@@ -105,7 +105,7 @@ const store = useCharactersStore()
 const CONDITION_LIST = [
   { name: 'Blinded',       activeClass: 'bg-blood-base/20 text-blood-bright border-blood-base/40' },
   { name: 'Charmed',       activeClass: 'bg-arcane-base/20 text-arcane-bright border-arcane-base/40' },
-  { name: 'Deafened',      activeClass: 'bg-shadow/60 text-mist border-shadow' },
+  { name: 'Deafened',      activeClass: 'bg-shadow/60 text-ash border-shadow' },
   { name: 'Frightened',    activeClass: 'bg-gold-dim/30 text-gold-deep dark:text-gold-bright border-gold-dim/50' },
   { name: 'Grappled',      activeClass: 'bg-gold-deep/20 text-gold-deep dark:text-gold-mid border-gold-deep/40' },
   { name: 'Incapacitated', activeClass: 'bg-blood-deep/30 text-blood-bright border-blood-deep/50' },

@@ -91,14 +91,14 @@
     --c-arcane-deep:    64  16  20;
     --c-arcane-base:   148  44  40;
     --c-arcane-mid:    188  56  56;
-    --c-arcane-bright: 220  80  80;   /* warmer, less harsh than pure #D81921 */
+    --c-arcane-bright: 232 120 120;   /* boosted for WCAG AA on dark backgrounds */
     --c-arcane-pale:   236 168 168;   /* text on dark */
 
     /* Blood */
     --c-blood-deep:    72  20  20;
     --c-blood-base:   112  36  36;
-    --c-blood-mid:    144  52  52;
-    --c-blood-bright: 176  72  72;
+    --c-blood-mid:    212 108 108;
+    --c-blood-bright: 224 120 120;
 
     /* Verdant */
     --c-verdant-deep:   20  64  44;
