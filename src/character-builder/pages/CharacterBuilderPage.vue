@@ -8,7 +8,7 @@
     <div class="w-full max-w-sm border border-gold-dim/25 rounded bg-abyss overflow-hidden">
 
       <!-- Header stripe -->
-      <div class="h-0.5 bg-arcane-bright" />
+      <div class="h-0.5 bg-gold-mid" />
 
       <div class="p-7 space-y-5">
         <div>
@@ -38,7 +38,7 @@
           <button class="btn-primary w-full justify-center gap-2" @click="resumeScreen = false">
             <BookOpenIcon :size="14" /> Continue Draft
           </button>
-          <button class="btn-secondary w-full justify-center gap-2 text-arcane-bright border-arcane-bright/30 hover:border-arcane-bright/60" @click="startFresh">
+          <button class="btn-secondary w-full justify-center gap-2" @click="startFresh">
             <PlusIcon :size="14" /> Start Fresh
           </button>
         </div>
@@ -108,7 +108,7 @@
         <!-- Sidebar footer -->
         <div class="px-4 py-3 border-t border-shadow">
           <button
-            class="font-mono text-2xs tracking-wide text-mist hover:text-arcane-bright transition-colors uppercase"
+            class="font-mono text-2xs tracking-wide text-mist hover:text-blood-bright transition-colors uppercase"
             @click="confirmDiscard"
           >Discard draft</button>
         </div>
@@ -128,19 +128,38 @@
             </h1>
           </div>
 
-          <!-- Error pill -->
-          <div
-            v-if="showErrors && stepErrors.length"
-            class="ml-auto flex items-center gap-1.5 font-body text-xs text-arcane-bright bg-arcane-bright/8 border border-arcane-bright/25 rounded px-3 py-1.5"
-          >
-            <AlertCircleIcon :size="13" />
-            {{ stepErrors[0] }}
-          </div>
+          <div class="ml-auto flex items-center gap-3">
+            <!-- Error pill -->
+            <div
+              v-if="showErrors && stepErrors.length"
+              class="flex items-center gap-1.5 font-body text-xs text-arcane-bright bg-arcane-bright/8 border border-arcane-bright/25 rounded px-3 py-1.5"
+            >
+              <AlertCircleIcon :size="13" />
+              {{ stepErrors[0] }}
+            </div>
 
-          <!-- Character name preview -->
-          <div v-else-if="builder.draft.name" class="ml-auto hidden sm:block text-right">
-            <p class="font-mono text-2xs tracking-widest uppercase text-mist">Character</p>
-            <p class="font-display text-sm text-vellum">{{ builder.draft.name }}</p>
+            <!-- Character name preview -->
+            <div v-else-if="builder.draft.name" class="hidden sm:block text-right">
+              <p class="font-mono text-2xs tracking-widest uppercase text-mist">Character</p>
+              <p class="font-display text-sm text-vellum">{{ builder.draft.name }}</p>
+            </div>
+
+            <!-- Summary panel toggle -->
+            <button
+              class="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs transition-all duration-150"
+              :class="summaryOpen
+                ? 'border-gold-dim/40 text-gold-mid hover:border-gold-mid/60 bg-gold-dim/5'
+                : 'border-shadow text-mist hover:text-ash hover:border-shadow/80'"
+              :title="summaryOpen ? 'Hide preview' : 'Show preview'"
+              @click="summaryOpen = !summaryOpen"
+            >
+              <span class="font-heading tracking-wide">Preview</span>
+              <ChevronRightIcon
+                :size="11"
+                class="transition-transform duration-200"
+                :class="summaryOpen ? 'rotate-180' : ''"
+              />
+            </button>
           </div>
         </div>
 
@@ -228,6 +247,58 @@
         </div>
 
       </div>
+
+      <!-- ── Right summary panel ──────────────────────────────────────────────── -->
+      <aside
+        v-if="summaryOpen"
+        class="hidden md:flex flex-col w-52 shrink-0 border-l border-shadow bg-depths overflow-y-auto"
+      >
+        <!-- Header -->
+        <div class="px-4 pt-4 pb-3 border-b border-shadow">
+          <p class="font-mono text-2xs tracking-[0.2em] uppercase text-mist">Preview</p>
+        </div>
+
+        <!-- Portrait / glyph -->
+        <div class="px-4 py-4 flex flex-col items-center gap-2 border-b border-shadow">
+          <div
+            v-if="builder.draft.portraitUrl"
+            class="w-16 h-16 rounded-full overflow-hidden border-2 border-gold-dim/40"
+          >
+            <img :src="builder.draft.portraitUrl" class="w-full h-full object-cover" alt="" />
+          </div>
+          <div
+            v-else
+            class="w-16 h-16 rounded-full border-2 border-shadow bg-abyss flex items-center justify-center"
+          >
+            <span class="text-2xl">{{ classGlyph }}</span>
+          </div>
+          <p class="font-display text-sm text-vellum text-center leading-snug">
+            {{ builder.draft.name || 'Unnamed' }}
+          </p>
+        </div>
+
+        <!-- Details -->
+        <div class="px-4 py-3 space-y-3 flex-1">
+          <div v-if="builder.draft.className">
+            <p class="text-2xs font-heading tracking-[0.18em] uppercase text-mist mb-0.5">Class</p>
+            <p class="text-sm font-heading text-vellum leading-tight">{{ builder.draft.className }}</p>
+            <p v-if="builder.draft.subclassName" class="text-xs font-body text-ash leading-tight">{{ builder.draft.subclassName }}</p>
+            <p class="text-2xs font-mono text-mist/50 mt-0.5">Lv {{ builder.draft.level }} · d{{ builder.draft.classHitDie }}</p>
+          </div>
+
+          <div v-if="builder.draft.raceName">
+            <p class="text-2xs font-heading tracking-[0.18em] uppercase text-mist mb-0.5">Race</p>
+            <p class="text-sm font-heading text-vellum leading-tight">{{ builder.draft.raceName }}</p>
+            <p v-if="builder.draft.subraceName" class="text-xs font-body text-ash leading-tight">{{ builder.draft.subraceName }}</p>
+          </div>
+
+          <div v-if="builder.draft.backgroundName">
+            <p class="text-2xs font-heading tracking-[0.18em] uppercase text-mist mb-0.5">Background</p>
+            <p class="text-sm font-heading text-vellum leading-tight">{{ builder.draft.backgroundName }}</p>
+          </div>
+        </div>
+      </aside>
+
     </div>
   </div>
 </template>
@@ -253,6 +324,7 @@ import StepEquipment from '@/character-builder/steps/StepEquipment.vue'
 import StepSpells from '@/character-builder/steps/StepSpells.vue'
 import StepPersonal from '@/character-builder/steps/StepPersonal.vue'
 import StepReview from '@/character-builder/steps/StepReview.vue'
+import { getClassGlyph } from '@/character-builder/classMeta'
 
 const builder = useBuilderStore()
 const router = useRouter()
@@ -262,6 +334,8 @@ const showErrors = ref(false)
 const showToast = ref(false)
 const prevStep = ref(1)
 const resumeScreen = ref(false)
+const summaryOpen = ref(true)
+const classGlyph = computed(() => builder.draft.classIndex ? getClassGlyph(builder.draft.classIndex) : '◈')
 let _toastTimer: ReturnType<typeof setTimeout> | null = null
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI']
@@ -309,14 +383,14 @@ function isCompleted(stepNumber: number) {
 }
 
 function getStepClass(stepNumber: number) {
-  if (stepNumber === builder.draft.currentStep) return 'bg-arcane-bright/8 dark:bg-arcane-bright/15 border-l-2 border-arcane-bright ml-[-1px]'
+  if (stepNumber === builder.draft.currentStep) return 'bg-gold-mid/8 border-l-2 border-gold-mid ml-[-1px]'
   if (stepNumber < builder.draft.currentStep) return 'hover:bg-shadow/40 cursor-pointer'
-  return 'cursor-not-allowed opacity-40 dark:opacity-60'
+  return 'cursor-not-allowed opacity-40'
 }
 
 function getStepBubbleClass(stepNumber: number) {
-  if (isCompleted(stepNumber)) return 'border-gold-mid/60 bg-gold-mid/15 dark:bg-gold-mid/25 text-gold-dim dark:text-gold-deep'
-  if (stepNumber === builder.draft.currentStep) return 'border-arcane-bright/60 bg-arcane-bright/10 dark:bg-arcane-bright/20 text-arcane-base dark:text-arcane-bright'
+  if (isCompleted(stepNumber)) return 'border-gold-mid/60 bg-gold-mid/15 text-gold-dim'
+  if (stepNumber === builder.draft.currentStep) return 'border-gold-mid bg-gold-mid/20 text-gold-mid ring-2 ring-gold-mid/25'
   return 'border-shadow text-mist bg-transparent'
 }
 

@@ -54,9 +54,20 @@
     </div>
 
     <!-- States -->
-    <div v-if="isPending" class="flex flex-col items-center gap-3 py-16">
-      <div class="animate-spin w-8 h-8 border-2 border-arcane-base border-t-transparent rounded-full" />
-      <p class="text-muted text-sm">Loading {{ loadedCount }} / {{ totalCount }} spells…</p>
+    <!-- Skeleton — matches grid layout, shows progress count as aria-label -->
+    <div
+      v-if="isPending"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+      :aria-label="`Loading spells… ${loadedCount} of ${totalCount}`"
+      aria-busy="true"
+    >
+      <div v-for="i in 12" :key="i" class="card p-4 flex flex-col gap-2">
+        <div class="flex items-start justify-between gap-2">
+          <div class="h-4 w-2/3 skeleton rounded-sm" />
+          <div class="h-5 w-14 skeleton rounded-sm" />
+        </div>
+        <div class="h-3 w-1/2 skeleton rounded-sm" />
+      </div>
     </div>
     <div v-else-if="isError" class="text-center py-16 text-danger">Failed to load spells.</div>
     <div v-else-if="filteredSpells.length === 0" class="text-center py-16 text-muted">No spells match your filters.</div>

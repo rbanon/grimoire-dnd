@@ -2,8 +2,10 @@
   <div>
 
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
-    <header class="border-b border-shadow bg-void">
-      <div class="app-container py-8 sm:py-10">
+    <header class="border-b border-shadow bg-void relative overflow-hidden">
+      <!-- Atmospheric gradient -->
+      <div class="absolute inset-0 bg-gradient-to-b from-gold-dim/5 to-transparent pointer-events-none" />
+      <div class="app-container py-8 sm:py-10 relative">
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
 
           <div>
@@ -47,7 +49,7 @@
         <CloudIcon :size="16" class="text-mist shrink-0" />
         <p class="font-body text-sm text-ash">
           Characters are saved in your browser only.
-          <RouterLink to="/login" class="text-arcane-bright hover:underline underline-offset-2 transition-colors">
+          <RouterLink to="/login" class="text-gold-mid hover:underline underline-offset-2 transition-colors">
             Sign in to sync to the cloud.
           </RouterLink>
         </p>
@@ -73,10 +75,23 @@
         </div>
       </Transition>
 
-      <!-- Loading -->
-      <div v-if="!store.loaded" class="flex flex-col items-center gap-4 py-24">
-        <div class="w-8 h-8 rounded border-2 border-gold-mid/40 border-t-gold-mid animate-spin" />
-        <p class="font-mono text-xs tracking-widest uppercase text-mist">Loading…</p>
+      <!-- Skeleton loading — mirrors CharacterCard grid -->
+      <div v-if="!store.loaded" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div
+          v-for="i in 8"
+          :key="i"
+          class="rounded-lg border border-gold-dim/15 bg-abyss overflow-hidden"
+        >
+          <div class="aspect-[4/3] skeleton" />
+          <div class="px-3.5 pt-2.5 pb-3 flex flex-col gap-2">
+            <div class="h-4 w-2/3 skeleton rounded-sm" />
+            <div class="h-3 w-1/2 skeleton rounded-sm" />
+            <div class="flex gap-1.5 mt-1">
+              <div class="h-4 w-10 skeleton rounded-sm" />
+              <div class="h-4 w-16 skeleton rounded-sm" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Empty state -->

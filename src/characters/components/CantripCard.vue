@@ -1,11 +1,11 @@
 <template>
-  <div class="px-3 py-2.5 rounded border border-arcane-base/20 bg-arcane-deep/5">
+  <div class="px-3 py-2.5 rounded border border-shadow bg-abyss/50">
 
     <!-- Name row -->
     <div class="flex items-center gap-2">
       <button
         type="button"
-        class="font-heading text-sm text-arcane-pale flex-1 min-w-0 truncate text-left hover:text-arcane-bright transition-colors"
+        class="font-heading text-sm text-vellum bg-transparent flex-1 min-w-0 truncate text-left hover:text-gold-mid transition-colors"
         title="Cast cantrip"
         @click="$emit('cast')"
       >{{ cantrip.name }}</button>
@@ -23,7 +23,7 @@
       </button>
       <button
         type="button"
-        class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/20 transition-all"
+        class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist hover:text-arcane-pale hover:bg-arcane-deep/20 transition-all"
         title="View details"
         @click="infoPanel.open({ kind: 'spell', index: cantrip.index })"
       >
@@ -45,7 +45,7 @@
 
       <!-- Loading skeleton -->
       <template v-if="loading">
-        <div class="h-2.5 w-32 rounded bg-shadow/40 animate-pulse" />
+        <div class="h-2.5 w-32 skeleton rounded-sm" />
       </template>
 
       <template v-else-if="spell">

@@ -3,7 +3,6 @@
 
     <!-- Header -->
     <div class="flex items-center justify-between">
-      <p class="font-body text-xs text-mist/50">Quick-access attacks, cantrips, and spells.</p>
       <button
         v-if="editMode"
         type="button"

@@ -27,7 +27,7 @@
             </div>
             <span v-if="kindBadge" class="badge-arcane text-2xs shrink-0 capitalize">{{ kindBadge }}</span>
           </div>
-          <p class="text-right text-blood-bright text-xs font-body italic">This panel is work in progress.</p>        </header>
+        </header>
 
         <!-- Body -->
           <div class="flex-1 overflow-y-auto px-5 py-5 space-y-5">

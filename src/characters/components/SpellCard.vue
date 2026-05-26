@@ -1,5 +1,5 @@
 <template>
-  <div class="px-3 py-2.5 rounded border border-arcane-base/20 bg-arcane-deep/5">
+  <div class="px-3 py-2.5 rounded border border-shadow bg-abyss/50">
 
     <!-- Name row -->
     <div class="flex items-center gap-2">
@@ -20,7 +20,7 @@
       <span v-else-if="spell.prepared" class="text-gold-mid text-2xs shrink-0" title="Prepared">◆</span>
       <button
         type="button"
-        class="font-heading text-sm text-arcane-pale/90 flex-1 min-w-0 truncate text-left hover:text-arcane-pale transition-colors"
+        class="font-heading text-sm text-vellum bg-transparent flex-1 min-w-0 truncate text-left hover:text-gold-mid transition-colors"
         title="Cast spell"
         @click="$emit('cast')"
       >{{ spell.name }}</button>
@@ -38,7 +38,7 @@
       </button>
       <button
         type="button"
-        class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/20 transition-all"
+        class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist hover:text-arcane-pale hover:bg-arcane-deep/20 transition-all"
         title="View details"
         @click="infoPanel.open({ kind: 'spell', index: spell.index })"
       >
@@ -58,7 +58,7 @@
     <!-- Summary row -->
     <div class="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
       <template v-if="loading">
-        <div class="h-2.5 w-40 rounded bg-shadow/40 animate-pulse" />
+        <div class="h-2.5 w-40 skeleton rounded-sm" />
       </template>
       <template v-else-if="detail">
         <span class="text-2xs font-heading tracking-wide text-mist">{{ castingTime }}</span>

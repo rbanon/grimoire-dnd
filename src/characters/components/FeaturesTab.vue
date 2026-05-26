@@ -9,9 +9,9 @@
       </div>
 
       <div v-if="classPending" class="space-y-2">
-        <div v-for="i in 5" :key="i" class="card p-4 animate-pulse">
-          <div class="h-3.5 bg-mist/10 rounded w-2/5 mb-2" />
-          <div class="h-3 bg-mist/10 rounded w-3/5" />
+        <div v-for="i in 5" :key="i" class="card p-4 flex flex-col gap-2">
+          <div class="h-3.5 skeleton rounded-sm w-2/5" />
+          <div class="h-3 skeleton rounded-sm w-3/5" />
         </div>
       </div>
 
@@ -53,8 +53,8 @@
       </div>
 
       <div v-if="racePending" class="space-y-2">
-        <div v-for="i in 3" :key="i" class="card p-4 animate-pulse">
-          <div class="h-3.5 bg-mist/10 rounded w-2/5" />
+        <div v-for="i in 3" :key="i" class="card p-4">
+          <div class="h-3.5 skeleton rounded-sm w-2/5" />
         </div>
       </div>
 
@@ -86,9 +86,9 @@
         <span>Background: {{ character.identity.background.name }}</span>
       </div>
 
-      <div v-if="bgPending" class="card p-4 animate-pulse">
-        <div class="h-3.5 bg-mist/10 rounded w-2/5 mb-2" />
-        <div class="h-3 bg-mist/10 rounded w-3/5" />
+      <div v-if="bgPending" class="card p-4 flex flex-col gap-2">
+        <div class="h-3.5 skeleton rounded-sm w-2/5" />
+        <div class="h-3 skeleton rounded-sm w-3/5" />
       </div>
 
       <FeatureRow

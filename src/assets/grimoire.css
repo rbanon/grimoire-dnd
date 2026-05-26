@@ -4,15 +4,15 @@
 
   /* Parchment palette — light mode only (dark disabled) */
   html {
-    --c-void:    254 249 241;   /* #fef9f1 background */
-    --c-abyss:   248 243 235;   /* #f8f3eb surface-container-low (cards) */
-    --c-depths:  242 237 229;   /* #f2ede5 surface-container (inputs, nested) */
-    --c-shadow:  224 191 186;   /* #e0bfba outline-variant (default borders) */
-    --c-dusk:    200 168 164;
-    --c-mist:    120 96 96;     /* #786060 outline (muted text, emphasis borders) — darkened for WCAG AA */
-    --c-ash:     88 65 62;      /* #58413e on-surface-variant (secondary text) */
-    --c-stone:   54 48 46;
-    --c-vellum:  29 28 23;      /* #1d1c17 on-surface (primary text) */
+    --c-void:    253 248 240;   /* #fdf8f0 background — crema cálido */
+    --c-abyss:   245 237 224;   /* #f5ede0 surface-container-low (cards, pergamino) */
+    --c-depths:  237 224 204;   /* #ede0cc surface-container (inputs, papel antiguo) */
+    --c-shadow:  210 185 155;   /* #d2b99b outline-variant (borders, marrón dorado sutil) */
+    --c-dusk:    188 162 130;   /* #bca282 dividers */
+    --c-mist:    120  88  64;   /* #785840 outline (muted text) */
+    --c-ash:      88  60  40;   /* #583c28 on-surface-variant (secondary text) */
+    --c-stone:    56  40  24;   /* #382818 */
+    --c-vellum:   28  20  10;   /* #1c140a on-surface (primary text, tinta oscura) */
 
     /* Gold Leaf — #D4AF37 */
     --c-gold-dim:    160 120 32;
@@ -91,14 +91,14 @@
     --c-arcane-deep:    64  16  20;
     --c-arcane-base:   148  44  40;
     --c-arcane-mid:    188  56  56;
-    --c-arcane-bright: 220  80  80;   /* warmer, less harsh than pure #D81921 */
+    --c-arcane-bright: 232 120 120;   /* boosted for WCAG AA on dark backgrounds */
     --c-arcane-pale:   236 168 168;   /* text on dark */
 
     /* Blood */
     --c-blood-deep:    72  20  20;
     --c-blood-base:   112  36  36;
-    --c-blood-mid:    144  52  52;
-    --c-blood-bright: 176  72  72;
+    --c-blood-mid:    212 108 108;
+    --c-blood-bright: 224 120 120;
 
     /* Verdant */
     --c-verdant-deep:   20  64  44;
@@ -122,6 +122,23 @@
     --shadow-inner:       inset 0 1px 0 rgba(255,255,255,0.06);
   }
 
+  /* Reset browser default appearance — prevents the native grey fill in all modes */
+  button,
+  [type='button'],
+  [type='reset'],
+  [type='submit'] {
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    line-height: inherit;
+    margin: 0;
+    padding: 0;
+  }
+
   * { box-sizing: border-box; }
 
   body {
@@ -135,10 +152,35 @@
   ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-gold-mid)); }
   * { scrollbar-width: thin; scrollbar-color: rgb(var(--c-shadow)) transparent; }
 
+  /* Hide scrollbar for horizontal scroll containers (tab bars, chip lists) */
+  .scroll-hidden { scrollbar-width: none; }
+  .scroll-hidden::-webkit-scrollbar { display: none; }
+
   ::selection {
     background: rgba(212, 175, 55, 0.22);
     color: rgb(var(--c-vellum));
   }
+}
+
+/* ── Skeleton shimmer — thematic loading placeholder ────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--c-shadow) / 0.25) 25%,
+    rgb(var(--c-shadow) / 0.45) 50%,
+    rgb(var(--c-shadow) / 0.25) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background: rgb(var(--c-shadow) / 0.30); }
 }
 
 /* ── Card entrance animation ─────────────────────────────────────────────── */

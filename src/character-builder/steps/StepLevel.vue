@@ -165,7 +165,13 @@
 
                 <!-- Fighting Style -->
                 <div v-if="choice.kind === 'fighting-style'" class="space-y-2">
-                  <p class="text-xs font-heading text-mist/80 uppercase tracking-wide">Choose a Fighting Style</p>
+                  <p
+                    class="text-xs font-heading uppercase tracking-wide flex items-center gap-1.5"
+                    :class="!builder.draft.levelChoices[lvl]?.[key] ? 'text-gold-mid' : 'text-mist/60'"
+                  >
+                    <span v-if="!builder.draft.levelChoices[lvl]?.[key]" class="text-gold-mid">◆</span>
+                    Choose a Fighting Style
+                  </p>
                   <div class="grid sm:grid-cols-2 gap-1.5">
                     <label
                       v-for="style in getFightingStyles(choice.classIndex)"
@@ -173,7 +179,9 @@
                       class="flex items-start gap-2.5 px-3 py-2.5 rounded border cursor-pointer transition-all"
                       :class="builder.draft.levelChoices[lvl]?.[key] === style.index
                         ? 'border-gold-mid/50 bg-gold-dim/10'
-                        : 'border-shadow hover:border-gold-dim/25'"
+                        : !builder.draft.levelChoices[lvl]?.[key]
+                          ? 'border-gold-dim/30 bg-gold-dim/5 hover:border-gold-mid/50 hover:bg-gold-dim/10'
+                          : 'border-shadow hover:border-gold-dim/35 hover:bg-gold-dim/5'"
                       @click="setChoice(lvl, key, style.index)"
                     >
                       <div class="w-3 h-3 rounded-full border-2 shrink-0 mt-0.5 flex items-center justify-center"
@@ -193,7 +201,13 @@
 
                 <!-- Static choice (e.g. Pact Boon) -->
                 <div v-else-if="choice.kind === 'static'" class="space-y-2">
-                  <p class="text-xs font-heading text-mist/80 uppercase tracking-wide">Choose a {{ choice.label }}</p>
+                  <p
+                    class="text-xs font-heading uppercase tracking-wide flex items-center gap-1.5"
+                    :class="!builder.draft.levelChoices[lvl]?.[key] ? 'text-gold-mid' : 'text-mist/60'"
+                  >
+                    <span v-if="!builder.draft.levelChoices[lvl]?.[key]" class="text-gold-mid">◆</span>
+                    Choose a {{ choice.label }}
+                  </p>
                   <div class="grid sm:grid-cols-2 gap-1.5">
                     <label
                       v-for="opt in choice.options"
@@ -201,7 +215,9 @@
                       class="flex items-start gap-2.5 px-3 py-2.5 rounded border cursor-pointer transition-all"
                       :class="builder.draft.levelChoices[lvl]?.[key] === opt.index
                         ? 'border-gold-mid/50 bg-gold-dim/10'
-                        : 'border-shadow hover:border-gold-dim/25'"
+                        : !builder.draft.levelChoices[lvl]?.[key]
+                          ? 'border-gold-dim/30 bg-gold-dim/5 hover:border-gold-mid/50 hover:bg-gold-dim/10'
+                          : 'border-shadow hover:border-gold-dim/35 hover:bg-gold-dim/5'"
                       @click="setChoice(lvl, key, opt.index)"
                     >
                       <div class="w-3 h-3 rounded-full border-2 shrink-0 mt-0.5 flex items-center justify-center"
@@ -354,11 +370,6 @@ function setChoice(lvl: number, key: string, value: string) {
     builder.draft.levelChoices[lvl] = {}
   }
   builder.draft.levelChoices[lvl][key] = value
-  if (levelChoicesDone(lvl)) {
-    const s = new Set(openLevels.value)
-    s.delete(lvl)
-    openLevels.value = s
-  }
 }
 </script>
 

@@ -89,7 +89,7 @@
             : isSkillSelected(skill.index)
               ? 'border-gold-mid/50 bg-gold-dim/8 cursor-pointer'
               : canSelectMore
-                ? 'border-shadow hover:border-gold-dim/20 hover:bg-depths cursor-pointer'
+                ? 'border-shadow hover:border-gold-mid/50 hover:bg-gold-dim/8 cursor-pointer'
                 : 'border-shadow opacity-50 cursor-not-allowed'"
         >
           <input
@@ -105,7 +105,7 @@
               ? 'border-gold-dim/50 bg-gold-dim/20'
               : isSkillSelected(skill.index)
                 ? 'border-gold-mid bg-gold-dim/30'
-                : 'border-mist group-hover:border-ash'"
+                : 'border-mist/50 group-hover:border-gold-mid/60 group-hover:bg-gold-dim/10'"
           >
             <CheckIcon v-if="isSkillSelected(skill.index) || isBackgroundSkill(skill.index) || isRaceSkill(skill.index)" :size="10" class="text-gold-mid" />
           </div>
