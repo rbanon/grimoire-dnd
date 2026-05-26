@@ -23,7 +23,7 @@
       </button>
       <button
         type="button"
-        class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/20 transition-all"
+        class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist hover:text-arcane-pale hover:bg-arcane-deep/20 transition-all"
         title="View details"
         @click="infoPanel.open({ kind: 'spell', index: cantrip.index })"
       >

@@ -122,7 +122,7 @@
               <button
                 v-if="character.combat.level < 20"
                 type="button"
-                class="w-8 h-8 flex items-center justify-center rounded border transition-colors border-gold-dim/40 text-gold-mid hover:text-gold-bright hover:border-gold-mid/60"
+                class="w-8 h-8 flex items-center justify-center rounded border transition-colors border-gold-dim/70 text-gold-mid hover:text-gold-bright hover:border-gold-mid"
                 title="Level Up"
                 @click="showLevelUp = true"
               >
@@ -132,8 +132,8 @@
                 type="button"
                 class="w-8 h-8 flex items-center justify-center rounded border transition-colors"
                 :class="editMode
-                  ? 'border-shadow/50 text-mist hover:text-ash hover:border-shadow'
-                  : 'border-gold-dim/40 text-gold-mid hover:text-gold-bright hover:border-gold-mid/60'"
+                  ? 'border-shadow text-ash hover:text-vellum hover:border-shadow/80'
+                  : 'border-gold-dim/70 text-gold-mid hover:text-gold-bright hover:border-gold-mid'"
                 :title="editMode ? 'Lock sheet' : 'Unlock sheet'"
                 @click="editMode = !editMode"
               >
@@ -240,7 +240,7 @@
                   >Exh</span>
                   <button
                     type="button"
-                    class="w-5 h-5 flex items-center justify-center text-mist/40 hover:text-ash font-heading text-sm leading-none transition-colors"
+                    class="w-5 h-5 flex items-center justify-center text-mist hover:text-ash font-heading text-sm leading-none transition-colors"
                     @click="adjustExhaustion(-1)"
                   >−</button>
                   <span
@@ -249,7 +249,7 @@
                   >{{ character.combat.exhaustion ?? 0 }}</span>
                   <button
                     type="button"
-                    class="w-5 h-5 flex items-center justify-center text-mist/40 hover:text-ash font-heading text-sm leading-none transition-colors"
+                    class="w-5 h-5 flex items-center justify-center text-mist hover:text-ash font-heading text-sm leading-none transition-colors"
                     @click="adjustExhaustion(1)"
                   >+</button>
                 </div>
@@ -616,18 +616,24 @@
           <!-- ── RIGHT PANEL: Tabs ─────────────────────────────────────────── -->
           <main class="min-w-0 pb-16">
 
-            <!-- Tab bar -->
-            <div class="border-b border-shadow mb-5">
-              <div class="flex gap-0 overflow-x-auto">
+            <!-- Tab bar — grimoire chapter navigation -->
+            <div class="mb-5">
+              <div class="border-b border-gold-dim/25 flex overflow-x-auto scroll-hidden">
                 <button
                   v-for="tab in tabs"
                   :key="tab.id"
-                  class="px-4 py-3 text-sm font-heading tracking-wide border-b-[3px] transition-all duration-150 whitespace-nowrap shrink-0"
+                  class="relative px-4 py-2.5 font-mono text-xs tracking-[0.16em] uppercase transition-colors duration-150 whitespace-nowrap shrink-0"
                   :class="activeTab === tab.id
-                    ? 'border-gold-mid text-gold-mid'
-                    : 'border-transparent text-ash hover:text-stone hover:border-shadow/60'"
+                    ? 'text-gold-mid bg-gold-dim/5'
+                    : 'text-mist hover:text-stone'"
                   @click="activeTab = tab.id"
-                >{{ tab.label }}</button>
+                >
+                  {{ tab.label }}
+                  <span
+                    v-if="activeTab === tab.id"
+                    class="absolute inset-x-0 -bottom-px h-[2px] bg-gradient-to-r from-transparent via-gold-mid to-transparent"
+                  />
+                </button>
               </div>
             </div>
 

@@ -56,7 +56,7 @@
             </div>
             <span class="hidden lg:inline">{{ displayName }}</span>
           </RouterLink>
-          <button class="btn-ghost text-xs px-2.5 py-1" @click="auth.signOut">
+          <button class="btn-ghost text-xs px-2.5 py-1 border border-shadow hover:border-gold-dim/60" @click="auth.signOut">
             Sign out
           </button>
         </template>

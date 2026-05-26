@@ -119,22 +119,26 @@ export default defineConfig({
 
     // ── Buttons
     'btn-base':
-      'inline-flex items-center justify-center gap-2 font-heading text-sm tracking-wide transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-mid focus-visible:ring-offset-2 focus-visible:ring-offset-void disabled:opacity-40 disabled:pointer-events-none select-none',
+      'appearance-none inline-flex items-center justify-center gap-2 font-heading text-sm tracking-wide transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-mid focus-visible:ring-offset-2 focus-visible:ring-offset-void disabled:opacity-40 disabled:pointer-events-none select-none',
 
+    // Warm gold gradient — reads like pressed gold leaf, not a generic UI rectangle
     'btn-primary':
-      'btn-base px-5 py-2 rounded bg-gold-base text-void font-semibold hover:bg-gold-mid active:bg-gold-dim',
+      'btn-base px-5 py-2 rounded font-semibold text-void bg-gradient-to-b from-gold-mid to-gold-base hover:from-gold-bright hover:to-gold-mid active:from-gold-dim active:to-gold-base',
 
+    // Thin warm border, transparent interior — gilded frame, not a block
     'btn-secondary':
-      'btn-base px-5 py-2 rounded border border-gold-dim/60 bg-transparent text-stone hover:border-gold-mid hover:text-vellum',
+      'btn-base px-5 py-2 rounded border border-gold-dim/50 text-stone hover:border-gold-mid hover:text-vellum',
 
+    // Text-only interaction — no box at all
     'btn-ghost':
-      'btn-base px-3 py-1.5 rounded text-stone hover:text-vellum hover:bg-dusk/20',
+      'btn-base px-3 py-1.5 rounded text-stone hover:text-vellum hover:bg-gold-dim/10',
 
+    // Blood gradient — matches primary treatment
     'btn-danger':
-      'btn-base px-5 py-2 rounded bg-blood-mid text-white hover:bg-blood-bright',
+      'btn-base px-5 py-2 rounded font-semibold text-white bg-gradient-to-b from-blood-bright to-blood-mid hover:from-blood-mid hover:to-blood-base active:from-blood-base active:to-blood-deep',
 
     'btn-icon':
-      'btn-base p-2 rounded text-stone hover:text-vellum hover:bg-dusk/20',
+      'btn-base p-2 rounded text-mist/70 hover:text-stone hover:bg-gold-dim/10',
 
     // ── Form controls
     'input-base':
