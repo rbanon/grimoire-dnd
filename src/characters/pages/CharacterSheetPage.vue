@@ -116,9 +116,34 @@
 
             <!-- Utility buttons -->
             <div class="flex items-center gap-1 shrink-0">
-              <button class="btn-secondary p-1.5" title="Export character" @click="downloadExport">
-                <DownloadIcon :size="14" />
-              </button>
+              <!-- Options menu (print / export) -->
+              <div class="relative">
+                <button
+                  class="w-8 h-8 flex items-center justify-center rounded border border-shadow text-mist hover:text-ash hover:border-shadow/80 transition-colors"
+                  title="Options"
+                  @click="optionsMenuOpen = !optionsMenuOpen"
+                >
+                  <MoreHorizontalIcon :size="14" />
+                </button>
+                <div v-if="optionsMenuOpen" class="fixed inset-0 z-40" @click="optionsMenuOpen = false" />
+                <div v-if="optionsMenuOpen" class="absolute right-0 top-full mt-1 z-50 w-48 bg-abyss border border-shadow rounded shadow-xl py-1">
+                  <button
+                    class="w-full text-left px-3 py-2.5 text-sm font-body text-ash hover:bg-depths hover:text-vellum transition-colors flex items-center gap-2.5"
+                    @click="optionsMenuOpen = false; printSheet()"
+                  >
+                    <PrinterIcon :size="13" class="text-mist shrink-0" />
+                    Print / Export PDF
+                  </button>
+                  <div class="mx-3 my-0.5 border-t border-shadow/40" />
+                  <button
+                    class="w-full text-left px-3 py-2.5 text-sm font-body text-ash hover:bg-depths hover:text-vellum transition-colors flex items-center gap-2.5"
+                    @click="optionsMenuOpen = false; downloadExport()"
+                  >
+                    <DownloadIcon :size="13" class="text-mist shrink-0" />
+                    Export JSON
+                  </button>
+                </div>
+              </div>
               <button
                 v-if="character.combat.level < 20"
                 type="button"
@@ -720,12 +745,15 @@
       @close="showAbilityModal = false"
       @save="onAbilitiesSaved"
     />
+
+    <!-- ── Print view (teleported to body, only visible during @media print) ── -->
+    <CharacterPrintView v-if="character" :character="character" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { ChevronDownIcon, DownloadIcon, EyeIcon, ImageIcon, LockIcon, LockOpenIcon, PencilIcon, ShieldIcon, SparklesIcon, StarIcon, TrendingUpIcon, WindIcon, ZapIcon } from 'lucide-vue-next'
+import { ChevronDownIcon, DownloadIcon, EyeIcon, ImageIcon, LockIcon, LockOpenIcon, MoreHorizontalIcon, PencilIcon, PrinterIcon, ShieldIcon, SparklesIcon, StarIcon, TrendingUpIcon, WindIcon, ZapIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName, AbilityScores } from '@/shared/types/character'
@@ -751,6 +779,7 @@ import ShortRestModal from '@/characters/components/ShortRestModal.vue'
 import LevelUpModal from '@/characters/components/LevelUpModal.vue'
 import LongRestModal from '@/characters/components/LongRestModal.vue'
 import AbilityScoresModal from '@/characters/components/AbilityScoresModal.vue'
+import CharacterPrintView from '@/characters/components/CharacterPrintView.vue'
 
 const props = defineProps<{ id: string }>()
 const store = useCharactersStore()
@@ -765,6 +794,7 @@ const editMode = ref(localStorage.getItem(EDIT_MODE_KEY) === 'true')
 watch(editMode, v => localStorage.setItem(EDIT_MODE_KEY, String(v)))
 const leftPanelOpen = ref(false)
 const restDropdownOpen = ref(false)
+const optionsMenuOpen = ref(false)
 const showShortRest = ref(false)
 const showLongRest  = ref(false)
 const showLevelUp   = ref(false)
@@ -1310,7 +1340,11 @@ async function onLeveled(updates: Partial<Character>) {
   dialog.open({ title: `Level ${newLvl}!`, body: `${name} has grown in power.`, items, variant: 'success' })
 }
 
-// ── Export ────────────────────────────────────────────────────────────────────
+// ── Print / Export ────────────────────────────────────────────────────────────
+
+function printSheet() {
+  window.print()
+}
 
 function downloadExport() {
   if (!character.value) return
