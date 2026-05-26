@@ -13,6 +13,11 @@ dist/
 .DS_Store
 Thumbs.db
 
+# Screenshots / local reference images
+*.png
+*.jpg
+*.jpeg
+
 # Auto-generated types (Vite / unplugin)
 src/auto-imports.d.ts
 src/components.d.ts
