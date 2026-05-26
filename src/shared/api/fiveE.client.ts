@@ -18,6 +18,42 @@ import type {
 } from '../types/api'
 
 const BASE_URL = import.meta.env.VITE_5E_API_BASE ?? 'https://www.dnd5eapi.co/api/2014'
+const LS_PREFIX = 'dnd5e:1:'
+
+// Serial queue with a gap between requests to stay under the API rate limit.
+// Cached (localStorage) requests skip the queue entirely and return instantly.
+const REQUEST_GAP_MS = 150
+const pending: Array<() => Promise<void>> = []
+let draining = false
+
+function enqueue<T>(fn: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    pending.push(() => fn().then(resolve, reject))
+    if (!draining) drain()
+  })
+}
+
+function drain(): void {
+  const next = pending.shift()
+  if (!next) { draining = false; return }
+  draining = true
+  next().finally(() => setTimeout(drain, REQUEST_GAP_MS))
+}
+
+function lsRead<T>(key: string): T | null {
+  try {
+    const v = localStorage.getItem(key)
+    return v ? JSON.parse(v) as T : null
+  } catch {
+    return null
+  }
+}
+
+function lsWrite(key: string, data: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(data))
+  } catch {}
+}
 
 async function get<T>(path: string, params?: Record<string, string>): Promise<T> {
   const url = new URL(`${BASE_URL}${path}`)
@@ -26,9 +62,17 @@ async function get<T>(path: string, params?: Record<string, string>): Promise<T>
       if (v !== undefined && v !== '') url.searchParams.set(k, v)
     }
   }
-  const res = await fetch(url.toString())
-  if (!res.ok) throw new Error(`5e API error: ${res.status} ${res.statusText} (${path})`)
-  return res.json() as Promise<T>
+  const cacheKey = LS_PREFIX + url.pathname + url.search
+  const cached = lsRead<T>(cacheKey)
+  if (cached) return cached
+
+  return enqueue(async () => {
+    const res = await fetch(url.toString())
+    if (!res.ok) throw new Error(`5e API error: ${res.status} ${res.statusText} (${path})`)
+    const data = await res.json() as T
+    lsWrite(cacheKey, data)
+    return data
+  })
 }
 
 // ── Reference lists (cached forever — SRD data never changes) ────────────────

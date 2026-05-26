@@ -1,11 +1,11 @@
 <template>
-  <div class="px-3 py-2.5 rounded border border-arcane-base/20 bg-arcane-deep/5">
+  <div class="px-3 py-2.5 rounded border border-shadow bg-abyss/50">
 
     <!-- Name row -->
     <div class="flex items-center gap-2">
       <button
         type="button"
-        class="font-heading text-sm text-arcane-pale flex-1 min-w-0 truncate text-left hover:text-arcane-bright transition-colors"
+        class="font-heading text-sm text-vellum bg-transparent flex-1 min-w-0 truncate text-left hover:text-gold-mid transition-colors"
         title="Cast cantrip"
         @click="$emit('cast')"
       >{{ cantrip.name }}</button>

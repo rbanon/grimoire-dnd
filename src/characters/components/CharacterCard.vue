@@ -25,7 +25,7 @@
       <!-- Name overlaid on portrait bottom -->
       <div class="absolute inset-x-0 bottom-0 px-3.5 pb-3 pointer-events-none">
         <div class="flex items-end justify-between gap-2">
-          <h3 class="font-display text-lg text-vellum leading-snug line-clamp-2 flex-1 min-w-0" style="text-shadow: 0 1px 4px rgba(0,0,0,0.5)">
+          <h3 class="font-display text-lg text-vellum leading-snug line-clamp-2 flex-1 min-w-0">
             {{ summary.name }}
           </h3>
           <span class="badge-gold shrink-0 mb-0.5">Lv {{ summary.level }}</span>
@@ -53,24 +53,17 @@
     </RouterLink>
 
     <!-- Info panel -->
-    <div class="px-3.5 pt-2.5 pb-3 flex flex-col gap-2 flex-1">
+    <div class="px-3.5 pt-2.5 pb-3 flex flex-col gap-1.5 flex-1">
 
-      <!-- Race · Class -->
-      <p class="font-body text-sm text-ash truncate leading-snug">
-        {{ summary.race }}<span class="text-dusk mx-1.5">·</span>{{ summary.className }}
+      <!-- Race · Class — Subclass -->
+      <p class="font-body text-sm text-ash leading-snug truncate">
+        {{ summary.race }}<span class="text-dusk mx-1.5">·</span>{{ summary.className }}<span v-if="summary.subclassName" class="text-mist/70"> — {{ summary.subclassName }}</span>
       </p>
 
-      <!-- HP + AC stats -->
-      <div class="flex items-center gap-2">
-        <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-depths border border-shadow/60 flex-1">
-          <HeartIcon :size="11" class="text-blood-bright shrink-0" />
-          <span class="font-mono text-xs text-vellum tabular-nums">{{ summary.currentHp }}<span class="text-mist">/{{ summary.maxHp }}</span></span>
-        </div>
-        <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-depths border border-shadow/60 flex-1">
-          <ShieldIcon :size="11" class="text-gold-mid shrink-0" />
-          <span class="font-mono text-xs text-vellum tabular-nums">{{ summary.armorClass }}</span>
-        </div>
-        <p class="font-mono text-2xs text-mist/60 tracking-wide">{{ relativeTime }}</p>
+      <!-- Last edited + campaigns placeholder -->
+      <div class="flex items-center justify-between gap-2 mt-auto">
+        <p class="font-mono text-2xs text-mist/50 tracking-wide">{{ relativeTime }}</p>
+        <span class="text-2xs font-heading tracking-widest uppercase text-mist/25">No campaign</span>
       </div>
 
     </div>
@@ -79,7 +72,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { CopyIcon, DownloadIcon, Trash2Icon, HeartIcon, ShieldIcon } from 'lucide-vue-next'
+import { CopyIcon, DownloadIcon, Trash2Icon } from 'lucide-vue-next'
 import type { CharacterSummary } from '@/shared/types/character'
 import { getClassGlyph } from '@/character-builder/classMeta'
 

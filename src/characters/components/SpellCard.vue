@@ -1,5 +1,5 @@
 <template>
-  <div class="px-3 py-2.5 rounded border border-arcane-base/20 bg-arcane-deep/5">
+  <div class="px-3 py-2.5 rounded border border-shadow bg-abyss/50">
 
     <!-- Name row -->
     <div class="flex items-center gap-2">
@@ -20,7 +20,7 @@
       <span v-else-if="spell.prepared" class="text-gold-mid text-2xs shrink-0" title="Prepared">◆</span>
       <button
         type="button"
-        class="font-heading text-sm text-arcane-pale/90 flex-1 min-w-0 truncate text-left hover:text-arcane-pale transition-colors"
+        class="font-heading text-sm text-vellum bg-transparent flex-1 min-w-0 truncate text-left hover:text-gold-mid transition-colors"
         title="Cast spell"
         @click="$emit('cast')"
       >{{ spell.name }}</button>

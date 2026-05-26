@@ -371,6 +371,7 @@ export interface CharacterSummary {
   name: string
   race: string
   className: string
+  subclassName?: string
   level: number
   portraitUrl: string | null
   updatedAt: string
@@ -384,7 +385,8 @@ export function toCharacterSummary(c: Character): CharacterSummary {
     id: c.id,
     name: c.identity.name,
     race: c.identity.subrace?.name ?? c.identity.race.name,
-    className: c.identity.subclass?.name ?? c.identity.class.name,
+    className: c.identity.class.name,
+    subclassName: c.identity.subclass?.name,
     level: c.combat.level,
     portraitUrl: c.portrait.type === 'url' ? c.portrait.url : null,
     updatedAt: c.updatedAt,

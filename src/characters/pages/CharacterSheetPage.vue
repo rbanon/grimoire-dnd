@@ -150,18 +150,11 @@
         <div class="app-container py-3">
 
           <!-- Stat boxes row — horizontally scrollable on mobile -->
-          <div class="flex items-start gap-2 overflow-x-auto pb-1 -mb-1 sm:overflow-x-visible sm:pb-0 sm:mb-0">
-            <!-- Stat grid -->
-            <div
-              class="grid gap-2 flex-1 min-w-0 items-start"
-              :class="character.spellcasting
-                ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8'
-                : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'"
-            >
+          <div class="flex items-start gap-2 overflow-x-auto pb-1 -mb-1 lg:overflow-x-visible lg:pb-0 lg:mb-0">
 
-            <!-- HP (special widget) -->
+            <!-- HP (special widget — always first, sized by content) -->
             <div
-              class="card flex flex-col items-center p-3 min-w-0"
+              class="card flex flex-col items-center p-3 shrink-0"
               :class="hpPercent < 0.25 ? 'border-blood-base/50' : ''"
             >
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">HP</p>
@@ -309,8 +302,11 @@
               </div>
             </div>
 
+            <!-- Equal-width stat boxes -->
+            <div class="flex flex-1 gap-2 items-start">
+
             <!-- AC -->
-            <div class="card flex flex-col items-center justify-center p-3 min-w-0">
+            <div class="card flex flex-col items-center justify-center p-3 flex-1 min-w-[80px]">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">AC</p>
               <input
                 v-if="acEditing && editMode"
@@ -326,14 +322,14 @@
               <button
                 v-else
                 type="button"
-                class="font-heading text-2xl text-vellum mt-0.5 leading-none transition-colors"
+                class="font-heading text-2xl text-vellum bg-transparent mt-0.5 leading-none transition-colors"
                 :class="editMode ? 'hover:text-gold-mid cursor-pointer' : 'cursor-default'"
                 @click="editMode && startAcEdit()"
               >{{ character.combat.armorClass }}</button>
             </div>
 
             <!-- Initiative (editable in edit mode, roll on click otherwise) -->
-            <div class="card flex flex-col items-center justify-center p-3 min-w-[60px]">
+            <div class="card flex flex-col items-center justify-center p-3 flex-1 min-w-[80px]">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Init</p>
               <input
                 v-if="initEditing && editMode"
@@ -348,7 +344,7 @@
               <button
                 v-else
                 type="button"
-                class="font-heading text-2xl text-vellum mt-0.5 leading-none transition-colors"
+                class="font-heading text-2xl text-vellum bg-transparent mt-0.5 leading-none transition-colors"
                 :class="editMode ? 'hover:text-gold-mid cursor-pointer' : 'hover:text-gold-mid cursor-pointer'"
                 :title="editMode ? 'Click to override initiative' : 'Roll Initiative'"
                 @click="editMode ? startInitEdit() : rollD20(initiativeMod, 'Initiative', $event)"
@@ -363,7 +359,7 @@
             </div>
 
             <!-- Speed (editable in edit mode) -->
-            <div class="card flex flex-col items-center justify-center p-3 min-w-0">
+            <div class="card flex flex-col items-center justify-center p-3 flex-1 min-w-[80px]">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Speed</p>
               <div class="flex items-baseline gap-0.5 mt-0.5">
                 <input
@@ -381,7 +377,7 @@
                 <button
                   v-else
                   type="button"
-                  class="font-heading text-2xl text-vellum leading-none transition-colors"
+                  class="font-heading text-2xl text-vellum bg-transparent leading-none transition-colors"
                   :class="editMode ? 'hover:text-gold-mid cursor-pointer' : 'cursor-default'"
                   :title="editMode ? 'Click to override speed' : ''"
                   @click="editMode && startSpeedEdit()"
@@ -398,38 +394,38 @@
             </div>
 
             <!-- Passive Perception -->
-            <div class="card flex flex-col items-center justify-center p-3 min-w-0">
+            <div class="card flex flex-col items-center justify-center p-3 flex-1 min-w-[80px]">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Pass. Perc</p>
               <p class="font-heading text-2xl text-vellum mt-0.5 leading-none">{{ passivePerception }}</p>
             </div>
 
             <!-- Prof Bonus -->
-            <div class="card flex flex-col items-center justify-center p-3 min-w-0">
+            <div class="card flex flex-col items-center justify-center p-3 flex-1 min-w-[80px]">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Prof</p>
               <p class="font-heading text-2xl text-vellum mt-0.5 leading-none">+{{ profBonus }}</p>
             </div>
 
             <!-- Spell Save DC -->
-            <div v-if="character.spellcasting" class="card flex flex-col items-center justify-center p-3 min-w-0">
+            <div v-if="character.spellcasting" class="card flex flex-col items-center justify-center p-3 flex-1 min-w-[80px]">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Spell DC</p>
               <p class="font-heading text-2xl text-gold-mid mt-0.5 leading-none">{{ spellSaveDC }}</p>
             </div>
 
             <!-- Spell Attack Bonus (clickable roll) -->
-            <div v-if="character.spellcasting" class="card flex flex-col items-center justify-center p-3 min-w-0">
+            <div v-if="character.spellcasting" class="card flex flex-col items-center justify-center p-3 flex-1 min-w-[80px]">
               <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Spell Atk</p>
               <button
                 type="button"
-                class="font-heading text-2xl text-gold-mid mt-0.5 leading-none hover:text-gold-bright transition-colors"
+                class="font-heading text-2xl text-gold-mid bg-transparent mt-0.5 leading-none hover:text-gold-bright transition-colors"
                 title="Roll Spell Attack"
                 @click="rollD20(spellAttackBonus, 'Spell Attack', $event)"
               >{{ fmt(spellAttackBonus) }}</button>
             </div>
 
-            </div><!-- /stat grid -->
+            </div><!-- /equal stat boxes -->
 
             <!-- Rest buttons + Hit Dice -->
-            <div class="flex flex-col gap-1 self-center shrink-0">
+            <div class="flex flex-col gap-1 shrink-0">
               <button
                 class="btn-secondary text-xs py-1.5 px-3"
                 @click="showShortRest = true"
@@ -472,7 +468,22 @@
         <div class="lg:grid lg:grid-cols-[288px_1fr] lg:gap-8 pt-5 lg:pt-6">
 
           <!-- ── LEFT PANEL: Abilities · Saves · Skills ─────────────────────── -->
-          <aside class="space-y-7 mb-8 lg:mb-0">
+          <aside class="mb-8 lg:mb-0">
+
+            <!-- Mobile/tablet toggle -->
+            <button
+              class="lg:hidden w-full flex items-center justify-between px-3 py-2.5 rounded border border-shadow bg-abyss hover:border-gold-dim/40 transition-colors mb-4"
+              @click="leftPanelOpen = !leftPanelOpen"
+            >
+              <span class="text-xs font-heading tracking-wide uppercase text-stone">Stats &amp; Skills</span>
+              <ChevronDownIcon
+                :size="14"
+                class="text-mist transition-transform duration-200"
+                :class="leftPanelOpen ? 'rotate-180' : ''"
+              />
+            </button>
+
+            <div class="space-y-7" :class="{ 'hidden lg:block': !leftPanelOpen }">
 
             <!-- Ability Scores -->
             <section>
@@ -617,6 +628,7 @@
               </div>
             </section>
 
+            </div><!-- /collapsible -->
           </aside>
 
           <!-- ── RIGHT PANEL: Tabs ─────────────────────────────────────────── -->
@@ -717,7 +729,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { DownloadIcon, ImageIcon, InfoIcon, LockIcon, LockOpenIcon, PencilIcon, TrendingUpIcon } from 'lucide-vue-next'
+import { ChevronDownIcon, DownloadIcon, ImageIcon, InfoIcon, LockIcon, LockOpenIcon, PencilIcon, TrendingUpIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName, AbilityScores } from '@/shared/types/character'
@@ -757,6 +769,7 @@ const { rollD20 } = useRoll()
 const EDIT_MODE_KEY = 'grimoire:editMode'
 const editMode = ref(localStorage.getItem(EDIT_MODE_KEY) === 'true')
 watch(editMode, v => localStorage.setItem(EDIT_MODE_KEY, String(v)))
+const leftPanelOpen = ref(false)
 const showShortRest = ref(false)
 const showLongRest  = ref(false)
 const showLevelUp   = ref(false)

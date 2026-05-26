@@ -179,6 +179,6 @@ export default defineConfig({
     'nav-link':
       'flex items-center gap-2 px-3 py-1.5 rounded text-sm font-heading tracking-wider text-stone hover:text-vellum hover:bg-dusk/20 transition-all duration-150',
     'nav-link-active':
-      'nav-link text-gold-mid hover:text-gold-mid font-semibold border-b-2 border-gold-mid rounded-none',
+      'nav-link text-gold-deep hover:text-gold-deep font-semibold border-b-2 border-gold-mid rounded-none',
   },
 })
