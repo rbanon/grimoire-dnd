@@ -28,6 +28,10 @@ let draining = false
 
 function enqueue<T>(fn: () => Promise<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
+    if (pending.length >= 200) {
+      reject(new Error('5e API queue full — too many concurrent requests'))
+      return
+    }
     pending.push(() => fn().then(resolve, reject))
     if (!draining) drain()
   })
@@ -52,7 +56,9 @@ function lsRead<T>(key: string): T | null {
 function lsWrite(key: string, data: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(data))
-  } catch {}
+  } catch (e) {
+    console.warn('[5e cache] localStorage write failed (quota exceeded?)', e)
+  }
 }
 
 async function get<T>(path: string, params?: Record<string, string>): Promise<T> {

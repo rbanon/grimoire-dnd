@@ -60,10 +60,12 @@
         {{ summary.race }}<span class="text-dusk mx-1.5">·</span>{{ summary.className }}<span v-if="summary.subclassName" class="text-mist/70"> — {{ summary.subclassName }}</span>
       </p>
 
-      <!-- Last edited + campaigns placeholder -->
+      <!-- Last edited + HP/AC -->
       <div class="flex items-center justify-between gap-2 mt-auto">
         <p class="font-mono text-2xs text-mist/50 tracking-wide">{{ relativeTime }}</p>
-        <span class="text-2xs font-heading tracking-widest uppercase text-mist/25">No campaign</span>
+        <span class="font-mono text-2xs text-mist/50 tracking-wide">
+          {{ summary.currentHp }}/{{ summary.maxHp }} HP · {{ summary.armorClass }} AC
+        </span>
       </div>
 
     </div>

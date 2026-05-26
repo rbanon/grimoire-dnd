@@ -335,7 +335,7 @@ const showToast = ref(false)
 const prevStep = ref(1)
 const resumeScreen = ref(false)
 const summaryOpen = ref(true)
-const classGlyph = computed(() => builder.draft.classIndex ? getClassGlyph(builder.draft.classIndex) : '⚔')
+const classGlyph = computed(() => builder.draft.classIndex ? getClassGlyph(builder.draft.classIndex) : '◈')
 let _toastTimer: ReturnType<typeof setTimeout> | null = null
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI']

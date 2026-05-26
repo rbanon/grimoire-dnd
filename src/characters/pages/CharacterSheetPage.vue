@@ -211,10 +211,14 @@
                     v-for="pip in 3"
                     :key="`s${pip}`"
                     type="button"
-                    class="w-3 h-3 rounded-full border-2 transition-all duration-100 cursor-pointer hover:border-gold-dim/60"
-                    :class="pip <= deathSaves.successes ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/30'"
+                    class="group w-11 h-11 flex items-center justify-center -m-4 transition-all duration-100 cursor-pointer"
                     @click="toggleDeathSave('successes', pip)"
-                  />
+                  >
+                    <span
+                      class="w-3 h-3 rounded-full border-2 pointer-events-none transition-all duration-100"
+                      :class="pip <= deathSaves.successes ? 'bg-gold-mid border-gold-mid' : 'bg-transparent border-mist/30 group-hover:border-gold-dim/60'"
+                    />
+                  </button>
                 </div>
                 <span class="text-mist/20 text-xs">|</span>
                 <div class="flex items-center gap-0.5">
@@ -222,10 +226,14 @@
                     v-for="pip in 3"
                     :key="`f${pip}`"
                     type="button"
-                    class="w-3 h-3 rounded-full border-2 transition-all duration-100 cursor-pointer hover:border-blood-base/60"
-                    :class="pip <= deathSaves.failures ? 'bg-blood-bright border-blood-bright' : 'bg-transparent border-mist/30'"
+                    class="group w-11 h-11 flex items-center justify-center -m-4 transition-all duration-100 cursor-pointer"
                     @click="toggleDeathSave('failures', pip)"
-                  />
+                  >
+                    <span
+                      class="w-3 h-3 rounded-full border-2 pointer-events-none transition-all duration-100"
+                      :class="pip <= deathSaves.failures ? 'bg-blood-bright border-blood-bright' : 'bg-transparent border-mist/30 group-hover:border-blood-base/60'"
+                    />
+                  </button>
                 </div>
               </div>
 
