@@ -213,19 +213,6 @@ interface ReferenceItem {
   name: string
 }
 
-interface ItemListData {
-  equipment: ReferenceItem[]
-  magicItems: ReferenceItem[]
-  weaponItemIndexes: Set<string>
-  armorItemIndexes: Set<string>
-  toolItemIndexes: Set<string>
-  gearItemIndexes: Set<string>
-}
-
-interface ItemDetailData {
-  equipment: ApiEquipment[]
-  magicItems: ApiMagicItem[]
-}
 
 const { data: allListData, isPending: isListPending, isError: isListError } = useQuery({
   queryKey: ['items-list'],

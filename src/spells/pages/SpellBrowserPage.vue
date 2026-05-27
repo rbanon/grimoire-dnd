@@ -193,7 +193,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { LayoutGridIcon, ListIcon } from 'lucide-vue-next'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import type { ApiSpell } from '@/shared/types/api'
@@ -322,12 +322,12 @@ const pagedSpellRefs = computed(() => {
   return filteredSpells.value.slice(start, start + PAGE_SIZE)
 })
 
-const { data: pageSpellDetails, isPending: isPageDetailsPending } = useQuery({
+const { data: pageSpellDetails } = useQuery({
   queryKey: computed(() => ['spell-page-details', pagedSpellRefs.value.map(spell => spell.index).join(',')]),
   queryFn: async () => Promise.all(pagedSpellRefs.value.map(spell => fiveEApi.getSpell(spell.index))),
   enabled: computed(() => pagedSpellRefs.value.length > 0),
   staleTime: Infinity,
-  keepPreviousData: true,
+  placeholderData: keepPreviousData,
 })
 
 const pageSpellDetailMap = computed(() => new Map(pageSpellDetails.value?.map(spell => [spell.index, spell]) ?? []))
@@ -348,7 +348,7 @@ const pagedSpells = computed(() => {
     level: -1,
     attack_type: undefined,
     damage: undefined,
-    school: { name: 'Unknown' },
+    school: { index: '', name: 'Unknown', url: '' },
     classes: [],
     subclasses: [],
     url: '',
