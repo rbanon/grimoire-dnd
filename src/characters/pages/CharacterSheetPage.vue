@@ -114,56 +114,62 @@
               </div>
             </div>
 
-            <!-- Utility buttons -->
-            <div class="flex items-center gap-1 shrink-0">
-              <!-- Options menu (print / export) -->
-              <div class="relative">
-                <button
-                  class="w-8 h-8 flex items-center justify-center rounded border border-shadow text-mist hover:text-ash hover:border-shadow/80 transition-colors"
-                  title="Options"
-                  @click="optionsMenuOpen = !optionsMenuOpen"
-                >
-                  <MoreHorizontalIcon :size="14" />
-                </button>
-                <div v-if="optionsMenuOpen" class="fixed inset-0 z-40" @click="optionsMenuOpen = false" />
-                <div v-if="optionsMenuOpen" class="absolute right-0 top-full mt-1 z-50 w-48 bg-abyss border border-shadow rounded shadow-xl py-1">
+            <!-- Utility column: icon row + Level Up on its own line -->
+            <div class="flex flex-col items-stretch sm:items-end gap-2 shrink-0">
+
+              <!-- Icon row: options, lock -->
+              <div class="flex items-center justify-end gap-1">
+                <!-- Options menu (print / export) -->
+                <div class="relative">
                   <button
-                    class="w-full text-left px-3 py-2.5 text-sm font-body text-ash hover:bg-depths hover:text-vellum transition-colors flex items-center gap-2.5"
-                    @click="optionsMenuOpen = false; printSheet()"
+                    class="w-8 h-8 flex items-center justify-center rounded border border-shadow text-mist hover:text-ash hover:border-shadow/80 transition-colors"
+                    title="Options"
+                    @click="optionsMenuOpen = !optionsMenuOpen"
                   >
-                    <PrinterIcon :size="13" class="text-mist shrink-0" />
-                    Print / Export PDF
+                    <MoreHorizontalIcon :size="14" />
                   </button>
-                  <div class="mx-3 my-0.5 border-t border-shadow/40" />
-                  <button
-                    class="w-full text-left px-3 py-2.5 text-sm font-body text-ash hover:bg-depths hover:text-vellum transition-colors flex items-center gap-2.5"
-                    @click="optionsMenuOpen = false; downloadExport()"
-                  >
-                    <DownloadIcon :size="13" class="text-mist shrink-0" />
-                    Export JSON
-                  </button>
+                  <div v-if="optionsMenuOpen" class="fixed inset-0 z-40" @click="optionsMenuOpen = false" />
+                  <div v-if="optionsMenuOpen" class="absolute right-0 top-full mt-1 z-50 w-48 bg-abyss border border-shadow rounded shadow-xl py-1">
+                    <button
+                      class="w-full text-left px-3 py-2.5 text-sm font-body text-ash hover:bg-depths hover:text-vellum transition-colors flex items-center gap-2.5"
+                      @click="optionsMenuOpen = false; printSheet()"
+                    >
+                      <PrinterIcon :size="13" class="text-mist shrink-0" />
+                      Print / Export PDF
+                    </button>
+                    <div class="mx-3 my-0.5 border-t border-shadow/40" />
+                    <button
+                      class="w-full text-left px-3 py-2.5 text-sm font-body text-ash hover:bg-depths hover:text-vellum transition-colors flex items-center gap-2.5"
+                      @click="optionsMenuOpen = false; downloadExport()"
+                    >
+                      <DownloadIcon :size="13" class="text-mist shrink-0" />
+                      Export JSON
+                    </button>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  class="w-8 h-8 flex items-center justify-center rounded border transition-colors"
+                  :class="editMode
+                    ? 'border-shadow text-ash hover:text-vellum hover:border-shadow/80'
+                    : 'border-gold-dim/70 text-gold-mid hover:text-gold-bright hover:border-gold-mid'"
+                  :title="editMode ? 'Lock sheet' : 'Unlock sheet'"
+                  @click="editMode = !editMode"
+                >
+                  <LockOpenIcon v-if="editMode" :size="14" />
+                  <LockIcon v-else :size="14" />
+                </button>
               </div>
+
+              <!-- Level Up — own line, full button -->
               <button
                 v-if="character.combat.level < 20"
                 type="button"
-                class="w-8 h-8 flex items-center justify-center rounded border transition-colors border-gold-dim/70 text-gold-mid hover:text-gold-bright hover:border-gold-mid"
-                title="Level Up"
+                class="btn-primary text-sm px-4 py-2 gap-2 justify-center"
                 @click="showLevelUp = true"
               >
                 <TrendingUpIcon :size="14" />
-              </button>
-              <button
-                type="button"
-                class="w-8 h-8 flex items-center justify-center rounded border transition-colors"
-                :class="editMode
-                  ? 'border-shadow text-ash hover:text-vellum hover:border-shadow/80'
-                  : 'border-gold-dim/70 text-gold-mid hover:text-gold-bright hover:border-gold-mid'"
-                :title="editMode ? 'Lock sheet' : 'Unlock sheet'"
-                @click="editMode = !editMode"
-              >
-                <LockOpenIcon v-if="editMode" :size="14" />
-                <LockIcon v-else :size="14" />
+                <span>Level Up</span>
               </button>
             </div>
           </div>
@@ -266,10 +272,15 @@
               <div class="ml-auto flex items-center gap-3 shrink-0">
 
                 <!-- Exhaustion -->
-                <div class="flex items-center gap-1">
+                <div
+                  class="flex items-center gap-1 transition-all duration-150"
+                  :class="(character.combat.exhaustion ?? 0) > 0
+                    ? 'px-2 py-0.5 rounded bg-blood-deep/25 border border-blood-base/40'
+                    : ''"
+                >
                   <span
                     class="text-2xs font-heading uppercase tracking-wider"
-                    :class="(character.combat.exhaustion ?? 0) > 0 ? 'text-blood-bright/70' : 'text-mist/40'"
+                    :class="(character.combat.exhaustion ?? 0) > 0 ? 'text-blood-bright' : 'text-mist/40'"
                   >Exh</span>
                   <button
                     type="button"
@@ -278,7 +289,7 @@
                   >−</button>
                   <span
                     class="font-heading text-sm leading-none min-w-[1ch] text-center"
-                    :class="(character.combat.exhaustion ?? 0) > 0 ? 'text-blood-bright' : 'text-mist/30'"
+                    :class="(character.combat.exhaustion ?? 0) > 0 ? 'text-blood-bright font-semibold' : 'text-mist/30'"
                   >{{ character.combat.exhaustion ?? 0 }}</span>
                   <button
                     type="button"
@@ -290,9 +301,10 @@
                 <!-- Rest ▾ dropdown -->
                 <div class="relative">
                   <button
-                    class="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                    class="btn-secondary text-xs py-2 px-3.5 flex items-center gap-1.5"
                     @click="restDropdownOpen = !restDropdownOpen"
                   >
+                    <BedIcon :size="13" />
                     Rest
                     <ChevronDownIcon
                       :size="12"
@@ -322,12 +334,24 @@
               </div><!-- /right side -->
             </div>
 
-            <!-- HP progress bar -->
-            <div class="w-full h-2 rounded-full bg-shadow/40 overflow-hidden">
-              <div
-                class="h-full rounded-full transition-all duration-300"
-                :class="hpPercent < 0.25 ? 'bg-blood-bright' : hpPercent < 0.5 ? 'bg-gold-mid' : 'bg-verdant-mid'"
-                :style="{ width: `${Math.max(0, Math.min(100, hpPercent * 100))}%` }"
+            <!-- HP progress bar — clickable/draggable range input overlay -->
+            <div class="relative w-full h-4 flex items-center">
+              <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-shadow/40 overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all duration-300"
+                  :class="hpPercent < 0.25 ? 'bg-blood-bright' : hpPercent < 0.5 ? 'bg-gold-mid' : 'bg-verdant-mid'"
+                  :style="{ width: `${Math.max(0, Math.min(100, hpPercent * 100))}%` }"
+                />
+              </div>
+              <input
+                v-if="character"
+                type="range"
+                min="0"
+                :max="character.combat.maxHp"
+                :value="character.combat.currentHp"
+                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                :title="`HP: ${character.combat.currentHp} / ${character.combat.maxHp}`"
+                @change="commitHpFromBar($event)"
               />
             </div>
           </div>
@@ -336,7 +360,7 @@
           <div class="flex items-stretch gap-2 overflow-x-auto pb-1 -mb-1 lg:overflow-x-visible lg:pb-0 lg:mb-0">
 
             <!-- AC -->
-            <div class="card flex items-center justify-center p-2.5 flex-1 min-w-[68px]">
+            <div class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <ShieldIcon :size="10" class="text-mist/50" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">AC</p>
@@ -361,7 +385,7 @@
             </div>
 
             <!-- Initiative -->
-            <div class="card flex items-center justify-center p-2.5 flex-1 min-w-[68px]">
+            <div class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <ZapIcon :size="10" class="text-mist/50" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Init</p>
@@ -391,7 +415,7 @@
             </div>
 
             <!-- Speed -->
-            <div class="card flex items-center justify-center p-2.5 flex-1 min-w-[68px]">
+            <div class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <WindIcon :size="10" class="text-mist/50" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Speed</p>
@@ -427,7 +451,7 @@
             </div>
 
             <!-- Passive Perception -->
-            <div class="card flex items-center justify-center p-2.5 flex-1 min-w-[68px]">
+            <div class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <EyeIcon :size="10" class="text-mist/50" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Perc</p>
@@ -436,7 +460,7 @@
             </div>
 
             <!-- Prof Bonus -->
-            <div class="card flex items-center justify-center p-2.5 flex-1 min-w-[68px]">
+            <div class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <StarIcon :size="10" class="text-mist/50" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Prof</p>
@@ -445,7 +469,7 @@
             </div>
 
             <!-- Spell Save DC -->
-            <div v-if="character.spellcasting" class="card flex items-center justify-center p-2.5 flex-1 min-w-[68px]">
+            <div v-if="character.spellcasting" class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <SparklesIcon :size="10" class="text-arcane-base/60" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Spell DC</p>
@@ -454,7 +478,7 @@
             </div>
 
             <!-- Spell Attack Bonus -->
-            <div v-if="character.spellcasting" class="card flex items-center justify-center p-2.5 flex-1 min-w-[68px]">
+            <div v-if="character.spellcasting" class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <SparklesIcon :size="10" class="text-arcane-base/60" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Spell Atk</p>
@@ -517,7 +541,7 @@
                 <div
                   v-for="ab in abilityEntries"
                   :key="ab.key"
-                  class="card py-3 px-2 text-center group relative overflow-hidden"
+                  class="card py-0 px-2 text-center group relative overflow-hidden"
                 >
                   <div
                     class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
@@ -707,6 +731,7 @@
 
     <!-- ── Roll overlays ─────────────────────────────────────────────────────── -->
     <RollConfirm />
+    <DiceRollAnimation />
     <RollResult />
 
     <!-- ── Long rest modal ───────────────────────────────────────────────────── -->
@@ -753,7 +778,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { ChevronDownIcon, DownloadIcon, EyeIcon, ImageIcon, LockIcon, LockOpenIcon, MoreHorizontalIcon, PencilIcon, PrinterIcon, ShieldIcon, SparklesIcon, StarIcon, TrendingUpIcon, WindIcon, ZapIcon } from 'lucide-vue-next'
+import { BedIcon, ChevronDownIcon, DownloadIcon, EyeIcon, ImageIcon, LockIcon, LockOpenIcon, MoreHorizontalIcon, PencilIcon, PrinterIcon, ShieldIcon, SparklesIcon, StarIcon, TrendingUpIcon, WindIcon, ZapIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName, AbilityScores } from '@/shared/types/character'
@@ -775,6 +800,7 @@ import BioTab from '@/characters/components/BioTab.vue'
 import TraitsTab from '@/characters/components/TraitsTab.vue'
 import RollResult from '@/shared/components/RollResult.vue'
 import RollConfirm from '@/shared/components/RollConfirm.vue'
+import DiceRollAnimation from '@/shared/components/DiceRollAnimation.vue'
 import ShortRestModal from '@/characters/components/ShortRestModal.vue'
 import LevelUpModal from '@/characters/components/LevelUpModal.vue'
 import LongRestModal from '@/characters/components/LongRestModal.vue'
@@ -955,6 +981,13 @@ async function commitHp() {
   const clamped = Math.max(0, Math.min(hpInputValue.value || 0, character.value.combat.maxHp))
   if (clamped === character.value.combat.currentHp) return
   await store.update(character.value.id, { combat: { ...character.value.combat, currentHp: clamped } })
+}
+
+async function commitHpFromBar(e: Event) {
+  if (!character.value) return
+  const newHp = parseInt((e.target as HTMLInputElement).value)
+  if (newHp === character.value.combat.currentHp) return
+  await store.update(character.value.id, { combat: { ...character.value.combat, currentHp: newHp } })
 }
 
 async function toggleInspiration() {

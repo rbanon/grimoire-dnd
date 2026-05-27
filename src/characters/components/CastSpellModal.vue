@@ -64,7 +64,11 @@
                   <div v-if="castableLevels.length === 0" class="text-xs font-body text-blood-bright">
                     No spell slots available.
                   </div>
-                  <div v-else class="flex flex-wrap gap-2">
+                  <p
+                    v-else-if="castableLevels[0] > spell.level"
+                    class="text-xs font-body text-arcane-pale/80 italic"
+                  >Pact Magic upcasts this spell to level {{ castableLevels[0] }}.</p>
+                  <div v-if="castableLevels.length > 0" class="flex flex-wrap gap-2">
                     <button
                       v-for="lvl in castableLevels"
                       :key="lvl"
@@ -100,6 +104,18 @@
             </template>
           </div>
 
+          <!-- Concentration warning -->
+          <div
+            v-if="detail?.concentration && character.combat.concentrationSpell"
+            class="px-5 py-2.5 border-t border-arcane-base/30 bg-arcane-deep/10 flex items-start gap-2.5 shrink-0"
+          >
+            <AlertTriangleIcon :size="14" class="text-arcane-pale/70 shrink-0 mt-0.5" />
+            <p class="text-xs font-body text-arcane-pale/80 leading-snug">
+              Casting this will end your concentration on
+              <span class="font-heading text-arcane-pale">{{ character.combat.concentrationSpell }}</span>.
+            </p>
+          </div>
+
           <!-- Actions -->
           <div class="px-5 py-3 border-t border-shadow flex justify-end gap-2 shrink-0">
             <button type="button" class="btn-secondary text-sm" @click="$emit('close')">Close</button>
@@ -120,7 +136,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { XIcon } from 'lucide-vue-next'
+import { XIcon, AlertTriangleIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
@@ -135,7 +151,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  cast: [slotLevel: number]
+  cast: [slotLevel: number, isConcentration: boolean]
 }>()
 
 type SlotKey = `level${1|2|3|4|5|6|7|8|9}`
@@ -143,13 +159,6 @@ function slotKey(n: number): SlotKey { return `level${n}` as SlotKey }
 
 const isCantrip = computed(() => props.spell.level === 0)
 const selectedLevel = ref(Math.max(props.spell.level, 1))
-
-watch(() => props.show, (val) => {
-  if (val) {
-    const firstAvailable = castableLevels.value[0] ?? Math.max(props.spell.level, 1)
-    selectedLevel.value = firstAvailable
-  }
-})
 
 const { data: detail, isPending: loading } = useQuery({
   queryKey: computed(() => ['spell', props.spell.index]),
@@ -179,8 +188,15 @@ const castableLevels = computed(() => {
   return levels
 })
 
+watch(() => props.show, (val) => {
+  if (val) {
+    const firstAvailable = castableLevels.value[0] ?? Math.max(props.spell.level, 1)
+    selectedLevel.value = firstAvailable
+  }
+}, { immediate: true })
+
 function handleCast() {
-  emit('cast', isCantrip.value ? 0 : selectedLevel.value)
+  emit('cast', isCantrip.value ? 0 : selectedLevel.value, detail.value?.concentration ?? false)
   emit('close')
 }
 </script>

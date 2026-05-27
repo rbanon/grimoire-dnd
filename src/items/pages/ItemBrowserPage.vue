@@ -191,7 +191,7 @@ import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { LayoutGridIcon, ListIcon } from 'lucide-vue-next'
 import { fiveEApi } from '@/shared/api/fiveE.client'
-import type { NormalizedItem, ItemSearchFilterState, ItemRarity } from '@/shared/types/items'
+import type { NormalizedItem, ItemSearchFilterState, ItemRarity, ItemCategory } from '@/shared/types/items'
 import { DEFAULT_ITEM_FILTERS, ItemCategorySchema } from '@/shared/types/items'
 import type { ApiEquipment, ApiMagicItem } from '@/shared/types/api'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
@@ -208,16 +208,65 @@ const RARITY_ORDER: Record<string, number> = {
   Common: 0, Uncommon: 1, Rare: 2, 'Very Rare': 3, Legendary: 4, Artifact: 5, Varies: 6, Unknown: 7,
 }
 
-const { data: allData, isPending, isError } = useQuery({
-  queryKey: ['items-all'],
+interface ReferenceItem {
+  index: string
+  name: string
+}
+
+interface ItemListData {
+  equipment: ReferenceItem[]
+  magicItems: ReferenceItem[]
+  weaponItemIndexes: Set<string>
+  armorItemIndexes: Set<string>
+  toolItemIndexes: Set<string>
+  gearItemIndexes: Set<string>
+}
+
+interface ItemDetailData {
+  equipment: ApiEquipment[]
+  magicItems: ApiMagicItem[]
+}
+
+const { data: allListData, isPending: isListPending, isError: isListError } = useQuery({
+  queryKey: ['items-list'],
   queryFn: async () => {
-    const [equipList, magicList] = await Promise.all([
+    const [equipList, magicList, weaponCat, armorCat, gearCat, toolsCat] = await Promise.all([
       fiveEApi.listEquipment(),
       fiveEApi.listMagicItems(),
+      fiveEApi.getEquipmentCategory('weapon'),
+      fiveEApi.getEquipmentCategory('armor'),
+      fiveEApi.getEquipmentCategory('adventuring-gear'),
+      fiveEApi.getEquipmentCategory('tools'),
     ])
+    return {
+      equipment: equipList.results,
+      magicItems: magicList.results,
+      weaponItemIndexes: new Set(weaponCat.equipment.map(e => e.index)),
+      armorItemIndexes: new Set(armorCat.equipment.map(e => e.index)),
+      gearItemIndexes: new Set(gearCat.equipment.map(e => e.index)),
+      toolItemIndexes: new Set(toolsCat.equipment.map(e => e.index)),
+    }
+  },
+  staleTime: Infinity,
+})
+
+const requiresDetails = computed(() => {
+  return Boolean(
+    filters.value.rarity ||
+    attunementFilter.value ||
+    filters.value.sortBy === 'cost' ||
+    filters.value.sortBy === 'weight' ||
+    filters.value.sortBy === 'rarity',
+  )
+})
+
+const { data: detailData, isPending: isDetailsPending, isError: isDetailsError } = useQuery({
+  queryKey: ['items-details'],
+  queryFn: async () => {
+    if (!allListData.value) return { equipment: [], magicItems: [] }
     const [equipDetails, magicDetails] = await Promise.all([
-      Promise.allSettled(equipList.results.map(r => fiveEApi.getEquipment(r.index))),
-      Promise.allSettled(magicList.results.map(r => fiveEApi.getMagicItem(r.index))),
+      Promise.allSettled(allListData.value.equipment.map(r => fiveEApi.getEquipment(r.index))),
+      Promise.allSettled(allListData.value.magicItems.map(r => fiveEApi.getMagicItem(r.index))),
     ])
     return {
       equipment: equipDetails
@@ -229,45 +278,90 @@ const { data: allData, isPending, isError } = useQuery({
     }
   },
   staleTime: Infinity,
+  enabled: computed(() => !!allListData.value && requiresDetails.value),
 })
 
-function normalizeEquipment(e: ApiEquipment): NormalizedItem {
-  const cat = e.equipment_category?.index ?? 'other'
+const isPending = computed(() => isListPending.value || (requiresDetails.value && isDetailsPending.value))
+const isError = computed(() => isListError.value || isDetailsError.value)
+
+function normalizeEquipment(e: ApiEquipment | undefined, fallbackCategory: ItemCategory): NormalizedItem {
+  const cat = e?.equipment_category?.index ?? fallbackCategory
   const parsed = ItemCategorySchema.safeParse(cat)
   return {
-    index: e.index,
-    name: e.name,
+    index: e?.index ?? 'unknown',
+    name: e?.name ?? 'Unknown Item',
     category: parsed.success ? parsed.data : 'other',
-    subCategory: e.weapon_category ?? e.armor_category ?? e.gear_category?.name,
-    cost: e.cost,
-    weight: e.weight,
-    weaponRange: e.weapon_range as 'Melee' | 'Ranged' | undefined,
-    armorCategory: e.armor_category,
+    subCategory: e?.weapon_category ?? e?.armor_category ?? e?.gear_category?.name,
+    cost: e?.cost,
+    weight: e?.weight,
+    weaponRange: e?.weapon_range as 'Melee' | 'Ranged' | undefined,
+    armorCategory: e?.armor_category,
     requiresAttunement: false,
     isMagic: false,
   }
 }
 
-function normalizeMagicItem(m: ApiMagicItem): NormalizedItem {
-  const requiresAttunement = m.desc?.[0]?.toLowerCase().includes('requires attunement') ?? false
-  const rawRarity = m.rarity?.name as ItemRarity | undefined
+function normalizeEquipmentReference(item: ReferenceItem, fallbackCategory: ItemCategory): NormalizedItem {
   return {
-    index: m.index,
-    name: m.name,
+    index: item.index,
+    name: item.name,
+    category: fallbackCategory,
+    isMagic: false,
+  }
+}
+
+function normalizeMagicItem(m: ApiMagicItem | undefined): NormalizedItem {
+  const requiresAttunement = m?.desc?.[0]?.toLowerCase().includes('requires attunement') ?? false
+  const rawRarity = m?.rarity?.name as ItemRarity | undefined
+  return {
+    index: m?.index ?? 'unknown',
+    name: m?.name ?? 'Unknown Item',
     category: 'magic-item',
-    subCategory: m.equipment_category?.name,
+    subCategory: m?.equipment_category?.name,
     rarity: rawRarity,
     requiresAttunement,
-    description: m.desc,
+    description: m?.desc,
     isMagic: true,
   }
 }
 
+function normalizeMagicItemReference(item: ReferenceItem): NormalizedItem {
+  return {
+    index: item.index,
+    name: item.name,
+    category: 'magic-item',
+    isMagic: true,
+  }
+}
+
+function getEquipmentCategory(index: string) {
+  if (!allListData.value) return 'other' as ItemCategory
+  if (allListData.value.weaponItemIndexes.has(index)) return 'weapon'
+  if (allListData.value.armorItemIndexes.has(index)) return 'armor'
+  if (allListData.value.toolItemIndexes.has(index)) return 'tools'
+  if (allListData.value.gearItemIndexes.has(index)) return 'adventuring-gear'
+  return 'other'
+}
+
 const allItems = computed<NormalizedItem[]>(() => {
-  if (!allData.value) return []
+  if (!allListData.value) return []
+
+  const equipmentByIndex = new Map(detailData.value?.equipment.map(item => [item.index, item]))
+  const magicByIndex = new Map(detailData.value?.magicItems.map(item => [item.index, item]))
+
   return [
-    ...allData.value.equipment.map(normalizeEquipment),
-    ...allData.value.magicItems.map(normalizeMagicItem),
+    ...allListData.value.equipment.map((item) => {
+      const detail = equipmentByIndex.get(item.index)
+      return detail
+        ? normalizeEquipment(detail, getEquipmentCategory(item.index))
+        : normalizeEquipmentReference(item, getEquipmentCategory(item.index))
+    }),
+    ...allListData.value.magicItems.map((item) => {
+      const detail = magicByIndex.get(item.index)
+      return detail
+        ? normalizeMagicItem(detail)
+        : normalizeMagicItemReference(item)
+    }),
   ]
 })
 

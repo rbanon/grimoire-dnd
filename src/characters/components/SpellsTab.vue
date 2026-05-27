@@ -130,15 +130,23 @@
               v-for="pip in maxSlots(lvl)"
               :key="pip"
               type="button"
-              class="w-4 h-4 rounded border-2 transition-all duration-100 cursor-pointer hover:border-arcane-pale/60"
-              :class="pip <= usedSlots(lvl) ? 'bg-arcane-base/60 border-arcane-base/60' : 'bg-transparent border-arcane-base/40'"
-              :title="pip <= usedSlots(lvl) ? 'Slot used — click to recover' : 'Click to spend slot'"
+              class="w-4 h-4 rounded border-2 transition-colors duration-100 cursor-pointer"
+              :class="pip <= maxSlots(lvl) - usedSlots(lvl)
+                ? 'bg-gold-mid border-gold-mid'
+                : 'bg-shadow/40 border-gold-dim/50 hover:bg-gold-dim/20 hover:border-gold-mid'"
+              :title="pip <= maxSlots(lvl) - usedSlots(lvl) ? 'Click to spend slot' : 'Slot used — click to recover'"
               @click="toggleSlot(lvl, pip)"
             />
             <span class="text-2xs font-body text-mist ml-1">
               {{ maxSlots(lvl) - usedSlots(lvl) }}/{{ maxSlots(lvl) }}
             </span>
+            <span v-if="isPactCaster" class="text-2xs font-heading tracking-wide text-arcane-pale/70 ml-1">Pact</span>
           </div>
+
+          <span
+            v-else-if="pactUpcastLevel && lvl < pactUpcastLevel"
+            class="text-2xs font-body text-arcane-pale/70 italic"
+          >↑ Casts via Pact Magic (Lv {{ pactUpcastLevel }})</span>
 
           <span v-else class="text-2xs font-body text-mist/50 italic">No slots</span>
         </div>
@@ -231,7 +239,7 @@ import { useConfirm } from '@/shared/composables/useConfirm'
 import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
 import { getSpellProfile, getMaxSpellLevel, getSpellSlots } from '@/character-builder/classMeta'
-import type { Character, SpellReference, CombatFavorite } from '@/shared/types/character'
+import type { Character, SpellReference, CombatFavorite, ResourcePool } from '@/shared/types/character'
 import { generateId } from '@/shared/lib/uuid'
 import CantripCard from './CantripCard.vue'
 import CantripPickerModal from './CantripPickerModal.vue'
@@ -339,6 +347,24 @@ function slotKey(n: number): SlotKey { return `level${n}` as SlotKey }
 function maxSlots(n: number) { return sc.value?.slotsMax[slotKey(n)] ?? 0 }
 function usedSlots(n: number) { return sc.value?.slotsUsed[slotKey(n)] ?? 0 }
 
+// Warlock Pact Magic: slots only exist at one level — upcast lower-level spells automatically
+const isPactCaster = computed(() => props.character.identity.class.index === 'warlock')
+const pactUpcastLevel = computed<number | null>(() => {
+  if (!isPactCaster.value || !sc.value) return null
+  for (let lvl = 9; lvl >= 1; lvl--) {
+    if (maxSlots(lvl) > 0) return lvl
+  }
+  return null
+})
+
+function pactResourceSync(newSlotsUsed: number): { resources?: ResourcePool[] } {
+  if (!isPactCaster.value || !pactUpcastLevel.value) return {}
+  const pool = props.character.resources.find(r => r.name === 'Pact Magic Slots')
+  if (!pool) return {}
+  const remaining = Math.max(0, maxSlots(pactUpcastLevel.value) - newSlotsUsed)
+  return { resources: props.character.resources.map(r => r.id === pool.id ? { ...r, current: remaining } : r) }
+}
+
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
 
 const activeLevels = computed(() => {
@@ -375,23 +401,37 @@ const allKnownSpellIndices = computed(() => {
 async function toggleSlot(lvl: number, pip: number) {
   if (!sc.value) return
   const key = slotKey(lvl)
-  const current = sc.value.slotsUsed[key]
-  const next = pip <= current ? pip - 1 : pip
+  const max = maxSlots(lvl)
+  const remaining = max - usedSlots(lvl)
+  const nextRemaining = pip <= remaining ? pip - 1 : pip
+  const next = max - nextRemaining
   await store.update(props.character.id, {
     spellcasting: { ...sc.value, slotsUsed: { ...sc.value.slotsUsed, [key]: next } },
+    ...pactResourceSync(next),
   })
 }
 
 // ── Cast spell ────────────────────────────────────────────────────────────────
 
-async function onCastSpell(slotLevel: number) {
-  if (!sc.value || slotLevel === 0) return
+async function onCastSpell(slotLevel: number, isConcentration: boolean) {
+  const spellName = castingSpell.value?.name
+  const concentrationUpdate = isConcentration && spellName
+    ? { combat: { ...props.character.combat, concentrationSpell: spellName } }
+    : {}
+
+  if (!sc.value || slotLevel === 0) {
+    if (isConcentration && spellName) await store.update(props.character.id, concentrationUpdate)
+    return
+  }
   const key = slotKey(slotLevel)
   const current = sc.value.slotsUsed[key]
   const max = sc.value.slotsMax[key]
   if (current >= max) return
+  const newUsed = current + 1
   await store.update(props.character.id, {
-    spellcasting: { ...sc.value, slotsUsed: { ...sc.value.slotsUsed, [key]: current + 1 } },
+    spellcasting: { ...sc.value, slotsUsed: { ...sc.value.slotsUsed, [key]: newUsed } },
+    ...pactResourceSync(newUsed),
+    ...concentrationUpdate,
   })
 }
 

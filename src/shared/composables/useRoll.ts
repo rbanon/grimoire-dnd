@@ -27,11 +27,34 @@ let _id = 0
 const _current = ref<RollResult | null>(null)
 const _pending = ref<PendingRoll | null>(null)
 let _timer: ReturnType<typeof setTimeout> | null = null
+const _animating = ref(false)
+const _animDieSides = ref(20)
+let _animTimer: ReturnType<typeof setTimeout> | null = null
+const _prefersReducedMotion =
+  typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 function _show(r: RollResult, ms = 4500) {
-  if (_timer) clearTimeout(_timer)
-  _current.value = r
-  _timer = setTimeout(() => { _current.value = null }, ms)
+  // Detect die type for animation
+  if (r.type === 'damage' && r.formula) {
+    const m = r.formula.match(/^(\d+)d(\d+)/)
+    _animDieSides.value = m ? parseInt(m[2]) : 6
+  } else {
+    _animDieSides.value = 20
+  }
+
+  // Animation plays first, then result appears.
+  // _animating is always true regardless of reduced-motion — CSS @media handles suppressing the keyframe.
+  if (_animTimer) clearTimeout(_animTimer)
+  _animating.value = true
+  const delay = _prefersReducedMotion ? 150 : 500
+
+  _animTimer = setTimeout(() => {
+    _animating.value = false
+    if (_timer) clearTimeout(_timer)
+    _current.value = r
+    _timer = setTimeout(() => { _current.value = null }, ms)
+  }, delay)
 }
 
 function _evalFormula(formula: string): number {
@@ -111,6 +134,8 @@ export function useRoll() {
   return {
     current: readonly(_current),
     pending: readonly(_pending),
+    animating: readonly(_animating),
+    animDieSides: readonly(_animDieSides),
     rollD20,
     confirmRoll,
     cancelRoll,
