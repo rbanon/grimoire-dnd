@@ -334,37 +334,24 @@
               </div><!-- /right side -->
             </div>
 
-            <!-- Saving throws inline (physical | mental) -->
-            <div class="flex items-center justify-center gap-1 flex-wrap pt-1.5 pb-0.5 border-t border-shadow/30">
-              <span class="text-2xs font-heading tracking-[0.15em] uppercase text-mist mr-1">Saves</span>
-              <template v-for="(save, idx) in SAVES" :key="save.key">
-                <span v-if="idx === 3" class="text-mist/25 text-sm mx-1.5" aria-hidden="true">│</span>
-                <button
-                  type="button"
-                  class="flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors hover:bg-depths/60"
-                  :class="character.savingThrowProficiencies[save.key]
-                    ? 'text-gold-mid hover:text-gold-bright'
-                    : 'text-stone hover:text-ash'"
-                  :title="`Roll ${save.label} save`"
-                  @click="rollD20(saveBonus(save.key), `${save.label} Save`, $event)"
-                >
-                  <span class="text-2xs font-heading uppercase tracking-wide">{{ save.key }}</span>
-                  <span class="font-heading text-sm leading-none">{{ fmt(saveBonus(save.key)) }}</span>
-                  <span
-                    v-if="character.savingThrowProficiencies[save.key]"
-                    class="text-2xs leading-none"
-                    aria-label="proficient"
-                  >★</span>
-                </button>
-              </template>
-            </div>
-
-            <!-- HP progress bar -->
-            <div class="w-full h-2 rounded-full bg-shadow/40 overflow-hidden">
-              <div
-                class="h-full rounded-full transition-all duration-300"
-                :class="hpPercent < 0.25 ? 'bg-blood-bright' : hpPercent < 0.5 ? 'bg-gold-mid' : 'bg-verdant-mid'"
-                :style="{ width: `${Math.max(0, Math.min(100, hpPercent * 100))}%` }"
+            <!-- HP progress bar — clickable/draggable range input overlay -->
+            <div class="relative w-full h-4 flex items-center">
+              <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-shadow/40 overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all duration-300"
+                  :class="hpPercent < 0.25 ? 'bg-blood-bright' : hpPercent < 0.5 ? 'bg-gold-mid' : 'bg-verdant-mid'"
+                  :style="{ width: `${Math.max(0, Math.min(100, hpPercent * 100))}%` }"
+                />
+              </div>
+              <input
+                v-if="character"
+                type="range"
+                min="0"
+                :max="character.combat.maxHp"
+                :value="character.combat.currentHp"
+                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                :title="`HP: ${character.combat.currentHp} / ${character.combat.maxHp}`"
+                @change="commitHpFromBar($event)"
               />
             </div>
           </div>
@@ -373,7 +360,7 @@
           <div class="flex items-stretch gap-2 overflow-x-auto pb-1 -mb-1 lg:overflow-x-visible lg:pb-0 lg:mb-0">
 
             <!-- AC -->
-            <div class="card flex items-center justify-center py-4 px-2.5 flex-1 min-w-[68px]">
+            <div class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <ShieldIcon :size="10" class="text-mist/50" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">AC</p>
@@ -398,7 +385,7 @@
             </div>
 
             <!-- Initiative -->
-            <div class="card flex items-center justify-center py-4 px-2.5 flex-1 min-w-[68px]">
+            <div class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <ZapIcon :size="10" class="text-mist/50" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Init</p>
@@ -428,7 +415,7 @@
             </div>
 
             <!-- Speed -->
-            <div class="card flex items-center justify-center py-4 px-2.5 flex-1 min-w-[68px]">
+            <div class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <WindIcon :size="10" class="text-mist/50" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Speed</p>
@@ -464,7 +451,7 @@
             </div>
 
             <!-- Passive Perception -->
-            <div class="card flex items-center justify-center py-4 px-2.5 flex-1 min-w-[68px]">
+            <div class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <EyeIcon :size="10" class="text-mist/50" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Perc</p>
@@ -473,7 +460,7 @@
             </div>
 
             <!-- Prof Bonus -->
-            <div class="card flex items-center justify-center py-4 px-2.5 flex-1 min-w-[68px]">
+            <div class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <StarIcon :size="10" class="text-mist/50" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Prof</p>
@@ -482,7 +469,7 @@
             </div>
 
             <!-- Spell Save DC -->
-            <div v-if="character.spellcasting" class="card flex items-center justify-center py-4 px-2.5 flex-1 min-w-[68px]">
+            <div v-if="character.spellcasting" class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <SparklesIcon :size="10" class="text-arcane-base/60" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Spell DC</p>
@@ -491,7 +478,7 @@
             </div>
 
             <!-- Spell Attack Bonus -->
-            <div v-if="character.spellcasting" class="card flex items-center justify-center py-4 px-2.5 flex-1 min-w-[68px]">
+            <div v-if="character.spellcasting" class="card flex items-center justify-center py-6 px-2.5 flex-1 min-w-[68px]">
               <div class="flex flex-col items-center gap-0.5">
                 <SparklesIcon :size="10" class="text-arcane-base/60" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">Spell Atk</p>
@@ -554,7 +541,7 @@
                 <div
                   v-for="ab in abilityEntries"
                   :key="ab.key"
-                  class="card py-3 px-2 text-center group relative overflow-hidden"
+                  class="card py-0 px-2 text-center group relative overflow-hidden"
                 >
                   <div
                     class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
@@ -744,6 +731,7 @@
 
     <!-- ── Roll overlays ─────────────────────────────────────────────────────── -->
     <RollConfirm />
+    <DiceRollAnimation />
     <RollResult />
 
     <!-- ── Long rest modal ───────────────────────────────────────────────────── -->
@@ -812,6 +800,7 @@ import BioTab from '@/characters/components/BioTab.vue'
 import TraitsTab from '@/characters/components/TraitsTab.vue'
 import RollResult from '@/shared/components/RollResult.vue'
 import RollConfirm from '@/shared/components/RollConfirm.vue'
+import DiceRollAnimation from '@/shared/components/DiceRollAnimation.vue'
 import ShortRestModal from '@/characters/components/ShortRestModal.vue'
 import LevelUpModal from '@/characters/components/LevelUpModal.vue'
 import LongRestModal from '@/characters/components/LongRestModal.vue'
@@ -992,6 +981,13 @@ async function commitHp() {
   const clamped = Math.max(0, Math.min(hpInputValue.value || 0, character.value.combat.maxHp))
   if (clamped === character.value.combat.currentHp) return
   await store.update(character.value.id, { combat: { ...character.value.combat, currentHp: clamped } })
+}
+
+async function commitHpFromBar(e: Event) {
+  if (!character.value) return
+  const newHp = parseInt((e.target as HTMLInputElement).value)
+  if (newHp === character.value.combat.currentHp) return
+  await store.update(character.value.id, { combat: { ...character.value.combat, currentHp: newHp } })
 }
 
 async function toggleInspiration() {

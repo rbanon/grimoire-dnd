@@ -1,5 +1,5 @@
 <template>
-  <div class="card px-4 py-3 space-y-1.5">
+  <div class="card bg-depths border-gold-dim/50 px-4 py-3 space-y-1.5">
 
     <!-- Name row -->
     <div class="flex items-center gap-2">
@@ -147,14 +147,14 @@ const hasAttackRoll = computed(() => !!detail.value?.attack_type)
 const damageType = computed(() => detail.value?.damage?.damage_type?.name ?? null)
 
 const SCHOOL_CLASSES: Record<string, string> = {
-  abjuration:    'text-blue-300/80 border-blue-500/30',
-  conjuration:   'text-emerald-300/80 border-emerald-500/30',
-  divination:    'text-sky-300/80 border-sky-500/30',
-  enchantment:   'text-pink-300/80 border-pink-500/30',
-  evocation:     'text-orange-300/80 border-orange-500/30',
-  illusion:      'text-violet-300/80 border-violet-500/30',
-  necromancy:    'text-green-400/70 border-green-600/30',
-  transmutation: 'text-amber-300/80 border-amber-500/30',
+  abjuration:    'text-blue-500 dark:text-blue-300/90 border-blue-500/40',
+  conjuration:   'text-emerald-600 dark:text-emerald-300/90 border-emerald-500/40',
+  divination:    'text-sky-600 dark:text-sky-300/90 border-sky-500/40',
+  enchantment:   'text-pink-600 dark:text-pink-300/90 border-pink-500/40',
+  evocation:     'text-orange-500 dark:text-orange-300/90 border-orange-500/40',
+  illusion:      'text-violet-500 dark:text-violet-300/90 border-violet-500/40',
+  necromancy:    'text-green-600 dark:text-green-400/80 border-green-600/40',
+  transmutation: 'text-amber-600 dark:text-amber-300/90 border-amber-500/40',
 }
 const schoolClass = computed(() => {
   const name = detail.value?.school?.name?.toLowerCase() ?? ''

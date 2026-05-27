@@ -55,15 +55,27 @@
               <SwordIcon :size="14" class="text-gold-dim/70 shrink-0 mt-0.5" />
               <span class="font-heading text-base text-vellum leading-tight truncate">{{ fav.weaponName }}</span>
             </div>
-            <button
-              v-if="editMode"
-              type="button"
-              class="p-1 rounded text-mist/40 hover:text-blood-bright hover:bg-blood-base/10 transition-colors shrink-0"
-              title="Remove from Favorites"
-              @click="removeFavorite(fav.id)"
-            >
-              <XIcon :size="13" />
-            </button>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button
+                v-if="resolvedWeapon(fav)"
+                type="button"
+                class="w-3 h-3 rounded-full border-2 transition-all duration-100 cursor-pointer"
+                :class="resolvedWeapon(fav)?.equipped
+                  ? 'bg-gold-mid border-gold-mid'
+                  : 'bg-shadow/30 border-mist/60 hover:border-mist hover:bg-shadow/50'"
+                :title="resolvedWeapon(fav)?.equipped ? 'Equipped — click to unequip' : 'Not equipped — click to equip'"
+                @click="toggleEquipped(fav)"
+              />
+              <button
+                v-if="editMode"
+                type="button"
+                class="p-1 rounded text-mist/40 hover:text-blood-bright hover:bg-blood-base/10 transition-colors"
+                title="Remove from Favorites"
+                @click="removeFavorite(fav.id)"
+              >
+                <XIcon :size="13" />
+              </button>
+            </div>
           </div>
 
           <!-- Stats grid -->
@@ -151,8 +163,8 @@
               :key="pip"
               type="button"
               class="w-3.5 h-3.5 rounded border-2 transition-all duration-100 cursor-pointer hover:border-gold-mid"
-              :class="pip <= usedSlots(lvl) ? 'bg-gold-mid/80 border-gold-mid' : 'bg-shadow/40 border-gold-dim/60'"
-              :title="pip <= usedSlots(lvl) ? 'Recover slot' : 'Spend slot'"
+              :class="pip <= maxSlots(lvl) - usedSlots(lvl) ? 'bg-gold-mid/80 border-gold-mid' : 'bg-shadow/40 border-gold-dim/60'"
+              :title="pip <= maxSlots(lvl) - usedSlots(lvl) ? 'Spend slot' : 'Recover slot'"
               @click="toggleSlot(lvl, pip)"
             />
           </div>
@@ -204,6 +216,7 @@ import { PlusIcon, XIcon, SwordIcon, StarIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useConfirm } from '@/shared/composables/useConfirm'
+import { useToast } from '@/shared/composables/useToast'
 import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
 import type { Character, CombatFavorite, InventoryItem, ResourcePool, SpellReference } from '@/shared/types/character'
@@ -216,6 +229,7 @@ const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
 const { confirm } = useConfirm()
 const { rollD20, rollDamage } = useRoll()
+const toast = useToast()
 
 const mods = computed(() => computeAllModifiers(props.character.abilityScores))
 const profBonus = computed(() => computeProficiencyBonus(props.character.combat.level))
@@ -263,8 +277,10 @@ async function toggleSlot(lvl: number, pip: number) {
   const sc = props.character.spellcasting
   if (!sc) return
   const key = slotKey(lvl)
-  const current = sc.slotsUsed[key]
-  const next = pip <= current ? pip - 1 : pip
+  const max = maxSlots(lvl)
+  const remaining = max - usedSlots(lvl)
+  const nextRemaining = pip <= remaining ? pip - 1 : pip
+  const next = max - nextRemaining
   await store.update(props.character.id, {
     spellcasting: { ...sc, slotsUsed: { ...sc.slotsUsed, [key]: next } },
   })
@@ -293,12 +309,20 @@ function parseBonus(str: string | undefined): number {
 
 function rollWeaponAtk(fav: CombatFavorite, event: MouseEvent) {
   const item = resolvedWeapon(fav)
-  rollD20(parseBonus(item?.attackBonus), `${fav.weaponName} Attack`, event)
+  if (!item?.equipped) {
+    toast.info(`${fav.weaponName} is not equipped.`)
+    return
+  }
+  rollD20(parseBonus(item.attackBonus), `${fav.weaponName} Attack`, event)
 }
 
 function rollWeaponDmg(fav: CombatFavorite) {
   const item = resolvedWeapon(fav)
   if (!item?.damage) return
+  if (!item.equipped) {
+    toast.info(`${fav.weaponName} is not equipped.`)
+    return
+  }
   rollDamage(item.damage, `${fav.weaponName} Damage`)
 }
 
@@ -315,9 +339,17 @@ async function onResourceChange(pools: ResourcePool[]) {
   await store.update(props.character.id, update)
 }
 
-async function onCastSpell(slotLevel: number) {
+async function onCastSpell(slotLevel: number, isConcentration: boolean) {
   const sc = props.character.spellcasting
-  if (!sc || slotLevel === 0) return
+  const spellName = castingSpell.value?.name
+  const concentrationUpdate = isConcentration && spellName
+    ? { combat: { ...props.character.combat, concentrationSpell: spellName } }
+    : {}
+
+  if (!sc || slotLevel === 0) {
+    if (isConcentration && spellName) await store.update(props.character.id, concentrationUpdate)
+    return
+  }
   const key = slotKey(slotLevel)
   const current = sc.slotsUsed[key]
   const max = sc.slotsMax[key]
@@ -325,6 +357,7 @@ async function onCastSpell(slotLevel: number) {
   const newUsed = current + 1
   const update: Partial<Character> = {
     spellcasting: { ...sc, slotsUsed: { ...sc.slotsUsed, [key]: newUsed } },
+    ...concentrationUpdate,
   }
   if (isPactCaster.value) {
     const pool = props.character.resources.find(r => r.name === 'Pact Magic Slots')
@@ -335,6 +368,16 @@ async function onCastSpell(slotLevel: number) {
     }
   }
   await store.update(props.character.id, update)
+}
+
+async function toggleEquipped(fav: CombatFavorite) {
+  const item = resolvedWeapon(fav)
+  if (!item) return
+  await store.update(props.character.id, {
+    inventory: props.character.inventory.map(i =>
+      i.id === item.id ? { ...i, equipped: !i.equipped } : i
+    ),
+  })
 }
 
 async function removeFavorite(id: string) {

@@ -104,6 +104,18 @@
             </template>
           </div>
 
+          <!-- Concentration warning -->
+          <div
+            v-if="detail?.concentration && character.combat.concentrationSpell"
+            class="px-5 py-2.5 border-t border-arcane-base/30 bg-arcane-deep/10 flex items-start gap-2.5 shrink-0"
+          >
+            <AlertTriangleIcon :size="14" class="text-arcane-pale/70 shrink-0 mt-0.5" />
+            <p class="text-xs font-body text-arcane-pale/80 leading-snug">
+              Casting this will end your concentration on
+              <span class="font-heading text-arcane-pale">{{ character.combat.concentrationSpell }}</span>.
+            </p>
+          </div>
+
           <!-- Actions -->
           <div class="px-5 py-3 border-t border-shadow flex justify-end gap-2 shrink-0">
             <button type="button" class="btn-secondary text-sm" @click="$emit('close')">Close</button>
@@ -124,7 +136,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { XIcon } from 'lucide-vue-next'
+import { XIcon, AlertTriangleIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
@@ -139,7 +151,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  cast: [slotLevel: number]
+  cast: [slotLevel: number, isConcentration: boolean]
 }>()
 
 type SlotKey = `level${1|2|3|4|5|6|7|8|9}`
@@ -184,7 +196,7 @@ watch(() => props.show, (val) => {
 }, { immediate: true })
 
 function handleCast() {
-  emit('cast', isCantrip.value ? 0 : selectedLevel.value)
+  emit('cast', isCantrip.value ? 0 : selectedLevel.value, detail.value?.concentration ?? false)
   emit('close')
 }
 </script>

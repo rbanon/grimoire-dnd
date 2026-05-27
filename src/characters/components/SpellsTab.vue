@@ -131,10 +131,10 @@
               :key="pip"
               type="button"
               class="w-4 h-4 rounded border-2 transition-colors duration-100 cursor-pointer"
-              :class="pip <= usedSlots(lvl)
+              :class="pip <= maxSlots(lvl) - usedSlots(lvl)
                 ? 'bg-gold-mid border-gold-mid'
                 : 'bg-shadow/40 border-gold-dim/50 hover:bg-gold-dim/20 hover:border-gold-mid'"
-              :title="pip <= usedSlots(lvl) ? 'Slot used — click to recover' : 'Click to spend slot'"
+              :title="pip <= maxSlots(lvl) - usedSlots(lvl) ? 'Click to spend slot' : 'Slot used — click to recover'"
               @click="toggleSlot(lvl, pip)"
             />
             <span class="text-2xs font-body text-mist ml-1">
@@ -401,8 +401,10 @@ const allKnownSpellIndices = computed(() => {
 async function toggleSlot(lvl: number, pip: number) {
   if (!sc.value) return
   const key = slotKey(lvl)
-  const current = sc.value.slotsUsed[key]
-  const next = pip <= current ? pip - 1 : pip
+  const max = maxSlots(lvl)
+  const remaining = max - usedSlots(lvl)
+  const nextRemaining = pip <= remaining ? pip - 1 : pip
+  const next = max - nextRemaining
   await store.update(props.character.id, {
     spellcasting: { ...sc.value, slotsUsed: { ...sc.value.slotsUsed, [key]: next } },
     ...pactResourceSync(next),
@@ -411,8 +413,16 @@ async function toggleSlot(lvl: number, pip: number) {
 
 // ── Cast spell ────────────────────────────────────────────────────────────────
 
-async function onCastSpell(slotLevel: number) {
-  if (!sc.value || slotLevel === 0) return
+async function onCastSpell(slotLevel: number, isConcentration: boolean) {
+  const spellName = castingSpell.value?.name
+  const concentrationUpdate = isConcentration && spellName
+    ? { combat: { ...props.character.combat, concentrationSpell: spellName } }
+    : {}
+
+  if (!sc.value || slotLevel === 0) {
+    if (isConcentration && spellName) await store.update(props.character.id, concentrationUpdate)
+    return
+  }
   const key = slotKey(slotLevel)
   const current = sc.value.slotsUsed[key]
   const max = sc.value.slotsMax[key]
@@ -421,6 +431,7 @@ async function onCastSpell(slotLevel: number) {
   await store.update(props.character.id, {
     spellcasting: { ...sc.value, slotsUsed: { ...sc.value.slotsUsed, [key]: newUsed } },
     ...pactResourceSync(newUsed),
+    ...concentrationUpdate,
   })
 }
 

@@ -34,10 +34,10 @@
           v-for="pip in pool.max"
           :key="pip"
           type="button"
-          class="w-4 h-4 rounded-full border-2 transition-all duration-100 cursor-pointer hover:border-gold-dim/80"
+          class="w-4 h-4 rounded border-2 transition-all duration-100 cursor-pointer hover:border-gold-mid"
           :class="pip <= pool.current
-            ? 'bg-gold-mid/70 border-gold-mid/70'
-            : 'bg-transparent border-shadow/60'"
+            ? 'bg-gold-mid border-gold-mid'
+            : 'bg-shadow/40 border-gold-dim/60'"
           :title="pip <= pool.current ? 'Click to spend' : 'Click to recover'"
           @click="togglePip(pool, pip)"
         />
@@ -52,15 +52,31 @@
           @click="spend(pool, 1)"
         >−</button>
         <div class="flex-1 flex items-center gap-1.5">
-          <div
-            class="h-1.5 rounded-full bg-shadow/30 flex-1 overflow-hidden"
-          >
-            <div
-              class="h-full rounded-full bg-gold-mid/60 transition-all duration-200"
-              :style="{ width: pool.max > 0 ? `${(pool.current / pool.max) * 100}%` : '0%' }"
+          <div class="relative flex-1 h-4 flex items-center">
+            <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-shadow/30 overflow-hidden">
+              <div
+                class="h-full rounded-full bg-gold-mid/60 transition-all duration-200"
+                :style="{ width: pool.max > 0 ? `${(pool.current / pool.max) * 100}%` : '0%' }"
+              />
+            </div>
+            <input
+              type="range"
+              min="0"
+              :max="pool.max"
+              :value="pool.current"
+              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              @change="onPoolBarChange(pool, $event)"
             />
           </div>
-          <span class="font-heading tabular-nums text-sm text-vellum w-12 text-right">{{ pool.current }}</span>
+          <input
+            type="number"
+            :value="pool.current"
+            min="0"
+            :max="pool.max"
+            class="font-heading tabular-nums text-sm text-vellum w-12 text-right bg-transparent border-none outline-none focus:ring-1 focus:ring-gold-mid/40 rounded px-0"
+            @change="onPoolInputChange(pool, $event)"
+            @keydown.enter="($event.target as HTMLInputElement).blur()"
+          />
         </div>
         <button
           type="button"
@@ -132,5 +148,17 @@ function spend(pool: ResourcePool, amount: number) {
 function recover(pool: ResourcePool, amount: number) {
   const next = Math.min(pool.max, pool.current + amount)
   emit('change', props.resources.map(r => r.id === pool.id ? { ...r, current: next } : r))
+}
+
+function onPoolBarChange(pool: ResourcePool, e: Event) {
+  const val = parseInt((e.target as HTMLInputElement).value)
+  emit('change', props.resources.map(r => r.id === pool.id ? { ...r, current: val } : r))
+}
+
+function onPoolInputChange(pool: ResourcePool, e: Event) {
+  const raw = parseInt((e.target as HTMLInputElement).value)
+  const clamped = Math.max(0, Math.min(pool.max, isNaN(raw) ? pool.current : raw))
+  ;(e.target as HTMLInputElement).value = String(clamped)
+  emit('change', props.resources.map(r => r.id === pool.id ? { ...r, current: clamped } : r))
 }
 </script>

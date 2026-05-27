@@ -48,7 +48,7 @@
           >
             <!-- row content injected below via shared slot-like duplication -->
             <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
-              :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-transparent border-mist/40 hover:border-mist'"
+              :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-shadow/30 border-mist/60 hover:border-mist hover:bg-shadow/50'"
               :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
               @click="toggleEquipped(item.id)" />
             <SwordIcon :size="11" class="text-gold-dim/60 shrink-0" />
@@ -90,7 +90,7 @@
             class="flex items-center gap-3 px-3 py-2.5 rounded border border-shadow bg-abyss/50 group"
           >
             <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
-              :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-transparent border-mist/40 hover:border-mist'"
+              :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-shadow/30 border-mist/60 hover:border-mist hover:bg-shadow/50'"
               :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
               @click="toggleEquipped(item.id)" />
             <ShieldIcon :size="11" class="text-arcane-pale/50 shrink-0" />
@@ -125,7 +125,7 @@
             class="flex items-center gap-3 px-3 py-2.5 rounded border border-shadow bg-abyss/50 group"
           >
             <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
-              :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-transparent border-mist/40 hover:border-mist'"
+              :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-shadow/30 border-mist/60 hover:border-mist hover:bg-shadow/50'"
               :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
               @click="toggleEquipped(item.id)" />
             <PackageIcon :size="11" class="text-mist/40 shrink-0" />
