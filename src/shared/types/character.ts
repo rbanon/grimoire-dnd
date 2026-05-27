@@ -258,6 +258,7 @@ export const SpellReferenceSchema = z.object({
   name: z.string(),
   level: z.number().int().min(0).max(9),
   school: z.string().optional(),
+  concentration: z.boolean().optional(),
 })
 export type SpellReference = z.infer<typeof SpellReferenceSchema>
 

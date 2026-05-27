@@ -64,7 +64,11 @@
                   <div v-if="castableLevels.length === 0" class="text-xs font-body text-blood-bright">
                     No spell slots available.
                   </div>
-                  <div v-else class="flex flex-wrap gap-2">
+                  <p
+                    v-else-if="castableLevels[0] > spell.level"
+                    class="text-xs font-body text-arcane-pale/80 italic"
+                  >Pact Magic upcasts this spell to level {{ castableLevels[0] }}.</p>
+                  <div v-if="castableLevels.length > 0" class="flex flex-wrap gap-2">
                     <button
                       v-for="lvl in castableLevels"
                       :key="lvl"
@@ -144,13 +148,6 @@ function slotKey(n: number): SlotKey { return `level${n}` as SlotKey }
 const isCantrip = computed(() => props.spell.level === 0)
 const selectedLevel = ref(Math.max(props.spell.level, 1))
 
-watch(() => props.show, (val) => {
-  if (val) {
-    const firstAvailable = castableLevels.value[0] ?? Math.max(props.spell.level, 1)
-    selectedLevel.value = firstAvailable
-  }
-})
-
 const { data: detail, isPending: loading } = useQuery({
   queryKey: computed(() => ['spell', props.spell.index]),
   queryFn: () => fiveEApi.getSpell(props.spell.index),
@@ -178,6 +175,13 @@ const castableLevels = computed(() => {
   }
   return levels
 })
+
+watch(() => props.show, (val) => {
+  if (val) {
+    const firstAvailable = castableLevels.value[0] ?? Math.max(props.spell.level, 1)
+    selectedLevel.value = firstAvailable
+  }
+}, { immediate: true })
 
 function handleCast() {
   emit('cast', isCantrip.value ? 0 : selectedLevel.value)

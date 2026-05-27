@@ -2,9 +2,10 @@
   <div class="space-y-3">
 
     <!-- ── Concentration ───────────────────────────────────────────────────── -->
-    <div class="flex items-center gap-3 flex-wrap">
+    <div class="flex items-center gap-3 flex-wrap relative">
       <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist shrink-0">Concentration</p>
 
+      <!-- Active concentration -->
       <span
         v-if="character.combat.concentrationSpell"
         class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-arcane-base/20 border border-arcane-base/40 text-arcane-pale text-2xs font-heading tracking-wide"
@@ -13,28 +14,53 @@
         <button
           type="button"
           class="opacity-60 hover:opacity-100 transition-opacity leading-none"
+          title="Drop concentration"
           @click="clearConcentration"
         >×</button>
       </span>
 
       <template v-else>
-        <input
-          v-if="showConcentrationInput"
-          ref="concentrationInputEl"
-          v-model="concentrationDraft"
-          type="text"
-          placeholder="Spell name…"
-          class="input-base text-xs py-0.5 px-2 w-40"
-          @blur="commitConcentration"
-          @keydown.enter="commitConcentration"
-          @keydown.esc="cancelConcentration"
-        />
+        <!-- No-caster / no spells known -->
+        <span
+          v-if="!character.spellcasting"
+          class="text-2xs text-mist/50 font-body italic"
+        >Not a spellcaster</span>
+
+        <!-- Picker button: opens dropdown of known concentration spells -->
         <button
           v-else
           type="button"
-          class="text-2xs text-mist hover:text-ash transition-colors font-body"
-          @click="startConcentration"
-        >+ Add concentration</button>
+          class="text-2xs text-mist hover:text-ash transition-colors font-body inline-flex items-center gap-1"
+          :disabled="loadingFlags"
+          @click="openPicker"
+        >
+          <span v-if="loadingFlags">Loading…</span>
+          <span v-else>+ Add concentration</span>
+        </button>
+
+        <!-- Dropdown with concentration-only spells -->
+        <div
+          v-if="pickerOpen"
+          ref="pickerEl"
+          class="absolute top-full left-0 mt-1 z-50 min-w-[16rem] max-w-xs bg-abyss border border-shadow rounded shadow-xl py-1 max-h-64 overflow-y-auto"
+        >
+          <p
+            v-if="concentrationSpells.length === 0"
+            class="px-3 py-2 text-2xs text-mist/60 font-body italic"
+          >No concentration spells known.</p>
+          <button
+            v-for="sp in concentrationSpells"
+            :key="sp.index"
+            type="button"
+            class="w-full text-left px-3 py-1.5 text-xs font-body text-ash hover:bg-depths hover:text-vellum transition-colors flex items-center justify-between gap-3"
+            @click="selectConcentration(sp)"
+          >
+            <span>{{ sp.name }}</span>
+            <span class="text-2xs font-heading text-mist/50 shrink-0">
+              {{ sp.level === 0 ? 'Cantrip' : `Lv ${sp.level}` }}
+            </span>
+          </button>
+        </div>
       </template>
     </div>
 
@@ -90,9 +116,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
-import type { Character } from '@/shared/types/character'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import type { Character, SpellReference } from '@/shared/types/character'
 import { useCharactersStore } from '@/characters/store'
+import { fiveEApi } from '@/shared/api/fiveE.client'
 
 const props = defineProps<{
   character: Character
@@ -153,30 +180,77 @@ function removeCondition(name: string) {
 
 // ── Concentration ──────────────────────────────────────────────────────────────
 
-const showConcentrationInput = ref(false)
-const concentrationDraft = ref('')
-const concentrationInputEl = ref<HTMLInputElement | null>(null)
+const pickerOpen = ref(false)
+const loadingFlags = ref(false)
+const pickerEl = ref<HTMLElement | null>(null)
 
-async function startConcentration() {
-  showConcentrationInput.value = true
-  await nextTick()
-  concentrationInputEl.value?.focus()
-}
-
-function commitConcentration() {
-  const spell = concentrationDraft.value.trim()
-  if (spell) {
-    store.update(props.character.id, {
-      combat: { ...props.character.combat, concentrationSpell: spell },
-    })
+// Spells whose concentration flag is true. Cantrips are included (some have concentration).
+const concentrationSpells = computed<SpellReference[]>(() => {
+  const sc = props.character.spellcasting
+  if (!sc) return []
+  const all: SpellReference[] = [...sc.spellsPrepared, ...sc.spellsKnown, ...sc.cantripsKnown]
+  const seen = new Set<string>()
+  const result: SpellReference[] = []
+  for (const s of all) {
+    if (s.concentration && !seen.has(s.index)) {
+      seen.add(s.index)
+      result.push(s)
+    }
   }
-  showConcentrationInput.value = false
-  concentrationDraft.value = ''
+  return result.sort((a, b) => a.name.localeCompare(b.name))
+})
+
+// Lazy-fill concentration flag for stored spells that pre-date this field
+async function ensureConcentrationFlags() {
+  const sc = props.character.spellcasting
+  if (!sc) return
+  const allRefs: SpellReference[] = [...sc.spellsPrepared, ...sc.spellsKnown, ...sc.cantripsKnown]
+  const missing = allRefs.filter(s => s.concentration === undefined)
+  if (missing.length === 0) return
+
+  loadingFlags.value = true
+  try {
+    const seen = new Set<string>()
+    const detailPromises = missing
+      .filter(s => { if (seen.has(s.index)) return false; seen.add(s.index); return true })
+      .map(async s => {
+        const detail = await fiveEApi.getSpell(s.index)
+        return { index: s.index, concentration: !!detail.concentration }
+      })
+    const flagPairs = await Promise.all(detailPromises)
+    const flagMap = new Map(flagPairs.map(p => [p.index, p.concentration]))
+
+    const enrich = (list: SpellReference[]) =>
+      list.map(s => flagMap.has(s.index)
+        ? { ...s, concentration: flagMap.get(s.index)! }
+        : s,
+      )
+
+    await store.update(props.character.id, {
+      spellcasting: {
+        ...sc,
+        spellsKnown:    enrich(sc.spellsKnown),
+        spellsPrepared: enrich(sc.spellsPrepared),
+        cantripsKnown:  enrich(sc.cantripsKnown),
+      },
+    })
+  } catch (e) {
+    console.warn('[concentration] failed to enrich spell flags', e)
+  } finally {
+    loadingFlags.value = false
+  }
 }
 
-function cancelConcentration() {
-  showConcentrationInput.value = false
-  concentrationDraft.value = ''
+async function openPicker() {
+  pickerOpen.value = true
+  await ensureConcentrationFlags()
+}
+
+function selectConcentration(sp: SpellReference) {
+  store.update(props.character.id, {
+    combat: { ...props.character.combat, concentrationSpell: sp.name },
+  })
+  pickerOpen.value = false
 }
 
 function clearConcentration() {
@@ -184,4 +258,14 @@ function clearConcentration() {
     combat: { ...props.character.combat, concentrationSpell: null },
   })
 }
+
+// Close picker on outside click
+function onDocClick(e: MouseEvent) {
+  if (!pickerOpen.value) return
+  if (pickerEl.value && !pickerEl.value.contains(e.target as Node)) {
+    pickerOpen.value = false
+  }
+}
+onMounted(() => document.addEventListener('mousedown', onDocClick))
+onUnmounted(() => document.removeEventListener('mousedown', onDocClick))
 </script>

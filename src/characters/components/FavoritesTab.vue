@@ -150,8 +150,8 @@
               v-for="pip in maxSlots(lvl)"
               :key="pip"
               type="button"
-              class="w-3.5 h-3.5 rounded border-2 transition-all duration-100 cursor-pointer hover:border-arcane-pale/60"
-              :class="pip <= usedSlots(lvl) ? 'bg-arcane-base/60 border-arcane-base/60' : 'bg-transparent border-arcane-base/40'"
+              class="w-3.5 h-3.5 rounded border-2 transition-all duration-100 cursor-pointer hover:border-gold-mid"
+              :class="pip <= usedSlots(lvl) ? 'bg-gold-mid/80 border-gold-mid' : 'bg-shadow/40 border-gold-dim/60'"
               :title="pip <= usedSlots(lvl) ? 'Recover slot' : 'Spend slot'"
               @click="toggleSlot(lvl, pip)"
             />
@@ -249,7 +249,15 @@ function slotKey(n: number) { return `level${n}` as `level${SlotLevel}` }
 function maxSlots(n: number) { return props.character.spellcasting?.slotsMax[slotKey(n)] ?? 0 }
 function usedSlots(n: number) { return props.character.spellcasting?.slotsUsed[slotKey(n)] ?? 0 }
 
-const slotLevels = computed(() => SPELL_LEVELS.filter(lvl => maxSlots(lvl) > 0))
+const isPactCaster = computed(() => props.character.identity.class.index === 'warlock')
+const pactUpcastLevel = computed<number | null>(() => {
+  if (!isPactCaster.value) return null
+  for (let lvl = 9; lvl >= 1; lvl--) {
+    if (maxSlots(lvl) > 0) return lvl
+  }
+  return null
+})
+const slotLevels = computed(() => isPactCaster.value ? [] : SPELL_LEVELS.filter(lvl => maxSlots(lvl) > 0))
 
 async function toggleSlot(lvl: number, pip: number) {
   const sc = props.character.spellcasting
@@ -295,7 +303,16 @@ function rollWeaponDmg(fav: CombatFavorite) {
 }
 
 async function onResourceChange(pools: ResourcePool[]) {
-  await store.update(props.character.id, { resources: pools })
+  const update: Partial<Character> = { resources: pools }
+  if (isPactCaster.value && pactUpcastLevel.value) {
+    const sc = props.character.spellcasting
+    const pool = pools.find(r => r.name === 'Pact Magic Slots')
+    if (sc && pool) {
+      const key = slotKey(pactUpcastLevel.value)
+      update.spellcasting = { ...sc, slotsUsed: { ...sc.slotsUsed, [key]: pool.max - pool.current } }
+    }
+  }
+  await store.update(props.character.id, update)
 }
 
 async function onCastSpell(slotLevel: number) {
@@ -305,9 +322,19 @@ async function onCastSpell(slotLevel: number) {
   const current = sc.slotsUsed[key]
   const max = sc.slotsMax[key]
   if (current >= max) return
-  await store.update(props.character.id, {
-    spellcasting: { ...sc, slotsUsed: { ...sc.slotsUsed, [key]: current + 1 } },
-  })
+  const newUsed = current + 1
+  const update: Partial<Character> = {
+    spellcasting: { ...sc, slotsUsed: { ...sc.slotsUsed, [key]: newUsed } },
+  }
+  if (isPactCaster.value) {
+    const pool = props.character.resources.find(r => r.name === 'Pact Magic Slots')
+    if (pool) {
+      update.resources = props.character.resources.map(r =>
+        r.id === pool.id ? { ...r, current: Math.max(0, max - newUsed) } : r
+      )
+    }
+  }
+  await store.update(props.character.id, update)
 }
 
 async function removeFavorite(id: string) {
