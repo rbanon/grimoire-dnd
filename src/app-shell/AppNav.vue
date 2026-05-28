@@ -50,17 +50,16 @@
         <ColorModeToggle class="hidden sm:flex" />
 
         <template v-if="auth.isAuthenticated">
-          <RouterLink to="/profile" class="nav-link text-sm hidden sm:flex">
-            <div class="w-6 h-6 rounded-full border border-gold-mid/50 overflow-hidden shrink-0 flex items-center justify-center"
-                 :class="auth.avatarUrl ? '' : 'bg-gold-base/80'">
+          <RouterLink to="/profile" class="nav-link text-sm hidden sm:flex min-w-0 overflow-hidden">
+            <!-- Avatar circle: initials always rendered as fallback; image layered on top -->
+            <div class="w-6 h-6 rounded-full border border-gold-mid/50 bg-gold-base/80 overflow-hidden shrink-0 flex items-center justify-center relative">
+              <span class="text-void text-xs font-heading leading-none">{{ initials }}</span>
               <img
                 v-if="auth.avatarUrl"
                 :src="auth.avatarUrl"
                 alt=""
-                class="w-full h-full object-cover"
-                @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+                class="absolute inset-0 w-full h-full object-cover"
               />
-              <span v-if="!auth.avatarUrl" class="text-void text-xs font-heading leading-none">{{ initials }}</span>
             </div>
             <span class="hidden lg:inline max-w-[140px] truncate">{{ displayName }}</span>
           </RouterLink>
@@ -107,6 +106,28 @@
             class="ml-auto text-mist"
           />
         </RouterLink>
+
+        <!-- Profile & sign out (authenticated only) -->
+        <template v-if="auth.isAuthenticated">
+          <div class="mt-2 pt-2 border-t border-shadow flex flex-col gap-0.5">
+            <RouterLink
+              to="/profile"
+              class="nav-link justify-start py-2.5"
+              @click="mobileOpen = false"
+            >
+              <UserCircleIcon :size="14" />
+              Profile
+              <span class="ml-auto text-xs font-body text-mist truncate max-w-[120px]">{{ displayName }}</span>
+            </RouterLink>
+            <button
+              class="nav-link justify-start py-2.5 text-blood-bright/80 hover:text-blood-bright w-full"
+              @click="auth.signOut(); mobileOpen = false"
+            >
+              Sign out
+            </button>
+          </div>
+        </template>
+
         <div class="mt-2 pt-2 border-t border-shadow flex items-center gap-2">
           <ColorModeToggle />
           <span class="text-xs text-mist font-heading tracking-wider">Theme</span>
@@ -119,7 +140,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { version } from '../../package.json'
-import { UsersIcon, SparklesIcon, ShieldIcon, BookOpenIcon, MenuIcon, XIcon, LockIcon } from 'lucide-vue-next'
+import { UsersIcon, SparklesIcon, ShieldIcon, BookOpenIcon, MenuIcon, XIcon, LockIcon, UserCircleIcon } from 'lucide-vue-next'
 import { useAuthStore } from '@/auth/store'
 import ColorModeToggle from './ColorModeToggle.vue'
 
