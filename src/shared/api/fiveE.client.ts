@@ -61,6 +61,13 @@ function lsWrite(key: string, data: unknown): void {
   }
 }
 
+const SAFE_INDEX_RE = /^[a-z0-9-]+$/i
+
+export function sanitizeApiIndex(index: string): string {
+  if (!SAFE_INDEX_RE.test(index)) throw new Error(`Invalid 5e API index: "${index}"`)
+  return index
+}
+
 async function get<T>(path: string, params?: Record<string, string>): Promise<T> {
   const url = new URL(`${BASE_URL}${path}`)
   if (params) {
@@ -85,15 +92,15 @@ async function get<T>(path: string, params?: Record<string, string>): Promise<T>
 
 export const fiveEApi = {
   listClasses: () => get<ApiReferenceList>('/classes'),
-  getClass: (index: string) => get<ApiClass>(`/classes/${index}`),
+  getClass: (index: string) => get<ApiClass>(`/classes/${sanitizeApiIndex(index)}`),
 
   listRaces: () => get<ApiReferenceList>('/races'),
-  getRace: (index: string) => get<ApiRace>(`/races/${index}`),
-  getSubrace: (index: string) => get<ApiSubrace>(`/subraces/${index}`),
-  getSubclass: (index: string) => get<ApiSubclass>(`/subclasses/${index}`),
+  getRace: (index: string) => get<ApiRace>(`/races/${sanitizeApiIndex(index)}`),
+  getSubrace: (index: string) => get<ApiSubrace>(`/subraces/${sanitizeApiIndex(index)}`),
+  getSubclass: (index: string) => get<ApiSubclass>(`/subclasses/${sanitizeApiIndex(index)}`),
 
   listBackgrounds: () => get<ApiReferenceList>('/backgrounds'),
-  getBackground: (index: string) => get<ApiBackground>(`/backgrounds/${index}`),
+  getBackground: (index: string) => get<ApiBackground>(`/backgrounds/${sanitizeApiIndex(index)}`),
 
   // Spells: when filtering by class, the API requires the class-scoped endpoint
   // (/classes/{index}/spells) — the ?class= query param on /spells is silently ignored.
@@ -103,19 +110,19 @@ export const fiveEApi = {
     if (params?.level !== undefined) queryParams.level = String(params.level)
     if (params?.school)          queryParams.school = params.school
     const path = params?.class
-      ? `/classes/${params.class}/spells`
+      ? `/classes/${sanitizeApiIndex(params.class)}/spells`
       : '/spells'
     return get<ApiReferenceList>(path, queryParams)
   },
-  getSpell: (index: string) => get<ApiSpell>(`/spells/${index}`),
+  getSpell: (index: string) => get<ApiSpell>(`/spells/${sanitizeApiIndex(index)}`),
 
   listSkills: () => get<ApiReferenceList>('/skills'),
-  getSkill: (index: string) => get<ApiSkill>(`/skills/${index}`),
+  getSkill: (index: string) => get<ApiSkill>(`/skills/${sanitizeApiIndex(index)}`),
   listProficiencies: () => get<ApiReferenceList>('/proficiencies'),
   listLanguages: () => get<ApiReferenceList>('/languages'),
   listAlignments: () => get<ApiReferenceList>('/alignments'),
   listFeats: () => get<ApiReferenceList>('/feats'),
-  getFeat: (index: string) => get<ApiFeat>(`/feats/${index}`),
+  getFeat: (index: string) => get<ApiFeat>(`/feats/${sanitizeApiIndex(index)}`),
   listTraits: () => get<ApiReferenceList>('/traits'),
 
   listMagicSchools: () => get<ApiReferenceList>('/magic-schools'),
@@ -124,19 +131,19 @@ export const fiveEApi = {
 
   // Equipment — no server-side filtering; fetch all, index client-side
   listEquipment: () => get<ApiReferenceList>('/equipment'),
-  getEquipment: (index: string) => get<ApiEquipment>(`/equipment/${index}`),
+  getEquipment: (index: string) => get<ApiEquipment>(`/equipment/${sanitizeApiIndex(index)}`),
   listEquipmentCategories: () => get<ApiReferenceList>('/equipment-categories'),
-  getEquipmentCategory: (index: string) => get<ApiEquipmentCategory>(`/equipment-categories/${index}`),
+  getEquipmentCategory: (index: string) => get<ApiEquipmentCategory>(`/equipment-categories/${sanitizeApiIndex(index)}`),
 
   // Magic items — no server-side filtering
   listMagicItems: () => get<ApiReferenceList>('/magic-items'),
-  getMagicItem: (index: string) => get<ApiMagicItem>(`/magic-items/${index}`),
+  getMagicItem: (index: string) => get<ApiMagicItem>(`/magic-items/${sanitizeApiIndex(index)}`),
 
   // Class features
   getClassLevels: (classIndex: string) =>
-    get<ApiClassLevel[]>(`/classes/${classIndex}/levels`),
-  getFeature: (index: string) => get<ApiFeature>(`/features/${index}`),
+    get<ApiClassLevel[]>(`/classes/${sanitizeApiIndex(classIndex)}/levels`),
+  getFeature: (index: string) => get<ApiFeature>(`/features/${sanitizeApiIndex(index)}`),
 
   // Race/subrace traits
-  getTrait: (index: string) => get<ApiTrait>(`/traits/${index}`),
+  getTrait: (index: string) => get<ApiTrait>(`/traits/${sanitizeApiIndex(index)}`),
 }

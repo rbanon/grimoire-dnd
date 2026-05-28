@@ -103,7 +103,13 @@ export type BackgroundSnapshot = z.infer<typeof BackgroundSnapshotSchema>
 
 export const PortraitMetadataSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('none') }),
-  z.object({ type: z.literal('url'), url: z.string().url() }),
+  z.object({
+    type: z.literal('url'),
+    url: z.string().url().refine(
+      (u) => /^https?:\/\//i.test(u),
+      { message: 'Portrait URL must use http or https' },
+    ),
+  }),
   z.object({ type: z.literal('local-preview') }), // in-memory only, not serialized
 ])
 export type PortraitMetadata = z.infer<typeof PortraitMetadataSchema>

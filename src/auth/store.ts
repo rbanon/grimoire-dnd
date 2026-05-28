@@ -26,17 +26,17 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function signInWithEmail(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
     if (error) throw error
   }
 
   async function signUpWithEmail(email: string, password: string) {
-    const { error } = await supabase.auth.signUp({ email, password })
+    const { error } = await supabase.auth.signUp({ email: email.trim().toLowerCase(), password })
     if (error) throw error
   }
 
   async function sendMagicLink(email: string) {
-    const { error } = await supabase.auth.signInWithOtp({ email })
+    const { error } = await supabase.auth.signInWithOtp({ email: email.trim().toLowerCase() })
     if (error) throw error
   }
 

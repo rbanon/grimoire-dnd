@@ -193,7 +193,7 @@ export const useCharactersStore = defineStore('characters', () => {
       if (error) {
         characters.value.splice(idx, 0, removed)
         useToast().error('Failed to delete character from cloud. Your data has been restored.')
-        throw error
+        throw new Error('Cloud delete failed')
       }
     } else {
       persistLocal()
@@ -237,7 +237,12 @@ export const useCharactersStore = defineStore('characters', () => {
     return JSON.stringify(envelope, null, 2)
   }
 
+  const IMPORT_MAX_BYTES = 5 * 1024 * 1024 // 5 MB
+
   async function importFromJson(json: string): Promise<{ imported: number; errors: string[] }> {
+    if (json.length > IMPORT_MAX_BYTES) {
+      return { imported: 0, errors: ['File is too large. Maximum size is 5 MB.'] }
+    }
     let parsed: unknown
     try {
       parsed = JSON.parse(json)
@@ -279,8 +284,8 @@ export const useCharactersStore = defineStore('characters', () => {
       if (auth.isAuthenticated) {
         try {
           await persistCloud(c)
-        } catch (e) {
-          errors.push(`Failed to save "${c.identity.name}" to cloud: ${e}`)
+        } catch {
+          errors.push(`Failed to save "${c.identity.name}" to cloud. Check your connection and try again.`)
         }
       }
     }

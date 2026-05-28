@@ -149,7 +149,9 @@ async function submit() {
   try {
     if (mode.value === 'signin') {
       await auth.signInWithEmail(email.value, password.value)
-      const redirect = (router.currentRoute.value.query.redirect as string) ?? '/'
+      const raw = router.currentRoute.value.query.redirect as string | undefined
+      // Only allow internal paths: must start with / but not // (protocol-relative)
+      const redirect = raw?.startsWith('/') && !raw.startsWith('//') ? raw : '/'
       router.push(redirect)
     } else {
       await auth.signUpWithEmail(email.value, password.value)
