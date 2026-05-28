@@ -51,8 +51,16 @@
 
         <template v-if="auth.isAuthenticated">
           <RouterLink to="/profile" class="nav-link text-sm hidden sm:flex">
-            <div class="w-6 h-6 rounded-full border border-gold-mid/50 bg-gold-base/80 flex items-center justify-center shrink-0">
-              <span class="text-void text-xs font-heading leading-none">{{ initials }}</span>
+            <div class="w-6 h-6 rounded-full border border-gold-mid/50 overflow-hidden shrink-0 flex items-center justify-center"
+                 :class="auth.avatarUrl ? '' : 'bg-gold-base/80'">
+              <img
+                v-if="auth.avatarUrl"
+                :src="auth.avatarUrl"
+                alt=""
+                class="w-full h-full object-cover"
+                @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+              />
+              <span v-if="!auth.avatarUrl" class="text-void text-xs font-heading leading-none">{{ initials }}</span>
             </div>
             <span class="hidden lg:inline">{{ displayName }}</span>
           </RouterLink>
@@ -118,16 +126,13 @@ import ColorModeToggle from './ColorModeToggle.vue'
 const auth = useAuthStore()
 const mobileOpen = ref(false)
 
-const initials = computed(() => {
-  const email = auth.userEmail ?? ''
-  const name = email.split('@')[0] ?? ''
-  return name.slice(0, 2).toUpperCase()
-})
-
 const displayName = computed(() => {
+  if (auth.nickname) return auth.nickname
   const email = auth.userEmail ?? ''
   return email.split('@')[0] || email
 })
+
+const initials = computed(() => displayName.value.slice(0, 2).toUpperCase())
 
 const navLinks = [
   { to: '/',          label: 'Characters', icon: UsersIcon,     authRequired: false },

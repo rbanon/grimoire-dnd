@@ -13,6 +13,8 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => user.value !== null)
   const userId = computed(() => user.value?.id ?? null)
   const userEmail = computed(() => user.value?.email ?? null)
+  const nickname = computed(() => (user.value?.user_metadata?.nickname as string | undefined) || null)
+  const avatarUrl = computed(() => (user.value?.user_metadata?.avatar_url as string | undefined) || null)
 
   async function init() {
     const { data } = await supabase.auth.getSession()
@@ -46,6 +48,19 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
+  async function updateProfile(data: { nickname: string | null; avatarUrl: string | null }) {
+    const { data: result, error } = await supabase.auth.updateUser({
+      data: { nickname: data.nickname, avatar_url: data.avatarUrl },
+    })
+    if (error) throw error
+    if (result.user) user.value = result.user
+  }
+
+  async function updatePassword(password: string) {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+  }
+
   return {
     user,
     loading,
@@ -53,10 +68,14 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     userId,
     userEmail,
+    nickname,
+    avatarUrl,
     init,
     signInWithEmail,
     signUpWithEmail,
     sendMagicLink,
     signOut,
+    updateProfile,
+    updatePassword,
   }
 })
