@@ -8,7 +8,7 @@ import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
 import { uploadPortrait } from '@/shared/lib/uploadPortrait'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 11
@@ -320,15 +320,18 @@ export const useBuilderStore = defineStore('builder', () => {
     const levelIdx = draft.value.level - 1
     const errors: string[] = []
     if (profile.castingType === 'known') {
-      const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
-      if (cantripLimit > 0 && activeCantrips.value.length < cantripLimit) {
-        const diff = cantripLimit - activeCantrips.value.length
-        errors.push(`Select ${diff} more cantrip${diff > 1 ? 's' : ''} (${activeCantrips.value.length}/${cantripLimit})`)
+      const incompleteLevels: number[] = []
+      for (let lvl = 1; lvl <= draft.value.level; lvl++) {
+        const cGain = cantripsGainedAtLevel(draft.value.classIndex, lvl)
+        const sGain = spellsGainedAtLevel(draft.value.classIndex, lvl)
+        const entry = draft.value.spellsByLevel[lvl]
+        const gotC = entry?.cantripsGained.length ?? 0
+        const gotS = entry?.spellsGained.length ?? 0
+        if (gotC < cGain || gotS < sGain) incompleteLevels.push(lvl)
       }
-      const spellLimit = profile.spellsKnown?.[levelIdx] ?? 0
-      if (spellLimit > 0 && activeSpells.value.length < spellLimit) {
-        const diff = spellLimit - activeSpells.value.length
-        errors.push(`Select ${diff} more spell${diff > 1 ? 's' : ''} (${activeSpells.value.length}/${spellLimit})`)
+      if (incompleteLevels.length > 0) {
+        const lvlList = incompleteLevels.map(l => `Lv ${l}`).join(', ')
+        errors.push(`Spells incomplete (${lvlList}) — open the highlighted sections below and pick the missing spells`)
       }
     } else {
       const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
@@ -694,7 +697,12 @@ export const useBuilderStore = defineStore('builder', () => {
       }
 
       const character = await buildCharacterFromDraft(id, ts, portrait)
-      await characterStore.create(character)
+      await Promise.race([
+        characterStore.create(character),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Save timed out. Check your connection and try again.')), 20000)
+        ),
+      ])
       await clearDraft()
       return id
     } catch (err) {

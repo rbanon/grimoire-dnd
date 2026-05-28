@@ -114,7 +114,7 @@
               ? 'border-gold-mid/60 bg-gold-dim/15 text-gold-deep'
               : fieldErrors.subrace
                 ? 'border-blood-base/50 text-ash hover:border-blood-base/70'
-                : 'border-shadow text-ash hover:border-gold-dim/25 hover:text-stone'"
+                : 'border-gold-dim/25 bg-depths text-stone hover:border-gold-dim/50 hover:text-vellum hover:bg-gold-dim/5'"
             @click="selectSubrace(sub.index, sub.name)"
           >
             {{ sub.name }}

@@ -66,39 +66,50 @@
     <!-- Standard array -->
     <section v-else-if="builder.draft.abilityMethod === 'standard'" class="space-y-5">
       <p class="text-sm font-body text-mist">
-        Assign each value from the standard array to an ability score. Each value can only be used once.
+        Assign each value to an ability score — drag a number onto a card, or use the dropdown.
       </p>
 
-      <!-- Available values -->
+      <!-- Available values (draggable) -->
       <div class="flex gap-2 flex-wrap">
         <span
           v-for="(val, i) in STANDARD_ARRAY"
           :key="i"
-          class="px-3 py-1.5 rounded font-heading text-sm border transition-all duration-150"
+          class="px-3 py-1.5 rounded font-heading text-sm border transition-all duration-150 select-none cursor-grab active:cursor-grabbing"
           :class="isArrayValueUsed(val)
             ? 'border-shadow/40 text-mist/40 line-through'
             : 'border-gold-dim/30 text-gold-mid bg-gold-dim/10'"
+          draggable="true"
+          @dragstart="dragValue = val"
+          @dragend="dragValue = null"
         >
           {{ val }}
         </span>
       </div>
 
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <AbilityScoreInput
+        <div
           v-for="ab in abilityDefs"
           :key="ab.key"
-          :label="ab.label"
-          :full-name="ab.fullName"
-          :ab-key="ab.key"
-          mode="standard"
-        />
+          class="rounded-lg transition-all duration-150"
+          :class="dragOver === ab.key && dragValue !== null ? 'ring-2 ring-gold-mid/40 ring-offset-2 ring-offset-abyss' : ''"
+          @dragover.prevent="dragOver = ab.key"
+          @dragleave.self="dragOver = null"
+          @drop.prevent="onDrop(ab.key)"
+        >
+          <AbilityScoreInput
+            :label="ab.label"
+            :full-name="ab.fullName"
+            :ab-key="ab.key"
+            mode="standard"
+          />
+        </div>
       </div>
 
       <p
-        v-if="showValidation && Object.keys(builder.draft.standardArrayAssignments).length < 6"
+        v-if="showValidation && !standardArrayComplete"
         class="text-xs font-body text-blood-bright"
       >
-        Assign all standard array values ({{ Object.keys(builder.draft.standardArrayAssignments).length }}/6 assigned).
+        Assign all standard array values ({{ Object.keys(builder.draft.standardArrayAssignments).length }}/6 done).
       </p>
     </section>
 
@@ -234,7 +245,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { InfoIcon } from 'lucide-vue-next'
 import { useBuilderStore, POINT_BUY_BUDGET, STANDARD_ARRAY } from '@/character-builder/builderStore'
 import { getAsiLevels } from '@/character-builder/classMeta'
@@ -277,8 +288,31 @@ const effectiveScore = (key: keyof AbilityScores) => builder.effectiveScores[key
 const effectiveMod   = (key: keyof AbilityScores) => computeModifier(builder.effectiveScores[key])
 
 function isArrayValueUsed(val: number): boolean {
-  return Object.values(builder.draft.baseScores).includes(val) &&
-    abilityDefs.some(ab => builder.draft.baseScores[ab.key] === val)
+  return Object.values(builder.draft.standardArrayAssignments).includes(val)
+}
+
+const standardArrayComplete = computed(() => {
+  const scores = abilityDefs.map(ab => builder.draft.baseScores[ab.key]).sort((a, b) => a - b)
+  const arr = [...STANDARD_ARRAY].sort((a, b) => a - b)
+  return scores.every((v, i) => v === arr[i])
+})
+
+const dragValue = ref<number | null>(null)
+const dragOver = ref<string | null>(null)
+
+function onDrop(abKey: keyof AbilityScores) {
+  dragOver.value = null
+  if (dragValue.value === null) return
+  const val = dragValue.value
+  // If this value is assigned to another ability, unassign it first
+  const prev = (Object.entries(builder.draft.standardArrayAssignments) as [keyof AbilityScores, number][])
+    .find(([k, v]) => k !== abKey && v === val)?.[0]
+  if (prev) {
+    delete builder.draft.standardArrayAssignments[prev]
+    builder.draft.baseScores[prev] = 8
+  }
+  builder.applyStandardArray(abKey, val)
+  dragValue.value = null
 }
 
 function setMethod(method: 'pointbuy' | 'standard' | 'manual' | 'roll') {

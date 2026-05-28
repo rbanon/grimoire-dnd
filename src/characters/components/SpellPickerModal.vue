@@ -95,6 +95,7 @@
                     {{ s.name }}
                   </p>
                   <p v-if="isKnown(s.index)" class="text-2xs font-body text-mist">Already known</p>
+                  <p v-else-if="isChosenElsewhere(s.index)" class="text-2xs font-body text-gold-dim/70">Chosen at another level</p>
                 </div>
 
                 <button
@@ -147,6 +148,8 @@ const props = defineProps<{
   classIndex: string
   className: string
   knownIndices: string[]
+  /** Spells chosen at other accordion levels — shown as blocked/labelled but don't affect the remaining counter */
+  chosenElsewhereIndices?: string[]
   /** When provided alongside slotsPerLevel, enables per-level limit enforcement */
   knownSpells?: { index: string; level: number }[]
   /** Per spell-level slot counts — enforces per-level caps instead of a single total */
@@ -213,9 +216,11 @@ const remainingAtLevel = computed(() =>
 )
 
 function isKnown(index: string) { return props.knownIndices.includes(index) }
+function isChosenElsewhere(index: string) { return props.chosenElsewhereIndices?.includes(index) ?? false }
 function isSelected(index: string) { return selected.value.some(s => s.index === index) }
 function isBlocked(index: string) {
   if (isSelected(index)) return false
+  if (isChosenElsewhere(index)) return true
   if (props.slotsPerLevel) return remainingAtLevel.value <= 0 || remaining.value <= 0
   return remaining.value <= 0
 }

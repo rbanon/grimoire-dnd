@@ -144,22 +144,6 @@
               <p class="font-display text-sm text-vellum">{{ builder.draft.name }}</p>
             </div>
 
-            <!-- Summary panel toggle -->
-            <button
-              class="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs transition-all duration-150"
-              :class="summaryOpen
-                ? 'border-gold-dim/40 text-gold-mid hover:border-gold-mid/60 bg-gold-dim/5'
-                : 'border-shadow text-mist hover:text-ash hover:border-shadow/80'"
-              :title="summaryOpen ? 'Hide preview' : 'Show preview'"
-              @click="summaryOpen = !summaryOpen"
-            >
-              <span class="font-heading tracking-wide">Preview</span>
-              <ChevronRightIcon
-                :size="11"
-                class="transition-transform duration-200"
-                :class="summaryOpen ? 'rotate-180' : ''"
-              />
-            </button>
           </div>
         </div>
 
@@ -175,7 +159,7 @@
           <p
             v-if="builder.saveError && visibleCurrentStep === builder.totalSteps"
             role="alert"
-            class="font-body text-xs text-arcane-bright text-center mb-2"
+            class="font-body text-xs text-blood-bright text-center mb-2"
           >{{ builder.saveError }}</p>
 
           <!-- Validation toast -->
@@ -248,56 +232,6 @@
 
       </div>
 
-      <!-- ── Right summary panel ──────────────────────────────────────────────── -->
-      <aside
-        v-if="summaryOpen"
-        class="hidden md:flex flex-col w-52 shrink-0 border-l border-shadow bg-depths overflow-y-auto"
-      >
-        <!-- Header -->
-        <div class="px-4 pt-4 pb-3 border-b border-shadow">
-          <p class="font-mono text-2xs tracking-[0.2em] uppercase text-mist">Preview</p>
-        </div>
-
-        <!-- Portrait / glyph -->
-        <div class="px-4 py-4 flex flex-col items-center gap-2 border-b border-shadow">
-          <div
-            v-if="builder.draft.portraitUrl"
-            class="w-16 h-16 rounded-full overflow-hidden border-2 border-gold-dim/40"
-          >
-            <img :src="builder.draft.portraitUrl" class="w-full h-full object-cover" alt="" />
-          </div>
-          <div
-            v-else
-            class="w-16 h-16 rounded-full border-2 border-shadow bg-abyss flex items-center justify-center"
-          >
-            <span class="text-2xl">{{ classGlyph }}</span>
-          </div>
-          <p class="font-display text-sm text-vellum text-center leading-snug">
-            {{ builder.draft.name || 'Unnamed' }}
-          </p>
-        </div>
-
-        <!-- Details -->
-        <div class="px-4 py-3 space-y-3 flex-1">
-          <div v-if="builder.draft.className">
-            <p class="text-2xs font-heading tracking-[0.18em] uppercase text-mist mb-0.5">Class</p>
-            <p class="text-sm font-heading text-vellum leading-tight">{{ builder.draft.className }}</p>
-            <p v-if="builder.draft.subclassName" class="text-xs font-body text-ash leading-tight">{{ builder.draft.subclassName }}</p>
-            <p class="text-2xs font-mono text-mist/50 mt-0.5">Lv {{ builder.draft.level }} · d{{ builder.draft.classHitDie }}</p>
-          </div>
-
-          <div v-if="builder.draft.raceName">
-            <p class="text-2xs font-heading tracking-[0.18em] uppercase text-mist mb-0.5">Race</p>
-            <p class="text-sm font-heading text-vellum leading-tight">{{ builder.draft.raceName }}</p>
-            <p v-if="builder.draft.subraceName" class="text-xs font-body text-ash leading-tight">{{ builder.draft.subraceName }}</p>
-          </div>
-
-          <div v-if="builder.draft.backgroundName">
-            <p class="text-2xs font-heading tracking-[0.18em] uppercase text-mist mb-0.5">Background</p>
-            <p class="text-sm font-heading text-vellum leading-tight">{{ builder.draft.backgroundName }}</p>
-          </div>
-        </div>
-      </aside>
 
     </div>
   </div>
@@ -324,7 +258,6 @@ import StepEquipment from '@/character-builder/steps/StepEquipment.vue'
 import StepSpells from '@/character-builder/steps/StepSpells.vue'
 import StepPersonal from '@/character-builder/steps/StepPersonal.vue'
 import StepReview from '@/character-builder/steps/StepReview.vue'
-import { getClassGlyph } from '@/character-builder/classMeta'
 
 const builder = useBuilderStore()
 const router = useRouter()
@@ -334,8 +267,6 @@ const showErrors = ref(false)
 const showToast = ref(false)
 const prevStep = ref(1)
 const resumeScreen = ref(false)
-const summaryOpen = ref(true)
-const classGlyph = computed(() => builder.draft.classIndex ? getClassGlyph(builder.draft.classIndex) : '◈')
 let _toastTimer: ReturnType<typeof setTimeout> | null = null
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI']

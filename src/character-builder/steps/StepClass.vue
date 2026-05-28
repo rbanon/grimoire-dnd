@@ -67,7 +67,7 @@
               class="px-3 py-1.5 rounded text-sm font-heading tracking-wide border transition-all duration-150"
               :class="builder.draft.subclassIndex === sub.index
                 ? 'border-gold-mid/60 bg-gold-dim/15 text-gold-deep'
-                : 'border-shadow text-ash hover:border-gold-dim/25 hover:text-stone'"
+                : 'border-gold-dim/25 bg-depths text-stone hover:border-gold-dim/50 hover:text-vellum hover:bg-gold-dim/5'"
               @click="toggleSubclass(sub.index, sub.name)"
             >
               {{ sub.name }}

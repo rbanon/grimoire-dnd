@@ -40,6 +40,19 @@
         </span>
       </p>
 
+      <!-- Slot info -->
+      <div v-if="slotInfoEntries.length > 0" class="flex items-start gap-2 text-xs font-body text-mist px-3 py-2.5 rounded border border-shadow bg-depths/40 -mt-2">
+        <span class="text-gold-dim/60 shrink-0 mt-0.5">ℹ</span>
+        <span>
+          Spell slots at level {{ builder.draft.level }}:
+          <template v-for="(e, i) in slotInfoEntries" :key="e.lvl">
+            <span class="text-stone font-heading">{{ e.count }}× Lv {{ e.lvl }}</span>
+            <span v-if="i < slotInfoEntries.length - 1" class="mx-1 text-mist/40">·</span>
+          </template>
+          — you may pick any spell up to level {{ maxSpellLevel }}.
+        </span>
+      </div>
+
       <div class="space-y-2">
         <div v-for="lvl in levelsWithGains" :key="lvl" class="card overflow-hidden">
           <!-- Header -->
@@ -57,7 +70,9 @@
                 class="text-2xs font-heading px-2 py-0.5 rounded border"
                 :class="isLevelComplete(lvl)
                   ? 'border-arcane-base/40 text-arcane-pale bg-arcane-deep/10'
-                  : 'border-shadow text-mist/50'"
+                  : showValidation
+                    ? 'border-blood-base/60 text-blood-bright bg-blood-deep/15'
+                    : 'border-shadow text-mist/50'"
               >{{ isLevelComplete(lvl) ? 'Done' : 'Pending' }}</span>
               <ChevronDownIcon
                 :size="14"
@@ -199,6 +214,16 @@
                 </template>
               </div>
 
+              <!-- Per-level validation hint -->
+              <p v-if="showValidation && !isLevelComplete(lvl)" class="text-xs font-body text-blood-bright pt-1">
+                <template v-if="getCantripEntry(lvl).length < cantripsGainedAt(lvl)">
+                  Pick {{ cantripsGainedAt(lvl) - getCantripEntry(lvl).length }} more cantrip{{ cantripsGainedAt(lvl) - getCantripEntry(lvl).length > 1 ? 's' : '' }} above.
+                </template>
+                <template v-if="getSpellEntry(lvl).length < spellsGainedAt(lvl)">
+                  Pick {{ spellsGainedAt(lvl) - getSpellEntry(lvl).length }} more spell{{ spellsGainedAt(lvl) - getSpellEntry(lvl).length > 1 ? 's' : '' }} above.
+                </template>
+              </p>
+
             </div>
           </Transition>
         </div>
@@ -211,6 +236,7 @@
         :class-index="builder.draft.classIndex"
         :class-name="builder.draft.className"
         :known-indices="knownIndicesForLevel(showSpellPickerForLevel!)"
+        :chosen-elsewhere-indices="chosenElsewhereForLevel(showSpellPickerForLevel)"
         :known-spells="activeSpellsBeforeLevel(showSpellPickerForLevel!)"
         :max-level="getMaxSpellLevel(builder.draft.classIndex, showSpellPickerForLevel!)"
         :limit="activeSpellsBeforeLevel(showSpellPickerForLevel!).length + spellsGainedAt(showSpellPickerForLevel!)"
@@ -224,6 +250,7 @@
         :class-index="builder.draft.classIndex"
         :class-name="builder.draft.className"
         :known-indices="replacementKnownIndices(showReplacementPickerForLevel!)"
+        :chosen-elsewhere-indices="chosenElsewhereForLevel(showReplacementPickerForLevel)"
         :known-spells="activeSpellsBeforeLevel(showReplacementPickerForLevel!).filter(s => s.index !== replacingFromIndex[showReplacementPickerForLevel!])"
         :max-level="getMaxSpellLevel(builder.draft.classIndex, showReplacementPickerForLevel!)"
         :limit="activeSpellsBeforeLevel(showReplacementPickerForLevel!).length"
@@ -419,9 +446,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { InfoIcon, PlusIcon, ChevronDownIcon } from 'lucide-vue-next'
+import { InfoIcon, PlusIcon, ChevronDownIcon, XIcon } from 'lucide-vue-next'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import type { SpellsByLevelEntry } from '@/character-builder/builderStore'
 import { fiveEApi } from '@/shared/api/fiveE.client'
@@ -587,6 +614,20 @@ function knownIndicesForLevel(lvl: number | null): string[] {
   return activeSpellsBeforeLevel(lvl).map(s => s.index)
 }
 
+/** Spells chosen at other character levels (not before this level) — blocks them in the picker without consuming the limit. */
+function chosenElsewhereForLevel(lvl: number | null): string[] {
+  if (lvl === null) return []
+  const before = new Set(activeSpellsBeforeLevel(lvl).map(s => s.index))
+  const result: string[] = []
+  for (const [l, entry] of Object.entries(builder.draft.spellsByLevel)) {
+    if (Number(l) === lvl || !entry) continue
+    for (const s of entry.spellsGained) {
+      if (!before.has(s.index)) result.push(s.index)
+    }
+  }
+  return result
+}
+
 function replacementKnownIndices(lvl: number | null): string[] {
   if (lvl === null) return []
   const fromIndex = replacingFromIndex.value[lvl]
@@ -631,12 +672,37 @@ onMounted(() => {
   replacingFromIndex.value = fromMap
 })
 
+// When validation fires, auto-open every incomplete level so the user can see what's missing
+watch(showValidation, (active) => {
+  if (!active) return
+  const next = new Set(openLevels.value)
+  for (const l of levelsWithGains.value) {
+    if (!isLevelComplete(l)) next.add(l)
+  }
+  openLevels.value = next
+})
+
 function toggleLevel(lvl: number) {
   const next = new Set(openLevels.value)
   if (next.has(lvl)) next.delete(lvl)
   else next.add(lvl)
   openLevels.value = next
 }
+
+// ── Slot info for known casters ───────────────────────────────────────────────
+
+const slotInfoEntries = computed(() => {
+  const slots = getSpellSlots(builder.draft.classIndex, builder.draft.level)
+  const result: { lvl: number; count: number }[] = []
+  const pairs: [number, number][] = [
+    [1, slots.level1], [2, slots.level2], [3, slots.level3], [4, slots.level4],
+    [5, slots.level5], [6, slots.level6], [7, slots.level7], [8, slots.level8], [9, slots.level9],
+  ]
+  for (const [lvl, count] of pairs) {
+    if (count > 0) result.push({ lvl, count })
+  }
+  return result
+})
 
 // ── Flat limits (prepared / spellbook) ───────────────────────────────────────
 
