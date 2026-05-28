@@ -1,7 +1,12 @@
 <template>
   <div>
+    <!-- ── Loading ─────────────────────────────────────────────────────────────── -->
+    <div v-if="!store.loaded" class="app-container py-24 flex justify-center">
+      <span class="w-6 h-6 border-2 border-gold-dim/40 border-t-gold-mid rounded-full animate-spin" />
+    </div>
+
     <!-- ── Not found ──────────────────────────────────────────────────────────── -->
-    <div v-if="!character" class="app-container py-24 text-center">
+    <div v-else-if="!character" class="app-container py-24 text-center">
       <p class="font-body text-ash">Character not found in this tome.</p>
       <RouterLink to="/" class="btn-secondary mt-4 inline-flex">← Back to characters</RouterLink>
     </div>
@@ -777,7 +782,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { BedIcon, ChevronDownIcon, DownloadIcon, EyeIcon, ImageIcon, LockIcon, LockOpenIcon, MoreHorizontalIcon, PencilIcon, PrinterIcon, ShieldIcon, SparklesIcon, StarIcon, TrendingUpIcon, WindIcon, ZapIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
@@ -812,6 +817,8 @@ const store = useCharactersStore()
 const auth = useAuthStore()
 const toast = useToast()
 const character = computed(() => store.getById(props.id))
+
+onMounted(() => { if (!store.loaded) store.load() })
 const dialog = useDialog()
 const { rollD20 } = useRoll()
 

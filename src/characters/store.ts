@@ -19,6 +19,8 @@ import { useToast } from '@/shared/composables/useToast'
 const LOCAL_KEY = 'characters'
 let _persistTimer: ReturnType<typeof setTimeout> | null = null
 
+export const MAX_CHARACTERS = 15
+
 function makeDefaultCharacter(partial: Partial<Character> = {}): Character {
   const id = generateId()
   const ts = now()
@@ -147,6 +149,9 @@ export const useCharactersStore = defineStore('characters', () => {
   // ── CRUD ──────────────────────────────────────────────────────────────────
 
   async function create(partial?: Partial<Character>): Promise<Character> {
+    if (characters.value.length >= MAX_CHARACTERS) {
+      throw new Error(`You've reached the limit of ${MAX_CHARACTERS} characters. Delete one to create a new one.`)
+    }
     const character = makeDefaultCharacter(partial)
     characters.value.push(character)
     if (auth.isAuthenticated) {
@@ -279,7 +284,11 @@ export const useCharactersStore = defineStore('characters', () => {
       }
     }
 
-    for (const c of toAdd) {
+    const remaining = MAX_CHARACTERS - characters.value.length
+    const skipped = toAdd.length - Math.min(toAdd.length, remaining)
+    if (skipped > 0) errors.push(`${skipped} character${skipped > 1 ? 's were' : ' was'} not imported: you've reached the ${MAX_CHARACTERS}-character limit.`)
+
+    for (const c of toAdd.slice(0, remaining)) {
       characters.value.push(c)
       if (auth.isAuthenticated) {
         try {

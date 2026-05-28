@@ -13,7 +13,7 @@
             <h1 class="font-display text-4xl sm:text-5xl text-vellum leading-tight">Characters</h1>
             <p class="font-body text-base text-ash mt-1.5">
               <template v-if="store.summaries.length > 0">
-                {{ store.summaries.length }} {{ store.summaries.length === 1 ? 'hero' : 'heroes' }} in your tome
+                {{ store.summaries.length }}/{{ MAX_CHARACTERS }} {{ store.summaries.length === 1 ? 'hero' : 'heroes' }} in your tome
               </template>
               <template v-else>Your story has yet to begin</template>
               <span v-if="!auth.isAuthenticated" class="ml-2 badge-gold">Local</span>
@@ -29,7 +29,13 @@
               Import
               <input type="file" accept=".json" class="sr-only" @change="onImport" />
             </label>
-            <RouterLink to="/characters/new" class="btn-primary gap-2 text-sm">
+            <RouterLink
+              to="/characters/new"
+              class="btn-primary gap-2 text-sm"
+              :class="atLimit ? 'opacity-50 pointer-events-none' : ''"
+              :title="atLimit ? `Limit of ${MAX_CHARACTERS} characters reached` : undefined"
+              :aria-disabled="atLimit"
+            >
               <PlusIcon :size="14" />
               New Character
             </RouterLink>
@@ -151,9 +157,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { PlusIcon, UploadIcon, CloudIcon, BookOpenIcon, CheckIcon, XCircleIcon } from 'lucide-vue-next'
-import { useCharactersStore } from '@/characters/store'
+import { useCharactersStore, MAX_CHARACTERS } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import CharacterCard from '@/characters/components/CharacterCard.vue'
@@ -162,6 +168,7 @@ const store = useCharactersStore()
 const auth = useAuthStore()
 const { confirm } = useConfirm()
 const importResult = ref<{ imported: number; errors: string[] } | null>(null)
+const atLimit = computed(() => store.summaries.length >= MAX_CHARACTERS)
 
 onMounted(() => store.load())
 
