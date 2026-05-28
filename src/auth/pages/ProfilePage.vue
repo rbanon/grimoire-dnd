@@ -18,43 +18,69 @@
     <section class="card p-6 corner-ornament flex flex-col gap-5">
       <p class="font-mono text-2xs tracking-[0.22em] uppercase text-mist">Identity</p>
 
-      <!-- Avatar row -->
-      <div class="flex items-start gap-4">
-        <!-- Preview -->
-        <div
-          class="w-16 h-16 rounded-full border-2 overflow-hidden shrink-0 flex items-center justify-center relative"
+      <!-- Avatar -->
+      <div class="flex items-center gap-5">
+        <!-- Clickable circle -->
+        <button
+          type="button"
+          class="relative w-20 h-20 rounded-full border-2 overflow-hidden shrink-0 flex items-center justify-center group transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-mid focus-visible:ring-offset-2 focus-visible:ring-offset-void"
           :class="avatarPreview ? 'border-gold-mid/50' : 'border-gold-dim/30 bg-depths'"
+          :disabled="uploading"
+          title="Upload profile photo"
+          @click="fileInput?.click()"
         >
           <img
             v-if="avatarPreview"
             :src="avatarPreview"
-            alt="Avatar preview"
+            alt="Your avatar"
             class="w-full h-full object-cover"
-            @error="onAvatarError"
           />
-          <span v-else class="font-heading text-xl text-gold-mid select-none">{{ initials }}</span>
-        </div>
+          <span v-else class="font-heading text-2xl text-gold-mid select-none">{{ initials }}</span>
 
-        <!-- URL input -->
-        <div class="flex-1 min-w-0">
-          <label for="avatar-url" class="label">Avatar URL</label>
-          <input
-            id="avatar-url"
-            v-model="avatarUrlInput"
-            type="url"
-            placeholder="https://i.imgur.com/example.jpg"
-            class="input-base"
-            autocomplete="off"
-            @blur="onAvatarBlur"
-          />
-          <p class="text-xs font-body text-mist mt-1.5">
-            Paste a direct image URL (jpg, png, webp). File upload coming soon.
-          </p>
-          <p v-if="avatarError" class="text-xs font-body text-blood-bright mt-1">{{ avatarError }}</p>
+          <!-- Hover overlay -->
+          <div
+            class="absolute inset-0 bg-abyss/60 flex items-center justify-center transition-opacity duration-150"
+            :class="uploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
+          >
+            <span v-if="uploading" class="w-5 h-5 border-2 border-gold-mid border-t-transparent rounded-full animate-spin" />
+            <CameraIcon v-else :size="18" class="text-gold-mid" />
+          </div>
+        </button>
+
+        <!-- Hidden file input -->
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          class="sr-only"
+          @change="onFileSelected"
+        />
+
+        <!-- Side info -->
+        <div class="flex flex-col gap-2">
+          <button
+            type="button"
+            class="btn-secondary text-sm px-4 py-1.5 gap-2"
+            :disabled="uploading"
+            @click="fileInput?.click()"
+          >
+            <UploadIcon :size="13" />
+            Upload photo
+          </button>
+          <button
+            v-if="avatarPreview"
+            type="button"
+            class="btn-ghost text-xs text-mist hover:text-blood-bright px-2 py-1 self-start"
+            :disabled="uploading"
+            @click="removeAvatar"
+          >
+            Remove
+          </button>
+          <p class="text-xs font-body text-mist">JPG, PNG, WebP or GIF · max 1 MB</p>
+          <p v-if="avatarFileError" class="text-xs font-body text-blood-bright">{{ avatarFileError }}</p>
         </div>
       </div>
 
-      <!-- Divider -->
       <div class="divider" />
 
       <!-- Nickname -->
@@ -64,13 +90,13 @@
           id="nickname"
           v-model="nicknameInput"
           type="text"
-          maxlength="40"
+          maxlength="20"
           placeholder="How should we call you?"
           class="input-base"
           autocomplete="nickname"
         />
         <p class="text-xs font-body text-mist mt-1.5">
-          Shown in the navbar. Defaults to your email username.
+          Max 20 characters. Shown in the navbar.
         </p>
       </div>
 
@@ -78,19 +104,18 @@
       <div>
         <label class="label">Email address</label>
         <p
-          class="w-full rounded border border-shadow bg-depths px-3.5 py-2 text-base font-body text-ash cursor-default"
+          class="w-full rounded border border-shadow bg-depths px-3.5 py-2 text-base font-body text-ash cursor-default select-all"
           aria-readonly="true"
         >
           {{ auth.userEmail }}
         </p>
-        <p class="text-xs font-body text-mist mt-1.5">Email cannot be changed here.</p>
       </div>
 
       <!-- Save -->
       <div class="flex items-center gap-3 pt-1">
         <button
           class="btn-primary gap-2"
-          :disabled="savingProfile"
+          :disabled="savingProfile || !!avatarFileError"
           @click="saveProfile"
         >
           <span v-if="savingProfile" class="w-3.5 h-3.5 border-2 border-void border-t-transparent rounded-full animate-spin" />
@@ -187,75 +212,104 @@
         <p class="font-mono text-2xs tracking-[0.22em] uppercase text-mist mb-1">Session</p>
         <p class="text-sm font-body text-ash">Sign out from all active sessions.</p>
       </div>
-      <button class="btn-danger shrink-0" @click="auth.signOut">
-        Sign out
-      </button>
+      <button class="btn-danger shrink-0" @click="auth.signOut">Sign out</button>
     </section>
 
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { ChevronLeftIcon, SaveIcon, CheckIcon, ShieldIcon, EyeIcon, EyeOffIcon } from 'lucide-vue-next'
+import { ref, computed, onUnmounted } from 'vue'
+import {
+  ChevronLeftIcon, SaveIcon, CheckIcon, ShieldIcon,
+  EyeIcon, EyeOffIcon, CameraIcon, UploadIcon,
+} from 'lucide-vue-next'
 import { useAuthStore } from '@/auth/store'
+import { validateAvatarFile, uploadAvatar } from '@/shared/lib/uploadAvatar'
 
 const auth = useAuthStore()
 
-// ── Identity ───────────────────────────────────────────────────────────────
+// ── Avatar & identity ──────────────────────────────────────────────────────
+
+const fileInput = ref<HTMLInputElement | null>(null)
+const pendingFile = ref<File | null>(null)
+const pendingBlobUrl = ref<string | null>(null)
+const avatarRemoved = ref(false)
+const avatarFileError = ref('')
+const uploading = ref(false)
+
+const avatarPreview = computed(() => {
+  if (avatarRemoved.value) return ''
+  if (pendingBlobUrl.value) return pendingBlobUrl.value
+  return auth.avatarUrl ?? ''
+})
 
 const nicknameInput = ref(auth.nickname ?? '')
-const avatarUrlInput = ref(auth.avatarUrl ?? '')
-const avatarPreview = ref(auth.avatarUrl ?? '')
-const avatarError = ref('')
-const savingProfile = ref(false)
-const profileSaved = ref(false)
-const profileError = ref('')
 
 const initials = computed(() => {
   const name = nicknameInput.value.trim() || auth.userEmail?.split('@')[0] || ''
   return name.slice(0, 2).toUpperCase() || '?'
 })
 
-function onAvatarBlur() {
-  avatarError.value = ''
-  const raw = avatarUrlInput.value.trim()
-  if (!raw) { avatarPreview.value = ''; return }
-  try {
-    const url = new URL(raw)
-    if (!/^https?:$/i.test(url.protocol)) {
-      avatarError.value = 'URL must start with http:// or https://'
-      avatarPreview.value = ''
-      return
-    }
-    avatarPreview.value = raw
-  } catch {
-    avatarError.value = 'Enter a valid URL.'
-    avatarPreview.value = ''
-  }
+function onFileSelected(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  avatarFileError.value = ''
+  const err = validateAvatarFile(file)
+  if (err) { avatarFileError.value = err; return }
+  // Revoke previous blob URL to free memory
+  if (pendingBlobUrl.value) URL.revokeObjectURL(pendingBlobUrl.value)
+  pendingFile.value = file
+  pendingBlobUrl.value = URL.createObjectURL(file)
+  avatarRemoved.value = false
 }
 
-function onAvatarError() {
-  avatarError.value = 'Could not load image from this URL.'
-  avatarPreview.value = ''
+function removeAvatar() {
+  if (pendingBlobUrl.value) { URL.revokeObjectURL(pendingBlobUrl.value); pendingBlobUrl.value = null }
+  pendingFile.value = null
+  avatarRemoved.value = true
+  avatarFileError.value = ''
 }
+
+onUnmounted(() => {
+  if (pendingBlobUrl.value) URL.revokeObjectURL(pendingBlobUrl.value)
+})
+
+// ── Profile save ───────────────────────────────────────────────────────────
+
+const savingProfile = ref(false)
+const profileSaved = ref(false)
+const profileError = ref('')
 
 async function saveProfile() {
-  if (avatarError.value) return
   savingProfile.value = true
   profileError.value = ''
   profileSaved.value = false
   try {
+    let finalAvatarUrl: string | null = auth.avatarUrl
+
+    if (avatarRemoved.value) {
+      finalAvatarUrl = null
+    } else if (pendingFile.value) {
+      uploading.value = true
+      finalAvatarUrl = await uploadAvatar(pendingFile.value, auth.userId!)
+      // Clean up blob URL — we now have the real Supabase URL
+      if (pendingBlobUrl.value) { URL.revokeObjectURL(pendingBlobUrl.value); pendingBlobUrl.value = null }
+      pendingFile.value = null
+    }
+
     await auth.updateProfile({
       nickname: nicknameInput.value.trim() || null,
-      avatarUrl: avatarPreview.value || null,
+      avatarUrl: finalAvatarUrl,
     })
     profileSaved.value = true
+    avatarRemoved.value = false
     setTimeout(() => (profileSaved.value = false), 3000)
   } catch (e) {
     profileError.value = e instanceof Error ? e.message : 'Could not save profile. Try again.'
   } finally {
     savingProfile.value = false
+    uploading.value = false
   }
 }
 

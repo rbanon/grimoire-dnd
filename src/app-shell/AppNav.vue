@@ -62,7 +62,7 @@
               />
               <span v-if="!auth.avatarUrl" class="text-void text-xs font-heading leading-none">{{ initials }}</span>
             </div>
-            <span class="hidden lg:inline">{{ displayName }}</span>
+            <span class="hidden lg:inline max-w-[140px] truncate">{{ displayName }}</span>
           </RouterLink>
           <button class="btn-ghost text-xs px-2.5 py-1 border border-shadow hover:border-gold-dim/60" @click="auth.signOut">
             Sign out
