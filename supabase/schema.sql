@@ -163,7 +163,7 @@ create policy "campaign_notes: owner access" on campaign_notes
 -- ── Storage: portraits bucket ────────────────────────────────────────────────
 
 insert into storage.buckets (id, name, public, file_size_limit)
-values ('portraits', 'portraits', true, 1048576)
+values ('portraits', 'portraits', true, 2097152)  -- 2 MB
 on conflict (id) do nothing;
 
 create policy "portraits: owner upload" on storage.objects

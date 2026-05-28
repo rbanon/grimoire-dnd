@@ -115,7 +115,7 @@
       <div class="flex items-center gap-3 pt-1">
         <button
           class="btn-primary gap-2"
-          :disabled="savingProfile || !!avatarFileError"
+          :disabled="savingProfile"
           @click="saveProfile"
         >
           <span v-if="savingProfile" class="w-3.5 h-3.5 border-2 border-void border-t-transparent rounded-full animate-spin" />

@@ -2,11 +2,11 @@ import { supabase } from '@/shared/api/supabase.client'
 
 const BUCKET = 'portraits'
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-const MAX_SIZE = 1_048_576 // 1 MB — matches the portraits bucket limit
+const MAX_SIZE = 2_097_152 // 2 MB
 
 export function validateAvatarFile(file: File): string | null {
   if (!ALLOWED_TYPES.includes(file.type)) return 'Only JPG, PNG, WebP, or GIF images are allowed.'
-  if (file.size > MAX_SIZE) return 'Image must be under 1 MB.'
+  if (file.size > MAX_SIZE) return 'Image must be under 2 MB.'
   return null
 }
 
