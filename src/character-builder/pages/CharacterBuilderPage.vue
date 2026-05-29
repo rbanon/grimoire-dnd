@@ -384,7 +384,7 @@ async function handleSave() {
   navigating.value = true
   try {
     const id = await builder.save()
-    router.push(`/characters/${id}`)
+    router.push(`/characters/${id}`).catch(() => { navigating.value = false })
   } catch {
     navigating.value = false
   }
