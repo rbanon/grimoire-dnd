@@ -67,7 +67,7 @@ A fully-featured **Single Page Application** for creating and managing Dungeons 
 | Server state | TanStack Query v5 |
 | Validation | Zod v4 |
 | Backend | Supabase (Auth + Postgres + Storage) |
-| Router | Vue Router v4 |
+| Router | Vue Router v5 |
 | Icons | Lucide Vue Next |
 | Data | [5e SRD API](https://www.dnd5eapi.co/) |
 
