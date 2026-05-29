@@ -148,7 +148,15 @@
         </div>
 
         <!-- Step content -->
-        <div class="flex-1 overflow-y-auto bg-void">
+        <div class="flex-1 overflow-y-auto bg-void relative">
+          <Transition name="fade-overlay">
+            <div
+              v-if="navigating"
+              class="absolute inset-0 z-10 flex items-center justify-center bg-void/90"
+            >
+              <GrimoireSpinner label="Saving character…" />
+            </div>
+          </Transition>
           <Transition :name="transitionName" mode="out-in">
             <component :is="currentStepComponent" :key="builder.draft.currentStep" class="h-full" />
           </Transition>
@@ -258,6 +266,7 @@ import StepEquipment from '@/character-builder/steps/StepEquipment.vue'
 import StepSpells from '@/character-builder/steps/StepSpells.vue'
 import StepPersonal from '@/character-builder/steps/StepPersonal.vue'
 import StepReview from '@/character-builder/steps/StepReview.vue'
+import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
 const builder = useBuilderStore()
 const router = useRouter()
@@ -267,6 +276,7 @@ const showErrors = ref(false)
 const showToast = ref(false)
 const prevStep = ref(1)
 const resumeScreen = ref(false)
+const navigating = ref(false)
 let _toastTimer: ReturnType<typeof setTimeout> | null = null
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI']
@@ -371,10 +381,13 @@ function handleBack() {
 }
 
 async function handleSave() {
+  navigating.value = true
   try {
     const id = await builder.save()
     router.push(`/characters/${id}`)
-  } catch { /* saveError shown in template */ }
+  } catch {
+    navigating.value = false
+  }
 }
 
 function startFresh() {
@@ -408,4 +421,7 @@ async function confirmDiscard() {
 
 .val-toast-enter-active, .val-toast-leave-active { transition: all 0.2s ease; }
 .val-toast-enter-from, .val-toast-leave-to { opacity: 0; transform: translateY(6px); }
+
+.fade-overlay-enter-active, .fade-overlay-leave-active { transition: opacity 0.15s ease; }
+.fade-overlay-enter-from, .fade-overlay-leave-to { opacity: 0; }
 </style>

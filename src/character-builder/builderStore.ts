@@ -484,9 +484,9 @@ export const useBuilderStore = defineStore('builder', () => {
   }
 
   function next() {
-    if (draft.value.currentStep >= totalSteps.value) return
+    if (draft.value.currentStep >= TOTAL_STEPS) return
     let s = draft.value.currentStep + 1
-    while (s < totalSteps.value && STEP_SKIPS.some(r => r.step === s && r.skip())) s++
+    while (s < TOTAL_STEPS && STEP_SKIPS.some(r => r.step === s && r.skip())) s++
     draft.value.currentStep = s
   }
 

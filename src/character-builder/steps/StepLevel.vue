@@ -5,76 +5,82 @@
     <section class="space-y-6">
       <div class="rule-gold"><span>Level & Hit Points</span></div>
 
-      <!-- Row 1: Level picker | Computed Max HP -->
-      <div class="grid sm:grid-cols-2 gap-6 items-start">
+      <!-- Row 1: Character Level | Stats panel -->
+      <div class="grid sm:grid-cols-2 gap-4 items-stretch">
 
-        <!-- Level picker -->
-        <div class="space-y-3">
-          <label class="label">Level (1–20)</label>
-          <div class="flex items-center gap-3">
+        <!-- Character Level -->
+        <div class="level-stat-card flex flex-col items-center justify-center gap-3 pt-5 pb-7 px-4 rounded-lg border border-shadow/60 bg-depths/30">
+          <p class="text-2xs font-heading text-mist uppercase tracking-widest">Character Level</p>
+          <div class="flex items-center gap-4">
             <button
               type="button"
-              class="btn-icon border border-shadow"
+              class="btn-icon border border-shadow w-9 h-9"
               :disabled="builder.draft.level <= 1"
               @click="builder.draft.level = Math.max(1, builder.draft.level - 1)"
             >−</button>
-            <span class="font-heading text-2xl text-gold-mid w-10 text-center">{{ builder.draft.level }}</span>
+            <span class="font-heading text-5xl leading-none text-gold-mid tabular-nums select-none w-12 text-center">{{ builder.draft.level }}</span>
             <button
               type="button"
-              class="btn-icon border border-shadow"
+              class="btn-icon border border-shadow w-9 h-9"
               :disabled="builder.draft.level >= 20"
               @click="builder.draft.level = Math.min(20, builder.draft.level + 1)"
             >+</button>
-            <div class="ml-2 flex gap-2 text-xs font-heading text-mist">
-              <span>Prof Bonus: <span class="text-gold-dim">+{{ profBonus }}</span></span>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="w-9 h-5 rounded-full border transition-all duration-200 flex items-center px-0.5"
-              :class="builder.draft.useMilestones
-                ? 'bg-gold-dim/30 border-gold-mid/50 justify-end'
-                : 'bg-shadow border-shadow justify-start'"
-              @click="builder.draft.useMilestones = !builder.draft.useMilestones"
-            >
-              <div class="w-4 h-4 rounded-full transition-all duration-200"
-                :class="builder.draft.useMilestones ? 'bg-gold-mid' : 'bg-mist'" />
-            </button>
-            <span class="text-xs font-heading text-ash">
-              {{ builder.draft.useMilestones ? 'Milestone leveling' : 'XP leveling' }}
-            </span>
           </div>
         </div>
 
-        <!-- Computed Max HP display -->
-        <div class="flex flex-col items-center justify-center gap-2 p-5 rounded border border-shadow/40 bg-depths/20 min-h-[110px] text-center">
-          <p class="text-2xs font-heading text-mist uppercase tracking-wide">Computed Max HP</p>
-          <p
-            class="font-heading text-5xl leading-none"
-            :class="builder.computedMaxHp > 0 ? 'text-gold-mid' : 'text-mist/30'"
-          >
-            {{ builder.computedMaxHp > 0 ? builder.computedMaxHp : '—' }}
-          </p>
-          <button
-            v-if="builder.draft.hpMethod === 'roll'"
-            type="button"
-            class="text-xs font-heading text-gold-mid border border-gold-dim/40 rounded px-2 py-0.5 hover:bg-gold-dim/10 transition-all"
-            @click="openRollModal"
-          >
-            {{ builder.computedMaxHp > 0 ? 'Reroll' : 'Roll Dice' }}
-          </button>
-          <div v-else-if="builder.draft.hpMethod === 'manual'" class="flex items-center gap-2">
-            <label class="text-xs font-heading text-mist shrink-0">Max HP</label>
-            <input
-              v-model.number="builder.draft.manualMaxHp"
-              type="number"
-              min="1"
-              max="999"
-              class="input-base w-20 text-lg font-heading text-center"
-            />
+        <!-- Stats panel: Leveling | Prof Bonus | Max HP -->
+        <div class="level-stat-card flex flex-col rounded-lg border border-shadow/60 bg-depths/30 overflow-hidden">
+
+          <!-- Leveling toggle -->
+          <div class="flex flex-1 items-center justify-between px-4 py-3">
+            <span class="text-xs font-heading text-mist uppercase tracking-widest">Leveling</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-heading text-ash">{{ builder.draft.useMilestones ? 'Milestone' : 'XP' }}</span>
+              <button
+                type="button"
+                class="w-9 h-5 rounded-full border transition-all duration-200 flex items-center px-0.5"
+                :class="builder.draft.useMilestones
+                  ? 'bg-gold-dim/30 border-gold-mid/50 justify-end'
+                  : 'bg-shadow border-shadow justify-start'"
+                @click="builder.draft.useMilestones = !builder.draft.useMilestones"
+              >
+                <div class="w-4 h-4 rounded-full transition-all duration-200"
+                  :class="builder.draft.useMilestones ? 'bg-gold-mid' : 'bg-mist'" />
+              </button>
+            </div>
           </div>
+
+          <!-- Prof Bonus -->
+          <div class="flex flex-1 items-center justify-between px-4 py-3 border-t border-shadow/40">
+            <span class="text-xs font-heading text-mist uppercase tracking-widest">Prof Bonus</span>
+            <span class="font-heading text-xl leading-none text-gold-mid">+{{ profBonus }}</span>
+          </div>
+
+          <!-- Max HP -->
+          <div class="flex flex-1 items-center justify-between px-4 pt-3 pb-4 border-t border-shadow/40">
+            <span class="text-xs font-heading text-mist uppercase tracking-widest">Max HP</span>
+            <div class="flex items-center gap-2">
+              <span
+                class="font-heading text-xl leading-none"
+                :class="builder.computedMaxHp > 0 ? 'text-gold-mid' : 'text-mist/30'"
+              >{{ builder.computedMaxHp > 0 ? builder.computedMaxHp : '—' }}</span>
+              <button
+                v-if="builder.draft.hpMethod === 'roll'"
+                type="button"
+                class="text-xs font-heading text-gold-mid border border-gold-dim/40 rounded px-2 py-0.5 hover:bg-gold-dim/10 transition-all"
+                @click="openRollModal"
+              >{{ builder.computedMaxHp > 0 ? 'Reroll' : 'Roll' }}</button>
+              <input
+                v-else-if="builder.draft.hpMethod === 'manual'"
+                v-model.number="builder.draft.manualMaxHp"
+                type="number"
+                min="1"
+                max="999"
+                class="input-base w-16 text-base font-heading text-center"
+              />
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -116,7 +122,7 @@
         <div
           v-for="lvl in builder.draft.level"
           :key="lvl"
-          class="border rounded overflow-hidden"
+          class="feature-row border rounded overflow-hidden"
           :class="levelHasError(lvl) ? 'border-blood-base/50' : 'border-shadow'"
         >
           <!-- Level row header -->
@@ -377,4 +383,16 @@ function setChoice(lvl: number, key: string, value: string) {
 .expand-enter-active, .expand-leave-active { transition: all 0.2s ease; overflow: hidden; }
 .expand-enter-from, .expand-leave-to { opacity: 0; max-height: 0; }
 .expand-enter-to, .expand-leave-from { max-height: 800px; }
+
+.level-stat-card {
+  box-shadow: var(--shadow-panel);
+}
+
+.feature-row {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), var(--shadow-card);
+  transition: box-shadow 0.18s ease;
+}
+.feature-row:has(> button:hover) {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16), var(--shadow-card-hover);
+}
 </style>
