@@ -79,7 +79,7 @@
             ? 'border-shadow/40 text-mist/40 line-through'
             : 'border-gold-dim/30 text-gold-mid bg-gold-dim/10'"
           draggable="true"
-          @dragstart="dragValue = val"
+          @dragstart="(e) => { dragValue = val; e.dataTransfer?.setData('text/plain', String(val)) }"
           @dragend="dragValue = null"
         >
           {{ val }}
