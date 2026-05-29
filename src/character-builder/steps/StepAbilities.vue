@@ -302,12 +302,14 @@ function onDrop(abKey: keyof AbilityScores) {
   dragOver.value = null
   if (dragValue.value === null) return
   const val = dragValue.value
-  // If this value is assigned to another ability, unassign it first
-  const prev = (Object.entries(builder.draft.standardArrayAssignments) as [keyof AbilityScores, number][])
+  const assignments = builder.draft.standardArrayAssignments
+  const prev = (Object.entries(assignments) as [keyof AbilityScores, number][])
     .find(([k, v]) => k !== abKey && v === val)?.[0]
+  const targetCurrent = assignments[abKey]
   if (prev) {
-    delete builder.draft.standardArrayAssignments[prev]
-    builder.draft.baseScores[prev] = 8
+    // Swap: give the dragged value's former owner the target's old value
+    if (targetCurrent !== undefined) builder.applyStandardArray(prev, targetCurrent)
+    else { delete assignments[prev]; builder.draft.baseScores[prev] = 8 }
   }
   builder.applyStandardArray(abKey, val)
   dragValue.value = null
