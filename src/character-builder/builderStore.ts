@@ -697,12 +697,7 @@ export const useBuilderStore = defineStore('builder', () => {
       }
 
       const character = await buildCharacterFromDraft(id, ts, portrait)
-      await Promise.race([
-        characterStore.create(character),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Save timed out. Check your connection and try again.')), 20000)
-        ),
-      ])
+      await characterStore.create(character)
       await clearDraft()
       return id
     } catch (err) {
