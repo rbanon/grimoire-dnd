@@ -18,7 +18,7 @@ $$;
 -- ── 2. Revoke direct execution of handle_new_user ────────────────────────────
 -- This function is only meant to fire as an INSERT trigger on auth.users.
 -- It must not be callable via /rest/v1/rpc/handle_new_user.
-revoke execute on function public.handle_new_user() from anon, authenticated;
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
 
 -- ── 3. Fix mutable search_path on set_updated_at ─────────────────────────────
 create or replace function public.set_updated_at()
