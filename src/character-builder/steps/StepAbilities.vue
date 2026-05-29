@@ -309,7 +309,7 @@ function onDrop(abKey: keyof AbilityScores) {
   if (prev) {
     // Swap: give the dragged value's former owner the target's old value
     if (targetCurrent !== undefined) builder.applyStandardArray(prev, targetCurrent)
-    else { delete assignments[prev]; builder.draft.baseScores[prev] = 8 }
+    else builder.unassignStandardArray(prev)
   }
   builder.applyStandardArray(abKey, val)
   dragValue.value = null

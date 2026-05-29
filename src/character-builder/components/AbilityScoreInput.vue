@@ -71,7 +71,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useBuilderStore, pbCost, STANDARD_ARRAY, POINT_BUY_MIN } from '@/character-builder/builderStore'
+import { useBuilderStore, pbCost, STANDARD_ARRAY } from '@/character-builder/builderStore'
 import { computeModifier } from '@/shared/types/character'
 import type { AbilityScores } from '@/shared/types/character'
 
@@ -116,8 +116,7 @@ function onSelectChange(e: Event) {
   if (!isNaN(val)) {
     builder.applyStandardArray(props.abKey, val)
   } else {
-    builder.draft.baseScores[props.abKey] = POINT_BUY_MIN
-    delete builder.draft.standardArrayAssignments[props.abKey]
+    builder.unassignStandardArray(props.abKey)
   }
 }
 </script>
