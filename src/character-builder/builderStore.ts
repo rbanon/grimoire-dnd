@@ -13,9 +13,12 @@ import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 11
 
+// ── Ability score default ─────────────────────────────────────────────────────
+export const ABILITY_SCORE_DEFAULT = 8
+
 // ── Point buy constants ───────────────────────────────────────────────────────
 export const POINT_BUY_BUDGET = 27
-export const POINT_BUY_MIN = 8
+export const POINT_BUY_MIN = ABILITY_SCORE_DEFAULT
 export const POINT_BUY_MAX = 15
 // Cumulative cost from score 8
 const PB_COST: Record<number, number> = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 }
@@ -522,8 +525,13 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value.baseScores[ability] = value
   }
 
+  function unassignStandardArray(ability: keyof AbilityScores) {
+    delete draft.value.standardArrayAssignments[ability]
+    draft.value.baseScores[ability] = ABILITY_SCORE_DEFAULT
+  }
+
   function resetScores() {
-    draft.value.baseScores = { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 }
+    draft.value.baseScores = { str: ABILITY_SCORE_DEFAULT, dex: ABILITY_SCORE_DEFAULT, con: ABILITY_SCORE_DEFAULT, int: ABILITY_SCORE_DEFAULT, wis: ABILITY_SCORE_DEFAULT, cha: ABILITY_SCORE_DEFAULT }
     draft.value.standardArrayAssignments = {}
     draft.value.rolledAbilityScores = []
     draft.value.rollAssignments = {}
@@ -731,6 +739,7 @@ export const useBuilderStore = defineStore('builder', () => {
     incrementScore,
     decrementScore,
     applyStandardArray,
+    unassignStandardArray,
     resetScores,
     setAsiAllocation,
     setFeatDecision,
