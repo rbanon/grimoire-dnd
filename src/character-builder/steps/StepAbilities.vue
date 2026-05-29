@@ -291,11 +291,9 @@ function isArrayValueUsed(val: number): boolean {
   return Object.values(builder.draft.standardArrayAssignments).includes(val)
 }
 
-const standardArrayComplete = computed(() => {
-  const scores = abilityDefs.map(ab => builder.draft.baseScores[ab.key]).sort((a, b) => a - b)
-  const arr = [...STANDARD_ARRAY].sort((a, b) => a - b)
-  return scores.every((v, i) => v === arr[i])
-})
+const standardArrayComplete = computed(() =>
+  Object.keys(builder.draft.standardArrayAssignments).length === 6
+)
 
 const dragValue = ref<number | null>(null)
 const dragOver = ref<string | null>(null)

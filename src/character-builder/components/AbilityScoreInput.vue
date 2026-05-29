@@ -113,7 +113,11 @@ function dec() {
 
 function onSelectChange(e: Event) {
   const val = parseInt((e.target as HTMLSelectElement).value)
-  if (!isNaN(val)) builder.applyStandardArray(props.abKey, val)
-  else builder.draft.baseScores[props.abKey] = POINT_BUY_MIN
+  if (!isNaN(val)) {
+    builder.applyStandardArray(props.abKey, val)
+  } else {
+    builder.draft.baseScores[props.abKey] = POINT_BUY_MIN
+    delete builder.draft.standardArrayAssignments[props.abKey]
+  }
 }
 </script>
