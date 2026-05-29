@@ -618,14 +618,18 @@ function knownIndicesForLevel(lvl: number | null): string[] {
 function chosenElsewhereForLevel(lvl: number | null): string[] {
   if (lvl === null) return []
   const before = new Set(activeSpellsBeforeLevel(lvl).map(s => s.index))
-  const result: string[] = []
-  for (const [l, entry] of Object.entries(builder.draft.spellsByLevel)) {
-    if (Number(l) === lvl || !entry) continue
-    for (const s of entry.spellsGained) {
-      if (!before.has(s.index)) result.push(s.index)
+  const result = new Set<string>()
+  for (let l = 1; l <= builder.draft.level; l++) {
+    if (l === lvl) continue
+    const poolBefore = new Set(spellPoolByLevel.value.get(l)?.map(s => s.index) ?? [])
+    const poolAfter = spellPoolByLevel.value.get(l + 1) ?? []
+    // Any spell newly added at level l (spellsGained or spellReplaced.to) that is
+    // not already in the pool before lvl belongs to another level's slot.
+    for (const s of poolAfter) {
+      if (!poolBefore.has(s.index) && !before.has(s.index)) result.add(s.index)
     }
   }
-  return result
+  return [...result]
 }
 
 function replacementKnownIndices(lvl: number | null): string[] {
