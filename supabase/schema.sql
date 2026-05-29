@@ -14,9 +14,13 @@ create table if not exists profiles (
   updated_at  timestamptz default now() not null
 );
 
--- Auto-create profile on user signup
-create or replace function handle_new_user()
-returns trigger language plpgsql security definer as $$
+-- Auto-create profile on user signup.
+-- SECURITY DEFINER with fixed search_path prevents search_path injection.
+-- EXECUTE is revoked from anon/authenticated — this is a trigger-only function.
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer
+set search_path = ''
+as $$
 begin
   insert into public.profiles (id, email)
   values (new.id, new.email)
@@ -24,6 +28,8 @@ begin
   return new;
 end;
 $$;
+
+revoke execute on function public.handle_new_user() from anon, authenticated;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
@@ -178,8 +184,9 @@ create policy "portraits: owner update" on storage.objects
     auth.uid()::text = (string_to_array(name, '/'))[1]
   );
 
-create policy "portraits: public read" on storage.objects
-  for select using (bucket_id = 'portraits');
+-- No broad SELECT policy: the bucket is public so files are accessible by direct
+-- URL without a policy. A broad SELECT would allow unauthenticated listing of
+-- all files, which is unnecessary and exposes user IDs.
 
 create policy "portraits: owner delete" on storage.objects
   for delete using (
@@ -188,8 +195,10 @@ create policy "portraits: owner delete" on storage.objects
   );
 
 -- ── updated_at auto-update trigger ───────────────────────────────────────────
-create or replace function set_updated_at()
-returns trigger language plpgsql as $$
+create or replace function public.set_updated_at()
+returns trigger language plpgsql
+set search_path = ''
+as $$
 begin
   new.updated_at = now();
   return new;
