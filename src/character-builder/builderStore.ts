@@ -768,7 +768,11 @@ export const useBuilderStore = defineStore('builder', () => {
             portraitUrl = await uploadPortrait(file, auth.userId, id)
           } catch { /* keep data URL on upload failure */ }
         }
-        try { new URL(portraitUrl); portrait = { type: 'url', url: portraitUrl } } catch { /* skip invalid URL */ }
+        try {
+          new URL(portraitUrl)
+          // Only accept http/https — data: and blob: URLs are invalid for the schema
+          if (/^https?:\/\//i.test(portraitUrl)) portrait = { type: 'url', url: portraitUrl }
+        } catch { /* skip invalid URL */ }
       }
 
       const character = await buildCharacterFromDraft(id, ts, portrait)
