@@ -57,7 +57,8 @@ export function computeFightingStyleBonuses(
       attack += 2
     }
     if (style === 'dueling' && inMainHand) {
-      const isOneHandedMelee = weapon.weaponCategory === 'melee' && weapon.handedness !== 'two-handed'
+      // weaponCategory undefined → treat as melee (manually-added weapons default to melee)
+      const isOneHandedMelee = weapon.weaponCategory !== 'ranged' && weapon.handedness !== 'two-handed'
       const offHandItem = slots.offHand ? inventory.find(i => i.id === slots.offHand) : null
       const offHandIsShieldOrEmpty = !offHandItem || offHandItem.armorType === 'shield'
       if (isOneHandedMelee && offHandIsShieldOrEmpty) damage += 2
