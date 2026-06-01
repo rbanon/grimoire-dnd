@@ -736,6 +736,7 @@ export const useBuilderStore = defineStore('builder', () => {
           const lvl = Number(lvlStr)
           if (lvl > d.level) return []
           return Object.entries(choices).flatMap(([choiceKey, chosenIndex]) => {
+            if (choiceKey === 'fighting-style') return []  // already in character.fightingStyles
             const resolved = resolveChoiceFeature(d.classIndex, lvl, choiceKey, chosenIndex)
             if (!resolved) return []
             return [{ id: generateId(), name: resolved.name, source: resolved.source, description: resolved.description }]

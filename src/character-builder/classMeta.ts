@@ -661,6 +661,11 @@ export function getFightingStyleOptions(classIndex: string): { index: string; na
   return []
 }
 
+/** Look up a fighting style by index across all classes. FIGHTER_STYLES is the superset. */
+export function getFightingStyleByIndex(index: string): { index: string; name: string; desc: string } | null {
+  return FIGHTER_STYLES.find(s => s.index === index) ?? null
+}
+
 /**
  * Resolves a level choice selection to a displayable feature entry.
  * Returns null for choices that don't produce a visible feature (ASI, skill picks).
