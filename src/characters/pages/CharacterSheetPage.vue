@@ -847,21 +847,24 @@ const portraitUploading = ref(false)
 async function onPortraitChange(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file || !character.value) return
-  if (file.size > 1_048_576) {
-    toast.error('Portrait must be under 1 MB.')
+  if (file.size > 20_971_520) {
+    toast.error('Portrait must be under 20 MB.')
     return
   }
   portraitUploading.value = true
   try {
     if (auth.isAuthenticated && auth.userId) {
+      // uploadPortrait compresses before sending
       const url = await uploadPortrait(file, auth.userId, props.id)
       await store.update(props.id, { portrait: { type: 'url', url } })
     } else {
+      const { compressPortrait } = await import('@/shared/lib/uploadPortrait')
+      const compressed = await compressPortrait(file)
       const url = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = (e) => resolve(e.target?.result as string)
         reader.onerror = reject
-        reader.readAsDataURL(file)
+        reader.readAsDataURL(compressed)
       })
       await store.update(props.id, { portrait: { type: 'url', url } })
     }
