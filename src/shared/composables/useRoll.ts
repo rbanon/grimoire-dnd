@@ -14,12 +14,15 @@ export interface RollResult {
   type: 'd20' | 'damage'
   formula?: string
   mode?: RollMode
+  diceRolls?: number[]    // individual die results for damage rolls
+  modifierParts?: string  // human-readable modifier breakdown, e.g. "+5 [+3 STR, +2 Prof]"
 }
 
 export interface PendingRoll {
   modifier: number
   label: string
   rect: DOMRect | null
+  modifierParts?: string
 }
 
 // Module-level singletons — all callers share the same state
@@ -57,28 +60,33 @@ function _show(r: RollResult, ms = 4500) {
   }, delay)
 }
 
-function _evalFormula(formula: string): number {
+function _evalFormula(formula: string): { total: number; rolls: number[]; flat: number } {
   const m = formula.match(/^(\d+)d(\d+)([+-]\d+)?$/i)
-  if (!m) return 0
+  if (!m) return { total: 0, rolls: [], flat: 0 }
   const count = parseInt(m[1])
   const sides = parseInt(m[2])
-  const flat = m[3] ? parseInt(m[3]) : 0
-  let total = flat
-  for (let i = 0; i < count; i++) total += Math.ceil(Math.random() * sides)
-  return Math.max(1, total)
+  const flat  = m[3] ? parseInt(m[3]) : 0
+  const rolls: number[] = []
+  let diceSum = 0
+  for (let i = 0; i < count; i++) {
+    const r = Math.ceil(Math.random() * sides)
+    rolls.push(r)
+    diceSum += r
+  }
+  return { total: Math.max(1, diceSum + flat), rolls, flat }
 }
 
 export function useRoll() {
-  function rollD20(modifier: number, label: string, event?: MouseEvent): void {
+  function rollD20(modifier: number, label: string, event?: MouseEvent, modifierParts?: string): void {
     const rect = event
       ? (event.currentTarget as Element | null)?.getBoundingClientRect() ?? null
       : null
-    _pending.value = { modifier, label, rect }
+    _pending.value = { modifier, label, rect, modifierParts }
   }
 
   function confirmRoll(mode: RollMode): RollResult | null {
     if (!_pending.value) return null
-    const { modifier, label } = _pending.value
+    const { modifier, label, modifierParts } = _pending.value
     _pending.value = null
 
     let die = Math.ceil(Math.random() * 20)
@@ -100,6 +108,7 @@ export function useRoll() {
       isCritFail: die === 1,
       type: 'd20',
       mode,
+      modifierParts,
     }
     _show(r)
     return r
@@ -109,18 +118,20 @@ export function useRoll() {
     _pending.value = null
   }
 
-  function rollDamage(formula: string, label: string): RollResult {
-    const total = _evalFormula(formula)
+  function rollDamage(formula: string, label: string, modifierParts?: string): RollResult {
+    const { total, rolls, flat } = _evalFormula(formula)
     const r: RollResult = {
       id: ++_id,
       label,
       die: total,
-      modifier: 0,
+      modifier: flat,
       total,
       isCrit: false,
       isCritFail: false,
       type: 'damage',
       formula,
+      diceRolls: rolls,
+      modifierParts,
     }
     _show(r)
     return r

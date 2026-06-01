@@ -354,7 +354,9 @@ function rollWeaponAtk(fav: CombatFavorite, event: MouseEvent) {
     return
   }
   const bonus = fsBonus(fav.id)
-  rollD20(parseBonus(item.attackBonus) + bonus.attack, `${fav.weaponName} Attack`, event)
+  const parts: string[] = [item.attackBonus ?? '+0']
+  if (bonus.attack > 0) parts.push(`+${bonus.attack} FS`)
+  rollD20(parseBonus(item.attackBonus) + bonus.attack, `${fav.weaponName} Attack`, event, parts.join(' '))
 }
 
 function rollWeaponDmg(fav: CombatFavorite) {
@@ -365,7 +367,10 @@ function rollWeaponDmg(fav: CombatFavorite) {
     return
   }
   const bonus = fsBonus(fav.id)
-  rollDamage(addBonusToDamage(item.damage, bonus.damage), `${fav.weaponName} Damage`)
+  const dmgFormula = addBonusToDamage(item.damage, bonus.damage)
+  const parts: string[] = [item.damage]
+  if (bonus.damage > 0) parts.push(`+${bonus.damage} FS`)
+  rollDamage(dmgFormula, `${fav.weaponName} Damage`, bonus.damage > 0 ? parts.join(' ') : undefined)
 }
 
 async function onResourceChange(pools: ResourcePool[]) {

@@ -551,7 +551,9 @@ function rollItemAtk(item: InventoryItem, event: MouseEvent) {
     return
   }
   const bonus = fsBonusFor(item)
-  rollD20(parseBonus(item.attackBonus) + bonus.attack, `${item.item.name} Attack`, event)
+  const parts: string[] = [item.attackBonus ?? '+0']
+  if (bonus.attack > 0) parts.push(`+${bonus.attack} FS`)
+  rollD20(parseBonus(item.attackBonus) + bonus.attack, `${item.item.name} Attack`, event, parts.join(' '))
 }
 
 function rollItemDmg(item: InventoryItem) {
@@ -562,7 +564,10 @@ function rollItemDmg(item: InventoryItem) {
     return
   }
   const bonus = fsBonusFor(item)
-  rollDamage(addBonusToDamage(item.damage, bonus.damage), `${item.item.name} Damage`)
+  const dmgFormula = addBonusToDamage(item.damage, bonus.damage)
+  const parts: string[] = [item.damage]
+  if (bonus.damage > 0) parts.push(`+${bonus.damage} FS`)
+  rollDamage(dmgFormula, `${item.item.name} Damage`, bonus.damage > 0 ? parts.join(' ') : undefined)
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────

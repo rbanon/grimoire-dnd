@@ -145,14 +145,19 @@ function fsBonusFor(item: InventoryItem) {
 function rollWeaponAtk(fav: CombatFavorite, event: MouseEvent) {
   const item = resolvedWeapon(fav)
   const bonus = item ? fsBonusFor(item) : { attack: 0, damage: 0 }
-  rollD20(parseBonus(item?.attackBonus) + bonus.attack, `${fav.weaponName} Attack`, event)
+  const parts: string[] = [item?.attackBonus ?? '+0']
+  if (bonus.attack > 0) parts.push(`+${bonus.attack} FS`)
+  rollD20(parseBonus(item?.attackBonus) + bonus.attack, `${fav.weaponName} Attack`, event, parts.join(' '))
 }
 
 function rollWeaponDmg(fav: CombatFavorite) {
   const item = resolvedWeapon(fav)
   if (!item?.damage) return
   const bonus = fsBonusFor(item)
-  rollDamage(addBonusToDamage(item.damage, bonus.damage), `${fav.weaponName} Damage`)
+  const dmgFormula = addBonusToDamage(item.damage, bonus.damage)
+  const parts: string[] = [item.damage]
+  if (bonus.damage > 0) parts.push(`+${bonus.damage} FS`)
+  rollDamage(dmgFormula, `${fav.weaponName} Damage`, bonus.damage > 0 ? parts.join(' ') : undefined)
 }
 
 async function removeFavorite(id: string) {
