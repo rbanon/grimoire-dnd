@@ -388,7 +388,12 @@
                   class="font-heading text-xl leading-none transition-colors"
                   :class="editMode ? 'text-vellum hover:text-gold-mid cursor-pointer' : 'text-vellum cursor-default'"
                   @click="editMode && startAcEdit()"
-                >{{ character.combat.armorClass }}</div>
+                >{{ effectiveAC }}</div>
+                <span
+                  v-if="effectiveAC > character.combat.armorClass"
+                  class="text-2xs font-heading text-verdant-bright leading-none"
+                  title="Defense fighting style +1"
+                >+1</span>
               </div>
             </div>
 
@@ -790,7 +795,7 @@ import { BedIcon, ChevronDownIcon, DownloadIcon, EyeIcon, ImageIcon, LockIcon, L
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName, AbilityScores } from '@/shared/types/character'
-import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
+import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus, computeEffectiveAC } from '@/shared/lib/derivedStats'
 import { CLASS_META, getSpellProfile, getClassResources } from '@/character-builder/classMeta'
 import { SKILLS } from '@/shared/lib/skillAbilityMap'
 import { useDialog } from '@/shared/composables/useDialog'
@@ -842,21 +847,24 @@ const portraitUploading = ref(false)
 async function onPortraitChange(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file || !character.value) return
-  if (file.size > 1_048_576) {
-    toast.error('Portrait must be under 1 MB.')
+  if (file.size > 20_971_520) {
+    toast.error('Portrait must be under 20 MB.')
     return
   }
   portraitUploading.value = true
   try {
     if (auth.isAuthenticated && auth.userId) {
+      // uploadPortrait compresses before sending
       const url = await uploadPortrait(file, auth.userId, props.id)
       await store.update(props.id, { portrait: { type: 'url', url } })
     } else {
+      const { compressPortrait } = await import('@/shared/lib/uploadPortrait')
+      const compressed = await compressPortrait(file)
       const url = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = (e) => resolve(e.target?.result as string)
         reader.onerror = reject
-        reader.readAsDataURL(file)
+        reader.readAsDataURL(compressed)
       })
       await store.update(props.id, { portrait: { type: 'url', url } })
     }
@@ -1044,6 +1052,19 @@ async function commitAlignment(value: string) {
     identity: { ...character.value.identity, alignment: next },
   })
 }
+
+// ── AC (base + Defense style bonus) ──────────────────────────────────────────
+
+const effectiveAC = computed(() => {
+  if (!character.value) return 0
+  return computeEffectiveAC(
+    character.value.combat.armorClass,
+    character.value.fightingStyles ?? [],
+    character.value.equippedSlots,
+    character.value.inventory,
+    mods.value.dex,
+  )
+})
 
 // ── AC editable ───────────────────────────────────────────────────────────────
 

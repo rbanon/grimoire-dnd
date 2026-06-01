@@ -56,16 +56,16 @@
               <span class="font-heading text-base text-vellum leading-tight truncate">{{ fav.weaponName }}</span>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
-              <button
-                v-if="resolvedWeapon(fav)"
-                type="button"
-                class="w-3 h-3 rounded-full border-2 transition-all duration-100 cursor-pointer"
-                :class="resolvedWeapon(fav)?.equipped
-                  ? 'bg-gold-mid border-gold-mid'
-                  : 'bg-shadow/30 border-mist/60 hover:border-mist hover:bg-shadow/50'"
-                :title="resolvedWeapon(fav)?.equipped ? 'Equipped — click to unequip' : 'Not equipped — click to equip'"
-                @click="toggleEquipped(fav)"
-              />
+              <!-- Slot badge -->
+              <span
+                v-if="resolvedWeapon(fav) && isInHandSlot(resolvedWeapon(fav)!)"
+                class="text-2xs font-heading px-1.5 py-0.5 rounded border border-gold-dim/40 text-gold-mid bg-gold-dim/10"
+              >{{ slots.mainHand === resolvedWeapon(fav)!.id ? 'MH' : 'OH' }}</span>
+              <span
+                v-else-if="resolvedWeapon(fav)"
+                class="text-2xs font-body text-mist/30 italic"
+                title="Not in any hand slot — assign in Equipment tab"
+              >—</span>
               <button
                 v-if="editMode"
                 type="button"
@@ -108,7 +108,7 @@
 
           <!-- Fighting style badge -->
           <div
-            v-if="fsBonus(fav.id).attack > 0 || fsBonus(fav.id).damage > 0"
+            v-if="fsBonus(fav.id).attack > 0 || fsBonus(fav.id).damage > 0 || fsBonus(fav.id).rerollLowDice"
             class="flex items-center gap-1.5 flex-wrap"
           >
             <span v-if="fsBonus(fav.id).attack > 0" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">
@@ -116,6 +116,9 @@
             </span>
             <span v-if="fsBonus(fav.id).damage > 0" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-blood-base/40 text-blood-mid bg-blood-deep/10">
               +{{ fsBonus(fav.id).damage }} dmg
+            </span>
+            <span v-if="fsBonus(fav.id).rerollLowDice" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-gold-dim/40 text-gold-mid bg-gold-dim/10">
+              GWF
             </span>
             <span class="text-2xs font-body text-mist/40">Fighting Style</span>
           </div>
@@ -271,24 +274,27 @@ const spells    = computed(() => favorites.value.filter(f => f.type === 'spell')
 
 // ── Fighting style bonuses ────────────────────────────────────────────────────
 
-const equippedWeapons = computed(() =>
-  props.character.inventory.filter(i => i.equipped && i.itemType === 'weapon')
-)
+const slots = computed(() => props.character.equippedSlots)
 
 const weaponFSBonuses = computed<Map<string, FightingStyleBonuses>>(() => {
   const styles = props.character.fightingStyles ?? []
+  const abMods = { str: mods.value.str, dex: mods.value.dex }
   const map = new Map<string, FightingStyleBonuses>()
   for (const fav of weapons.value) {
     const item = resolvedWeapon(fav)
     map.set(fav.id, item
-      ? computeFightingStyleBonuses(styles, item, equippedWeapons.value)
-      : { attack: 0, damage: 0 })
+      ? computeFightingStyleBonuses(styles, item, slots.value, props.character.inventory, abMods)
+      : { attack: 0, damage: 0, rerollLowDice: false })
   }
   return map
 })
 
 function fsBonus(favId: string): FightingStyleBonuses {
-  return weaponFSBonuses.value.get(favId) ?? { attack: 0, damage: 0 }
+  return weaponFSBonuses.value.get(favId) ?? { attack: 0, damage: 0, rerollLowDice: false }
+}
+
+function isInHandSlot(item: InventoryItem): boolean {
+  return slots.value.mainHand === item.id || slots.value.offHand === item.id
 }
 
 // ── Spell slots ───────────────────────────────────────────────────────────────
@@ -346,23 +352,32 @@ function parseBonus(str: string | undefined): number {
 
 function rollWeaponAtk(fav: CombatFavorite, event: MouseEvent) {
   const item = resolvedWeapon(fav)
-  if (!item?.equipped) {
-    toast.info(`${fav.weaponName} is not equipped.`)
+  if (!item) return
+  if (!isInHandSlot(item)) {
+    toast.info(`${fav.weaponName} is not in a hand slot. Assign it in the Equipment tab.`)
     return
   }
   const bonus = fsBonus(fav.id)
-  rollD20(parseBonus(item.attackBonus) + bonus.attack, `${fav.weaponName} Attack`, event)
+  const parts: string[] = [item.attackBonus ?? '+0']
+  if (bonus.attack > 0) parts.push(`+${bonus.attack} FS`)
+  rollD20(parseBonus(item.attackBonus) + bonus.attack, `${fav.weaponName} Attack`, event, parts.join(' '))
 }
 
 function rollWeaponDmg(fav: CombatFavorite) {
   const item = resolvedWeapon(fav)
   if (!item?.damage) return
-  if (!item.equipped) {
-    toast.info(`${fav.weaponName} is not equipped.`)
+  if (!isInHandSlot(item)) {
+    toast.info(`${fav.weaponName} is not in a hand slot. Assign it in the Equipment tab.`)
     return
   }
   const bonus = fsBonus(fav.id)
-  rollDamage(addBonusToDamage(item.damage, bonus.damage), `${fav.weaponName} Damage`)
+  const dmgFormula = addBonusToDamage(item.damage, bonus.damage)
+  const parts: string[] = [item.damage]
+  if (bonus.damage > 0) parts.push(`+${bonus.damage} FS`)
+  if (bonus.rerollLowDice) parts.push('GWF')
+  rollDamage(dmgFormula, `${fav.weaponName} Damage`,
+    (bonus.damage > 0 || bonus.rerollLowDice) ? parts.join(' ') : undefined,
+    bonus.rerollLowDice)
 }
 
 async function onResourceChange(pools: ResourcePool[]) {
@@ -407,16 +422,6 @@ async function onCastSpell(slotLevel: number, isConcentration: boolean) {
     }
   }
   await store.update(props.character.id, update)
-}
-
-async function toggleEquipped(fav: CombatFavorite) {
-  const item = resolvedWeapon(fav)
-  if (!item) return
-  await store.update(props.character.id, {
-    inventory: props.character.inventory.map(i =>
-      i.id === item.id ? { ...i, equipped: !i.equipped } : i
-    ),
-  })
 }
 
 async function removeFavorite(id: string) {

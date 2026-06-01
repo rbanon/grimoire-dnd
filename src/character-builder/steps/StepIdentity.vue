@@ -253,34 +253,40 @@ import { getRaceMeta } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
+import { compressPortrait } from '@/shared/lib/uploadPortrait'
 import type { ApiRace } from '@/shared/types/api'
 import PickerCard from '@/character-builder/components/PickerCard.vue'
 import AlignmentGrid from '@/character-builder/components/AlignmentGrid.vue'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
-const MAX_PORTRAIT_BYTES = 1_048_576 // 1 MB
+const MAX_PORTRAIT_BYTES = 10_485_760 // 10 MB — compression handles the rest
 
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
 const { showValidation } = useBuilderValidation()
 const fileInput = ref<HTMLInputElement | null>(null)
 const portraitError = ref('')
+const portraitCompressing = ref(false)
 const showAppearance = ref(false)
 const showPersonality = ref(false)
 
-function onFileChange(event: Event) {
+async function onFileChange(event: Event) {
   portraitError.value = ''
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
   if (file.size > MAX_PORTRAIT_BYTES) {
-    portraitError.value = 'Max 1 MB'
+    portraitError.value = 'Max 10 MB'
     return
   }
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    builder.draft.portraitUrl = e.target?.result as string
+  portraitCompressing.value = true
+  try {
+    const compressed = await compressPortrait(file)
+    const reader = new FileReader()
+    reader.onload = (e) => { builder.draft.portraitUrl = e.target?.result as string }
+    reader.readAsDataURL(compressed)
+  } finally {
+    portraitCompressing.value = false
   }
-  reader.readAsDataURL(file)
 }
 
 // Track which required fields have been interacted with — errors only show after touch

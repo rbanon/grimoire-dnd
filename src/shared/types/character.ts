@@ -184,6 +184,16 @@ export const CombatStatsSchema = z.object({
 })
 export type CombatStats = z.infer<typeof CombatStatsSchema>
 
+// ─── Equipment Slots ─────────────────────────────────────────────────────────
+
+export const EquippedSlotsSchema = z.object({
+  mainHand: z.string().nullable().default(null), // inventory item id
+  offHand:  z.string().nullable().default(null), // weapon or shield
+  armor:    z.string().nullable().default(null), // non-shield armor
+})
+export type EquippedSlots = z.infer<typeof EquippedSlotsSchema>
+export const DEFAULT_EQUIPPED_SLOTS: EquippedSlots = { mainHand: null, offHand: null, armor: null }
+
 // ─── Inventory ────────────────────────────────────────────────────────────────
 
 export const CurrencySchema = z.object({
@@ -352,6 +362,7 @@ export const CharacterSchema = z.object({
   vulnerabilities: z.array(z.string()),
   senses: z.array(z.string()),
   fightingStyles: z.array(z.string()).default([]),
+  equippedSlots: EquippedSlotsSchema.default(DEFAULT_EQUIPPED_SLOTS),
   attacks: z.array(AttackSchema),
   combatFavorites: z.array(CombatFavoriteSchema).default([]),
   inventory: z.array(InventoryItemSchema),

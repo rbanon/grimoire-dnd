@@ -43,6 +43,42 @@
       </div>
     </section>
 
+    <!-- ── Fighting Styles ──────────────────────────────────────────────── -->
+    <section v-if="resolvedFightingStyles.length > 0">
+      <div class="rule-gold mb-5">
+        <span>Fighting Style</span>
+      </div>
+      <div class="space-y-1.5">
+        <FeatureRow
+          v-for="style in resolvedFightingStyles"
+          :key="style.index"
+          :name="style.name"
+          :description="style.desc"
+          source="Fighting Style"
+          :open="expanded.has('fs-' + style.index)"
+          @toggle="toggleExpand('fs-' + style.index)"
+        />
+      </div>
+    </section>
+
+    <!-- ── Choices & Feats ───────────────────────────────────────────────── -->
+    <section v-if="character.features.length > 0">
+      <div class="rule-gold mb-5">
+        <span>Choices & Feats</span>
+      </div>
+      <div class="space-y-1.5">
+        <FeatureRow
+          v-for="feat in character.features"
+          :key="feat.id"
+          :name="feat.name"
+          :description="feat.description"
+          :source="feat.source ?? ''"
+          :open="expanded.has(feat.id)"
+          @toggle="toggleExpand(feat.id)"
+        />
+      </div>
+    </section>
+
     <!-- ── Race & Subrace Traits ──────────────────────────────────────────── -->
     <section>
       <div class="rule-gold mb-5">
@@ -110,6 +146,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import type { Character } from '@/shared/types/character'
 import type { ApiFeature, ApiTrait } from '@/shared/types/api'
+import { getFightingStyleByIndex } from '@/character-builder/classMeta'
 import FeatureRow from './FeatureRow.vue'
 
 const props = defineProps<{ character: Character }>()
@@ -123,6 +160,14 @@ function toggleExpand(id: string) {
   // trigger reactivity
   expanded.value = new Set(expanded.value)
 }
+
+// ── Fighting styles ───────────────────────────────────────────────────────────
+
+const resolvedFightingStyles = computed(() =>
+  (props.character.fightingStyles ?? [])
+    .map(idx => getFightingStyleByIndex(idx))
+    .filter((s): s is NonNullable<ReturnType<typeof getFightingStyleByIndex>> => s !== null)
+)
 
 // ── Class features ────────────────────────────────────────────────────────────
 

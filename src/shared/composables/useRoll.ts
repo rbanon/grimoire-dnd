@@ -14,12 +14,15 @@ export interface RollResult {
   type: 'd20' | 'damage'
   formula?: string
   mode?: RollMode
+  diceRolls?: number[]    // individual die results for damage rolls
+  modifierParts?: string  // human-readable modifier breakdown, e.g. "+5 [+3 STR, +2 Prof]"
 }
 
 export interface PendingRoll {
   modifier: number
   label: string
   rect: DOMRect | null
+  modifierParts?: string
 }
 
 // Module-level singletons — all callers share the same state
@@ -57,36 +60,51 @@ function _show(r: RollResult, ms = 4500) {
   }, delay)
 }
 
-function _evalFormula(formula: string): number {
+function _evalFormula(
+  formula: string,
+  rerollLowDice = false,
+): { total: number; rolls: number[]; flat: number } {
   const m = formula.match(/^(\d+)d(\d+)([+-]\d+)?$/i)
-  if (!m) return 0
+  if (!m) return { total: 0, rolls: [], flat: 0 }
   const count = parseInt(m[1])
   const sides = parseInt(m[2])
-  const flat = m[3] ? parseInt(m[3]) : 0
-  let total = flat
-  for (let i = 0; i < count; i++) total += Math.ceil(Math.random() * sides)
-  return Math.max(1, total)
+  const flat  = m[3] ? parseInt(m[3]) : 0
+  const rolls: number[] = []
+  let diceSum = 0
+  for (let i = 0; i < count; i++) {
+    let r = Math.ceil(Math.random() * sides)
+    // Great Weapon Fighting: reroll 1s and 2s once
+    if (rerollLowDice && (r === 1 || r === 2)) r = Math.ceil(Math.random() * sides)
+    rolls.push(r)
+    diceSum += r
+  }
+  return { total: Math.max(1, diceSum + flat), rolls, flat }
 }
 
 export function useRoll() {
-  function rollD20(modifier: number, label: string, event?: MouseEvent): void {
+  function rollD20(modifier: number, label: string, event?: MouseEvent, modifierParts?: string): void {
     const rect = event
       ? (event.currentTarget as Element | null)?.getBoundingClientRect() ?? null
       : null
-    _pending.value = { modifier, label, rect }
+    _pending.value = { modifier, label, rect, modifierParts }
   }
 
   function confirmRoll(mode: RollMode): RollResult | null {
     if (!_pending.value) return null
-    const { modifier, label } = _pending.value
+    const { modifier, label, modifierParts } = _pending.value
     _pending.value = null
 
-    let die = Math.ceil(Math.random() * 20)
+    const raw1 = Math.ceil(Math.random() * 20)
+    let die: number
     let die2: number | undefined
 
     if (mode === 'advantage' || mode === 'disadvantage') {
-      die2 = Math.ceil(Math.random() * 20)
-      die = mode === 'advantage' ? Math.max(die, die2) : Math.min(die, die2)
+      const raw2 = Math.ceil(Math.random() * 20)
+      // die = kept die, die2 = dropped die (so they always differ when rolls differ)
+      die  = mode === 'advantage' ? Math.max(raw1, raw2) : Math.min(raw1, raw2)
+      die2 = mode === 'advantage' ? Math.min(raw1, raw2) : Math.max(raw1, raw2)
+    } else {
+      die = raw1
     }
 
     const r: RollResult = {
@@ -100,6 +118,7 @@ export function useRoll() {
       isCritFail: die === 1,
       type: 'd20',
       mode,
+      modifierParts,
     }
     _show(r)
     return r
@@ -109,18 +128,20 @@ export function useRoll() {
     _pending.value = null
   }
 
-  function rollDamage(formula: string, label: string): RollResult {
-    const total = _evalFormula(formula)
+  function rollDamage(formula: string, label: string, modifierParts?: string, rerollLowDice = false): RollResult {
+    const { total, rolls, flat } = _evalFormula(formula, rerollLowDice)
     const r: RollResult = {
       id: ++_id,
       label,
       die: total,
-      modifier: 0,
+      modifier: flat,
       total,
       isCrit: false,
       isCritFail: false,
       type: 'damage',
       formula,
+      diceRolls: rolls,
+      modifierParts,
     }
     _show(r)
     return r

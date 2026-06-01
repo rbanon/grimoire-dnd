@@ -8,7 +8,7 @@ import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
 import { uploadPortrait } from '@/shared/lib/uploadPortrait'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 11
@@ -721,14 +721,28 @@ export const useBuilderStore = defineStore('builder', () => {
       spellcasting,
       resources: getClassResources(d.classIndex, d.level, computeAllModifiers(effectiveScores.value)),
       favoriteSpells: [],
-      features: Object.entries(d.featsByLevel)
-        .filter(([, dec]) => dec.type === 'feat' && dec.featIndex)
-        .map(([level, dec]) => ({
-          id: generateId(),
-          name: dec.featName ?? dec.featIndex ?? '',
-          source: `Level ${level} Feat`,
-          description: '',
-        })),
+      features: [
+        // Feats chosen at ASI levels
+        ...Object.entries(d.featsByLevel)
+          .filter(([, dec]) => dec.type === 'feat' && dec.featIndex)
+          .map(([level, dec]) => ({
+            id: generateId(),
+            name: dec.featName ?? dec.featIndex ?? '',
+            source: `Level ${level} Feat`,
+            description: '',
+          })),
+        // Level choices (fighting styles, pact boons, etc.)
+        ...Object.entries(d.levelChoices).flatMap(([lvlStr, choices]) => {
+          const lvl = Number(lvlStr)
+          if (lvl > d.level) return []
+          return Object.entries(choices).flatMap(([choiceKey, chosenIndex]) => {
+            if (choiceKey === 'fighting-style') return []  // already in character.fightingStyles
+            const resolved = resolveChoiceFeature(d.classIndex, lvl, choiceKey, chosenIndex)
+            if (!resolved) return []
+            return [{ id: generateId(), name: resolved.name, source: resolved.source, description: resolved.description }]
+          })
+        }),
+      ],
       overrides: {},
     })
   }
@@ -754,7 +768,11 @@ export const useBuilderStore = defineStore('builder', () => {
             portraitUrl = await uploadPortrait(file, auth.userId, id)
           } catch { /* keep data URL on upload failure */ }
         }
-        try { new URL(portraitUrl); portrait = { type: 'url', url: portraitUrl } } catch { /* skip invalid URL */ }
+        try {
+          new URL(portraitUrl)
+          // Only accept http/https — data: and blob: URLs are invalid for the schema
+          if (/^https?:\/\//i.test(portraitUrl)) portrait = { type: 'url', url: portraitUrl }
+        } catch { /* skip invalid URL */ }
       }
 
       const character = await buildCharacterFromDraft(id, ts, portrait)
