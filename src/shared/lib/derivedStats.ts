@@ -108,6 +108,13 @@ export function computeFightingStyleBonuses(
   return { attack, damage, rerollLowDice }
 }
 
+/** Infers armor category from base AC when armorType is missing (D&D 5e SRD ranges). */
+function inferArmorType(baseAC: number): 'light' | 'medium' | 'heavy' {
+  if (baseAC >= 16) return 'heavy'   // chain mail 16, splint 17, plate 18
+  if (baseAC >= 13) return 'medium'  // chain shirt 13, scale 14, half plate 15
+  return 'light'                     // leather 11, studded 12
+}
+
 /**
  * Computes the displayed AC from the current equipment slots:
  *   - Armor slot present  → armor base AC + DEX modifier (capped per armor type)
@@ -126,10 +133,12 @@ export function computeEffectiveAC(
 
   let ac: number
   if (armorItem?.armorClass != null) {
-    const type = armorItem.armorType
+    // Fall back to inferring the type from the base AC when armorType is missing
+    // (old items / manual entries) so heavy armor isn't wrongly given full DEX.
+    const type = armorItem.armorType ?? inferArmorType(armorItem.armorClass)
     if (type === 'heavy')        ac = armorItem.armorClass
     else if (type === 'medium')  ac = armorItem.armorClass + Math.min(dexMod, 2)
-    else                         ac = armorItem.armorClass + dexMod   // light or unknown
+    else                         ac = armorItem.armorClass + dexMod   // light
   } else {
     ac = baseAC  // unarmored or no armor slotted
   }
