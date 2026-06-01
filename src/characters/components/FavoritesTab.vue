@@ -106,6 +106,20 @@
             </div>
           </div>
 
+          <!-- Fighting style badge -->
+          <div
+            v-if="fsBonus(fav.id).attack > 0 || fsBonus(fav.id).damage > 0"
+            class="flex items-center gap-1.5 flex-wrap"
+          >
+            <span v-if="fsBonus(fav.id).attack > 0" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">
+              +{{ fsBonus(fav.id).attack }} atk
+            </span>
+            <span v-if="fsBonus(fav.id).damage > 0" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-blood-base/40 text-blood-mid bg-blood-deep/10">
+              +{{ fsBonus(fav.id).damage }} dmg
+            </span>
+            <span class="text-2xs font-body text-mist/40">Fighting Style</span>
+          </div>
+
           <!-- Range + roll buttons -->
           <div class="flex items-center justify-between gap-2 pt-1 border-t border-shadow/30">
             <span v-if="resolvedWeapon(fav)?.range" class="text-xs font-body text-mist/50">
@@ -218,8 +232,9 @@ import { useRoll } from '@/shared/composables/useRoll'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import { useToast } from '@/shared/composables/useToast'
 import { computeAllModifiers } from '@/shared/types/character'
-import { computeProficiencyBonus, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
+import { computeProficiencyBonus, computeSpellAttackBonus, computeFightingStyleBonuses, addBonusToDamage } from '@/shared/lib/derivedStats'
 import type { Character, CombatFavorite, InventoryItem, ResourcePool, SpellReference } from '@/shared/types/character'
+import type { FightingStyleBonuses } from '@/shared/lib/derivedStats'
 import AddToCombatModal from './AddToCombatModal.vue'
 import CastSpellModal from './CastSpellModal.vue'
 import FavoriteSpellCard from './FavoriteSpellCard.vue'
@@ -253,6 +268,28 @@ const favorites = computed(() => props.character.combatFavorites ?? [])
 const weapons   = computed(() => favorites.value.filter(f => f.type === 'weapon'))
 const cantrips  = computed(() => favorites.value.filter(f => f.type === 'cantrip'))
 const spells    = computed(() => favorites.value.filter(f => f.type === 'spell'))
+
+// ── Fighting style bonuses ────────────────────────────────────────────────────
+
+const equippedWeapons = computed(() =>
+  props.character.inventory.filter(i => i.equipped && i.itemType === 'weapon')
+)
+
+const weaponFSBonuses = computed<Map<string, FightingStyleBonuses>>(() => {
+  const styles = props.character.fightingStyles ?? []
+  const map = new Map<string, FightingStyleBonuses>()
+  for (const fav of weapons.value) {
+    const item = resolvedWeapon(fav)
+    map.set(fav.id, item
+      ? computeFightingStyleBonuses(styles, item, equippedWeapons.value)
+      : { attack: 0, damage: 0 })
+  }
+  return map
+})
+
+function fsBonus(favId: string): FightingStyleBonuses {
+  return weaponFSBonuses.value.get(favId) ?? { attack: 0, damage: 0 }
+}
 
 // ── Spell slots ───────────────────────────────────────────────────────────────
 
@@ -313,7 +350,8 @@ function rollWeaponAtk(fav: CombatFavorite, event: MouseEvent) {
     toast.info(`${fav.weaponName} is not equipped.`)
     return
   }
-  rollD20(parseBonus(item.attackBonus), `${fav.weaponName} Attack`, event)
+  const bonus = fsBonus(fav.id)
+  rollD20(parseBonus(item.attackBonus) + bonus.attack, `${fav.weaponName} Attack`, event)
 }
 
 function rollWeaponDmg(fav: CombatFavorite) {
@@ -323,7 +361,8 @@ function rollWeaponDmg(fav: CombatFavorite) {
     toast.info(`${fav.weaponName} is not equipped.`)
     return
   }
-  rollDamage(item.damage, `${fav.weaponName} Damage`)
+  const bonus = fsBonus(fav.id)
+  rollDamage(addBonusToDamage(item.damage, bonus.damage), `${fav.weaponName} Damage`)
 }
 
 async function onResourceChange(pools: ResourcePool[]) {

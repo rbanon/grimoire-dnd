@@ -221,6 +221,8 @@ export const InventoryItemSchema = z.object({
   damage: z.string().optional(),
   damageType: z.string().optional(),
   range: z.string().optional(),
+  weaponCategory: z.enum(['melee', 'ranged']).optional(),
+  handedness: z.enum(['one-handed', 'two-handed', 'versatile']).optional(),
   // armor-specific
   armorClass: z.number().int().optional(),
   armorType: z.enum(['light', 'medium', 'heavy', 'shield']).optional(),
@@ -349,6 +351,7 @@ export const CharacterSchema = z.object({
   immunities: z.array(z.string()),
   vulnerabilities: z.array(z.string()),
   senses: z.array(z.string()),
+  fightingStyles: z.array(z.string()).default([]),
   attacks: z.array(AttackSchema),
   combatFavorites: z.array(CombatFavoriteSchema).default([]),
   inventory: z.array(InventoryItemSchema),

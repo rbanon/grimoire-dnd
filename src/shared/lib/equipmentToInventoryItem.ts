@@ -36,6 +36,11 @@ export function equipmentToInventoryItem(
       range = `${eq.throw_range.normal}/${eq.throw_range.long} ft. (thrown)`
     }
 
+    const weaponCategory = isRanged ? 'ranged' : 'melee'
+    const handedness = props.includes('two-handed') ? 'two-handed'
+      : props.includes('versatile') ? 'versatile'
+      : 'one-handed'
+
     return {
       ...base,
       itemType:   'weapon',
@@ -43,6 +48,8 @@ export function equipmentToInventoryItem(
       damage:      eq.damage?.damage_dice,
       damageType:  eq.damage?.damage_type.name,
       range,
+      weaponCategory,
+      handedness,
     }
   }
 

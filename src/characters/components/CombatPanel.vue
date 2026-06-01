@@ -106,11 +106,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { SwordIcon, PlusIcon, XIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useConfirm } from '@/shared/composables/useConfirm'
+import { computeFightingStyleBonuses, addBonusToDamage } from '@/shared/lib/derivedStats'
 import type { Character, CombatFavorite, InventoryItem } from '@/shared/types/character'
 import AddToCombatModal from './AddToCombatModal.vue'
 
@@ -132,15 +133,29 @@ function parseBonus(str: string | undefined): number {
   return m ? parseInt(m[1]) : 0
 }
 
+const equippedWeapons = computed(() =>
+  props.character.inventory.filter(i => i.equipped && i.itemType === 'weapon')
+)
+
+function fsBonusFor(item: InventoryItem) {
+  return computeFightingStyleBonuses(
+    props.character.fightingStyles ?? [],
+    item,
+    equippedWeapons.value,
+  )
+}
+
 function rollWeaponAtk(fav: CombatFavorite, event: MouseEvent) {
   const item = resolvedWeapon(fav)
-  rollD20(parseBonus(item?.attackBonus), `${fav.weaponName} Attack`, event)
+  const bonus = item ? fsBonusFor(item) : { attack: 0, damage: 0 }
+  rollD20(parseBonus(item?.attackBonus) + bonus.attack, `${fav.weaponName} Attack`, event)
 }
 
 function rollWeaponDmg(fav: CombatFavorite) {
   const item = resolvedWeapon(fav)
   if (!item?.damage) return
-  rollDamage(item.damage, `${fav.weaponName} Damage`)
+  const bonus = fsBonusFor(item)
+  rollDamage(addBonusToDamage(item.damage, bonus.damage), `${fav.weaponName} Damage`)
 }
 
 async function removeFavorite(id: string) {

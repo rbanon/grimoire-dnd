@@ -380,7 +380,7 @@ import { useCharactersStore } from '@/characters/store'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { computeAllModifiers } from '@/shared/types/character'
-import { computeProficiencyBonus } from '@/shared/lib/derivedStats'
+import { computeProficiencyBonus, computeFightingStyleBonuses, addBonusToDamage } from '@/shared/lib/derivedStats'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useToast } from '@/shared/composables/useToast'
 import type { Character, AbilityName, InventoryItem, CombatFavorite } from '@/shared/types/character'
@@ -407,12 +407,25 @@ function parseBonus(str: string | undefined): number {
   return m ? parseInt(m[1]) : 0
 }
 
+const equippedWeapons = computed(() =>
+  props.character.inventory.filter(i => i.equipped && i.itemType === 'weapon')
+)
+
+function fsBonusFor(item: InventoryItem) {
+  return computeFightingStyleBonuses(
+    props.character.fightingStyles ?? [],
+    item,
+    equippedWeapons.value,
+  )
+}
+
 function rollItemAtk(item: InventoryItem, event: MouseEvent) {
   if (!item.equipped) {
     toast.info(`${item.item.name} is not equipped.`)
     return
   }
-  rollD20(parseBonus(item.attackBonus), `${item.item.name} Attack`, event)
+  const bonus = fsBonusFor(item)
+  rollD20(parseBonus(item.attackBonus) + bonus.attack, `${item.item.name} Attack`, event)
 }
 
 function rollItemDmg(item: InventoryItem) {
@@ -421,7 +434,8 @@ function rollItemDmg(item: InventoryItem) {
     toast.info(`${item.item.name} is not equipped.`)
     return
   }
-  rollDamage(item.damage, `${item.item.name} Damage`)
+  const bonus = fsBonusFor(item)
+  rollDamage(addBonusToDamage(item.damage, bonus.damage), `${item.item.name} Damage`)
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
