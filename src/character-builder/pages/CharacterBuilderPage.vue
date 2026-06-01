@@ -384,8 +384,11 @@ async function handleSave() {
   navigating.value = true
   try {
     const id = await builder.save()
-    router.push(`/characters/${id}`).catch(() => { navigating.value = false })
+    const failure = await router.push(`/characters/${id}`)
+    // NavigationFailure resolves (doesn't reject) — component stays mounted
+    if (failure) navigating.value = false
   } catch {
+    // save() threw or router.push() rejected (e.g. chunk load failure)
     navigating.value = false
   }
 }

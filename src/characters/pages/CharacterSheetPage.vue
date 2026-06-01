@@ -1,7 +1,10 @@
 <template>
   <div>
     <!-- ── Loading ─────────────────────────────────────────────────────────────── -->
-    <div v-if="!store.loaded" class="app-container py-24 flex justify-center">
+    <!-- Only show spinner when store hasn't loaded AND character isn't already in memory.
+         The latter case happens when navigating directly from the builder: the character
+         is already in characters.value (pushed by create()) before store.load() runs. -->
+    <div v-if="!store.loaded && !character" class="app-container py-24 flex justify-center">
       <span class="w-6 h-6 border-2 border-gold-dim/40 border-t-gold-mid rounded-full animate-spin" />
     </div>
 
@@ -818,7 +821,7 @@ const auth = useAuthStore()
 const toast = useToast()
 const character = computed(() => store.getById(props.id))
 
-onMounted(() => { if (!store.loaded) store.load() })
+onMounted(() => { if (!store.loaded && !character.value) store.load() })
 const dialog = useDialog()
 const { rollD20 } = useRoll()
 
