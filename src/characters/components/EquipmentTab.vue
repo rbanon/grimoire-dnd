@@ -311,7 +311,16 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="label mb-1.5 block">Damage</label>
-              <input v-model="draft.damage" type="text" placeholder="1d8+3" class="input-base w-full font-mono text-sm" />
+              <input
+                v-model="draft.damage"
+                type="text"
+                placeholder="1d8+3"
+                class="input-base w-full font-mono text-sm"
+                :class="damageValid ? '' : 'border-blood-base/60'"
+              />
+              <p v-if="!damageValid" class="mt-1 text-2xs font-body text-blood-bright">
+                Use dice notation like 1d8 or 2d6+3
+              </p>
             </div>
             <div>
               <label class="label mb-1.5 block">Damage Type</label>
@@ -411,7 +420,7 @@
           <button
             type="button"
             class="btn-primary text-sm gap-1.5"
-            :disabled="!draft.name.trim()"
+            :disabled="!draft.name.trim() || !damageValid"
             @click="submitForm"
           >
             <PlusIcon :size="13" /> Add {{ ITEM_TYPES.find(t => t.id === draftType)?.label }}
@@ -732,6 +741,14 @@ const computedBonusDisplay = computed(() => {
   return total >= 0 ? `+${total}` : String(total)
 })
 
+// Damage must be empty or valid dice notation (NdN or NdN±N) so rolls don't
+// silently evaluate to 0. Only enforced for weapons.
+const damageValid = computed(() => {
+  if (draftType.value !== 'weapon') return true
+  const d = draft.damage.trim()
+  return d === '' || /^\d+d\d+([+-]\d+)?$/i.test(d)
+})
+
 function resetDraft() {
   draft.name = ''
   draft.category = ''
@@ -762,6 +779,7 @@ function closeForm() {
 
 async function submitForm() {
   if (!draft.name.trim()) return
+  if (!damageValid.value) return
 
   const base = {
     id: generateId(),

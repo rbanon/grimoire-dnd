@@ -43,8 +43,10 @@ const NO_BONUS: FightingStyleBonuses = { attack: 0, damage: 0, rerollLowDice: fa
 function isLikelyRanged(weapon: InventoryItem): boolean {
   if (weapon.weaponCategory === 'ranged') return true
   if (weapon.weaponCategory === 'melee')  return false
-  // Infer from range field for manually-added weapons (e.g. "60/120 ft." → ranged)
+  // Infer from range field for manually-added weapons (e.g. "60/120 ft." → ranged).
+  // Thrown weapons (javelin, handaxe) have a range but are melee — exclude them.
   if (weapon.range) {
+    if (/thrown/i.test(weapon.range)) return false
     const m = weapon.range.match(/^(\d+)/)
     return m ? parseInt(m[1]) > 5 : false
   }
@@ -97,11 +99,10 @@ export function computeFightingStyleBonuses(
       rerollLowDice = true
     }
 
-    // Two-Weapon Fighting: add ability modifier to off-hand damage (melee only)
-    // Without TWF the off-hand attack deals no ability-modifier bonus; with it you add STR (or DEX)
+    // Two-Weapon Fighting: add ability modifier to off-hand damage (melee only).
+    // 5e adds the modifier regardless of sign or zero, so no `!== 0` guard.
     if (style === 'two-weapon' && inOffHand && isMelee && !isTwoHanded && abilityMods) {
-      const abMod = Math.max(abilityMods.str, abilityMods.dex)
-      if (abMod !== 0) damage += abMod
+      damage += Math.max(abilityMods.str, abilityMods.dex)
     }
   }
 
