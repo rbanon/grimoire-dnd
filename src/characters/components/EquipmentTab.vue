@@ -541,6 +541,7 @@ const effectiveAC = computed(() => computeEffectiveAC(
   props.character.fightingStyles ?? [],
   slots.value,
   props.character.inventory,
+  mods.value.dex,
 ))
 
 function rollItemAtk(item: InventoryItem, event: MouseEvent) {

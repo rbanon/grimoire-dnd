@@ -1059,6 +1059,7 @@ const effectiveAC = computed(() => {
     character.value.fightingStyles ?? [],
     character.value.equippedSlots,
     character.value.inventory,
+    mods.value.dex,
   )
 })
 

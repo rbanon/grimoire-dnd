@@ -68,19 +68,39 @@ export function computeFightingStyleBonuses(
 }
 
 /**
- * Returns the displayed AC: base AC + 1 if the character has the Defense fighting
- * style and has non-shield armor in the armor slot.
+ * Computes the displayed AC from the current equipment slots:
+ *   - Armor slot present  → armor base AC + DEX modifier (capped per armor type)
+ *   - Off Hand = shield   → +2
+ *   - Defense style + armor worn → +1
+ *   - No armor slotted    → falls back to baseAC (manual or unarmored value)
  */
 export function computeEffectiveAC(
   baseAC: number,
   fightingStyles: string[],
   slots: EquippedSlots,
   inventory: InventoryItem[],
+  dexMod: number,
 ): number {
-  if (!fightingStyles.includes('defense')) return baseAC
   const armorItem = slots.armor ? inventory.find(i => i.id === slots.armor) : null
-  if (!armorItem || armorItem.itemType !== 'armor' || armorItem.armorType === 'shield') return baseAC
-  return baseAC + 1
+
+  let ac: number
+  if (armorItem?.armorClass != null) {
+    const type = armorItem.armorType
+    if (type === 'heavy')        ac = armorItem.armorClass
+    else if (type === 'medium')  ac = armorItem.armorClass + Math.min(dexMod, 2)
+    else                         ac = armorItem.armorClass + dexMod   // light or unknown
+  } else {
+    ac = baseAC  // unarmored or no armor slotted
+  }
+
+  // Shield in off-hand
+  const offHandItem = slots.offHand ? inventory.find(i => i.id === slots.offHand) : null
+  if (offHandItem?.armorType === 'shield') ac += 2
+
+  // Defense fighting style
+  if (fightingStyles.includes('defense') && armorItem) ac += 1
+
+  return ac
 }
 
 /** Adds a flat numeric bonus to a damage dice expression (e.g. "1d8+3" + 2 → "1d8+5"). */
