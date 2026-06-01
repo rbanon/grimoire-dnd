@@ -43,6 +43,24 @@
       </div>
     </section>
 
+    <!-- ── Choices & Feats ───────────────────────────────────────────────── -->
+    <section v-if="character.features.length > 0">
+      <div class="rule-gold mb-5">
+        <span>Choices & Feats</span>
+      </div>
+      <div class="space-y-1.5">
+        <FeatureRow
+          v-for="feat in character.features"
+          :key="feat.id"
+          :name="feat.name"
+          :description="feat.description"
+          :source="feat.source ?? ''"
+          :open="expanded.has(feat.id)"
+          @toggle="toggleExpand(feat.id)"
+        />
+      </div>
+    </section>
+
     <!-- ── Race & Subrace Traits ──────────────────────────────────────────── -->
     <section>
       <div class="rule-gold mb-5">

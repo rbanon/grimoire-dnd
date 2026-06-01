@@ -661,6 +661,36 @@ export function getFightingStyleOptions(classIndex: string): { index: string; na
   return []
 }
 
+/**
+ * Resolves a level choice selection to a displayable feature entry.
+ * Returns null for choices that don't produce a visible feature (ASI, skill picks).
+ */
+export function resolveChoiceFeature(
+  classIndex: string,
+  level: number,
+  choiceKey: string,
+  chosenIndex: string,
+): { name: string; description: string; source: string } | null {
+  const entry = getLevelEntry(classIndex, level)
+  if (!entry?.choices) return null
+  const choice = entry.choices[choiceKey]
+  if (!choice) return null
+
+  if (choice.kind === 'fighting-style') {
+    const opt = getFightingStyleOptions(choice.classIndex).find(o => o.index === chosenIndex)
+    if (!opt) return null
+    return { name: opt.name, description: opt.desc, source: `Level ${level} Fighting Style` }
+  }
+
+  if (choice.kind === 'static') {
+    const opt = choice.options.find(o => o.index === chosenIndex)
+    if (!opt) return null
+    return { name: opt.name, description: opt.desc, source: `Level ${level} ${choice.label}` }
+  }
+
+  return null  // 'asi' and 'skill' choices don't produce a feature entry
+}
+
 // ─── Class resources ──────────────────────────────────────────────────────────
 
 type AbilityMods = { str: number; dex: number; con: number; int: number; wis: number; cha: number }
