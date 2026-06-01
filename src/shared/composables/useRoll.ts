@@ -94,12 +94,17 @@ export function useRoll() {
     const { modifier, label, modifierParts } = _pending.value
     _pending.value = null
 
-    let die = Math.ceil(Math.random() * 20)
+    const raw1 = Math.ceil(Math.random() * 20)
+    let die: number
     let die2: number | undefined
 
     if (mode === 'advantage' || mode === 'disadvantage') {
-      die2 = Math.ceil(Math.random() * 20)
-      die = mode === 'advantage' ? Math.max(die, die2) : Math.min(die, die2)
+      const raw2 = Math.ceil(Math.random() * 20)
+      // die = kept die, die2 = dropped die (so they always differ when rolls differ)
+      die  = mode === 'advantage' ? Math.max(raw1, raw2) : Math.min(raw1, raw2)
+      die2 = mode === 'advantage' ? Math.min(raw1, raw2) : Math.max(raw1, raw2)
+    } else {
+      die = raw1
     }
 
     const r: RollResult = {
