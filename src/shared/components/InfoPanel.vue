@@ -4,7 +4,7 @@
     <Transition name="ip-fade">
       <div
         v-if="panel.target.value"
-        class="fixed inset-0 z-[49] bg-black/40"
+        class="fixed inset-0 z-[59] bg-black/40"
         aria-hidden="true"
         @click="panel.close()"
       />
@@ -13,7 +13,7 @@
     <Transition name="ip-slide">
       <aside
         v-if="panel.target.value"
-        class="fixed top-0 right-0 h-full w-full sm:w-[440px] z-50 flex flex-col bg-void border-l border-shadow overflow-hidden"
+        class="fixed top-0 right-0 h-full w-full sm:w-[440px] z-[60] flex flex-col bg-void border-l border-shadow overflow-hidden"
       >
         <!-- Header -->
         <header class="flex flex-col px-5 py-4 border-b border-shadow shrink-0 bg-abyss/50 gap-1">
