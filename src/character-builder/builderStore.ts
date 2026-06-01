@@ -328,8 +328,8 @@ export const useBuilderStore = defineStore('builder', () => {
         const cGain = cantripsGainedAtLevel(draft.value.classIndex, lvl)
         const sGain = spellsGainedAtLevel(draft.value.classIndex, lvl)
         const entry = draft.value.spellsByLevel[lvl]
-        const gotC = entry?.cantripsGained.length ?? 0
-        const gotS = entry?.spellsGained.length ?? 0
+        const gotC = entry?.cantripsGained?.length ?? 0
+        const gotS = entry?.spellsGained?.length ?? 0
         if (gotC < cGain || gotS < sGain) incompleteLevels.push(lvl)
       }
       if (incompleteLevels.length > 0) {
@@ -445,8 +445,32 @@ export const useBuilderStore = defineStore('builder', () => {
     if (!saved) return false
     const merged = { ...defaultDraft(), ...(saved as Partial<BuilderDraft>) }
     if (!merged.classIndex) return false
+    migrateKnownCasterSpells(merged)
     draft.value = merged
     return true
+  }
+
+  // Migrate drafts saved before per-level spell tracking was introduced.
+  // Known casters (Bard/Sorcerer/Warlock/Ranger) stored spells in flat selectedSpells;
+  // distribute them into spellsByLevel following each level's gain count.
+  function migrateKnownCasterSpells(d: BuilderDraft): void {
+    const profile = getSpellProfile(d.classIndex)
+    if (!profile || profile.castingType !== 'known') return
+    if (Object.keys(d.spellsByLevel).length > 0) return
+    if (d.selectedCantrips.length === 0 && d.selectedSpells.length === 0) return
+    let ci = 0, si = 0
+    for (let lvl = 1; lvl <= d.level; lvl++) {
+      const cGain = cantripsGainedAtLevel(d.classIndex, lvl)
+      const sGain = spellsGainedAtLevel(d.classIndex, lvl)
+      if (cGain === 0 && sGain === 0) continue
+      d.spellsByLevel[lvl] = {
+        cantripsGained: d.selectedCantrips.slice(ci, ci + cGain),
+        spellsGained:   d.selectedSpells.slice(si, si + sGain),
+        spellReplaced:  null,
+      }
+      ci += cGain
+      si += sGain
+    }
   }
 
   function saveDraft() {
@@ -528,6 +552,29 @@ export const useBuilderStore = defineStore('builder', () => {
   function unassignStandardArray(ability: keyof AbilityScores) {
     delete draft.value.standardArrayAssignments[ability]
     draft.value.baseScores[ability] = ABILITY_SCORE_DEFAULT
+  }
+
+  // Atomic drop: reassigns draggedVal to targetAbility and swaps out its previous owner,
+  // replacing both assignments and baseScores objects in one operation.
+  function applyStandardArrayDrop(draggedVal: number, targetAbility: keyof AbilityScores) {
+    const assignments = { ...draft.value.standardArrayAssignments }
+    const scores      = { ...draft.value.baseScores }
+    const prevAbility = (Object.entries(assignments) as [keyof AbilityScores, number][])
+      .find(([k, v]) => k !== targetAbility && v === draggedVal)?.[0]
+    const targetCurrent = assignments[targetAbility]
+    if (prevAbility) {
+      if (targetCurrent !== undefined) {
+        assignments[prevAbility] = targetCurrent
+        scores[prevAbility] = targetCurrent
+      } else {
+        delete assignments[prevAbility]
+        scores[prevAbility] = ABILITY_SCORE_DEFAULT
+      }
+    }
+    assignments[targetAbility] = draggedVal
+    scores[targetAbility] = draggedVal
+    draft.value.standardArrayAssignments = assignments
+    draft.value.baseScores = scores
   }
 
   function resetScores() {
@@ -612,12 +659,18 @@ export const useBuilderStore = defineStore('builder', () => {
       }
     }
 
+    const fightingStyles = Object.values(d.levelChoices)
+      .flatMap(choices => Object.entries(choices))
+      .filter(([key]) => key === 'fighting-style')
+      .map(([, value]) => value)
+
     return CharacterSchema.parse({
       id,
       schemaVersion: '1.0',
       createdAt: ts,
       updatedAt: ts,
       portrait,
+      fightingStyles,
       identity: {
         name: d.name.trim(),
         race: { index: d.raceIndex, name: d.raceName, speed: d.raceSpeed, sizeCategory: d.raceSizeCategory },
@@ -740,6 +793,7 @@ export const useBuilderStore = defineStore('builder', () => {
     decrementScore,
     applyStandardArray,
     unassignStandardArray,
+    applyStandardArrayDrop,
     resetScores,
     setAsiAllocation,
     setFeatDecision,

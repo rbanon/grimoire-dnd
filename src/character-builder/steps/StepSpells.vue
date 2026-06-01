@@ -562,6 +562,8 @@ function removeSpellAtLevel(lvl: number, index: string) {
 
 // ── Active spells before a given level ───────────────────────────────────────
 
+// Iterates to draft.level + 1 so chosenElsewhereForLevel can read get(l + 1)
+// for l === draft.level without falling back to the ?? [] default.
 const spellPoolByLevel = computed(() => {
   const pools = new Map<number, { index: string; name: string; level: number }[]>()
   const pool = new Map<string, { index: string; name: string; level: number }>()

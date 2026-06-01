@@ -301,17 +301,7 @@ const dragOver = ref<string | null>(null)
 function onDrop(abKey: keyof AbilityScores) {
   dragOver.value = null
   if (dragValue.value === null) return
-  const val = dragValue.value
-  const assignments = builder.draft.standardArrayAssignments
-  const prev = (Object.entries(assignments) as [keyof AbilityScores, number][])
-    .find(([k, v]) => k !== abKey && v === val)?.[0]
-  const targetCurrent = assignments[abKey]
-  if (prev) {
-    // Swap: give the dragged value's former owner the target's old value
-    if (targetCurrent !== undefined) builder.applyStandardArray(prev, targetCurrent)
-    else builder.unassignStandardArray(prev)
-  }
-  builder.applyStandardArray(abKey, val)
+  builder.applyStandardArrayDrop(dragValue.value, abKey)
   dragValue.value = null
 }
 
