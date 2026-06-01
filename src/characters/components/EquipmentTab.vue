@@ -39,11 +39,7 @@
             <option value="">— Empty —</option>
             <option v-for="item in weapons" :key="item.id" :value="item.id">{{ item.item.name }}</option>
           </select>
-          <div v-if="slottedFSBonus('mainHand').attack > 0 || slottedFSBonus('mainHand').damage > 0 || slottedFSBonus('mainHand').rerollLowDice" class="flex gap-1 flex-wrap">
-            <span v-if="slottedFSBonus('mainHand').attack > 0" class="text-2xs font-heading px-1 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">+{{ slottedFSBonus('mainHand').attack }} atk</span>
-            <span v-if="slottedFSBonus('mainHand').damage > 0" class="text-2xs font-heading px-1 py-0.5 rounded border border-blood-base/40 text-blood-mid bg-blood-deep/10">+{{ slottedFSBonus('mainHand').damage }} dmg</span>
-            <span v-if="slottedFSBonus('mainHand').rerollLowDice" class="text-2xs font-heading px-1 py-0.5 rounded border border-gold-dim/40 text-gold-mid bg-gold-dim/10">GWF</span>
-          </div>
+          <FightingStyleBadges :bonus="mainHandBonus" />
         </div>
 
         <!-- Off Hand -->
@@ -65,9 +61,7 @@
               <option v-for="item in shields" :key="item.id" :value="item.id">{{ item.item.name }}</option>
             </optgroup>
           </select>
-          <div v-if="slottedFSBonus('offHand').attack > 0" class="flex gap-1 flex-wrap">
-            <span class="text-2xs font-heading px-1 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">+{{ slottedFSBonus('offHand').attack }} atk</span>
-          </div>
+          <FightingStyleBadges :bonus="offHandBonus" />
         </div>
 
         <!-- Armor slot -->
@@ -466,11 +460,12 @@
 import { ref, computed, reactive, watch, nextTick } from 'vue'
 import { PackageIcon, PlusIcon, Trash2Icon, XIcon, SwordIcon, ShieldIcon, StarIcon, InfoIcon, BookOpenIcon } from 'lucide-vue-next'
 import ItemPickerModal from './ItemPickerModal.vue'
+import FightingStyleBadges from './FightingStyleBadges.vue'
 import { useCharactersStore } from '@/characters/store'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { computeAllModifiers } from '@/shared/types/character'
-import { computeProficiencyBonus, computeFightingStyleBonuses, computeEffectiveAC, addBonusToDamage } from '@/shared/lib/derivedStats'
+import { computeProficiencyBonus, computeFightingStyleBonuses, computeEffectiveAC, addBonusToDamage, parseBonus } from '@/shared/lib/derivedStats'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useToast } from '@/shared/composables/useToast'
 import type { Character, AbilityName, InventoryItem, CombatFavorite, EquippedSlots } from '@/shared/types/character'
@@ -526,12 +521,6 @@ async function clearSlot(slot: keyof EquippedSlots) {
 
 // ── Roll helpers ──────────────────────────────────────────────────────────────
 
-function parseBonus(str: string | undefined): number {
-  if (!str) return 0
-  const m = str.match(/^([+-]?\d+)$/)
-  return m ? parseInt(m[1]) : 0
-}
-
 function fsBonusFor(item: InventoryItem) {
   return computeFightingStyleBonuses(
     props.character.fightingStyles ?? [],
@@ -546,6 +535,11 @@ function slottedFSBonus(slot: 'mainHand' | 'offHand') {
   const item = slottedItem(slot)
   return item ? fsBonusFor(item) : { attack: 0, damage: 0, rerollLowDice: false }
 }
+
+// Memoized per-slot bonuses for the Loadout badges (avoids re-running the
+// computation on every render for each badge condition).
+const mainHandBonus = computed(() => slottedFSBonus('mainHand'))
+const offHandBonus  = computed(() => slottedFSBonus('offHand'))
 
 const effectiveAC = computed(() => computeEffectiveAC(
   props.character.combat.armorClass,

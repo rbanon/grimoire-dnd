@@ -107,21 +107,7 @@
           </div>
 
           <!-- Fighting style badge -->
-          <div
-            v-if="fsBonus(fav.id).attack > 0 || fsBonus(fav.id).damage > 0 || fsBonus(fav.id).rerollLowDice"
-            class="flex items-center gap-1.5 flex-wrap"
-          >
-            <span v-if="fsBonus(fav.id).attack > 0" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">
-              +{{ fsBonus(fav.id).attack }} atk
-            </span>
-            <span v-if="fsBonus(fav.id).damage > 0" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-blood-base/40 text-blood-mid bg-blood-deep/10">
-              +{{ fsBonus(fav.id).damage }} dmg
-            </span>
-            <span v-if="fsBonus(fav.id).rerollLowDice" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-gold-dim/40 text-gold-mid bg-gold-dim/10">
-              GWF
-            </span>
-            <span class="text-2xs font-body text-mist/40">Fighting Style</span>
-          </div>
+          <FightingStyleBadges :bonus="fsBonus(fav.id)" label />
 
           <!-- Range + roll buttons -->
           <div class="flex items-center justify-between gap-2 pt-1 border-t border-shadow/30">
@@ -235,13 +221,14 @@ import { useRoll } from '@/shared/composables/useRoll'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import { useToast } from '@/shared/composables/useToast'
 import { computeAllModifiers } from '@/shared/types/character'
-import { computeProficiencyBonus, computeSpellAttackBonus, computeFightingStyleBonuses, addBonusToDamage } from '@/shared/lib/derivedStats'
+import { computeProficiencyBonus, computeSpellAttackBonus, computeFightingStyleBonuses, addBonusToDamage, parseBonus } from '@/shared/lib/derivedStats'
 import type { Character, CombatFavorite, InventoryItem, ResourcePool, SpellReference } from '@/shared/types/character'
 import type { FightingStyleBonuses } from '@/shared/lib/derivedStats'
 import AddToCombatModal from './AddToCombatModal.vue'
 import CastSpellModal from './CastSpellModal.vue'
 import FavoriteSpellCard from './FavoriteSpellCard.vue'
 import ResourceTracker from './ResourceTracker.vue'
+import FightingStyleBadges from './FightingStyleBadges.vue'
 
 const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
@@ -342,12 +329,6 @@ function dicePart(damage: string | undefined): string {
 function shortDmgType(type: string | undefined): string {
   if (!type) return ''
   return type.length > 8 ? type.slice(0, 7) + '.' : type
-}
-
-function parseBonus(str: string | undefined): number {
-  if (!str) return 0
-  const m = str.match(/^([+-]?\d+)$/)
-  return m ? parseInt(m[1]) : 0
 }
 
 function rollWeaponAtk(fav: CombatFavorite, event: MouseEvent) {

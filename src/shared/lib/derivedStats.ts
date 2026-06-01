@@ -5,6 +5,13 @@ export function computeProficiencyBonus(level: number): number {
   return Math.ceil(level / 4) + 1
 }
 
+/** Parses a signed numeric bonus string ("+3", "-1") to a number; 0 if absent/invalid. */
+export function parseBonus(str: string | undefined): number {
+  if (!str) return 0
+  const m = str.match(/^([+-]?\d+)$/)
+  return m ? parseInt(m[1]) : 0
+}
+
 export function computePassiveScore(skill: number, mod: number, prof: boolean, profBonus: number): number {
   return 10 + mod + (prof ? profBonus : 0) + skill
 }

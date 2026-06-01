@@ -111,7 +111,7 @@ import { SwordIcon, PlusIcon, XIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useConfirm } from '@/shared/composables/useConfirm'
-import { computeFightingStyleBonuses, addBonusToDamage } from '@/shared/lib/derivedStats'
+import { computeFightingStyleBonuses, addBonusToDamage, parseBonus } from '@/shared/lib/derivedStats'
 import { computeAllModifiers } from '@/shared/types/character'
 import type { Character, CombatFavorite, InventoryItem } from '@/shared/types/character'
 import AddToCombatModal from './AddToCombatModal.vue'
@@ -127,12 +127,6 @@ const mods = computed(() => computeAllModifiers(props.character.abilityScores))
 function resolvedWeapon(fav: CombatFavorite): InventoryItem | null {
   if (fav.type !== 'weapon' || !fav.inventoryItemId) return null
   return props.character.inventory.find(i => i.id === fav.inventoryItemId) ?? null
-}
-
-function parseBonus(str: string | undefined): number {
-  if (!str) return 0
-  const m = str.match(/^([+-]?\d+)$/)
-  return m ? parseInt(m[1]) : 0
 }
 
 function fsBonusFor(item: InventoryItem) {
