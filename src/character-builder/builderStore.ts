@@ -7,7 +7,7 @@ import { storageGet, storageSet, storageRemove } from '@/shared/lib/storage'
 import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
-import { uploadPortrait } from '@/shared/lib/uploadPortrait'
+import { uploadPortraitBlob } from '@/shared/lib/uploadPortrait'
 import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
@@ -762,17 +762,16 @@ export const useBuilderStore = defineStore('builder', () => {
         let portraitUrl = d.portraitUrl
         if (portraitUrl.startsWith('data:') && auth.isAuthenticated && auth.userId) {
           try {
+            // portraitUrl is already a compressed JPEG data URL (compressPortrait
+            // ran at ingestion) — upload the blob directly without re-compressing.
             const blob = await fetch(portraitUrl).then(r => r.blob())
-            const ext = blob.type.split('/')[1]?.split('+')[0] ?? 'jpg'
-            const file = new File([blob], `portrait.${ext}`, { type: blob.type })
-            portraitUrl = await uploadPortrait(file, auth.userId, id)
+            portraitUrl = await uploadPortraitBlob(blob, auth.userId, id)
           } catch { /* keep data URL on upload failure */ }
         }
-        try {
-          new URL(portraitUrl)
-          // Only accept http/https — data: and blob: URLs are invalid for the schema
-          if (/^https?:\/\//i.test(portraitUrl)) portrait = { type: 'url', url: portraitUrl }
-        } catch { /* skip invalid URL */ }
+        // Accept http(s) (uploaded) and data:image (local/unauthenticated) URLs.
+        if (/^https?:\/\//i.test(portraitUrl) || /^data:image\//i.test(portraitUrl)) {
+          portrait = { type: 'url', url: portraitUrl }
+        }
       }
 
       const character = await buildCharacterFromDraft(id, ts, portrait)
