@@ -501,22 +501,12 @@ function currentSlot(itemId: string): keyof EquippedSlots | null {
   return null
 }
 
-async function equipToSlot(itemId: string, slot: keyof EquippedSlots) {
-  const s = { ...slots.value }
-  if (s.mainHand === itemId) s.mainHand = null
-  if (s.offHand  === itemId) s.offHand  = null
-  if (s.armor    === itemId) s.armor    = null
-  s[slot] = itemId
-  const equippedIds = new Set([s.mainHand, s.offHand, s.armor].filter(Boolean) as string[])
-  const inventory = props.character.inventory.map(i => ({ ...i, equipped: equippedIds.has(i.id) }))
-  await store.update(props.character.id, { equippedSlots: s, inventory })
+function equipToSlot(itemId: string, slot: keyof EquippedSlots) {
+  return store.setEquipmentSlot(props.character.id, slot, itemId)
 }
 
-async function clearSlot(slot: keyof EquippedSlots) {
-  const s = { ...slots.value, [slot]: null }
-  const equippedIds = new Set([s.mainHand, s.offHand, s.armor].filter(Boolean) as string[])
-  const inventory = props.character.inventory.map(i => ({ ...i, equipped: equippedIds.has(i.id) }))
-  await store.update(props.character.id, { equippedSlots: s, inventory })
+function clearSlot(slot: keyof EquippedSlots) {
+  return store.clearEquipmentSlot(props.character.id, slot)
 }
 
 // ── Roll helpers ──────────────────────────────────────────────────────────────

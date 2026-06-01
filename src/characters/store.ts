@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { z } from 'zod'
-import type { Character, CharacterSummary } from '@/shared/types/character'
+import type { Character, CharacterSummary, EquippedSlots } from '@/shared/types/character'
 import {
   CharacterSchema,
   CharacterExportEnvelopeSchema,
@@ -383,6 +383,38 @@ export const useCharactersStore = defineStore('characters', () => {
     await update(characterId, { favoriteSpells })
   }
 
+  // ── Equipment slots ─────────────────────────────────────────────────────────
+  // Single source of truth for slot ↔ inventory.equipped sync, reusable from any
+  // component (Equipment tab, future Level Up auto-equip, etc.).
+
+  function syncEquippedFlags(c: Character, slots: EquippedSlots) {
+    const equippedIds = new Set([slots.mainHand, slots.offHand, slots.armor].filter(Boolean) as string[])
+    return c.inventory.map((i) => ({ ...i, equipped: equippedIds.has(i.id) }))
+  }
+
+  async function setEquipmentSlot(
+    characterId: string,
+    slot: keyof EquippedSlots,
+    itemId: string,
+  ): Promise<void> {
+    const c = getById(characterId)
+    if (!c) return
+    const slots: EquippedSlots = { ...c.equippedSlots }
+    // Remove the item from any slot it already occupies, then assign the target.
+    if (slots.mainHand === itemId) slots.mainHand = null
+    if (slots.offHand === itemId) slots.offHand = null
+    if (slots.armor === itemId) slots.armor = null
+    slots[slot] = itemId
+    await update(characterId, { equippedSlots: slots, inventory: syncEquippedFlags(c, slots) })
+  }
+
+  async function clearEquipmentSlot(characterId: string, slot: keyof EquippedSlots): Promise<void> {
+    const c = getById(characterId)
+    if (!c) return
+    const slots: EquippedSlots = { ...c.equippedSlots, [slot]: null }
+    await update(characterId, { equippedSlots: slots, inventory: syncEquippedFlags(c, slots) })
+  }
+
   return {
     characters,
     summaries,
@@ -397,5 +429,7 @@ export const useCharactersStore = defineStore('characters', () => {
     exportMany,
     importFromJson,
     toggleFavoriteSpell,
+    setEquipmentSlot,
+    clearEquipmentSlot,
   }
 })
