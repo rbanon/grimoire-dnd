@@ -60,7 +60,10 @@ function _show(r: RollResult, ms = 4500) {
   }, delay)
 }
 
-function _evalFormula(formula: string): { total: number; rolls: number[]; flat: number } {
+function _evalFormula(
+  formula: string,
+  rerollLowDice = false,
+): { total: number; rolls: number[]; flat: number } {
   const m = formula.match(/^(\d+)d(\d+)([+-]\d+)?$/i)
   if (!m) return { total: 0, rolls: [], flat: 0 }
   const count = parseInt(m[1])
@@ -69,7 +72,9 @@ function _evalFormula(formula: string): { total: number; rolls: number[]; flat: 
   const rolls: number[] = []
   let diceSum = 0
   for (let i = 0; i < count; i++) {
-    const r = Math.ceil(Math.random() * sides)
+    let r = Math.ceil(Math.random() * sides)
+    // Great Weapon Fighting: reroll 1s and 2s once
+    if (rerollLowDice && (r === 1 || r === 2)) r = Math.ceil(Math.random() * sides)
     rolls.push(r)
     diceSum += r
   }
@@ -118,8 +123,8 @@ export function useRoll() {
     _pending.value = null
   }
 
-  function rollDamage(formula: string, label: string, modifierParts?: string): RollResult {
-    const { total, rolls, flat } = _evalFormula(formula)
+  function rollDamage(formula: string, label: string, modifierParts?: string, rerollLowDice = false): RollResult {
+    const { total, rolls, flat } = _evalFormula(formula, rerollLowDice)
     const r: RollResult = {
       id: ++_id,
       label,

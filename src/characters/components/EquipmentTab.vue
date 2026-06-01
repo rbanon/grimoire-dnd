@@ -39,9 +39,10 @@
             <option value="">— Empty —</option>
             <option v-for="item in weapons" :key="item.id" :value="item.id">{{ item.item.name }}</option>
           </select>
-          <div v-if="slottedFSBonus('mainHand').attack > 0 || slottedFSBonus('mainHand').damage > 0" class="flex gap-1 flex-wrap">
+          <div v-if="slottedFSBonus('mainHand').attack > 0 || slottedFSBonus('mainHand').damage > 0 || slottedFSBonus('mainHand').rerollLowDice" class="flex gap-1 flex-wrap">
             <span v-if="slottedFSBonus('mainHand').attack > 0" class="text-2xs font-heading px-1 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">+{{ slottedFSBonus('mainHand').attack }} atk</span>
             <span v-if="slottedFSBonus('mainHand').damage > 0" class="text-2xs font-heading px-1 py-0.5 rounded border border-blood-base/40 text-blood-mid bg-blood-deep/10">+{{ slottedFSBonus('mainHand').damage }} dmg</span>
+            <span v-if="slottedFSBonus('mainHand').rerollLowDice" class="text-2xs font-heading px-1 py-0.5 rounded border border-gold-dim/40 text-gold-mid bg-gold-dim/10">GWF</span>
           </div>
         </div>
 
@@ -528,12 +529,13 @@ function fsBonusFor(item: InventoryItem) {
     item,
     slots.value,
     props.character.inventory,
+    { str: mods.value.str, dex: mods.value.dex },
   )
 }
 
 function slottedFSBonus(slot: 'mainHand' | 'offHand') {
   const item = slottedItem(slot)
-  return item ? fsBonusFor(item) : { attack: 0, damage: 0 }
+  return item ? fsBonusFor(item) : { attack: 0, damage: 0, rerollLowDice: false }
 }
 
 const effectiveAC = computed(() => computeEffectiveAC(
@@ -567,7 +569,10 @@ function rollItemDmg(item: InventoryItem) {
   const dmgFormula = addBonusToDamage(item.damage, bonus.damage)
   const parts: string[] = [item.damage]
   if (bonus.damage > 0) parts.push(`+${bonus.damage} FS`)
-  rollDamage(dmgFormula, `${item.item.name} Damage`, bonus.damage > 0 ? parts.join(' ') : undefined)
+  if (bonus.rerollLowDice) parts.push('GWF')
+  rollDamage(dmgFormula, `${item.item.name} Damage`,
+    (bonus.damage > 0 || bonus.rerollLowDice) ? parts.join(' ') : undefined,
+    bonus.rerollLowDice)
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────

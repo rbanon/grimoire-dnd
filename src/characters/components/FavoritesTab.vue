@@ -108,7 +108,7 @@
 
           <!-- Fighting style badge -->
           <div
-            v-if="fsBonus(fav.id).attack > 0 || fsBonus(fav.id).damage > 0"
+            v-if="fsBonus(fav.id).attack > 0 || fsBonus(fav.id).damage > 0 || fsBonus(fav.id).rerollLowDice"
             class="flex items-center gap-1.5 flex-wrap"
           >
             <span v-if="fsBonus(fav.id).attack > 0" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">
@@ -116,6 +116,9 @@
             </span>
             <span v-if="fsBonus(fav.id).damage > 0" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-blood-base/40 text-blood-mid bg-blood-deep/10">
               +{{ fsBonus(fav.id).damage }} dmg
+            </span>
+            <span v-if="fsBonus(fav.id).rerollLowDice" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-gold-dim/40 text-gold-mid bg-gold-dim/10">
+              GWF
             </span>
             <span class="text-2xs font-body text-mist/40">Fighting Style</span>
           </div>
@@ -275,18 +278,19 @@ const slots = computed(() => props.character.equippedSlots)
 
 const weaponFSBonuses = computed<Map<string, FightingStyleBonuses>>(() => {
   const styles = props.character.fightingStyles ?? []
+  const abMods = { str: mods.value.str, dex: mods.value.dex }
   const map = new Map<string, FightingStyleBonuses>()
   for (const fav of weapons.value) {
     const item = resolvedWeapon(fav)
     map.set(fav.id, item
-      ? computeFightingStyleBonuses(styles, item, slots.value, props.character.inventory)
-      : { attack: 0, damage: 0 })
+      ? computeFightingStyleBonuses(styles, item, slots.value, props.character.inventory, abMods)
+      : { attack: 0, damage: 0, rerollLowDice: false })
   }
   return map
 })
 
 function fsBonus(favId: string): FightingStyleBonuses {
-  return weaponFSBonuses.value.get(favId) ?? { attack: 0, damage: 0 }
+  return weaponFSBonuses.value.get(favId) ?? { attack: 0, damage: 0, rerollLowDice: false }
 }
 
 function isInHandSlot(item: InventoryItem): boolean {
@@ -370,7 +374,10 @@ function rollWeaponDmg(fav: CombatFavorite) {
   const dmgFormula = addBonusToDamage(item.damage, bonus.damage)
   const parts: string[] = [item.damage]
   if (bonus.damage > 0) parts.push(`+${bonus.damage} FS`)
-  rollDamage(dmgFormula, `${fav.weaponName} Damage`, bonus.damage > 0 ? parts.join(' ') : undefined)
+  if (bonus.rerollLowDice) parts.push('GWF')
+  rollDamage(dmgFormula, `${fav.weaponName} Damage`,
+    (bonus.damage > 0 || bonus.rerollLowDice) ? parts.join(' ') : undefined,
+    bonus.rerollLowDice)
 }
 
 async function onResourceChange(pools: ResourcePool[]) {

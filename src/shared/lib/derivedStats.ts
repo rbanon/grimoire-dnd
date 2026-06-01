@@ -31,41 +31,81 @@ export function computeSkillModifier(
 
 // ── Fighting Style Bonuses ────────────────────────────────────────────────────
 
-export interface FightingStyleBonuses { attack: number; damage: number }
+export interface FightingStyleBonuses {
+  attack: number
+  damage: number
+  rerollLowDice: boolean  // Great Weapon Fighting: reroll 1s and 2s on damage dice
+}
+
+const NO_BONUS: FightingStyleBonuses = { attack: 0, damage: 0, rerollLowDice: false }
+
+/** True if the weapon is likely ranged: explicit category OR a range string longer than 5 ft. */
+function isLikelyRanged(weapon: InventoryItem): boolean {
+  if (weapon.weaponCategory === 'ranged') return true
+  if (weapon.weaponCategory === 'melee')  return false
+  // Infer from range field for manually-added weapons (e.g. "60/120 ft." → ranged)
+  if (weapon.range) {
+    const m = weapon.range.match(/^(\d+)/)
+    return m ? parseInt(m[1]) > 5 : false
+  }
+  return false
+}
 
 /**
- * Computes attack/damage bonuses for a weapon given the current equipment slots.
+ * Computes all fighting-style bonuses for a weapon given the current equipment slots.
  *
- * Archery  — +2 attack when the weapon is in mainHand or offHand and is ranged.
- * Dueling  — +2 damage when the weapon is in mainHand, is one-handed melee, and
- *             offHand is empty or holds a shield (not another weapon).
+ * Archery           — +2 attack, ranged weapon in any hand slot
+ * Dueling           — +2 damage, one-handed melee in main hand, off hand empty or shield
+ * Great Weapon Fght — reroll 1s and 2s on damage dice, two-handed weapon in main hand
+ * Two-Weapon Fght   — add ability modifier to off-hand damage (pass abilityMods)
+ * Defense           — handled separately in computeEffectiveAC
+ * Protection        — reaction-based, not applicable to rolls
  */
 export function computeFightingStyleBonuses(
   fightingStyles: string[],
   weapon: InventoryItem,
   slots: EquippedSlots,
   inventory: InventoryItem[],
+  abilityMods?: { str: number; dex: number },
 ): FightingStyleBonuses {
-  if (weapon.itemType !== 'weapon') return { attack: 0, damage: 0 }
-  let attack = 0, damage = 0
+  if (weapon.itemType !== 'weapon') return { ...NO_BONUS }
+  let attack = 0, damage = 0, rerollLowDice = false
   const inMainHand = slots.mainHand === weapon.id
   const inOffHand  = slots.offHand  === weapon.id
   const inAnySlot  = inMainHand || inOffHand
+  const ranged     = isLikelyRanged(weapon)
+  // weaponCategory undefined → treat as melee for melee-specific styles
+  const isMelee    = !ranged
+  const isTwoHanded = weapon.handedness === 'two-handed'
 
   for (const style of fightingStyles) {
-    if (style === 'archery' && inAnySlot && weapon.weaponCategory === 'ranged') {
+
+    // Archery: +2 attack with ranged weapons (infer from range field if no explicit category)
+    if (style === 'archery' && inAnySlot && ranged) {
       attack += 2
     }
-    if (style === 'dueling' && inMainHand) {
-      // weaponCategory undefined → treat as melee (manually-added weapons default to melee)
-      const isOneHandedMelee = weapon.weaponCategory !== 'ranged' && weapon.handedness !== 'two-handed'
+
+    // Dueling: +2 damage, one-handed melee in main hand, off hand empty or shield only
+    if (style === 'dueling' && inMainHand && isMelee && !isTwoHanded) {
       const offHandItem = slots.offHand ? inventory.find(i => i.id === slots.offHand) : null
       const offHandIsShieldOrEmpty = !offHandItem || offHandItem.armorType === 'shield'
-      if (isOneHandedMelee && offHandIsShieldOrEmpty) damage += 2
+      if (offHandIsShieldOrEmpty) damage += 2
+    }
+
+    // Great Weapon Fighting: reroll 1s and 2s on damage, two-handed weapon in main hand
+    if (style === 'great-weapon' && inMainHand && isTwoHanded) {
+      rerollLowDice = true
+    }
+
+    // Two-Weapon Fighting: add ability modifier to off-hand damage (melee only)
+    // Without TWF the off-hand attack deals no ability-modifier bonus; with it you add STR (or DEX)
+    if (style === 'two-weapon' && inOffHand && isMelee && !isTwoHanded && abilityMods) {
+      const abMod = Math.max(abilityMods.str, abilityMods.dex)
+      if (abMod !== 0) damage += abMod
     }
   }
 
-  return { attack, damage }
+  return { attack, damage, rerollLowDice }
 }
 
 /**

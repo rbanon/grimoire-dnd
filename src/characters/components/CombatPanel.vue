@@ -106,12 +106,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { SwordIcon, PlusIcon, XIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import { computeFightingStyleBonuses, addBonusToDamage } from '@/shared/lib/derivedStats'
+import { computeAllModifiers } from '@/shared/types/character'
 import type { Character, CombatFavorite, InventoryItem } from '@/shared/types/character'
 import AddToCombatModal from './AddToCombatModal.vue'
 
@@ -121,6 +122,7 @@ const { confirm } = useConfirm()
 const { rollD20, rollDamage } = useRoll()
 
 const showModal = ref(false)
+const mods = computed(() => computeAllModifiers(props.character.abilityScores))
 
 function resolvedWeapon(fav: CombatFavorite): InventoryItem | null {
   if (fav.type !== 'weapon' || !fav.inventoryItemId) return null
@@ -139,12 +141,13 @@ function fsBonusFor(item: InventoryItem) {
     item,
     props.character.equippedSlots,
     props.character.inventory,
+    { str: mods.value.str, dex: mods.value.dex },
   )
 }
 
 function rollWeaponAtk(fav: CombatFavorite, event: MouseEvent) {
   const item = resolvedWeapon(fav)
-  const bonus = item ? fsBonusFor(item) : { attack: 0, damage: 0 }
+  const bonus = item ? fsBonusFor(item) : { attack: 0, damage: 0, rerollLowDice: false }
   const parts: string[] = [item?.attackBonus ?? '+0']
   if (bonus.attack > 0) parts.push(`+${bonus.attack} FS`)
   rollD20(parseBonus(item?.attackBonus) + bonus.attack, `${fav.weaponName} Attack`, event, parts.join(' '))
@@ -157,7 +160,10 @@ function rollWeaponDmg(fav: CombatFavorite) {
   const dmgFormula = addBonusToDamage(item.damage, bonus.damage)
   const parts: string[] = [item.damage]
   if (bonus.damage > 0) parts.push(`+${bonus.damage} FS`)
-  rollDamage(dmgFormula, `${fav.weaponName} Damage`, bonus.damage > 0 ? parts.join(' ') : undefined)
+  if (bonus.rerollLowDice) parts.push('GWF')
+  rollDamage(dmgFormula, `${fav.weaponName} Damage`,
+    (bonus.damage > 0 || bonus.rerollLowDice) ? parts.join(' ') : undefined,
+    bonus.rerollLowDice)
 }
 
 async function removeFavorite(id: string) {
