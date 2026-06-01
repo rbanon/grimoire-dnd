@@ -1,4 +1,4 @@
-import type { AbilityScores, InventoryItem } from '../types/character'
+import type { AbilityScores, EquippedSlots, InventoryItem } from '../types/character'
 import { computeModifier } from '../types/character'
 
 export function computeProficiencyBonus(level: number): number {
@@ -34,34 +34,53 @@ export function computeSkillModifier(
 export interface FightingStyleBonuses { attack: number; damage: number }
 
 /**
- * Computes the attack and damage bonuses from fighting styles for a given weapon.
- * `equippedWeapons` = all weapons currently marked equipped in inventory (used for
- * Dueling's "no other weapons" condition). Uses favorites as the active-weapon proxy.
+ * Computes attack/damage bonuses for a weapon given the current equipment slots.
  *
- * Implemented styles:
- *   Archery  — +2 attack with ranged weapons
- *   Dueling  — +2 damage with a one-handed melee weapon and no other equipped weapon
+ * Archery  — +2 attack when the weapon is in mainHand or offHand and is ranged.
+ * Dueling  — +2 damage when the weapon is in mainHand, is one-handed melee, and
+ *             offHand is empty or holds a shield (not another weapon).
  */
 export function computeFightingStyleBonuses(
   fightingStyles: string[],
   weapon: InventoryItem,
-  equippedWeapons: InventoryItem[],
+  slots: EquippedSlots,
+  inventory: InventoryItem[],
 ): FightingStyleBonuses {
   if (weapon.itemType !== 'weapon') return { attack: 0, damage: 0 }
   let attack = 0, damage = 0
+  const inMainHand = slots.mainHand === weapon.id
+  const inOffHand  = slots.offHand  === weapon.id
+  const inAnySlot  = inMainHand || inOffHand
 
   for (const style of fightingStyles) {
-    if (style === 'archery' && weapon.weaponCategory === 'ranged') {
+    if (style === 'archery' && inAnySlot && weapon.weaponCategory === 'ranged') {
       attack += 2
     }
-    if (style === 'dueling') {
+    if (style === 'dueling' && inMainHand) {
       const isOneHandedMelee = weapon.weaponCategory === 'melee' && weapon.handedness !== 'two-handed'
-      const otherEquipped = equippedWeapons.some(w => w.id !== weapon.id)
-      if (isOneHandedMelee && !otherEquipped) damage += 2
+      const offHandItem = slots.offHand ? inventory.find(i => i.id === slots.offHand) : null
+      const offHandIsShieldOrEmpty = !offHandItem || offHandItem.armorType === 'shield'
+      if (isOneHandedMelee && offHandIsShieldOrEmpty) damage += 2
     }
   }
 
   return { attack, damage }
+}
+
+/**
+ * Returns the displayed AC: base AC + 1 if the character has the Defense fighting
+ * style and has non-shield armor in the armor slot.
+ */
+export function computeEffectiveAC(
+  baseAC: number,
+  fightingStyles: string[],
+  slots: EquippedSlots,
+  inventory: InventoryItem[],
+): number {
+  if (!fightingStyles.includes('defense')) return baseAC
+  const armorItem = slots.armor ? inventory.find(i => i.id === slots.armor) : null
+  if (!armorItem || armorItem.itemType !== 'armor' || armorItem.armorType === 'shield') return baseAC
+  return baseAC + 1
 }
 
 /** Adds a flat numeric bonus to a damage dice expression (e.g. "1d8+3" + 2 → "1d8+5"). */

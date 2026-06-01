@@ -56,16 +56,16 @@
               <span class="font-heading text-base text-vellum leading-tight truncate">{{ fav.weaponName }}</span>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
-              <button
-                v-if="resolvedWeapon(fav)"
-                type="button"
-                class="w-3 h-3 rounded-full border-2 transition-all duration-100 cursor-pointer"
-                :class="resolvedWeapon(fav)?.equipped
-                  ? 'bg-gold-mid border-gold-mid'
-                  : 'bg-shadow/30 border-mist/60 hover:border-mist hover:bg-shadow/50'"
-                :title="resolvedWeapon(fav)?.equipped ? 'Equipped — click to unequip' : 'Not equipped — click to equip'"
-                @click="toggleEquipped(fav)"
-              />
+              <!-- Slot badge -->
+              <span
+                v-if="resolvedWeapon(fav) && isInHandSlot(resolvedWeapon(fav)!)"
+                class="text-2xs font-heading px-1.5 py-0.5 rounded border border-gold-dim/40 text-gold-mid bg-gold-dim/10"
+              >{{ slots.mainHand === resolvedWeapon(fav)!.id ? 'MH' : 'OH' }}</span>
+              <span
+                v-else-if="resolvedWeapon(fav)"
+                class="text-2xs font-body text-mist/30 italic"
+                title="Not in any hand slot — assign in Equipment tab"
+              >—</span>
               <button
                 v-if="editMode"
                 type="button"
@@ -271,9 +271,7 @@ const spells    = computed(() => favorites.value.filter(f => f.type === 'spell')
 
 // ── Fighting style bonuses ────────────────────────────────────────────────────
 
-const equippedWeapons = computed(() =>
-  props.character.inventory.filter(i => i.equipped && i.itemType === 'weapon')
-)
+const slots = computed(() => props.character.equippedSlots)
 
 const weaponFSBonuses = computed<Map<string, FightingStyleBonuses>>(() => {
   const styles = props.character.fightingStyles ?? []
@@ -281,7 +279,7 @@ const weaponFSBonuses = computed<Map<string, FightingStyleBonuses>>(() => {
   for (const fav of weapons.value) {
     const item = resolvedWeapon(fav)
     map.set(fav.id, item
-      ? computeFightingStyleBonuses(styles, item, equippedWeapons.value)
+      ? computeFightingStyleBonuses(styles, item, slots.value, props.character.inventory)
       : { attack: 0, damage: 0 })
   }
   return map
@@ -289,6 +287,10 @@ const weaponFSBonuses = computed<Map<string, FightingStyleBonuses>>(() => {
 
 function fsBonus(favId: string): FightingStyleBonuses {
   return weaponFSBonuses.value.get(favId) ?? { attack: 0, damage: 0 }
+}
+
+function isInHandSlot(item: InventoryItem): boolean {
+  return slots.value.mainHand === item.id || slots.value.offHand === item.id
 }
 
 // ── Spell slots ───────────────────────────────────────────────────────────────
@@ -346,8 +348,9 @@ function parseBonus(str: string | undefined): number {
 
 function rollWeaponAtk(fav: CombatFavorite, event: MouseEvent) {
   const item = resolvedWeapon(fav)
-  if (!item?.equipped) {
-    toast.info(`${fav.weaponName} is not equipped.`)
+  if (!item) return
+  if (!isInHandSlot(item)) {
+    toast.info(`${fav.weaponName} is not in a hand slot. Assign it in the Equipment tab.`)
     return
   }
   const bonus = fsBonus(fav.id)
@@ -357,8 +360,8 @@ function rollWeaponAtk(fav: CombatFavorite, event: MouseEvent) {
 function rollWeaponDmg(fav: CombatFavorite) {
   const item = resolvedWeapon(fav)
   if (!item?.damage) return
-  if (!item.equipped) {
-    toast.info(`${fav.weaponName} is not equipped.`)
+  if (!isInHandSlot(item)) {
+    toast.info(`${fav.weaponName} is not in a hand slot. Assign it in the Equipment tab.`)
     return
   }
   const bonus = fsBonus(fav.id)
@@ -407,16 +410,6 @@ async function onCastSpell(slotLevel: number, isConcentration: boolean) {
     }
   }
   await store.update(props.character.id, update)
-}
-
-async function toggleEquipped(fav: CombatFavorite) {
-  const item = resolvedWeapon(fav)
-  if (!item) return
-  await store.update(props.character.id, {
-    inventory: props.character.inventory.map(i =>
-      i.id === item.id ? { ...i, equipped: !i.equipped } : i
-    ),
-  })
 }
 
 async function removeFavorite(id: string) {

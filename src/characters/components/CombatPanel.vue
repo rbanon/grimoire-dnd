@@ -106,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { SwordIcon, PlusIcon, XIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { useRoll } from '@/shared/composables/useRoll'
@@ -133,15 +133,12 @@ function parseBonus(str: string | undefined): number {
   return m ? parseInt(m[1]) : 0
 }
 
-const equippedWeapons = computed(() =>
-  props.character.inventory.filter(i => i.equipped && i.itemType === 'weapon')
-)
-
 function fsBonusFor(item: InventoryItem) {
   return computeFightingStyleBonuses(
     props.character.fightingStyles ?? [],
     item,
-    equippedWeapons.value,
+    props.character.equippedSlots,
+    props.character.inventory,
   )
 }
 

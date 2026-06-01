@@ -20,6 +20,67 @@
       </div>
     </section>
 
+    <!-- ── Loadout ───────────────────────────────────────────────────────── -->
+    <section class="space-y-3">
+      <p class="label">Loadout</p>
+      <div class="grid grid-cols-3 gap-2">
+
+        <!-- Main Hand -->
+        <div class="card p-3 space-y-2">
+          <div class="flex items-center gap-1.5">
+            <SwordIcon :size="10" class="text-gold-dim/60 shrink-0" />
+            <p class="text-2xs font-heading tracking-wide uppercase text-mist">Main Hand</p>
+          </div>
+          <div v-if="slottedItem('mainHand')" class="flex items-start justify-between gap-1 min-w-0">
+            <span class="font-heading text-xs text-vellum leading-snug break-words min-w-0">{{ slottedItem('mainHand')!.item.name }}</span>
+            <button type="button" class="shrink-0 text-mist/30 hover:text-blood-bright transition-colors ml-1" title="Clear slot" @click="clearSlot('mainHand')">
+              <XIcon :size="11" />
+            </button>
+          </div>
+          <p v-else class="text-xs font-body text-mist/30 italic">Empty</p>
+          <div v-if="slottedFSBonus('mainHand').attack > 0 || slottedFSBonus('mainHand').damage > 0" class="flex gap-1 flex-wrap">
+            <span v-if="slottedFSBonus('mainHand').attack > 0" class="text-2xs font-heading px-1 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">+{{ slottedFSBonus('mainHand').attack }} atk</span>
+            <span v-if="slottedFSBonus('mainHand').damage > 0" class="text-2xs font-heading px-1 py-0.5 rounded border border-blood-base/40 text-blood-mid bg-blood-deep/10">+{{ slottedFSBonus('mainHand').damage }} dmg</span>
+          </div>
+        </div>
+
+        <!-- Off Hand -->
+        <div class="card p-3 space-y-2">
+          <div class="flex items-center gap-1.5">
+            <SwordIcon :size="10" class="text-mist/40 shrink-0" />
+            <p class="text-2xs font-heading tracking-wide uppercase text-mist">Off Hand</p>
+          </div>
+          <div v-if="slottedItem('offHand')" class="flex items-start justify-between gap-1 min-w-0">
+            <span class="font-heading text-xs text-vellum leading-snug break-words min-w-0">{{ slottedItem('offHand')!.item.name }}</span>
+            <button type="button" class="shrink-0 text-mist/30 hover:text-blood-bright transition-colors ml-1" title="Clear slot" @click="clearSlot('offHand')">
+              <XIcon :size="11" />
+            </button>
+          </div>
+          <p v-else class="text-xs font-body text-mist/30 italic">Empty</p>
+          <div v-if="slottedFSBonus('offHand').attack > 0" class="flex gap-1 flex-wrap">
+            <span class="text-2xs font-heading px-1 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">+{{ slottedFSBonus('offHand').attack }} atk</span>
+          </div>
+        </div>
+
+        <!-- Armor slot -->
+        <div class="card p-3 space-y-2">
+          <div class="flex items-center gap-1.5">
+            <ShieldIcon :size="10" class="text-arcane-pale/50 shrink-0" />
+            <p class="text-2xs font-heading tracking-wide uppercase text-mist">Armor</p>
+          </div>
+          <div v-if="slottedItem('armor')" class="flex items-start justify-between gap-1 min-w-0">
+            <span class="font-heading text-xs text-vellum leading-snug break-words min-w-0">{{ slottedItem('armor')!.item.name }}</span>
+            <button type="button" class="shrink-0 text-mist/30 hover:text-blood-bright transition-colors ml-1" title="Clear slot" @click="clearSlot('armor')">
+              <XIcon :size="11" />
+            </button>
+          </div>
+          <p v-else class="text-xs font-body text-mist/30 italic">Empty</p>
+          <span v-if="effectiveAC > character.combat.armorClass" class="text-2xs font-heading px-1 py-0.5 rounded border border-verdant-base/40 text-verdant-bright bg-verdant-deep/10 self-start">+1 Defense</span>
+        </div>
+
+      </div>
+    </section>
+
     <!-- ── Inventory ─────────────────────────────────────────────────────── -->
     <section class="space-y-3">
       <div class="flex items-center justify-between">
@@ -44,13 +105,9 @@
           <div
             v-for="item in weapons"
             :key="item.id"
-            class="flex items-center gap-3 px-3 py-2.5 rounded border border-shadow bg-abyss/50 group"
+            class="flex items-center gap-2 px-3 py-2.5 rounded border bg-abyss/50 group transition-colors"
+            :class="currentSlot(item.id) ? 'border-gold-dim/40' : 'border-shadow'"
           >
-            <!-- row content injected below via shared slot-like duplication -->
-            <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
-              :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-shadow/30 border-mist/60 hover:border-mist hover:bg-shadow/50'"
-              :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
-              @click="toggleEquipped(item.id)" />
             <SwordIcon :size="11" class="text-gold-dim/60 shrink-0" />
             <div class="flex-1 min-w-0">
               <span class="font-heading text-sm text-vellum">{{ item.item.name }}</span>
@@ -61,6 +118,16 @@
                 <span v-if="item.damageType" class="text-mist/50 font-body text-2xs ml-1">{{ item.damageType }}</span>
               </span>
             </div>
+            <!-- Slot assignment buttons / badge -->
+            <template v-if="currentSlot(item.id)">
+              <span class="text-2xs font-heading px-1.5 py-0.5 rounded border border-gold-dim/40 text-gold-mid bg-gold-dim/10 shrink-0">
+                {{ currentSlot(item.id) === 'mainHand' ? 'MH' : 'OH' }}
+              </span>
+            </template>
+            <template v-else>
+              <button type="button" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-shadow text-mist/50 hover:border-gold-dim/40 hover:text-gold-mid transition-all shrink-0 opacity-0 group-hover:opacity-100" title="Equip to Main Hand" @click="equipToSlot(item.id, 'mainHand')">→ MH</button>
+              <button type="button" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-shadow text-mist/50 hover:border-gold-dim/40 hover:text-gold-mid transition-all shrink-0 opacity-0 group-hover:opacity-100" title="Equip to Off Hand" @click="equipToSlot(item.id, 'offHand')">→ OH</button>
+            </template>
             <span v-if="item.item.weight" class="text-xs font-body text-mist/50 shrink-0 hidden sm:inline">{{ item.item.weight }} lb.</span>
             <button type="button" class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/30 hover:text-gold-mid opacity-0 group-hover:opacity-100 transition-all" @click="infoPanel.open({ kind: 'item', index: item.item.index })"><InfoIcon :size="12" /></button>
             <button type="button" class="px-2 py-0.5 rounded border border-arcane-base/30 bg-arcane-deep/10 text-arcane-pale hover:border-arcane-base/60 hover:bg-arcane-deep/20 transition-all font-heading text-xs shrink-0" @click="(e) => rollItemAtk(item, e)">⚃ Atk</button>
@@ -87,12 +154,9 @@
           <div
             v-for="item in armorItems"
             :key="item.id"
-            class="flex items-center gap-3 px-3 py-2.5 rounded border border-shadow bg-abyss/50 group"
+            class="flex items-center gap-2 px-3 py-2.5 rounded border bg-abyss/50 group transition-colors"
+            :class="currentSlot(item.id) ? 'border-gold-dim/40' : 'border-shadow'"
           >
-            <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
-              :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-shadow/30 border-mist/60 hover:border-mist hover:bg-shadow/50'"
-              :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
-              @click="toggleEquipped(item.id)" />
             <ShieldIcon :size="11" class="text-arcane-pale/50 shrink-0" />
             <div class="flex-1 min-w-0">
               <span class="font-heading text-sm text-vellum">{{ item.item.name }}</span>
@@ -101,6 +165,14 @@
                 <span v-if="item.armorType" class="text-mist/40 font-body text-2xs ml-1">{{ item.armorType }}</span>
               </span>
             </div>
+            <!-- Slot badge / assign button -->
+            <span v-if="currentSlot(item.id)" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-gold-dim/40 text-gold-mid bg-gold-dim/10 shrink-0">
+              {{ currentSlot(item.id) === 'armor' ? 'Armor' : currentSlot(item.id) === 'offHand' ? 'OH' : 'MH' }}
+            </span>
+            <button v-else type="button" class="text-2xs font-heading px-1.5 py-0.5 rounded border border-shadow text-mist/50 hover:border-arcane-base/40 hover:text-arcane-pale transition-all shrink-0 opacity-0 group-hover:opacity-100"
+              :title="item.armorType === 'shield' ? 'Equip to Off Hand' : 'Equip to Armor slot'"
+              @click="equipToSlot(item.id, item.armorType === 'shield' ? 'offHand' : 'armor')"
+            >→ {{ item.armorType === 'shield' ? 'OH' : 'Armor' }}</button>
             <span v-if="item.item.weight" class="text-xs font-body text-mist/50 shrink-0 hidden sm:inline">{{ item.item.weight }} lb.</span>
             <button type="button" class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/30 hover:text-gold-mid opacity-0 group-hover:opacity-100 transition-all" @click="infoPanel.open({ kind: 'item', index: item.item.index })"><InfoIcon :size="12" /></button>
             <div class="flex items-center gap-1 shrink-0">
@@ -126,8 +198,8 @@
           >
             <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
               :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-shadow/30 border-mist/60 hover:border-mist hover:bg-shadow/50'"
-              :title="item.equipped ? 'Equipped — click to unequip' : 'Click to equip'"
-              @click="toggleEquipped(item.id)" />
+              :title="item.equipped ? 'In use — click to toggle' : 'Click to mark in use'"
+              @click="store.update(character.id, { inventory: character.inventory.map(i => i.id === item.id ? { ...i, equipped: !i.equipped } : i) })" />
             <PackageIcon :size="11" class="text-mist/40 shrink-0" />
             <div class="flex-1 min-w-0">
               <span class="font-heading text-sm text-vellum">{{ item.item.name }}</span>
@@ -380,10 +452,10 @@ import { useCharactersStore } from '@/characters/store'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { computeAllModifiers } from '@/shared/types/character'
-import { computeProficiencyBonus, computeFightingStyleBonuses, addBonusToDamage } from '@/shared/lib/derivedStats'
+import { computeProficiencyBonus, computeFightingStyleBonuses, computeEffectiveAC, addBonusToDamage } from '@/shared/lib/derivedStats'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useToast } from '@/shared/composables/useToast'
-import type { Character, AbilityName, InventoryItem, CombatFavorite } from '@/shared/types/character'
+import type { Character, AbilityName, InventoryItem, CombatFavorite, EquippedSlots } from '@/shared/types/character'
 import { generateId } from '@/shared/lib/uuid'
 
 const props = defineProps<{ character: Character; editMode: boolean }>()
@@ -399,6 +471,41 @@ const mods = computed(() => computeAllModifiers(props.character.abilityScores))
 const profBonus = computed(() => computeProficiencyBonus(props.character.combat.level))
 function fmt(n: number) { return n >= 0 ? `+${n}` : String(n) }
 
+// ── Equipment slots ───────────────────────────────────────────────────────────
+
+const slots = computed(() => props.character.equippedSlots)
+
+function slottedItem(slot: keyof EquippedSlots): InventoryItem | null {
+  const id = slots.value[slot]
+  return id ? (props.character.inventory.find(i => i.id === id) ?? null) : null
+}
+
+function currentSlot(itemId: string): keyof EquippedSlots | null {
+  const s = slots.value
+  if (s.mainHand === itemId) return 'mainHand'
+  if (s.offHand  === itemId) return 'offHand'
+  if (s.armor    === itemId) return 'armor'
+  return null
+}
+
+async function equipToSlot(itemId: string, slot: keyof EquippedSlots) {
+  const s = { ...slots.value }
+  if (s.mainHand === itemId) s.mainHand = null
+  if (s.offHand  === itemId) s.offHand  = null
+  if (s.armor    === itemId) s.armor    = null
+  s[slot] = itemId
+  const equippedIds = new Set([s.mainHand, s.offHand, s.armor].filter(Boolean) as string[])
+  const inventory = props.character.inventory.map(i => ({ ...i, equipped: equippedIds.has(i.id) }))
+  await store.update(props.character.id, { equippedSlots: s, inventory })
+}
+
+async function clearSlot(slot: keyof EquippedSlots) {
+  const s = { ...slots.value, [slot]: null }
+  const equippedIds = new Set([s.mainHand, s.offHand, s.armor].filter(Boolean) as string[])
+  const inventory = props.character.inventory.map(i => ({ ...i, equipped: equippedIds.has(i.id) }))
+  await store.update(props.character.id, { equippedSlots: s, inventory })
+}
+
 // ── Roll helpers ──────────────────────────────────────────────────────────────
 
 function parseBonus(str: string | undefined): number {
@@ -407,21 +514,31 @@ function parseBonus(str: string | undefined): number {
   return m ? parseInt(m[1]) : 0
 }
 
-const equippedWeapons = computed(() =>
-  props.character.inventory.filter(i => i.equipped && i.itemType === 'weapon')
-)
-
 function fsBonusFor(item: InventoryItem) {
   return computeFightingStyleBonuses(
     props.character.fightingStyles ?? [],
     item,
-    equippedWeapons.value,
+    slots.value,
+    props.character.inventory,
   )
 }
 
+function slottedFSBonus(slot: 'mainHand' | 'offHand') {
+  const item = slottedItem(slot)
+  return item ? fsBonusFor(item) : { attack: 0, damage: 0 }
+}
+
+const effectiveAC = computed(() => computeEffectiveAC(
+  props.character.combat.armorClass,
+  props.character.fightingStyles ?? [],
+  slots.value,
+  props.character.inventory,
+))
+
 function rollItemAtk(item: InventoryItem, event: MouseEvent) {
-  if (!item.equipped) {
-    toast.info(`${item.item.name} is not equipped.`)
+  const slot = currentSlot(item.id)
+  if (slot !== 'mainHand' && slot !== 'offHand') {
+    toast.info(`${item.item.name} is not in a hand slot. Use the Loadout section above.`)
     return
   }
   const bonus = fsBonusFor(item)
@@ -430,8 +547,9 @@ function rollItemAtk(item: InventoryItem, event: MouseEvent) {
 
 function rollItemDmg(item: InventoryItem) {
   if (!item.damage) return
-  if (!item.equipped) {
-    toast.info(`${item.item.name} is not equipped.`)
+  const slot = currentSlot(item.id)
+  if (slot !== 'mainHand' && slot !== 'offHand') {
+    toast.info(`${item.item.name} is not in a hand slot. Use the Loadout section above.`)
     return
   }
   const bonus = fsBonusFor(item)
@@ -496,14 +614,6 @@ const totalWeight = computed(() =>
 const weapons = computed(() => props.character.inventory.filter(i => i.itemType === 'weapon'))
 const armorItems = computed(() => props.character.inventory.filter(i => i.itemType === 'armor'))
 const gearItems = computed(() => props.character.inventory.filter(i => i.itemType === 'gear'))
-
-async function toggleEquipped(itemId: string) {
-  await store.update(props.character.id, {
-    inventory: props.character.inventory.map((i) =>
-      i.id === itemId ? { ...i, equipped: !i.equipped } : i,
-    ),
-  })
-}
 
 async function adjustQuantity(itemId: string, delta: number) {
   await store.update(props.character.id, {
