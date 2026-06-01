@@ -28,14 +28,35 @@ export function migrateCharacter(raw: unknown): Character {
   // ─────────────────────────────────────────────────────────────────────────
 
   data = { ...data, schemaVersion: CURRENT_SCHEMA_VERSION }
-  const char = CharacterSchema.parse(data)
+  let char = CharacterSchema.parse(data)
 
   // Soft-populate resources for characters created before the resource tracker.
   // Runs every load; once resources are spent/modified they are no longer empty.
   if (char.resources.length === 0) {
     const mods = computeAllModifiers(char.abilityScores)
     const populated = getClassResources(char.identity.class.index, char.combat.level, mods)
-    if (populated.length > 0) return { ...char, resources: populated }
+    if (populated.length > 0) char = { ...char, resources: populated }
+  }
+
+  // Soft-populate equipment slots for characters created before the slot system.
+  // Back-fills equippedSlots from the legacy `equipped` boolean so old characters
+  // can still roll attacks (rolls now require a hand-slot assignment).
+  const slots = char.equippedSlots
+  if (!slots.mainHand && !slots.offHand && !slots.armor) {
+    const weapons = char.inventory.filter(i => i.equipped && i.itemType === 'weapon')
+    const armor   = char.inventory.filter(i => i.equipped && i.itemType === 'armor')
+    const shield    = armor.find(a => a.armorType === 'shield')
+    const bodyArmor = armor.find(a => a.armorType !== 'shield')
+    if (weapons.length > 0 || armor.length > 0) {
+      char = {
+        ...char,
+        equippedSlots: {
+          mainHand: weapons[0]?.id ?? null,
+          offHand:  weapons[1]?.id ?? shield?.id ?? null,
+          armor:    bodyArmor?.id ?? null,
+        },
+      }
+    }
   }
 
   return char
