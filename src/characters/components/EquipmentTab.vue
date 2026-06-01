@@ -31,13 +31,14 @@
             <SwordIcon :size="10" class="text-gold-dim/60 shrink-0" />
             <p class="text-2xs font-heading tracking-wide uppercase text-mist">Main Hand</p>
           </div>
-          <div v-if="slottedItem('mainHand')" class="flex items-start justify-between gap-1 min-w-0">
-            <span class="font-heading text-xs text-vellum leading-snug break-words min-w-0">{{ slottedItem('mainHand')!.item.name }}</span>
-            <button type="button" class="shrink-0 text-mist/30 hover:text-blood-bright transition-colors ml-1" title="Clear slot" @click="clearSlot('mainHand')">
-              <XIcon :size="11" />
-            </button>
-          </div>
-          <p v-else class="text-xs font-body text-mist/30 italic">Empty</p>
+          <select
+            class="input-base text-xs w-full"
+            :value="slots.mainHand ?? ''"
+            @change="onSlotSelect('mainHand', $event)"
+          >
+            <option value="">— Empty —</option>
+            <option v-for="item in weapons" :key="item.id" :value="item.id">{{ item.item.name }}</option>
+          </select>
           <div v-if="slottedFSBonus('mainHand').attack > 0 || slottedFSBonus('mainHand').damage > 0" class="flex gap-1 flex-wrap">
             <span v-if="slottedFSBonus('mainHand').attack > 0" class="text-2xs font-heading px-1 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">+{{ slottedFSBonus('mainHand').attack }} atk</span>
             <span v-if="slottedFSBonus('mainHand').damage > 0" class="text-2xs font-heading px-1 py-0.5 rounded border border-blood-base/40 text-blood-mid bg-blood-deep/10">+{{ slottedFSBonus('mainHand').damage }} dmg</span>
@@ -50,13 +51,19 @@
             <SwordIcon :size="10" class="text-mist/40 shrink-0" />
             <p class="text-2xs font-heading tracking-wide uppercase text-mist">Off Hand</p>
           </div>
-          <div v-if="slottedItem('offHand')" class="flex items-start justify-between gap-1 min-w-0">
-            <span class="font-heading text-xs text-vellum leading-snug break-words min-w-0">{{ slottedItem('offHand')!.item.name }}</span>
-            <button type="button" class="shrink-0 text-mist/30 hover:text-blood-bright transition-colors ml-1" title="Clear slot" @click="clearSlot('offHand')">
-              <XIcon :size="11" />
-            </button>
-          </div>
-          <p v-else class="text-xs font-body text-mist/30 italic">Empty</p>
+          <select
+            class="input-base text-xs w-full"
+            :value="slots.offHand ?? ''"
+            @change="onSlotSelect('offHand', $event)"
+          >
+            <option value="">— Empty —</option>
+            <optgroup v-if="weapons.length" label="Weapons">
+              <option v-for="item in weapons" :key="item.id" :value="item.id">{{ item.item.name }}</option>
+            </optgroup>
+            <optgroup v-if="shields.length" label="Shields">
+              <option v-for="item in shields" :key="item.id" :value="item.id">{{ item.item.name }}</option>
+            </optgroup>
+          </select>
           <div v-if="slottedFSBonus('offHand').attack > 0" class="flex gap-1 flex-wrap">
             <span class="text-2xs font-heading px-1 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">+{{ slottedFSBonus('offHand').attack }} atk</span>
           </div>
@@ -68,13 +75,14 @@
             <ShieldIcon :size="10" class="text-arcane-pale/50 shrink-0" />
             <p class="text-2xs font-heading tracking-wide uppercase text-mist">Armor</p>
           </div>
-          <div v-if="slottedItem('armor')" class="flex items-start justify-between gap-1 min-w-0">
-            <span class="font-heading text-xs text-vellum leading-snug break-words min-w-0">{{ slottedItem('armor')!.item.name }}</span>
-            <button type="button" class="shrink-0 text-mist/30 hover:text-blood-bright transition-colors ml-1" title="Clear slot" @click="clearSlot('armor')">
-              <XIcon :size="11" />
-            </button>
-          </div>
-          <p v-else class="text-xs font-body text-mist/30 italic">Empty</p>
+          <select
+            class="input-base text-xs w-full"
+            :value="slots.armor ?? ''"
+            @change="onSlotSelect('armor', $event)"
+          >
+            <option value="">— Empty —</option>
+            <option v-for="item in nonShieldArmor" :key="item.id" :value="item.id">{{ item.item.name }}</option>
+          </select>
           <span v-if="effectiveAC > character.combat.armorClass" class="text-2xs font-heading px-1 py-0.5 rounded border border-verdant-base/40 text-verdant-bright bg-verdant-deep/10 self-start">+1 Defense</span>
         </div>
 
@@ -611,9 +619,17 @@ const totalWeight = computed(() =>
   }, 0),
 )
 
-const weapons = computed(() => props.character.inventory.filter(i => i.itemType === 'weapon'))
-const armorItems = computed(() => props.character.inventory.filter(i => i.itemType === 'armor'))
-const gearItems = computed(() => props.character.inventory.filter(i => i.itemType === 'gear'))
+const weapons       = computed(() => props.character.inventory.filter(i => i.itemType === 'weapon'))
+const armorItems    = computed(() => props.character.inventory.filter(i => i.itemType === 'armor'))
+const shields       = computed(() => armorItems.value.filter(i => i.armorType === 'shield'))
+const nonShieldArmor = computed(() => armorItems.value.filter(i => i.armorType !== 'shield'))
+const gearItems     = computed(() => props.character.inventory.filter(i => i.itemType === 'gear'))
+
+function onSlotSelect(slot: keyof EquippedSlots, event: Event) {
+  const id = (event.target as HTMLSelectElement).value
+  if (id) equipToSlot(id, slot)
+  else clearSlot(slot)
+}
 
 async function adjustQuantity(itemId: string, delta: number) {
   await store.update(props.character.id, {
