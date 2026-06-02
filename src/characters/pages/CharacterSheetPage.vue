@@ -373,7 +373,7 @@
                 <ShieldIcon :size="10" class="text-mist/50" />
                 <p class="text-2xs font-heading tracking-[0.15em] uppercase text-mist">AC</p>
                 <input
-                  v-if="acEditing && editMode"
+                  v-if="acEditing && editMode && !acIsDerived"
                   ref="acInputEl"
                   v-model.number="acValue"
                   type="number"
@@ -386,11 +386,12 @@
                 <div
                   v-else
                   class="font-heading text-xl leading-none transition-colors"
-                  :class="editMode ? 'text-vellum hover:text-gold-mid cursor-pointer' : 'text-vellum cursor-default'"
-                  @click="editMode && startAcEdit()"
+                  :class="editMode && !acIsDerived ? 'text-vellum hover:text-gold-mid cursor-pointer' : 'text-vellum cursor-default'"
+                  :title="acIsDerived ? 'Derived from equipped armor — manage in the Equipment tab' : ''"
+                  @click="editMode && !acIsDerived && startAcEdit()"
                 >{{ effectiveAC }}</div>
                 <span
-                  v-if="effectiveAC > character.combat.armorClass"
+                  v-if="acHasDefense"
                   class="text-2xs font-heading text-verdant-bright leading-none"
                   title="Defense fighting style +1"
                 >+1</span>
@@ -802,7 +803,7 @@ import { useDialog } from '@/shared/composables/useDialog'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useAuthStore } from '@/auth/store'
 import { useToast } from '@/shared/composables/useToast'
-import { uploadPortrait } from '@/shared/lib/uploadPortrait'
+import { uploadPortrait, compressPortrait } from '@/shared/lib/uploadPortrait'
 import { getClassGlyph } from '@/character-builder/classMeta'
 import ConditionsBar from '@/characters/components/ConditionsBar.vue'
 import FavoritesTab from '@/characters/components/FavoritesTab.vue'
@@ -858,7 +859,6 @@ async function onPortraitChange(event: Event) {
       const url = await uploadPortrait(file, auth.userId, props.id)
       await store.update(props.id, { portrait: { type: 'url', url } })
     } else {
-      const { compressPortrait } = await import('@/shared/lib/uploadPortrait')
       const compressed = await compressPortrait(file)
       const url = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
@@ -1053,7 +1053,7 @@ async function commitAlignment(value: string) {
   })
 }
 
-// ── AC (base + Defense style bonus) ──────────────────────────────────────────
+// ── AC (derived from armor slot, or manual base when no armor equipped) ───────
 
 const effectiveAC = computed(() => {
   if (!character.value) return 0
@@ -1064,6 +1064,25 @@ const effectiveAC = computed(() => {
     character.value.inventory,
     mods.value.dex,
   )
+})
+
+// AC is derived (not manually editable) when armor or a shield is equipped.
+const acIsDerived = computed(() => {
+  const c = character.value
+  if (!c) return false
+  const armorId = c.equippedSlots.armor
+  const offId = c.equippedSlots.offHand
+  const hasArmor = !!armorId && c.inventory.some(i => i.id === armorId && i.itemType === 'armor')
+  const hasShield = !!offId && c.inventory.some(i => i.id === offId && i.armorType === 'shield')
+  return hasArmor || hasShield
+})
+
+// True when the Defense fighting style is contributing its +1 to the displayed AC.
+const acHasDefense = computed(() => {
+  const c = character.value
+  if (!c || !(c.fightingStyles ?? []).includes('defense')) return false
+  const armorId = c.equippedSlots.armor
+  return !!armorId && c.inventory.some(i => i.id === armorId && i.itemType === 'armor' && i.armorType !== 'shield')
 })
 
 // ── AC editable ───────────────────────────────────────────────────────────────

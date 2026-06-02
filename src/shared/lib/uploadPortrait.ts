@@ -1,4 +1,5 @@
 import { supabase } from '@/shared/api/supabase.client'
+import { withTimeout } from '@/shared/lib/withTimeout'
 
 const BUCKET = 'portraits'
 const MAX_PX   = 512   // max width/height in pixels
@@ -49,7 +50,29 @@ export async function compressPortrait(file: File): Promise<File> {
 }
 
 /**
- * Compresses then uploads a portrait file to Supabase Storage.
+ * Uploads an already-prepared (compressed) blob to Supabase Storage without
+ * re-compressing. Use when the source is a portrait data: URL produced by
+ * compressPortrait (e.g. the builder draft) to avoid double JPEG re-encoding.
+ * Returns the public CDN URL.
+ */
+export async function uploadPortraitBlob(
+  blob: Blob,
+  userId: string,
+  characterId: string,
+): Promise<string> {
+  const path = `${userId}/${characterId}.jpg`
+  const { error } = await withTimeout(
+    supabase.storage.from(BUCKET).upload(path, blob, { upsert: true, contentType: 'image/jpeg' }),
+    20_000,
+    'Portrait upload',
+  )
+  if (error) throw error
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+  return data.publicUrl
+}
+
+/**
+ * Compresses then uploads a raw portrait file to Supabase Storage.
  * Returns the public CDN URL.
  */
 export async function uploadPortrait(
@@ -58,11 +81,5 @@ export async function uploadPortrait(
   characterId: string,
 ): Promise<string> {
   const compressed = await compressPortrait(file)
-  const path = `${userId}/${characterId}.jpg`
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, compressed, { upsert: true, contentType: 'image/jpeg' })
-  if (error) throw error
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
-  return data.publicUrl
+  return uploadPortraitBlob(compressed, userId, characterId)
 }

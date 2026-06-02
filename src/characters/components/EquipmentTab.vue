@@ -39,11 +39,7 @@
             <option value="">— Empty —</option>
             <option v-for="item in weapons" :key="item.id" :value="item.id">{{ item.item.name }}</option>
           </select>
-          <div v-if="slottedFSBonus('mainHand').attack > 0 || slottedFSBonus('mainHand').damage > 0 || slottedFSBonus('mainHand').rerollLowDice" class="flex gap-1 flex-wrap">
-            <span v-if="slottedFSBonus('mainHand').attack > 0" class="text-2xs font-heading px-1 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">+{{ slottedFSBonus('mainHand').attack }} atk</span>
-            <span v-if="slottedFSBonus('mainHand').damage > 0" class="text-2xs font-heading px-1 py-0.5 rounded border border-blood-base/40 text-blood-mid bg-blood-deep/10">+{{ slottedFSBonus('mainHand').damage }} dmg</span>
-            <span v-if="slottedFSBonus('mainHand').rerollLowDice" class="text-2xs font-heading px-1 py-0.5 rounded border border-gold-dim/40 text-gold-mid bg-gold-dim/10">GWF</span>
-          </div>
+          <FightingStyleBadges :bonus="mainHandBonus" />
         </div>
 
         <!-- Off Hand -->
@@ -65,9 +61,7 @@
               <option v-for="item in shields" :key="item.id" :value="item.id">{{ item.item.name }}</option>
             </optgroup>
           </select>
-          <div v-if="slottedFSBonus('offHand').attack > 0" class="flex gap-1 flex-wrap">
-            <span class="text-2xs font-heading px-1 py-0.5 rounded border border-arcane-base/40 text-arcane-pale bg-arcane-deep/10">+{{ slottedFSBonus('offHand').attack }} atk</span>
-          </div>
+          <FightingStyleBadges :bonus="offHandBonus" />
         </div>
 
         <!-- Armor slot -->
@@ -311,7 +305,16 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="label mb-1.5 block">Damage</label>
-              <input v-model="draft.damage" type="text" placeholder="1d8+3" class="input-base w-full font-mono text-sm" />
+              <input
+                v-model="draft.damage"
+                type="text"
+                placeholder="1d8+3"
+                class="input-base w-full font-mono text-sm"
+                :class="damageValid ? '' : 'border-blood-base/60'"
+              />
+              <p v-if="!damageValid" class="mt-1 text-2xs font-body text-blood-bright">
+                Use dice notation like 1d8 or 2d6+3
+              </p>
             </div>
             <div>
               <label class="label mb-1.5 block">Damage Type</label>
@@ -411,7 +414,7 @@
           <button
             type="button"
             class="btn-primary text-sm gap-1.5"
-            :disabled="!draft.name.trim()"
+            :disabled="!draft.name.trim() || !damageValid"
             @click="submitForm"
           >
             <PlusIcon :size="13" /> Add {{ ITEM_TYPES.find(t => t.id === draftType)?.label }}
@@ -457,11 +460,12 @@
 import { ref, computed, reactive, watch, nextTick } from 'vue'
 import { PackageIcon, PlusIcon, Trash2Icon, XIcon, SwordIcon, ShieldIcon, StarIcon, InfoIcon, BookOpenIcon } from 'lucide-vue-next'
 import ItemPickerModal from './ItemPickerModal.vue'
+import FightingStyleBadges from './FightingStyleBadges.vue'
 import { useCharactersStore } from '@/characters/store'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { computeAllModifiers } from '@/shared/types/character'
-import { computeProficiencyBonus, computeFightingStyleBonuses, computeEffectiveAC, addBonusToDamage } from '@/shared/lib/derivedStats'
+import { computeProficiencyBonus, computeFightingStyleBonuses, computeEffectiveAC, addBonusToDamage, parseBonus } from '@/shared/lib/derivedStats'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useToast } from '@/shared/composables/useToast'
 import type { Character, AbilityName, InventoryItem, CombatFavorite, EquippedSlots } from '@/shared/types/character'
@@ -497,31 +501,15 @@ function currentSlot(itemId: string): keyof EquippedSlots | null {
   return null
 }
 
-async function equipToSlot(itemId: string, slot: keyof EquippedSlots) {
-  const s = { ...slots.value }
-  if (s.mainHand === itemId) s.mainHand = null
-  if (s.offHand  === itemId) s.offHand  = null
-  if (s.armor    === itemId) s.armor    = null
-  s[slot] = itemId
-  const equippedIds = new Set([s.mainHand, s.offHand, s.armor].filter(Boolean) as string[])
-  const inventory = props.character.inventory.map(i => ({ ...i, equipped: equippedIds.has(i.id) }))
-  await store.update(props.character.id, { equippedSlots: s, inventory })
+function equipToSlot(itemId: string, slot: keyof EquippedSlots) {
+  return store.setEquipmentSlot(props.character.id, slot, itemId)
 }
 
-async function clearSlot(slot: keyof EquippedSlots) {
-  const s = { ...slots.value, [slot]: null }
-  const equippedIds = new Set([s.mainHand, s.offHand, s.armor].filter(Boolean) as string[])
-  const inventory = props.character.inventory.map(i => ({ ...i, equipped: equippedIds.has(i.id) }))
-  await store.update(props.character.id, { equippedSlots: s, inventory })
+function clearSlot(slot: keyof EquippedSlots) {
+  return store.clearEquipmentSlot(props.character.id, slot)
 }
 
 // ── Roll helpers ──────────────────────────────────────────────────────────────
-
-function parseBonus(str: string | undefined): number {
-  if (!str) return 0
-  const m = str.match(/^([+-]?\d+)$/)
-  return m ? parseInt(m[1]) : 0
-}
 
 function fsBonusFor(item: InventoryItem) {
   return computeFightingStyleBonuses(
@@ -537,6 +525,11 @@ function slottedFSBonus(slot: 'mainHand' | 'offHand') {
   const item = slottedItem(slot)
   return item ? fsBonusFor(item) : { attack: 0, damage: 0, rerollLowDice: false }
 }
+
+// Memoized per-slot bonuses for the Loadout badges (avoids re-running the
+// computation on every render for each badge condition).
+const mainHandBonus = computed(() => slottedFSBonus('mainHand'))
+const offHandBonus  = computed(() => slottedFSBonus('offHand'))
 
 const effectiveAC = computed(() => computeEffectiveAC(
   props.character.combat.armorClass,
@@ -732,6 +725,14 @@ const computedBonusDisplay = computed(() => {
   return total >= 0 ? `+${total}` : String(total)
 })
 
+// Damage must be empty or valid dice notation (NdN or NdN±N) so rolls don't
+// silently evaluate to 0. Only enforced for weapons.
+const damageValid = computed(() => {
+  if (draftType.value !== 'weapon') return true
+  const d = draft.damage.trim()
+  return d === '' || /^\d+d\d+([+-]\d+)?$/i.test(d)
+})
+
 function resetDraft() {
   draft.name = ''
   draft.category = ''
@@ -762,6 +763,7 @@ function closeForm() {
 
 async function submitForm() {
   if (!draft.name.trim()) return
+  if (!damageValid.value) return
 
   const base = {
     id: generateId(),

@@ -652,7 +652,14 @@ const resolvedInventory = computed<InventoryItem[]>(() => {
 
   for (const f of fixedItems.value) {
     const eq = map[f.equipment.index]
-    if (eq) items.push(toInventoryItem(eq, f.quantity))
+    if (!eq) continue
+    const isEquippable = eq.equipment_category?.index === 'weapon' || !!eq.weapon_category
+                      || eq.equipment_category?.index === 'armor'  || !!eq.armor_category
+    if (isEquippable && f.quantity > 1) {
+      for (let q = 0; q < f.quantity; q++) items.push(toInventoryItem(eq, 1))
+    } else {
+      items.push(toInventoryItem(eq, f.quantity))
+    }
   }
 
   for (const [giStr, vi] of Object.entries(choices.value)) {
@@ -664,7 +671,16 @@ const resolvedInventory = computed<InventoryItem[]>(() => {
     for (const [si, slot] of variant.slots.entries()) {
       if (slot.kind === 'item') {
         const eq = map[slot.ref.index]
-        if (eq) items.push(toInventoryItem(eq, slot.quantity))
+        if (!eq) continue
+        const isEquippable = eq.equipment_category?.index === 'weapon' || !!eq.weapon_category
+                          || eq.equipment_category?.index === 'armor'  || !!eq.armor_category
+        if (isEquippable && slot.quantity > 1) {
+          // Weapons and armor with quantity>1 get separate entries so each
+          // can be independently equipped to a different slot (MH/OH/armor).
+          for (let q = 0; q < slot.quantity; q++) items.push(toInventoryItem(eq, 1))
+        } else {
+          items.push(toInventoryItem(eq, slot.quantity))
+        }
       } else {
         const selIdx = categorySelections.value[`${gi}_${si}`]
         if (selIdx) {

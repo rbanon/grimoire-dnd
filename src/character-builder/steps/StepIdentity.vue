@@ -55,10 +55,16 @@
               <span class="text-2xs font-heading tracking-wide">Upload</span>
             </div>
             <div
-              v-if="builder.draft.portraitUrl"
+              v-if="builder.draft.portraitUrl && !portraitCompressing"
               class="absolute inset-0 bg-abyss/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
             >
               <PencilIcon :size="16" class="text-stone" />
+            </div>
+            <div
+              v-if="portraitCompressing"
+              class="absolute inset-0 bg-abyss/70 flex items-center justify-center"
+            >
+              <GrimoireSpinner />
             </div>
           </div>
           <input
@@ -272,7 +278,8 @@ const showPersonality = ref(false)
 
 async function onFileChange(event: Event) {
   portraitError.value = ''
-  const file = (event.target as HTMLInputElement).files?.[0]
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
   if (!file) return
   if (file.size > MAX_PORTRAIT_BYTES) {
     portraitError.value = 'Max 10 MB'
@@ -281,11 +288,18 @@ async function onFileChange(event: Event) {
   portraitCompressing.value = true
   try {
     const compressed = await compressPortrait(file)
-    const reader = new FileReader()
-    reader.onload = (e) => { builder.draft.portraitUrl = e.target?.result as string }
-    reader.readAsDataURL(compressed)
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => resolve(e.target?.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(compressed)
+    })
+    builder.draft.portraitUrl = dataUrl
+  } catch {
+    portraitError.value = 'Could not process image'
   } finally {
     portraitCompressing.value = false
+    input.value = '' // allow re-selecting the same file
   }
 }
 

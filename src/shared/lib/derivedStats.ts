@@ -5,6 +5,13 @@ export function computeProficiencyBonus(level: number): number {
   return Math.ceil(level / 4) + 1
 }
 
+/** Parses a signed numeric bonus string ("+3", "-1") to a number; 0 if absent/invalid. */
+export function parseBonus(str: string | undefined): number {
+  if (!str) return 0
+  const m = str.match(/^([+-]?\d+)$/)
+  return m ? parseInt(m[1]) : 0
+}
+
 export function computePassiveScore(skill: number, mod: number, prof: boolean, profBonus: number): number {
   return 10 + mod + (prof ? profBonus : 0) + skill
 }
@@ -43,8 +50,10 @@ const NO_BONUS: FightingStyleBonuses = { attack: 0, damage: 0, rerollLowDice: fa
 function isLikelyRanged(weapon: InventoryItem): boolean {
   if (weapon.weaponCategory === 'ranged') return true
   if (weapon.weaponCategory === 'melee')  return false
-  // Infer from range field for manually-added weapons (e.g. "60/120 ft." → ranged)
+  // Infer from range field for manually-added weapons (e.g. "60/120 ft." → ranged).
+  // Thrown weapons (javelin, handaxe) have a range but are melee — exclude them.
   if (weapon.range) {
+    if (/thrown/i.test(weapon.range)) return false
     const m = weapon.range.match(/^(\d+)/)
     return m ? parseInt(m[1]) > 5 : false
   }
@@ -97,15 +106,21 @@ export function computeFightingStyleBonuses(
       rerollLowDice = true
     }
 
-    // Two-Weapon Fighting: add ability modifier to off-hand damage (melee only)
-    // Without TWF the off-hand attack deals no ability-modifier bonus; with it you add STR (or DEX)
+    // Two-Weapon Fighting: add ability modifier to off-hand damage (melee only).
+    // 5e adds the modifier regardless of sign or zero, so no `!== 0` guard.
     if (style === 'two-weapon' && inOffHand && isMelee && !isTwoHanded && abilityMods) {
-      const abMod = Math.max(abilityMods.str, abilityMods.dex)
-      if (abMod !== 0) damage += abMod
+      damage += Math.max(abilityMods.str, abilityMods.dex)
     }
   }
 
   return { attack, damage, rerollLowDice }
+}
+
+/** Infers armor category from base AC when armorType is missing (D&D 5e SRD ranges). */
+function inferArmorType(baseAC: number): 'light' | 'medium' | 'heavy' {
+  if (baseAC >= 16) return 'heavy'   // chain mail 16, splint 17, plate 18
+  if (baseAC >= 13) return 'medium'  // chain shirt 13, scale 14, half plate 15
+  return 'light'                     // leather 11, studded 12
 }
 
 /**
@@ -126,10 +141,12 @@ export function computeEffectiveAC(
 
   let ac: number
   if (armorItem?.armorClass != null) {
-    const type = armorItem.armorType
+    // Fall back to inferring the type from the base AC when armorType is missing
+    // (old items / manual entries) so heavy armor isn't wrongly given full DEX.
+    const type = armorItem.armorType ?? inferArmorType(armorItem.armorClass)
     if (type === 'heavy')        ac = armorItem.armorClass
     else if (type === 'medium')  ac = armorItem.armorClass + Math.min(dexMod, 2)
-    else                         ac = armorItem.armorClass + dexMod   // light or unknown
+    else                         ac = armorItem.armorClass + dexMod   // light
   } else {
     ac = baseAC  // unarmored or no armor slotted
   }

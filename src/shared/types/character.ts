@@ -105,9 +105,12 @@ export const PortraitMetadataSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('none') }),
   z.object({
     type: z.literal('url'),
-    url: z.string().url().refine(
-      (u) => /^https?:\/\//i.test(u),
-      { message: 'Portrait URL must use http or https' },
+    // Accepts http(s) URLs (uploaded portraits) and data:image URLs (local,
+    // unauthenticated portraits persisted to localStorage — kept small by
+    // compressPortrait). Authenticated saves convert to https via uploadPortrait.
+    url: z.string().refine(
+      (u) => /^https?:\/\//i.test(u) || /^data:image\//i.test(u),
+      { message: 'Portrait URL must be an http(s) or data:image URL' },
     ),
   }),
   z.object({ type: z.literal('local-preview') }), // in-memory only, not serialized

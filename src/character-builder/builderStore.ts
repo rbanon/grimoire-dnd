@@ -7,8 +7,8 @@ import { storageGet, storageSet, storageRemove } from '@/shared/lib/storage'
 import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
-import { uploadPortrait } from '@/shared/lib/uploadPortrait'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature } from '@/character-builder/classMeta'
+import { uploadPortraitBlob } from '@/shared/lib/uploadPortrait'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 11
@@ -137,6 +137,10 @@ export interface BuilderDraft {
   selectedPreparedSpells: { index: string; name: string; level: number }[]
   // Per-level spell selection for known casters (Bard, Sorcerer, Warlock, Ranger)
   spellsByLevel: Record<number, SpellsByLevelEntry>
+  // Warlock: 3 bonus cantrips from any class granted by Pact of the Tome
+  tomeCantrips: { index: string; name: string }[]
+  // Warlock: Eldritch Invocations chosen
+  selectedInvocations: { index: string; name: string }[]
 }
 
 const defaultDraft = (): BuilderDraft => ({
@@ -168,6 +172,7 @@ const defaultDraft = (): BuilderDraft => ({
   featsByLevel: {},
   asiAllocations: {},
   selectedCantrips: [], selectedSpells: [], selectedPreparedSpells: [], spellsByLevel: {},
+  tomeCantrips: [], selectedInvocations: [],
 })
 
 const DRAFT_ARRAY_FIELDS = [
@@ -175,6 +180,7 @@ const DRAFT_ARRAY_FIELDS = [
   'selectedSkills', 'selectedLanguages', 'startingInventory', 'raceProfOptions',
   'availableSubraces', 'availableSubclasses', 'backgroundSkillProficiencies',
   'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs', 'raceSkillProficiencies',
+  'tomeCantrips', 'selectedInvocations',
 ] as const
 
 const DRAFT_OBJ_FIELDS = [
@@ -257,6 +263,13 @@ export const useBuilderStore = defineStore('builder', () => {
         if (!seen.has(c.index)) { seen.add(c.index); result.push(c) }
       }
     }
+    // Pact of the Tome grants 3 additional cantrips from any class
+    if (draft.value.classIndex === 'warlock' && draft.value.level >= 3
+        && draft.value.levelChoices[3]?.['pact-boon'] === 'tome') {
+      for (const c of draft.value.tomeCantrips) {
+        if (!seen.has(c.index)) { seen.add(c.index); result.push(c) }
+      }
+    }
     return result
   })
 
@@ -336,6 +349,12 @@ export const useBuilderStore = defineStore('builder', () => {
         const lvlList = incompleteLevels.map(l => `Lv ${l}`).join(', ')
         errors.push(`Spells incomplete (${lvlList}) — open the highlighted sections below and pick the missing spells`)
       }
+      // Pact of the Tome requires 3 cantrips from any class (Warlock is a known caster)
+      if (draft.value.classIndex === 'warlock' && draft.value.level >= 3
+          && draft.value.levelChoices[3]?.['pact-boon'] === 'tome') {
+        const diff = 3 - draft.value.tomeCantrips.length
+        if (diff > 0) errors.push(`Choose ${diff} more Book of Shadows cantrip${diff > 1 ? 's' : ''} (${draft.value.tomeCantrips.length}/3)`)
+      }
     } else {
       const cantripLimit = profile.cantripsKnown[levelIdx] ?? 0
       if (cantripLimit > 0 && draft.value.selectedCantrips.length < cantripLimit) {
@@ -395,6 +414,11 @@ export const useBuilderStore = defineStore('builder', () => {
               break
             }
           }
+        }
+        if (draft.value.classIndex === 'warlock' && draft.value.level >= 2) {
+          const needed = getInvocationsCount(draft.value.level)
+          const chosen = draft.value.selectedInvocations.length
+          if (chosen < needed) errs.push(`Choose ${needed - chosen} more Eldritch Invocation${needed - chosen > 1 ? 's' : ''} (${chosen}/${needed})`)
         }
         return errs
       })(),
@@ -609,6 +633,8 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value.spellsByLevel = {}
     draft.value.selectedSpells = []
     draft.value.selectedPreparedSpells = []
+    draft.value.tomeCantrips = []
+    draft.value.selectedInvocations = []
   })
 
   // Re-validate currentStep whenever skippable conditions change
@@ -624,6 +650,12 @@ export const useBuilderStore = defineStore('builder', () => {
     }
     for (const lvl of Object.keys(draft.value.spellsByLevel).map(Number)) {
       if (lvl > newLevel) delete draft.value.spellsByLevel[lvl]
+    }
+    if (draft.value.classIndex === 'warlock') {
+      const maxInvocations = getInvocationsCount(newLevel)
+      if (draft.value.selectedInvocations.length > maxInvocations) {
+        draft.value.selectedInvocations = draft.value.selectedInvocations.slice(0, maxInvocations)
+      }
     }
   })
 
@@ -762,17 +794,16 @@ export const useBuilderStore = defineStore('builder', () => {
         let portraitUrl = d.portraitUrl
         if (portraitUrl.startsWith('data:') && auth.isAuthenticated && auth.userId) {
           try {
+            // portraitUrl is already a compressed JPEG data URL (compressPortrait
+            // ran at ingestion) — upload the blob directly without re-compressing.
             const blob = await fetch(portraitUrl).then(r => r.blob())
-            const ext = blob.type.split('/')[1]?.split('+')[0] ?? 'jpg'
-            const file = new File([blob], `portrait.${ext}`, { type: blob.type })
-            portraitUrl = await uploadPortrait(file, auth.userId, id)
+            portraitUrl = await uploadPortraitBlob(blob, auth.userId, id)
           } catch { /* keep data URL on upload failure */ }
         }
-        try {
-          new URL(portraitUrl)
-          // Only accept http/https — data: and blob: URLs are invalid for the schema
-          if (/^https?:\/\//i.test(portraitUrl)) portrait = { type: 'url', url: portraitUrl }
-        } catch { /* skip invalid URL */ }
+        // Accept http(s) (uploaded) and data:image (local/unauthenticated) URLs.
+        if (/^https?:\/\//i.test(portraitUrl) || /^data:image\//i.test(portraitUrl)) {
+          portrait = { type: 'url', url: portraitUrl }
+        }
       }
 
       const character = await buildCharacterFromDraft(id, ts, portrait)

@@ -199,9 +199,10 @@ import { ref, reactive, computed } from 'vue'
 import { ImageIcon, PencilIcon } from 'lucide-vue-next'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
+import { compressPortrait } from '@/shared/lib/uploadPortrait'
 import AlignmentGrid from '@/character-builder/components/AlignmentGrid.vue'
 
-const MAX_PORTRAIT_BYTES = 1_048_576
+const MAX_PORTRAIT_BYTES = 10_485_760 // 10 MB — compression handles the rest
 
 const builder = useBuilderStore()
 const { showValidation } = useBuilderValidation()
@@ -218,14 +219,26 @@ const fieldErrors = computed(() => ({
   gender: (touched.gender || showValidation.value) && !builder.draft.gender.trim(),
 }))
 
-function onFileChange(event: Event) {
+async function onFileChange(event: Event) {
   portraitError.value = ''
-  const file = (event.target as HTMLInputElement).files?.[0]
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
   if (!file) return
-  if (file.size > MAX_PORTRAIT_BYTES) { portraitError.value = 'Max 1 MB'; return }
-  const reader = new FileReader()
-  reader.onload = (e) => { builder.draft.portraitUrl = e.target?.result as string }
-  reader.readAsDataURL(file)
+  if (file.size > MAX_PORTRAIT_BYTES) { portraitError.value = 'Max 10 MB'; return }
+  try {
+    const compressed = await compressPortrait(file)
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => resolve(e.target?.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(compressed)
+    })
+    builder.draft.portraitUrl = dataUrl
+  } catch {
+    portraitError.value = 'Could not process image'
+  } finally {
+    input.value = '' // allow re-selecting the same file
+  }
 }
 
 type AppearanceKey = 'height' | 'weight' | 'eyes' | 'skin' | 'hair'

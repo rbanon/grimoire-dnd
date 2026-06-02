@@ -91,7 +91,7 @@
                   class="w-4 h-4 rounded shrink-0 border-2 flex items-center justify-center transition-all"
                   :class="isPrepared(spell.index)
                     ? 'border-arcane-base/60 bg-arcane-base/30'
-                    : 'border-shadow/60'"
+                    : 'border-mist/40 bg-shadow/30'"
                 >
                   <CheckIcon v-if="isPrepared(spell.index)" :size="9" class="text-arcane-pale" />
                 </span>

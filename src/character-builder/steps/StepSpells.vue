@@ -229,6 +229,52 @@
         </div>
       </div>
 
+      <!-- Pact of the Tome: 3 bonus cantrips from any class -->
+      <section v-if="isPactOfTome" class="space-y-4 pt-2">
+        <div class="rule-gold"><span>Book of Shadows</span></div>
+        <div class="flex items-center justify-between -mt-4">
+          <p class="text-xs font-body text-mist">Choose 3 cantrips from any class list to inscribe in your Book of Shadows.</p>
+          <span
+            class="ml-4 shrink-0 text-xs font-body tabular-nums"
+            :class="builder.draft.tomeCantrips.length >= 3 ? 'text-arcane-pale' : 'text-mist'"
+          >{{ builder.draft.tomeCantrips.length }} / 3</span>
+        </div>
+        <div v-if="allCantripsLoading" class="flex justify-center py-6">
+          <GrimoireSpinner />
+        </div>
+        <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+          <div
+            v-for="c in allCantrips"
+            :key="c.index"
+            class="group relative flex items-center rounded border text-sm font-heading tracking-wide transition-all duration-150"
+            :class="isTomeCantripSelected(c.index)
+              ? 'border-arcane-base/50 bg-arcane-deep/20 text-arcane-pale cursor-pointer'
+              : isWarlockCantrip(c.index)
+                ? 'border-shadow text-mist/30 cursor-not-allowed opacity-40'
+                : builder.draft.tomeCantrips.length >= 3
+                  ? 'border-shadow text-mist/40 cursor-not-allowed opacity-50'
+                  : 'border-shadow text-ash hover:border-arcane-base/25 hover:text-stone cursor-pointer'"
+            @click="toggleTomeCantrip(c)"
+          >
+            <span class="flex-1 px-3 py-2 text-left">
+              {{ c.name }}
+              <span v-if="isTomeCantripSelected(c.index)" class="text-arcane-pale ml-1">✓</span>
+            </span>
+            <button
+              type="button"
+              class="shrink-0 px-2.5 py-2 text-mist/60 hover:text-ash opacity-0 group-hover:opacity-100 transition-all"
+              aria-label="Spell details"
+              @click.stop="infoPanel.open({ kind: 'spell', index: c.index })"
+            >
+              <InfoIcon :size="12" />
+            </button>
+          </div>
+        </div>
+        <p v-if="showValidation && builder.draft.tomeCantrips.length < 3" class="text-xs font-body text-blood-bright">
+          Select {{ 3 - builder.draft.tomeCantrips.length }} more cantrip{{ 3 - builder.draft.tomeCantrips.length !== 1 ? 's' : '' }} for your Book of Shadows.
+        </p>
+      </section>
+
       <!-- Gain spell picker -->
       <SpellPickerModal
         v-if="showSpellPickerForLevel !== null"
@@ -370,7 +416,7 @@
                 class="w-4 h-4 rounded shrink-0 border flex items-center justify-center transition-all"
                 :class="isPreparedInBuilder(spell.index)
                   ? 'border-arcane-base/60 bg-arcane-base/30 text-arcane-pale'
-                  : 'border-shadow/60'"
+                  : 'border-mist/40 bg-shadow/30'"
               >
                 <span v-if="isPreparedInBuilder(spell.index)" class="text-2xs leading-none">✓</span>
               </span>
@@ -800,6 +846,44 @@ const { data: cantripData, isPending: cantripsLoading } = useQuery({
   enabled: computed(() => !!builder.draft.classIndex && !!profile.value),
 })
 const cantrips = computed(() => cantripData.value?.results ?? [])
+
+// ── Pact of the Tome ──────────────────────────────────────────────────────────
+
+const isPactOfTome = computed(() =>
+  builder.draft.classIndex === 'warlock' &&
+  builder.draft.level >= 3 &&
+  builder.draft.levelChoices[3]?.['pact-boon'] === 'tome'
+)
+
+const { data: allCantripData, isPending: allCantripsLoading } = useQuery({
+  queryKey: ['cantrips', 'all'],
+  queryFn: () => fiveEApi.listSpells({ level: 0 }),
+  staleTime: Infinity,
+  enabled: isPactOfTome,
+})
+const allCantrips = computed(() => allCantripData.value?.results ?? [])
+
+// Clear tome cantrips if the pact boon changes away from Tome
+watch(isPactOfTome, (is) => {
+  if (!is) builder.draft.tomeCantrips = []
+})
+
+function isTomeCantripSelected(index: string): boolean {
+  return builder.draft.tomeCantrips.some(c => c.index === index)
+}
+
+function isWarlockCantrip(index: string): boolean {
+  return builder.activeCantrips.some(c => c.index === index)
+}
+
+function toggleTomeCantrip(c: { index: string; name: string }) {
+  if (isWarlockCantrip(c.index)) return
+  if (isTomeCantripSelected(c.index)) {
+    builder.draft.tomeCantrips = builder.draft.tomeCantrips.filter(x => x.index !== c.index)
+  } else if (builder.draft.tomeCantrips.length < 3) {
+    builder.draft.tomeCantrips.push({ index: c.index, name: c.name })
+  }
+}
 
 // ── Flat cantrip interactions (prepared / spellbook) ──────────────────────────
 

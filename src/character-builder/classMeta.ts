@@ -315,6 +315,64 @@ const WARLOCK_PACT_BOONS = [
   { index: 'tome',  name: 'Pact of the Tome',   desc: 'Receive a Book of Shadows granting three additional cantrips from any class list' },
 ]
 
+export const ELDRITCH_INVOCATIONS: { index: string; name: string; desc: string; prereqLevel: number }[] = [
+  // Level 2+
+  { index: 'agonizing-blast',          name: 'Agonizing Blast',           desc: 'Add your Charisma modifier to the damage of Eldritch Blast',                               prereqLevel: 2 },
+  { index: 'armor-of-shadows',         name: 'Armor of Shadows',          desc: 'Cast Mage Armor on yourself at will, without expending a spell slot',                       prereqLevel: 2 },
+  { index: 'beast-speech',             name: 'Beast Speech',              desc: 'Cast Speak with Animals at will, without expending a spell slot',                           prereqLevel: 2 },
+  { index: 'beguiling-influence',      name: 'Beguiling Influence',       desc: 'Gain proficiency in the Deception and Persuasion skills',                                   prereqLevel: 2 },
+  { index: 'book-of-ancient-secrets',  name: 'Book of Ancient Secrets',   desc: 'Inscribe ritual spells in your Book of Shadows and cast them as rituals (req: Pact of the Tome)', prereqLevel: 2 },
+  { index: 'devils-sight',             name: "Devil's Sight",             desc: 'See normally in darkness, magical and nonmagical, out to 120 feet',                         prereqLevel: 2 },
+  { index: 'eldritch-sight',           name: 'Eldritch Sight',            desc: 'Cast Detect Magic at will, without expending a spell slot',                                 prereqLevel: 2 },
+  { index: 'eldritch-spear',           name: 'Eldritch Spear',            desc: 'Eldritch Blast range extends to 300 feet',                                                  prereqLevel: 2 },
+  { index: 'eyes-of-the-rune-keeper',  name: 'Eyes of the Rune Keeper',   desc: 'Read all writing, regardless of language',                                                  prereqLevel: 2 },
+  { index: 'fiendish-vigor',           name: 'Fiendish Vigor',            desc: 'Cast False Life on yourself at will as a 1st-level spell, without expending a spell slot',  prereqLevel: 2 },
+  { index: 'gaze-of-two-minds',        name: 'Gaze of Two Minds',         desc: 'Touch a willing humanoid to perceive through its senses until the end of your next turn',   prereqLevel: 2 },
+  { index: 'mask-of-many-faces',       name: 'Mask of Many Faces',        desc: 'Cast Disguise Self at will, without expending a spell slot',                                prereqLevel: 2 },
+  { index: 'misty-visions',            name: 'Misty Visions',             desc: 'Cast Silent Image at will, without expending a spell slot',                                 prereqLevel: 2 },
+  { index: 'repelling-blast',          name: 'Repelling Blast',           desc: 'Knock creatures hit by Eldritch Blast up to 10 feet in a straight line',                   prereqLevel: 2 },
+  { index: 'voice-of-the-chain-master',name: 'Voice of the Chain Master', desc: 'Communicate telepathically with your familiar and perceive through its senses (req: Pact of the Chain)', prereqLevel: 2 },
+  // Level 5+
+  { index: 'mire-the-mind',            name: 'Mire the Mind',             desc: 'Cast Slow once using a warlock spell slot, 1/long rest',                                    prereqLevel: 5 },
+  { index: 'one-with-shadows',         name: 'One with Shadows',          desc: 'Become invisible as an action while in dim light or darkness',                              prereqLevel: 5 },
+  { index: 'sign-of-ill-omen',         name: 'Sign of Ill Omen',          desc: 'Cast Bestow Curse once using a warlock spell slot, 1/long rest',                            prereqLevel: 5 },
+  { index: 'thief-of-five-fates',      name: 'Thief of Five Fates',       desc: 'Cast Bane once using a warlock spell slot, 1/long rest',                                    prereqLevel: 5 },
+  { index: 'thirsting-blade',          name: 'Thirsting Blade',           desc: 'Attack twice with your pact weapon when you take the Attack action (req: Pact of the Blade)', prereqLevel: 5 },
+  // Level 7+
+  { index: 'bewitching-whispers',      name: 'Bewitching Whispers',       desc: 'Cast Compulsion once using a warlock spell slot, 1/long rest',                              prereqLevel: 7 },
+  { index: 'dreadful-word',            name: 'Dreadful Word',             desc: 'Cast Confusion once using a warlock spell slot, 1/long rest',                               prereqLevel: 7 },
+  { index: 'sculptor-of-flesh',        name: 'Sculptor of Flesh',         desc: 'Cast Polymorph once using a warlock spell slot, 1/long rest',                               prereqLevel: 7 },
+  // Level 9+
+  { index: 'ascendant-step',           name: 'Ascendant Step',            desc: 'Cast Levitate on yourself at will, without expending a spell slot',                         prereqLevel: 9 },
+  { index: 'minions-of-chaos',         name: 'Minions of Chaos',          desc: 'Cast Conjure Elemental once using a warlock spell slot, 1/long rest',                       prereqLevel: 9 },
+  { index: 'otherworldly-leap',        name: 'Otherworldly Leap',         desc: 'Cast Jump on yourself at will, without expending a spell slot',                             prereqLevel: 9 },
+  { index: 'whispers-of-the-grave',    name: 'Whispers of the Grave',     desc: 'Cast Speak with Dead at will, without expending a spell slot',                              prereqLevel: 9 },
+  // Level 12+
+  { index: 'lifedrinker',              name: 'Lifedrinker',               desc: 'Add Charisma modifier as necrotic damage on pact weapon attacks (req: Pact of the Blade)',  prereqLevel: 12 },
+  // Level 15+
+  { index: 'chains-of-carceri',        name: 'Chains of Carceri',         desc: 'Cast Hold Monster at will on celestials, fiends, and elementals (req: Pact of the Chain)', prereqLevel: 15 },
+  { index: 'master-of-myriad-forms',   name: 'Master of Myriad Forms',    desc: 'Cast Alter Self at will, without expending a spell slot',                                   prereqLevel: 15 },
+  { index: 'visions-of-distant-realms',name: 'Visions of Distant Realms', desc: 'Cast Arcane Eye at will, without expending a spell slot',                                   prereqLevel: 15 },
+  { index: 'witch-sight',              name: 'Witch Sight',               desc: 'See the true form of any shapechanger or creature concealed by illusion within 30 feet',   prereqLevel: 15 },
+]
+
+export function getInvocationsCount(level: number): number {
+  if (level < 2) return 0
+  let count = 2
+  if (level >= 5)  count++
+  if (level >= 7)  count++
+  if (level >= 9)  count++
+  if (level >= 12) count++
+  if (level >= 15) count++
+  if (level >= 17) count++
+  if (level >= 19) count++
+  return count
+}
+
+export function getAvailableInvocations(level: number) {
+  return ELDRITCH_INVOCATIONS.filter(i => i.prereqLevel <= level)
+}
+
 export const CLASS_LEVELS: Partial<Record<string, Partial<Record<number, LevelEntry>>>> = {
   barbarian: {
     1:  { features: ['Rage (2/rest, +2 damage)', 'Unarmored Defense (10 + DEX mod + CON mod)'] },

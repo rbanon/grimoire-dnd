@@ -257,6 +257,53 @@
       </p>
     </section>
 
+    <!-- Eldritch Invocations (Warlock only) -->
+    <section v-if="isWarlock && builder.draft.level >= 2" class="space-y-4">
+      <div class="rule-gold"><span>Eldritch Invocations</span></div>
+
+      <div class="flex items-center justify-between -mt-4">
+        <p class="text-xs font-body text-mist">
+          Choose invocations that enhance your eldritch power. Some require a minimum level.
+        </p>
+        <span
+          class="ml-4 shrink-0 text-xs font-body tabular-nums"
+          :class="invocationsComplete ? 'text-arcane-pale' : showValidation ? 'text-blood-bright' : 'text-mist'"
+        >{{ builder.draft.selectedInvocations.length }} / {{ invocationsNeeded }}</span>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-1.5">
+        <button
+          v-for="inv in availableInvocations"
+          :key="inv.index"
+          type="button"
+          class="flex items-start gap-2.5 px-3 py-2.5 rounded border text-left transition-all"
+          :class="isInvocationSelected(inv.index)
+            ? 'border-arcane-base/50 bg-arcane-deep/15'
+            : !invocationsComplete
+              ? 'border-shadow hover:border-arcane-base/25 cursor-pointer'
+              : 'border-shadow/40 text-mist/40 cursor-not-allowed opacity-50'"
+          :disabled="!isInvocationSelected(inv.index) && invocationsComplete"
+          @click="toggleInvocation(inv)"
+        >
+          <div
+            class="w-3 h-3 rounded-full border-2 shrink-0 mt-1 flex items-center justify-center"
+            :class="isInvocationSelected(inv.index) ? 'border-arcane-base' : 'border-mist/50'"
+          >
+            <div v-if="isInvocationSelected(inv.index)" class="w-1.5 h-1.5 rounded-full bg-arcane-pale" />
+          </div>
+          <div class="min-w-0">
+            <p class="font-heading text-sm" :class="isInvocationSelected(inv.index) ? 'text-arcane-pale' : 'text-stone'">{{ inv.name }}</p>
+            <p class="text-xs font-body text-mist mt-0.5 leading-relaxed">{{ inv.desc }}</p>
+            <span v-if="inv.prereqLevel > 2" class="text-2xs font-heading text-gold-dim/60 mt-0.5 block">Req. level {{ inv.prereqLevel }}+</span>
+          </div>
+        </button>
+      </div>
+
+      <p v-if="showValidation && !invocationsComplete" class="text-xs font-body text-blood-bright">
+        Choose {{ invocationsNeeded - builder.draft.selectedInvocations.length }} more invocation{{ invocationsNeeded - builder.draft.selectedInvocations.length > 1 ? 's' : '' }} to continue.
+      </p>
+    </section>
+
     <HpRollModal
       :show="showRollModal"
       :hit-die="builder.draft.classHitDie"
@@ -274,7 +321,7 @@
 import { ref, computed, watch } from 'vue'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import { computeProficiencyBonus } from '@/shared/lib/derivedStats'
-import { getLevelEntry, getFightingStyleOptions } from '@/character-builder/classMeta'
+import { getLevelEntry, getFightingStyleOptions, getInvocationsCount, getAvailableInvocations } from '@/character-builder/classMeta'
 import type { ChoiceType } from '@/character-builder/classMeta'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import HpRollModal from '@/character-builder/components/HpRollModal.vue'
@@ -376,6 +423,25 @@ function setChoice(lvl: number, key: string, value: string) {
     builder.draft.levelChoices[lvl] = {}
   }
   builder.draft.levelChoices[lvl][key] = value
+}
+
+// ── Eldritch Invocations ──────────────────────────────────────────────────────
+
+const isWarlock = computed(() => builder.draft.classIndex === 'warlock')
+const invocationsNeeded = computed(() => getInvocationsCount(builder.draft.level))
+const availableInvocations = computed(() => getAvailableInvocations(builder.draft.level))
+const invocationsComplete = computed(() => builder.draft.selectedInvocations.length >= invocationsNeeded.value)
+
+function isInvocationSelected(index: string): boolean {
+  return builder.draft.selectedInvocations.some(i => i.index === index)
+}
+
+function toggleInvocation(inv: { index: string; name: string }) {
+  if (isInvocationSelected(inv.index)) {
+    builder.draft.selectedInvocations = builder.draft.selectedInvocations.filter(i => i.index !== inv.index)
+  } else if (!invocationsComplete.value) {
+    builder.draft.selectedInvocations.push({ index: inv.index, name: inv.name })
+  }
 }
 </script>
 
