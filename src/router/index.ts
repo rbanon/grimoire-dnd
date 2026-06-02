@@ -27,11 +27,6 @@ export const router = createRouter({
           component: () => import('@/characters/pages/CharacterSheetPage.vue'),
           props: true,
         },
-        {
-          path: 'characters/:id/edit',
-          name: 'character-edit',
-          redirect: (to) => ({ name: 'character-sheet', params: to.params }),
-        },
         // Reference browsing
         {
           path: 'spells',

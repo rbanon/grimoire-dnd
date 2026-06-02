@@ -277,7 +277,13 @@ async function selectRace(index: string, name: string) {
     }, {} as Record<string, number>)
     builder.draft.availableSubraces = detail.subraces.map(s => ({ index: s.index, name: s.name }))
     builder.draft.raceLanguageCount = detail.languages.length || 1
-    builder.draft.selectedLanguages = detail.languages.map(l => l.index)
+    // Preserve user-chosen languages (background choices) when switching races.
+    // Only replace the racial auto-grants, not languages the user picked themselves.
+    const oldRaceLanguages = builder.draft.raceAutoLanguages ?? []
+    const newRaceLanguages = detail.languages.map(l => l.index)
+    const userChosenLanguages = builder.draft.selectedLanguages.filter(l => !oldRaceLanguages.includes(l))
+    builder.draft.raceAutoLanguages = newRaceLanguages
+    builder.draft.selectedLanguages = [...new Set([...newRaceLanguages, ...userChosenLanguages])]
     builder.draft.raceSkillProficiencies = detail.starting_proficiencies
       .filter(p => p.index.startsWith('skill-'))
       .map(p => p.index.replace(/^skill-/, ''))

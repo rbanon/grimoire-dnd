@@ -796,7 +796,7 @@ import { BedIcon, ChevronDownIcon, DownloadIcon, EyeIcon, ImageIcon, LockIcon, L
 import { useCharactersStore } from '@/characters/store'
 import { computeModifier, computeAllModifiers } from '@/shared/types/character'
 import type { Character, AbilityName, AbilityScores } from '@/shared/types/character'
-import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus, computeEffectiveAC } from '@/shared/lib/derivedStats'
+import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus, computeEffectiveAC, computeUnarmoredAC } from '@/shared/lib/derivedStats'
 import { CLASS_META, getSpellProfile, getClassResources } from '@/character-builder/classMeta'
 import { SKILLS } from '@/shared/lib/skillAbilityMap'
 import { useDialog } from '@/shared/composables/useDialog'
@@ -1057,11 +1057,15 @@ async function commitAlignment(value: string) {
 
 const effectiveAC = computed(() => {
   if (!character.value) return 0
+  const c = character.value
+  // Use class-specific unarmored AC formula as the fallback base.
+  // computeEffectiveAC ignores this when armor is slotted, so it's safe to always pass it.
+  const unarmoredBase = computeUnarmoredAC(c.identity.class.index, mods.value)
   return computeEffectiveAC(
-    character.value.combat.armorClass,
-    character.value.fightingStyles ?? [],
-    character.value.equippedSlots,
-    character.value.inventory,
+    unarmoredBase,
+    c.fightingStyles ?? [],
+    c.equippedSlots,
+    c.inventory,
     mods.value.dex,
   )
 })
@@ -1310,10 +1314,18 @@ function onShortRested(result: { healed: number; diceSpent: number; rolls: numbe
   const shortRestedResources = c.resources.map(r =>
     r.refreshOn === 'short' ? { ...r, current: r.max } : r,
   )
-  store.update(c.id, {
+  const updates: Partial<Character> = {
     combat: { ...c.combat, currentHp: result.newHp, hitDiceRemaining: result.newHitDice },
     resources: shortRestedResources,
-  })
+  }
+  // Warlock Pact Magic slots recover on a short rest (not just the resource pool but the actual slot pool)
+  if (c.identity.class.index === 'warlock' && c.spellcasting) {
+    updates.spellcasting = {
+      ...c.spellcasting,
+      slotsUsed: { level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0, level7: 0, level8: 0, level9: 0 },
+    }
+  }
+  store.update(c.id, updates)
   const items: { label: string; value: string }[] = []
   if (result.diceSpent > 0) {
     const conMod = computeModifier(c.abilityScores.con)
@@ -1351,6 +1363,9 @@ function applyLongRest(c: Character, newPrepared: import('@/shared/types/charact
   const newHitDice  = Math.min(c.combat.level, c.combat.hitDiceRemaining + regained)
   // Long rest restores all resources (short-rest and long-rest)
   const restedResources = c.resources.map(r => ({ ...r, current: r.max }))
+  // Long rest reduces exhaustion by 1 (PHB: "Finishing a long rest reduces a creature's exhaustion level by 1")
+  const currentExhaustion = c.combat.exhaustion ?? 0
+  const newExhaustion = Math.max(0, currentExhaustion - 1)
   const updates: Partial<Character> = {
     combat: {
       ...c.combat,
@@ -1358,6 +1373,9 @@ function applyLongRest(c: Character, newPrepared: import('@/shared/types/charact
       tempHp: 0,
       hitDiceRemaining: newHitDice,
       deathSaves: { successes: 0, failures: 0 },
+      exhaustion: newExhaustion,
+      // Concentration ends when you become incapacitated (sleep), so clear it on long rest
+      concentrationSpell: null,
     },
     resources: restedResources,
   }
@@ -1366,6 +1384,9 @@ function applyLongRest(c: Character, newPrepared: import('@/shared/types/charact
     { label: 'Hit Dice',    value: `+${regained} recovered (${newHitDice}d${hitDie.value})` },
     { label: 'Death Saves', value: 'Reset' },
   ]
+  if (currentExhaustion > 0) {
+    items.push({ label: 'Exhaustion', value: `${currentExhaustion} → ${newExhaustion}` })
+  }
   if (c.spellcasting) {
     const spellcasting = {
       ...c.spellcasting,
@@ -1409,6 +1430,16 @@ async function onLeveled(updates: Partial<Character>) {
     const existing = c.resources.find(r => r.id === newPool.id)
     return existing ? { ...newPool, current: Math.min(existing.current, newPool.max) } : newPool
   })
+  // PHB: "If your Constitution modifier changes, your hit point maximum changes accordingly,
+  // as if you had the new modifier for every Hit Die you have rolled."
+  const oldConMod = computeModifier(c.abilityScores.con)
+  const newConMod = computeModifier((updates.abilityScores ?? c.abilityScores).con)
+  if (newConMod !== oldConMod && updates.combat) {
+    updates.combat = {
+      ...updates.combat,
+      maxHp: (updates.combat.maxHp ?? c.combat.maxHp) + (newConMod - oldConMod) * newLvl,
+    }
+  }
   levelUpSaving.value = true
   await store.update(c.id, updates)
   levelUpSaving.value = false

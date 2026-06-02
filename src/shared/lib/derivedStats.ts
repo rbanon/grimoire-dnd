@@ -172,6 +172,18 @@ export function addBonusToDamage(damage: string, bonus: number): string {
   return bonus > 0 ? `${damage}+${bonus}` : `${damage}${bonus}`
 }
 
+/**
+ * Computes the base AC for a character with no armor equipped.
+ * Monk:      10 + DEX mod + WIS mod  (Unarmored Defense)
+ * Barbarian: 10 + DEX mod + CON mod  (Unarmored Defense)
+ * Others:    10 + DEX mod            (standard unarmored)
+ */
+export function computeUnarmoredAC(classIndex: string, mods: { dex: number; con: number; wis: number }): number {
+  if (classIndex === 'monk')      return 10 + mods.dex + mods.wis
+  if (classIndex === 'barbarian') return 10 + mods.dex + mods.con
+  return 10 + mods.dex
+}
+
 // Spellcasting
 export function computeSpellSaveDC(spellAbilityMod: number, profBonus: number): number {
   return 8 + spellAbilityMod + profBonus

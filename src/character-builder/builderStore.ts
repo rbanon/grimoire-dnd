@@ -37,7 +37,7 @@ export interface SpellsByLevelEntry {
 }
 
 export interface BuilderDraft {
-  // Internal — holy symbol / emblem descriptions keyed by slot "${gi}_${si}"
+  // Holy symbol / emblem flavor descriptions keyed by slot "${gi}_${si}" (builder-only, not persisted to character)
   holySymbolDescriptions: Record<string, string>
   currentStep: number
 
@@ -108,6 +108,8 @@ export interface BuilderDraft {
   selectedRaceProfs: string[]
   // Race auto-granted skill proficiencies (e.g. Half-Orc → Intimidation)
   raceSkillProficiencies: string[]
+  // Auto-granted racial languages (tracked separately to avoid overwriting user-chosen languages on race change)
+  raceAutoLanguages: string[]
 
   // Step 4 — Proficiencies
   selectedSkills: string[]
@@ -153,7 +155,7 @@ const defaultDraft = (): BuilderDraft => ({
   raceIndex: '', raceName: '', raceSpeed: 30, raceSizeCategory: 'Medium',
   raceAbilityBonuses: {}, raceLanguageCount: 2, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
-  raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [],
+  raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [], raceAutoLanguages: [],
   backgroundIndex: '', backgroundName: '', backgroundDescription: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [], backgroundLanguageChoices: 0,
   classIndex: '', className: '', classHitDie: 8, classSpellcastingAbility: null,
   classSkillChoices: 2, classSkillOptions: [],
@@ -180,7 +182,7 @@ const DRAFT_ARRAY_FIELDS = [
   'selectedSkills', 'selectedLanguages', 'startingInventory', 'raceProfOptions',
   'availableSubraces', 'availableSubclasses', 'backgroundSkillProficiencies',
   'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs', 'raceSkillProficiencies',
-  'tomeCantrips', 'selectedInvocations',
+  'tomeCantrips', 'selectedInvocations', 'raceAutoLanguages',
 ] as const
 
 const DRAFT_OBJ_FIELDS = [
@@ -687,7 +689,9 @@ export const useBuilderStore = defineStore('builder', () => {
         spellsKnown:    castingType === 'prepared' ? d.selectedSpells : finalSpells,
         spellsPrepared: castingType === 'prepared' ? d.selectedPreparedSpells
           : castingType === 'spellbook' ? finalSpells : [],
-        ritualCasting: false,
+        // Wizard, Cleric, and Druid have the Ritual Casting class feature at level 1.
+        // Bard (College of Lore) gets it at level 3, but subclass tracking is out of MVP scope.
+        ritualCasting: ['wizard', 'cleric', 'druid'].includes(d.classIndex),
       }
     }
 
