@@ -15,6 +15,7 @@ import { generateId, now } from '@/shared/lib/uuid'
 import { supabase } from '@/shared/api/supabase.client'
 import { useAuthStore } from '@/auth/store'
 import { useToast } from '@/shared/composables/useToast'
+import { withTimeout } from '@/shared/lib/withTimeout'
 
 const LOCAL_KEY = 'characters'
 let _persistTimer: ReturnType<typeof setTimeout> | null = null
@@ -106,14 +107,23 @@ export const useCharactersStore = defineStore('characters', () => {
 
   async function loadFromCloud(): Promise<boolean> {
     if (!auth.userId) { loadFromLocal(); return false }
-    const { data, error } = await supabase
-      .from('characters')
-      .select('data')
-      .eq('user_id', auth.userId)
-      .order('updated_at', { ascending: false })
 
-    if (error) {
-      console.error('[characters] Cloud load failed, falling back to local', error)
+    let data: Array<{ data: unknown }> | null = null
+    let loadError: unknown = null
+    try {
+      const result = await withTimeout(
+        supabase.from('characters').select('data').eq('user_id', auth.userId).order('updated_at', { ascending: false }),
+        20_000,
+        'Character load',
+      )
+      data = result.data as Array<{ data: unknown }> | null
+      loadError = result.error
+    } catch (err) {
+      loadError = err
+    }
+
+    if (loadError) {
+      console.error('[characters] Cloud load failed, falling back to local', loadError)
       loadFromLocal()
       return false
     }
@@ -133,16 +143,20 @@ export const useCharactersStore = defineStore('characters', () => {
 
   async function persistCloud(character: Character) {
     if (!auth.isAuthenticated || !auth.userId) return
-    const { error } = await supabase.from('characters').upsert({
-      id: character.id,
-      user_id: auth.userId,
-      name: character.identity.name,
-      level: character.combat.level,
-      class_name: character.identity.class.name,
-      race_name: character.identity.race.name,
-      portrait_url: character.portrait.type === 'url' ? character.portrait.url : null,
-      data: toJsonValue(character),
-    })
+    const { error } = await withTimeout(
+      supabase.from('characters').upsert({
+        id: character.id,
+        user_id: auth.userId,
+        name: character.identity.name,
+        level: character.combat.level,
+        class_name: character.identity.class.name,
+        race_name: character.identity.race.name,
+        portrait_url: character.portrait.type === 'url' ? character.portrait.url : null,
+        data: toJsonValue(character),
+      }),
+      20_000,
+      'Character save',
+    )
     if (error) throw error
   }
 
@@ -194,7 +208,11 @@ export const useCharactersStore = defineStore('characters', () => {
     characters.value = characters.value.filter((c) => c.id !== id)
     if (auth.isAuthenticated) {
       if (!auth.userId) throw new Error('Not authenticated')
-      const { error } = await supabase.from('characters').delete().eq('id', id).eq('user_id', auth.userId)
+      const { error } = await withTimeout(
+        supabase.from('characters').delete().eq('id', id).eq('user_id', auth.userId),
+        20_000,
+        'Character delete',
+      )
       if (error) {
         characters.value.splice(idx, 0, removed)
         useToast().error('Failed to delete character from cloud. Your data has been restored.')

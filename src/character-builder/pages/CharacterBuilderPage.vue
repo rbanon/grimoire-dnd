@@ -384,11 +384,11 @@ async function handleSave() {
   navigating.value = true
   try {
     const id = await builder.save()
-    const failure = await router.push(`/characters/${id}`)
+    const failure = await router.replace(`/characters/${id}`)
     // NavigationFailure resolves (doesn't reject) — component stays mounted
     if (failure) navigating.value = false
   } catch {
-    // save() threw or router.push() rejected (e.g. chunk load failure)
+    // save() threw or router.replace() rejected — reset spinner
     navigating.value = false
   }
 }

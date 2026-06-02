@@ -1,4 +1,5 @@
 import { supabase } from '@/shared/api/supabase.client'
+import { withTimeout } from '@/shared/lib/withTimeout'
 
 const BUCKET = 'portraits'
 const MAX_PX   = 512   // max width/height in pixels
@@ -60,9 +61,11 @@ export async function uploadPortraitBlob(
   characterId: string,
 ): Promise<string> {
   const path = `${userId}/${characterId}.jpg`
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
+  const { error } = await withTimeout(
+    supabase.storage.from(BUCKET).upload(path, blob, { upsert: true, contentType: 'image/jpeg' }),
+    20_000,
+    'Portrait upload',
+  )
   if (error) throw error
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
   return data.publicUrl

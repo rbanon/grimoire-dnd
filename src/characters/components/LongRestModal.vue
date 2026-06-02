@@ -74,7 +74,7 @@
                         class="w-4 h-4 rounded shrink-0 border flex items-center justify-center transition-all"
                         :class="isPrepared(spell.index)
                           ? 'border-arcane-base/60 bg-arcane-base/30 text-arcane-pale'
-                          : 'border-shadow/60'"
+                          : 'border-mist/40 bg-shadow/30'"
                       >
                         <span v-if="isPrepared(spell.index)" class="text-2xs leading-none">✓</span>
                       </span>

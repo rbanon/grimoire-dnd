@@ -184,9 +184,14 @@ create policy "portraits: owner update" on storage.objects
     auth.uid()::text = (string_to_array(name, '/'))[1]
   );
 
--- No broad SELECT policy: the bucket is public so files are accessible by direct
--- URL without a policy. A broad SELECT would allow unauthenticated listing of
--- all files, which is unnecessary and exposes user IDs.
+-- Owner SELECT is required for upsert: Supabase needs to check row existence
+-- before deciding INSERT vs UPDATE. Scoped to the owner's folder only, so
+-- unauthenticated users cannot list files.
+create policy "portraits: owner select" on storage.objects
+  for select using (
+    bucket_id = 'portraits' and
+    auth.uid()::text = (string_to_array(name, '/'))[1]
+  );
 
 create policy "portraits: owner delete" on storage.objects
   for delete using (
