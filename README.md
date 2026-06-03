@@ -12,46 +12,62 @@ A fully-featured **Single Page Application** for creating and managing Dungeons 
 ## Features
 
 ### Character Builder
-11-step wizard covering the full character creation process:
+11-step wizard covering the full D&D 5e character creation process:
 
-- **Class & Subclass** — pick from all 12 SRD classes with subclass selection at the appropriate level
-- **Level & Features** — set level 1–20; class features displayed per level
-- **Race & Subrace** — full race details (speed, ASI bonuses, traits, languages) fetched live from the 5e API
+- **Class & Subclass** — all 12 SRD classes; subclass selection at the correct level per class
+- **Level & Features** — set level 1–20; class features displayed per level with choice UI (fighting styles, pact boons, eldritch invocations)
+- **Race & Subrace** — speed, ASI bonuses, traits, languages, and racial proficiencies fetched live from the 5e API; race resistances and Darkvision auto-applied
 - **Background** — skill proficiencies, tool proficiencies, and starting languages
-- **Ability Scores** — point buy, standard array (with drag & drop), manual entry, or 4d6-drop-lowest roll
+- **Ability Scores** — point buy, standard array (drag & drop), manual entry, or 4d6-drop-lowest roll
 - **Feats & ASI** — feat picker with prerequisite filtering at every ASI level
-- **Skills & Proficiencies** — class, background, and racial proficiency origins clearly distinguished
-- **Spells** — level-by-level picker for known casters (Bard, Ranger, Sorcerer, Warlock); flat pool for prepared casters (Cleric, Druid, Paladin) and spellbook casters (Wizard); Warlock Pact Magic handled separately
-- **Equipment** — starting gold and item selection
-- **Personal Details** — appearance, personality traits, ideals, bonds, flaws, biography
+- **Skills & Proficiencies** — class, background, and racial origins clearly distinguished
+- **Spells** — three casting flows handled correctly:
+  - *Known casters* (Bard, Ranger, Sorcerer, Warlock) — level-by-level accordion with optional spell replacement per level
+  - *Prepared casters* (Cleric, Druid, Paladin) — open pool + daily preparation (ability mod + level / ½ level for Paladin)
+  - *Spellbook caster* (Wizard) — starting grimoire (Int mod + level spells) with daily preparation
+  - *Warlock* — Pact Magic slots, Eldritch Invocations, Pact of the Tome bonus cantrips
+- **Equipment** — starting equipment from the 5e API with full option group UI; packs (Explorer's Pack, Priest's Pack, etc.) automatically expanded into their individual item contents; or start with rolled gold
+- **Personal Details** — appearance, personality traits, ideals, bonds, flaws, biography, portrait upload
 - **Review & Save** — full summary before committing
 
 ### Character Sheet
 
 - **Tactical strip** — HP (interactive ±, THP, death saves at 0), AC, Initiative, Speed, Passive Perception, Proficiency Bonus, Spell Save DC, Spell Attack Bonus
 - **Dice rolling** — every stat, skill, save, attack, and damage roll supports Normal / Advantage / Disadvantage with animated dice
-- **Combat tab** — hit dice pips, Short Rest (hit dice recovery) and Long Rest dialogs
-- **Spells tab** — manage known, prepared, and spellbook spells; daily re-preparation for Cleric, Druid, and Paladin via **Manage Prepared** modal; cast tracking with slot usage
+- **Combat tab** — hit dice pips, Short Rest (hit dice recovery) and Long Rest dialogs; Unarmored Defense for Monk and Barbarian
+- **Spells tab** — manage known, prepared, and spellbook spells; daily re-preparation for Cleric, Druid, Paladin, and Wizard via **Prepare Spells** modal (Wizard sees only their spellbook, not the full class list); slot tracking with cast dialog
 - **Favorites tab** — weapon attacks and favourite spells with one-click rolls
-- **Equipment tab** — inventory grouped by type (Weapons, Armor, Gear); inline weapon rolls
-- **Features tab** — class and racial features loaded live from the 5e API
+- **Equipment tab** — inventory grouped by type (Weapons, Armor, Gear); Main Hand / Off Hand / Armor slots; fighting style bonuses displayed inline; inline weapon rolls
+- **Features tab** — class and racial features; feats with description lookup
 - **Bio & Notes** — free-form text sections
 - **Conditions bar** — active conditions as dismissible chips
 - **Concentration tracker** — visual indicator when a concentration spell is active
-- **Level Up** — subclass picker, ASI distribution, feat selection
+- **Level Up modal** — subclass selection, ASI / feat picker, optional spell replacement (known casters), new cantrip/spell picks, spell slot preview
 - **Print / PDF export** — print-ready sheet via browser print dialog
 - **Inline editing** — lock/unlock mode persisted across sessions
 
 ### Reference Browsers
 
-- **Spell Browser** — searchable, filterable spell list from the SRD
+- **Spell Browser** — searchable, filterable spell list from the SRD with school badges and detail panel
 - **Item Browser** — equipment reference
 
 ### Account & Sync
 
 - Authentication via Supabase Auth
 - Characters saved to the cloud and synced on login (local-first with merge strategy)
+- Portrait upload to Supabase Storage (compressed JPEG)
 - Up to 15 characters per account
+
+---
+
+## Spellcasting Rules Implemented
+
+| Class | Type | Ability | Daily preparation |
+|-------|------|---------|-------------------|
+| Bard / Ranger / Sorcerer / Warlock | Known | — | Fixed list; swap 1 spell per level-up |
+| Cleric / Druid | Prepared | WIS | WIS mod + level (all slots fillable) |
+| Paladin | Prepared | CHA | ½ level + CHA mod |
+| Wizard | Spellbook | INT | INT mod + level (from spellbook only) |
 
 ---
 
@@ -121,13 +137,13 @@ src/
 ├── auth/               Supabase Auth store, Login, Profile pages
 ├── character-builder/
 │   ├── builderStore.ts  Wizard state, validation, buildCharacterFromDraft
-│   ├── classMeta.ts     Class metadata, spell profiles, resource tables
+│   ├── classMeta.ts     Class/race metadata, spell profiles, resource tables, getRaceTraits
 │   ├── steps/           11 step components (StepClass → StepReview)
 │   └── pages/           CharacterBuilderPage
 ├── characters/
-│   ├── store.ts         CRUD, cloud sync, migration
+│   ├── store.ts         CRUD, cloud sync, schema migration
 │   ├── pages/           CharacterListPage, CharacterSheetPage
-│   └── components/      All sheet tabs and modals
+│   └── components/      Sheet tabs, LevelUpModal, ManagePreparedModal, LongRestModal…
 ├── spells/              SpellBrowserPage
 ├── items/               ItemBrowserPage
 └── shared/
