@@ -103,7 +103,7 @@
             type="button"
             class="text-xs font-heading px-2 py-0.5 rounded border border-shadow text-mist hover:border-arcane-base/40 hover:text-arcane-pale transition-all"
             @click="showManagePrepared = true"
-          >Manage Prepared</button>
+          >{{ isSpellbookCaster ? 'Prepare Spells' : 'Manage Prepared' }}</button>
           <button
             v-if="editMode"
             type="button"
@@ -204,7 +204,7 @@
         @add="onAddSpells"
       />
 
-      <!-- Manage prepared spells modal (prepared casters only) -->
+      <!-- Manage prepared spells modal (prepared + spellbook casters) -->
       <ManagePreparedModal
         v-if="isPreparedCaster"
         :show="showManagePrepared"
@@ -213,6 +213,7 @@
         :current-prepared="sc.spellsPrepared"
         :max-spell-level="maxSpellLevel"
         :daily-limit="preparedLimit ?? 9"
+        :spellbook-spells="isSpellbookCaster ? sc.spellsKnown : undefined"
         @close="showManagePrepared = false"
         @save="onManagePrepareSaved"
       />
@@ -278,18 +279,27 @@ const spellAbilityMod = computed(() => {
   return mods.value[sc.value.spellcastingAbility]
 })
 
-const isPreparedCaster = computed(() => {
+const isSpellbookCaster = computed(() => {
   const profile = getSpellProfile(props.character.identity.class.index)
-  return profile?.castingType === 'prepared'
+  return profile?.castingType === 'spellbook'
 })
 
-// Daily prepared limit for prepared casters (Math.max to always be able to fill all slots)
+const isPreparedCaster = computed(() => {
+  const profile = getSpellProfile(props.character.identity.class.index)
+  return profile?.castingType === 'prepared' || profile?.castingType === 'spellbook'
+})
+
+// Daily prepared limit for prepared/spellbook casters
 const preparedLimit = computed((): number | undefined => {
   if (!isPreparedCaster.value || !sc.value) return undefined
   const level = props.character.combat.level
+  const mod = spellAbilityMod.value
+  if (isSpellbookCaster.value) {
+    // Wizard: Int_mod + level (no totalSlots max — prepares from spellbook)
+    return Math.max(1, level + mod)
+  }
   const slots = getSpellSlots(props.character.identity.class.index, level)
   const totalSlots = Object.values(slots).reduce((s, v) => s + v, 0)
-  const mod = spellAbilityMod.value
   const daily = props.character.identity.class.index === 'paladin'
     ? Math.max(1, Math.floor(level / 2) + mod)
     : Math.max(1, level + mod)
@@ -453,9 +463,8 @@ async function onAddSpells(spells: { index: string; name: string; level: number 
   const castingType = getSpellProfile(props.character.identity.class.index)?.castingType ?? 'known'
   const updated = { ...sc.value }
   if (castingType === 'spellbook') {
-    // Wizard: new spells enter both spellbook and prepared list
-    updated.spellsKnown    = [...sc.value.spellsKnown, ...spells]
-    updated.spellsPrepared = [...sc.value.spellsPrepared, ...spells]
+    // Wizard: new spells enter the spellbook only; preparation is a separate daily step
+    updated.spellsKnown = [...sc.value.spellsKnown, ...spells]
   } else {
     // prepared and known: spells go into the known pool only
     updated.spellsKnown = [...sc.value.spellsKnown, ...spells]

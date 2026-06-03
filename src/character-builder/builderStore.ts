@@ -8,7 +8,7 @@ import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
 import { uploadPortraitBlob } from '@/shared/lib/uploadPortrait'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 11
@@ -472,6 +472,7 @@ export const useBuilderStore = defineStore('builder', () => {
     const merged = { ...defaultDraft(), ...(saved as Partial<BuilderDraft>) }
     if (!merged.classIndex) return false
     migrateKnownCasterSpells(merged)
+    migrateKnownToPreparedCasterSpells(merged)
     draft.value = merged
     return true
   }
@@ -497,6 +498,27 @@ export const useBuilderStore = defineStore('builder', () => {
       ci += cGain
       si += sGain
     }
+  }
+
+  // Migrate drafts where paladin was previously tracked as 'known' (spellsByLevel)
+  // → flatten into selectedSpells for the prepared-caster UI.
+  function migrateKnownToPreparedCasterSpells(d: BuilderDraft): void {
+    const profile = getSpellProfile(d.classIndex)
+    if (!profile || profile.castingType !== 'prepared') return
+    if (Object.keys(d.spellsByLevel).length === 0) return
+    if (d.selectedSpells.length > 0) return  // already migrated or user has data
+    const pool = new Map<string, { index: string; name: string; level: number }>()
+    for (let lvl = 1; lvl <= d.level; lvl++) {
+      const entry = d.spellsByLevel[lvl]
+      if (!entry) continue
+      for (const s of entry.spellsGained) pool.set(s.index, s)
+      if (entry.spellReplaced) {
+        pool.delete(entry.spellReplaced.fromIndex)
+        pool.set(entry.spellReplaced.to.index, entry.spellReplaced.to)
+      }
+    }
+    d.selectedSpells = [...pool.values()]
+    d.spellsByLevel = {}
   }
 
   function saveDraft() {
@@ -750,7 +772,10 @@ export const useBuilderStore = defineStore('builder', () => {
         ...d.backgroundToolProficiencies,
         ...d.raceProfOptions.filter(p => d.selectedRaceProfs.includes(p.index)).map(p => p.name),
       ],
-      resistances: [], immunities: [], vulnerabilities: [], senses: [],
+      ...(() => {
+        const t = getRaceTraits(d.raceIndex, d.subraceIndex || undefined)
+        return { resistances: t.resistances, immunities: t.immunities, vulnerabilities: [], senses: t.senses }
+      })(),
       attacks: [],
       inventory: d.startingInventory,
       currency: { cp: 0, sp: 0, ep: 0, gp: d.manualGold, pp: 0 },

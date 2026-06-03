@@ -155,6 +155,7 @@
                 <span v-if="i > 0"> · </span>
                 <span v-if="s === 'subclass'">pick subclass</span>
                 <span v-else-if="s === 'asi'">ASI or Feat</span>
+                <span v-else-if="s === 'replace'">replace a spell (optional)</span>
                 <span v-else-if="s === 'cantrips'">pick {{ deltaCantrips }} cantrip{{ deltaCantrips > 1 ? 's' : '' }}</span>
                 <span v-else-if="s === 'spells'">pick {{ deltaSpells }} spell{{ deltaSpells > 1 ? 's' : '' }}</span>
               </template>
@@ -305,6 +306,100 @@
                     <p class="font-heading text-sm flex-1" :class="selectedFeat?.index === feat.index ? 'text-gold-mid' : 'text-ash'">
                       {{ feat.name }}
                     </p>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </template>
+
+          <!-- ───────────────────── STEP: Replace Spell ─────────────────── -->
+          <template v-else-if="currentStep === 'replace'">
+            <div class="px-5 py-4 border-b border-shadow shrink-0">
+              <p class="font-heading text-base text-arcane-pale">Replace a Spell <span class="text-mist text-xs font-body ml-1 font-normal">Optional</span></p>
+              <p class="text-2xs font-body text-mist mt-0.5">{{ character.identity.class.name }} · Level {{ newLevel }} · you may swap one known spell</p>
+            </div>
+
+            <!-- Phase 1: pick which spell to remove -->
+            <template v-if="!replaceFromSpell && !replacePickerOpen">
+              <p class="px-5 pt-4 pb-1 text-xs font-body text-mist/70 shrink-0">Select a spell to replace, or click Next to skip.</p>
+              <div class="overflow-y-auto flex-1 px-4 py-2 space-y-1">
+                <div
+                  v-for="s in replaceableSpells"
+                  :key="s.index"
+                  class="flex items-center gap-3 px-3 py-2.5 rounded border cursor-pointer transition-all border-shadow hover:border-arcane-base/30 hover:bg-arcane-deep/10"
+                  @click="replaceFromSpell = s; replacePickerOpen = true; replaceSpellLevel = s.level"
+                >
+                  <div class="flex-1 min-w-0">
+                    <p class="font-heading text-sm text-ash">{{ s.name }}</p>
+                    <p class="text-2xs font-body text-mist">Spell Level {{ s.level }}</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/30 transition-all"
+                    title="View details"
+                    @click.stop="infoPanel.open({ kind: 'spell', index: s.index })"
+                  ><InfoIcon :size="12" /></button>
+                </div>
+              </div>
+            </template>
+
+            <!-- Phase 2: pick replacement spell -->
+            <template v-else>
+              <!-- "Replacing X" bar -->
+              <div class="px-5 pt-3 pb-0 shrink-0 flex items-center gap-2">
+                <span class="text-xs font-body text-mist">Replacing:</span>
+                <span class="font-heading text-sm text-arcane-pale/60 line-through">{{ replaceFromSpell?.name }}</span>
+                <button
+                  type="button"
+                  class="ml-auto text-xs font-body text-mist/50 hover:text-ash transition-colors"
+                  @click="replaceFromSpell = null; replaceToSpell = null; replacePickerOpen = false"
+                >Cancel</button>
+              </div>
+              <!-- Level tabs -->
+              <div class="flex border-b border-shadow overflow-x-auto shrink-0 scrollbar-none mt-2">
+                <button
+                  v-for="lvl in replaceAvailableLevels"
+                  :key="lvl"
+                  type="button"
+                  class="px-3.5 py-2.5 text-xs font-heading tracking-wide whitespace-nowrap transition-colors shrink-0 border-b-2"
+                  :class="replaceSpellLevel === lvl
+                    ? 'border-arcane-base text-arcane-pale'
+                    : 'border-transparent text-mist hover:text-ash'"
+                  @click="replaceSpellLevel = lvl; replaceSearch = ''"
+                >Level {{ lvl }}</button>
+              </div>
+              <div class="px-5 py-3 border-b border-shadow shrink-0">
+                <input v-model="replaceSearch" type="text" placeholder="Search spells…" class="input-base w-full text-sm" />
+              </div>
+              <div class="overflow-y-auto flex-1 px-4 py-3 space-y-1">
+                <div v-if="replaceSpellLoading" class="flex justify-center py-10">
+                  <GrimoireSpinner label="Loading spells…" />
+                </div>
+                <p v-else-if="replaceFilteredSpells.length === 0" class="text-sm font-body text-mist text-center py-8">No spells found.</p>
+                <template v-else>
+                  <div
+                    v-for="s in replaceFilteredSpells"
+                    :key="s.index"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded border transition-all cursor-pointer"
+                    :class="replaceToSpell?.index === s.index
+                      ? 'border-arcane-base/60 bg-arcane-deep/20'
+                      : 'border-shadow hover:border-arcane-base/30 hover:bg-arcane-deep/10'"
+                    @click="replaceToSpell = { index: s.index, name: s.name }"
+                  >
+                    <div class="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all"
+                      :class="replaceToSpell?.index === s.index ? 'border-arcane-base bg-arcane-deep/40' : 'border-mist/40'"
+                    >
+                      <span v-if="replaceToSpell?.index === s.index" class="text-arcane-pale text-[10px] leading-none">✓</span>
+                    </div>
+                    <p class="font-heading text-sm flex-1"
+                      :class="replaceToSpell?.index === s.index ? 'text-arcane-pale' : 'text-ash'"
+                    >{{ s.name }}</p>
+                    <button
+                      type="button"
+                      class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/40 hover:text-arcane-pale hover:bg-arcane-deep/30 transition-all"
+                      title="View details"
+                      @click.stop="infoPanel.open({ kind: 'spell', index: s.index })"
+                    ><InfoIcon :size="12" /></button>
                   </div>
                 </template>
               </div>
@@ -525,6 +620,46 @@ const deltaSpells = computed(() => {
   )
 })
 
+// ── Spell replacement (known-casters: Bard, Sorcerer, Warlock, Ranger) ────────
+
+const canReplaceSpell = computed(() =>
+  profile.value?.castingType === 'known' &&
+  newLevel.value > 1 &&
+  (props.character.spellcasting?.spellsKnown.length ?? 0) > 0,
+)
+
+// Ref: spell the user chose to swap out (null = no replacement this level)
+const replaceFromSpell = ref<SpellReference | null>(null)
+// Ref: the new spell selected as replacement
+const replaceToSpell   = ref<{ index: string; name: string } | null>(null)
+
+const replaceSearch      = ref('')
+const replaceSpellLevel  = ref(1)
+const replacePickerOpen  = ref(false)
+
+const replaceableSpells = computed((): SpellReference[] =>
+  props.character.spellcasting?.spellsKnown.filter(s => s.level > 0) ?? [],
+)
+
+const replaceAvailableLevels = computed(() => {
+  const max = getMaxSpellLevel(classIndex.value, newLevel.value)
+  return Array.from({ length: max }, (_, i) => i + 1)
+})
+
+const { data: replaceSpellData, isPending: replaceSpellLoading } = useQuery({
+  queryKey: computed(() => ['spells', classIndex.value, replaceSpellLevel.value]),
+  queryFn: () => fiveEApi.listSpells({ class: classIndex.value, level: replaceSpellLevel.value }),
+  staleTime: Infinity,
+  enabled: computed(() => props.show && canReplaceSpell.value && replacePickerOpen.value),
+})
+
+const replaceFilteredSpells = computed(() => {
+  const q = replaceSearch.value.trim().toLowerCase()
+  const known = new Set(props.character.spellcasting?.spellsKnown.map(s => s.index) ?? [])
+  const all = (replaceSpellData.value?.results ?? []).filter(s => !known.has(s.index))
+  return q ? all.filter(s => s.name.toLowerCase().includes(q)) : all
+})
+
 // ── Subclass ──────────────────────────────────────────────────────────────────
 
 const needsSubclass = computed(() =>
@@ -633,13 +768,14 @@ function setFeatChoice(choice: 'asi' | 'feat') {
 
 // ── Stepper ───────────────────────────────────────────────────────────────────
 
-type Step = 'hp' | 'subclass' | 'asi' | 'cantrips' | 'spells'
+type Step = 'hp' | 'subclass' | 'asi' | 'replace' | 'cantrips' | 'spells'
 
 const steps = computed((): Step[] => {
   if (atMaxLevel.value) return ['hp']
   const s: Step[] = ['hp']
   if (needsSubclass.value) s.push('subclass')
   if (isAsiLevel.value) s.push('asi')
+  if (canReplaceSpell.value) s.push('replace')
   if (deltaCantrips.value > 0) s.push('cantrips')
   if (deltaSpells.value > 0) s.push('spells')
   return s
@@ -658,6 +794,7 @@ const canAdvance = computed(() => {
   }
   if (currentStep.value === 'subclass') return selectedSubclass.value !== null
   if (currentStep.value === 'asi') return featChoice.value === 'feat' ? selectedFeat.value !== null : asiCanProceed.value
+  if (currentStep.value === 'replace') return true  // optional step
   if (currentStep.value === 'cantrips') return remainingCantrips.value === 0
   if (currentStep.value === 'spells') return remainingSpells.value === 0
   return true
@@ -825,6 +962,11 @@ watch(() => props.show, (v) => {
   cantripSearch.value = ''
   spellSearch.value = ''
   selectedSpellLevel.value = availableSpellLevels.value[0] ?? 1
+  replaceFromSpell.value = null
+  replaceToSpell.value = null
+  replaceSearch.value = ''
+  replacePickerOpen.value = false
+  replaceSpellLevel.value = replaceAvailableLevels.value[0] ?? 1
 })
 
 // ── Confirm ───────────────────────────────────────────────────────────────────
@@ -883,11 +1025,21 @@ function confirm() {
     const addedSpells: SpellReference[] = selectedSpells.value.map(s => ({
       index: s.index, name: s.name, level: s.level,
     }))
+    // Apply optional spell replacement for known-casters
+    let updatedKnown = [...c.spellcasting.spellsKnown, ...addedSpells]
+    if (replaceFromSpell.value && replaceToSpell.value) {
+      updatedKnown = updatedKnown.filter(s => s.index !== replaceFromSpell.value!.index)
+      updatedKnown.push({
+        index: replaceToSpell.value.index,
+        name: replaceToSpell.value.name,
+        level: replaceSpellLevel.value,
+      })
+    }
     updates.spellcasting = {
       ...c.spellcasting,
       slotsMax: newSlots.value,
       cantripsKnown: [...c.spellcasting.cantripsKnown, ...addedCantrips],
-      spellsKnown:   [...c.spellcasting.spellsKnown,   ...addedSpells],
+      spellsKnown:   updatedKnown,
     }
   }
 

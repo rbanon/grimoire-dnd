@@ -1350,8 +1350,8 @@ function onShortRested(result: { healed: number; diceSpent: number; rolls: numbe
 function longRest() {
   const c = character.value
   if (!c) return
-  const isPrepared = getSpellProfile(c.identity.class.index)?.castingType === 'prepared'
-  if (isPrepared) {
+  const ct = getSpellProfile(c.identity.class.index)?.castingType
+  if (ct === 'prepared' || ct === 'spellbook') {
     showLongRest.value = true
   } else {
     applyLongRest(c, [])

@@ -162,9 +162,9 @@ export const SPELL_PROFILES: Partial<Record<string, SpellProfile>> = {
     cantripsKnown: srdData.cantripsKnown.druid,
   },
   paladin: {
-    castingType: 'known',
+    castingType: 'prepared',
+    preparedAbility: 'cha',
     cantripsKnown: srdData.cantripsKnown.paladin,
-    spellsKnown:   [0,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10,11],
   },
   ranger: {
     castingType: 'known',
@@ -182,9 +182,11 @@ export const SPELL_PROFILES: Partial<Record<string, SpellProfile>> = {
     spellsKnown:   srdData.spellsKnown.warlock,
   },
   wizard: {
-    castingType: 'known',
+    castingType: 'spellbook',
+    preparedAbility: 'int',
     cantripsKnown: srdData.cantripsKnown.wizard,
-    spellsKnown:   [3,5,7,9,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26],
+    // Spellbook size per level: 6 at L1, +2 per level (copying from scrolls/spellbooks)
+    spellsKnown: [6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44],
   },
 }
 
@@ -700,6 +702,46 @@ const STARTING_GOLD: Record<string, StartingGoldFormula> = {
 
 export function getStartingGoldFormula(classIndex: string): StartingGoldFormula | null {
   return STARTING_GOLD[classIndex] ?? null
+}
+
+// ─── Race traits ──────────────────────────────────────────────────────────────
+
+export interface RaceTraits {
+  resistances: string[]
+  immunities: string[]
+  senses: string[]
+}
+
+// Dragonborn: subraceIndex from the 5e API e.g. 'dragonborn-black', 'dragonborn-red'
+const DRAGONBORN_ANCESTRY_RESISTANCE: Record<string, string> = {
+  'dragonborn-black':  'acid',
+  'dragonborn-blue':   'lightning',
+  'dragonborn-brass':  'fire',
+  'dragonborn-bronze': 'lightning',
+  'dragonborn-copper': 'acid',
+  'dragonborn-gold':   'fire',
+  'dragonborn-green':  'poison',
+  'dragonborn-red':    'fire',
+  'dragonborn-silver': 'cold',
+  'dragonborn-white':  'cold',
+}
+
+export function getRaceTraits(raceIndex: string, subraceIndex?: string): RaceTraits {
+  const resistances: string[] = []
+  const immunities:  string[] = []
+  const senses:      string[] = []
+
+  if (['elf', 'dwarf', 'gnome', 'half-elf', 'half-orc', 'tiefling'].includes(raceIndex)) {
+    senses.push('Darkvision 60 ft.')
+  }
+  if (raceIndex === 'tiefling') resistances.push('fire')
+  if (raceIndex === 'dwarf')    resistances.push('poison')
+  if (raceIndex === 'dragonborn' && subraceIndex) {
+    const dmgType = DRAGONBORN_ANCESTRY_RESISTANCE[subraceIndex]
+    if (dmgType) resistances.push(dmgType)
+  }
+
+  return { resistances, immunities, senses }
 }
 
 export function rollStartingGold(classIndex: string): number {
