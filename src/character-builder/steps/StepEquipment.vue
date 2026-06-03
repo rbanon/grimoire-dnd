@@ -592,6 +592,25 @@ function selectionStatLine(key: string): string {
   return parts.join(' · ')
 }
 
+// ── Pack expansion ────────────────────────────────────────────────────────────
+
+// Creates a gear InventoryItem from a pack-contents ApiReference (no full fetch needed).
+function packContentToInventoryItem(ref: ApiReference, quantity: number): InventoryItem {
+  return {
+    id: generateId(),
+    item: { index: ref.index, name: ref.name },
+    quantity,
+    equipped: false,
+    itemType: 'gear' as const,
+  }
+}
+
+// Returns expanded items if equip is a pack (has contents), otherwise null.
+function expandPack(eq: ApiEquipment, outerQty: number): InventoryItem[] | null {
+  if (!eq.contents?.length) return null
+  return eq.contents.map(c => packContentToInventoryItem(c.item, c.quantity * outerQty))
+}
+
 // ── Convert API equipment to InventoryItem ────────────────────────────────────
 
 function toInventoryItem(equip: ApiEquipment, quantity: number): InventoryItem {
@@ -653,6 +672,11 @@ const resolvedInventory = computed<InventoryItem[]>(() => {
   for (const f of fixedItems.value) {
     const eq = map[f.equipment.index]
     if (!eq) continue
+    const expanded = expandPack(eq, f.quantity)
+    if (expanded) {
+      items.push(...expanded)
+      continue
+    }
     const isEquippable = eq.equipment_category?.index === 'weapon' || !!eq.weapon_category
                       || eq.equipment_category?.index === 'armor'  || !!eq.armor_category
     if (isEquippable && f.quantity > 1) {
@@ -672,6 +696,11 @@ const resolvedInventory = computed<InventoryItem[]>(() => {
       if (slot.kind === 'item') {
         const eq = map[slot.ref.index]
         if (!eq) continue
+        const expanded = expandPack(eq, slot.quantity)
+        if (expanded) {
+          items.push(...expanded)
+          continue
+        }
         const isEquippable = eq.equipment_category?.index === 'weapon' || !!eq.weapon_category
                           || eq.equipment_category?.index === 'armor'  || !!eq.armor_category
         if (isEquippable && slot.quantity > 1) {
