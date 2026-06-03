@@ -19,8 +19,10 @@
           <div class="px-5 py-4 border-b border-shadow shrink-0">
             <div class="flex items-center justify-between">
               <div>
-                <p class="font-heading text-base text-arcane-pale">Manage Prepared Spells</p>
-                <p class="text-2xs font-body text-mist mt-0.5">{{ className }} · full class spell list</p>
+                <p class="font-heading text-base text-arcane-pale">Prepare Spells</p>
+                <p class="text-2xs font-body text-mist mt-0.5">
+                  {{ className }} · {{ isSpellbookMode ? 'from your spellbook' : 'full class spell list' }}
+                </p>
               </div>
               <div class="flex items-center gap-3">
                 <span
@@ -142,6 +144,8 @@ const props = defineProps<{
   currentPrepared: SpellReference[]
   maxSpellLevel: number
   dailyLimit: number
+  /** When provided (spellbook casters), show only these spells instead of fetching the full class list */
+  spellbookSpells?: SpellReference[]
 }>()
 
 const emit = defineEmits<{
@@ -154,7 +158,13 @@ const activeLevel = ref(1)
 const search = ref('')
 const localPrepared = ref<SpellReference[]>([])
 
+const isSpellbookMode = computed(() => !!props.spellbookSpells)
+
 const levelTabs = computed(() => {
+  if (isSpellbookMode.value) {
+    const levels = new Set(props.spellbookSpells!.map(s => s.level).filter(l => l > 0))
+    return [...levels].sort((a, b) => a - b)
+  }
   const tabs: number[] = []
   for (let i = 1; i <= props.maxSpellLevel; i++) tabs.push(i)
   return tabs
@@ -162,20 +172,27 @@ const levelTabs = computed(() => {
 
 watch(() => props.show, (open) => {
   if (open) {
-    activeLevel.value = 1
+    activeLevel.value = levelTabs.value[0] ?? 1
     search.value = ''
     localPrepared.value = [...props.currentPrepared]
   }
 })
 
-const { data, isPending: loading } = useQuery({
+const { data, isPending: apiLoading } = useQuery({
   queryKey: computed(() => ['spells', props.classIndex, activeLevel.value]),
   queryFn: () => fiveEApi.listSpells({ class: props.classIndex, level: activeLevel.value }),
   staleTime: Infinity,
-  enabled: computed(() => props.show && !!props.classIndex),
+  enabled: computed(() => props.show && !!props.classIndex && !isSpellbookMode.value),
 })
 
-const allSpells = computed(() => data.value?.results ?? [])
+const loading = computed(() => !isSpellbookMode.value && apiLoading.value)
+
+const allSpells = computed(() => {
+  if (isSpellbookMode.value) {
+    return props.spellbookSpells!.filter(s => s.level === activeLevel.value)
+  }
+  return data.value?.results ?? []
+})
 
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()

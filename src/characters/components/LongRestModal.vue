@@ -146,7 +146,9 @@ const hitDie      = computed(() => CLASS_META[classIndex.value]?.hitDie ?? 8)
 
 // ── Prepared caster logic ─────────────────────────────────────────────────────
 
-const isPreparedCaster = computed(() => profile.value?.castingType === 'prepared')
+const isPreparedCaster = computed(() =>
+  profile.value?.castingType === 'prepared' || profile.value?.castingType === 'spellbook'
+)
 
 const abilityKey = computed(() => profile.value?.preparedAbility ?? 'wis')
 const abilityMod = computed(() => mods.value[abilityKey.value] ?? 0)
@@ -160,10 +162,13 @@ const totalSlotCount = computed(() => {
 const dailyLimit = computed(() => {
   const lv  = props.character.combat.level
   const mod = abilityMod.value
+  if (profile.value?.castingType === 'spellbook') {
+    // Wizard: Int_mod + level only (prepares from spellbook, not slot-capped)
+    return Math.max(1, lv + mod)
+  }
   const daily = classIndex.value === 'paladin'
     ? Math.max(1, Math.floor(lv / 2) + mod)
     : Math.max(1, lv + mod)
-  // Match the builder: allow max(totalSlots, daily) so all slots can always be filled
   return Math.max(totalSlotCount.value, daily)
 })
 
