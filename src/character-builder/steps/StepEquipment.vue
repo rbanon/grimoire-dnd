@@ -339,16 +339,22 @@ interface OptionGroup {
 
 // ── Data fetching ─────────────────────────────────────────────────────────────
 
+const classEdition = computed(() => builder.draft.classEdition ?? '2014')
 const { data: classData, isPending: classLoading } = useQuery({
-  queryKey: computed(() => ['class', builder.draft.classIndex]),
-  queryFn: () => fiveEApi.getClass(builder.draft.classIndex),
+  queryKey: computed(() => [classEdition.value, 'class', builder.draft.classIndex]),
+  queryFn: () => classEdition.value === '2024'
+    ? fiveEApi.getClass2024(builder.draft.classIndex)
+    : fiveEApi.getClass(builder.draft.classIndex),
   enabled: computed(() => !!builder.draft.classIndex),
   staleTime: Infinity,
 })
 
+const bgEdition = computed(() => builder.draft.backgroundEdition ?? '2014')
 const { data: bgData, isLoading: bgLoading } = useQuery({
-  queryKey: computed(() => ['background', builder.draft.backgroundIndex]),
-  queryFn: () => fiveEApi.getBackground(builder.draft.backgroundIndex),
+  queryKey: computed(() => [bgEdition.value, 'background', builder.draft.backgroundIndex]),
+  queryFn: () => bgEdition.value === '2024'
+    ? fiveEApi.getBackground2024(builder.draft.backgroundIndex)
+    : fiveEApi.getBackground(builder.draft.backgroundIndex),
   enabled: computed(() => !!builder.draft.backgroundIndex && builder.draft.backgroundIndex !== 'custom'),
   staleTime: Infinity,
 })

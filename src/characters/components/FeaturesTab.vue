@@ -109,7 +109,7 @@
           v-for="trait in allRaceTraits"
           :key="trait.index"
           :name="trait.name"
-          :description="trait.desc.join('\n\n')"
+          :description="traitDescription(trait)"
           :source="traitSource(trait)"
           :open="expanded.has(trait.index)"
           @toggle="toggleExpand(trait.index)"
@@ -193,10 +193,20 @@
         <div class="h-3 skeleton rounded-sm w-3/5" />
       </div>
 
+      <!-- 2014 background feature -->
       <FeatureRow
-        v-else-if="bgData"
+        v-else-if="bgData && bgData.feature"
         :name="bgData.feature.name"
         :description="bgData.feature.desc.join('\n\n')"
+        source="Background"
+        :open="expanded.has('bg-feature')"
+        @toggle="toggleExpand('bg-feature')"
+      />
+      <!-- 2024 background origin feat -->
+      <FeatureRow
+        v-else-if="bgData && bgData.feat"
+        :name="bgData.feat.name"
+        description="Origin feat granted by this background (2024 rules)."
         source="Background"
         :open="expanded.has('bg-feature')"
         @toggle="toggleExpand('bg-feature')"
@@ -376,7 +386,7 @@ const {
         const subspecies = await fiveEApi.getSubspecies(subraceIndex.value) as Api2024Subspecies
         traitRefs.push(...subspecies.traits)
       }
-      return Promise.all(traitRefs.map(t => fiveEApi.getTrait(t.index)))
+      return fetchTraits(traitRefs.map(t => t.index), '2024')
     }
     const [race, subrace] = await Promise.all([
       fiveEApi.getRace(raceIndex.value),
@@ -386,12 +396,28 @@ const {
       ...race.traits,
       ...(subrace?.racial_traits ?? []),
     ]
-    return Promise.all(traitRefs.map(t => fiveEApi.getTrait(t.index)))
+    return fetchTraits(traitRefs.map(t => t.index), '2014')
   },
   staleTime: Infinity,
 })
 
+// Fetch traits resiliently: a single 404 shouldn't blank the whole list.
+async function fetchTraits(indices: string[], edition: '2014' | '2024'): Promise<ApiTrait[]> {
+  const results = await Promise.allSettled(
+    indices.map(i => edition === '2024' ? fiveEApi.getTrait2024(i) : fiveEApi.getTrait(i)),
+  )
+  return results
+    .filter((r): r is PromiseFulfilledResult<ApiTrait> => r.status === 'fulfilled')
+    .map(r => r.value)
+}
+
 const allRaceTraits = computed(() => raceData.value ?? [])
+
+// Trait descriptions: 2014 uses `desc` (string[]), 2024 uses `description` (string).
+function traitDescription(trait: ApiTrait): string {
+  if (trait.desc && trait.desc.length) return trait.desc.join('\n\n')
+  return trait.description ?? ''
+}
 
 function traitSource(trait: ApiTrait): string {
   if (raceEdition.value === '2024') {
@@ -400,7 +426,7 @@ function traitSource(trait: ApiTrait): string {
       ? props.character.identity.subrace.name
       : props.character.identity.race.name
   }
-  if (subraceIndex.value && trait.subraces.some(s => s.index === subraceIndex.value)) {
+  if (subraceIndex.value && trait.subraces?.some(s => s.index === subraceIndex.value)) {
     return props.character.identity.subrace!.name
   }
   return props.character.identity.race.name
@@ -409,10 +435,13 @@ function traitSource(trait: ApiTrait): string {
 // ── Background feature ────────────────────────────────────────────────────────
 
 const bgIndex = computed(() => props.character.identity.background.index)
+const bgEdition = computed(() => props.character.identity.background.edition ?? '2014')
 
 const { isLoading: bgPending, data: bgData } = useQuery({
-  queryKey: computed(() => ['background', bgIndex.value]),
-  queryFn: () => fiveEApi.getBackground(bgIndex.value),
+  queryKey: computed(() => [bgEdition.value, 'background', bgIndex.value]),
+  queryFn: () => bgEdition.value === '2024'
+    ? fiveEApi.getBackground2024(bgIndex.value)
+    : fiveEApi.getBackground(bgIndex.value),
   staleTime: Infinity,
   enabled: computed(() => !!bgIndex.value && bgIndex.value !== 'custom'),
 })

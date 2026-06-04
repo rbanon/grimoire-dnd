@@ -160,7 +160,7 @@
         </div>
 
         <template v-else-if="bgDetail">
-          <!-- Feature -->
+          <!-- Feature (2014) -->
           <div v-if="bgDetail.feature" class="space-y-2">
             <p class="text-2xs font-heading tracking-wide uppercase text-mist">Feature</p>
             <div class="px-3 py-2.5 rounded border border-shadow/50 bg-depths/20 space-y-1">
@@ -171,6 +171,25 @@
                 class="text-xs font-body text-ash leading-relaxed"
               >{{ line }}</p>
             </div>
+          </div>
+
+          <!-- Origin Feat + Ability Scores (2024) -->
+          <div v-if="bgDetail.feat" class="space-y-2">
+            <p class="text-2xs font-heading tracking-wide uppercase text-mist">Origin Feat</p>
+            <span class="inline-block px-2.5 py-1 rounded border border-arcane-base/30 bg-arcane-deep/10 text-xs font-heading text-arcane-pale">
+              {{ bgDetail.feat.name }}
+            </span>
+          </div>
+          <div v-if="bgDetail.ability_scores?.length" class="space-y-2">
+            <p class="text-2xs font-heading tracking-wide uppercase text-mist">Ability Scores</p>
+            <div class="flex flex-wrap gap-1.5">
+              <span
+                v-for="ab in bgDetail.ability_scores"
+                :key="ab.index"
+                class="px-2 py-0.5 rounded border border-gold-dim/25 bg-gold-dim/8 text-xs font-heading text-gold-dim"
+              >{{ ab.name }}</span>
+            </div>
+            <p class="text-2xs font-body text-mist/60 italic">2024 backgrounds let you increase these ability scores (+2/+1 or +1/+1/+1).</p>
           </div>
 
           <!-- Auto proficiencies -->

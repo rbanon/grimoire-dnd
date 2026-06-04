@@ -845,7 +845,7 @@ function formatPrerequisites(feat: typeof selectedFeatData.value): string {
   // Api2024Feat
   const f = feat as Api2024Feat
   const parts: string[] = []
-  if (f.prerequisites.minimum_level) parts.push(`Level ${f.prerequisites.minimum_level}+`)
+  if (f.prerequisites?.minimum_level) parts.push(`Level ${f.prerequisites.minimum_level}+`)
   if (f.prerequisite_options?.desc) parts.push(f.prerequisite_options.desc)
   return parts.join(' · ')
 }

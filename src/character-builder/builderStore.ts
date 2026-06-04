@@ -741,7 +741,7 @@ export const useBuilderStore = defineStore('builder', () => {
         subrace: d.subraceIndex ? { index: d.subraceIndex, name: d.subraceName } : null,
         class: { index: d.classIndex, name: d.className, hitDie: d.classHitDie, spellcastingAbility: d.classSpellcastingAbility, edition: d.classEdition ?? '2014' },
         subclass: d.subclassIndex ? { index: d.subclassIndex, name: d.subclassName } : null,
-        background: { index: d.backgroundIndex, name: d.backgroundName, skillProficiencies: d.backgroundSkillProficiencies, description: d.backgroundDescription || undefined },
+        background: { index: d.backgroundIndex, name: d.backgroundName, skillProficiencies: d.backgroundSkillProficiencies, description: d.backgroundDescription || undefined, edition: d.backgroundEdition ?? '2014' },
         alignment: d.alignment,
         age: d.age || undefined,
         gender: d.gender || undefined,

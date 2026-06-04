@@ -5,6 +5,7 @@ import type {
   ApiSubrace,
   ApiSubclass,
   ApiBackground,
+  Api2024Background,
   ApiSpell,
   ApiEquipment,
   ApiEquipmentCategory,
@@ -106,7 +107,23 @@ export const fiveEApi = {
   listBackgrounds: () => get<ApiReferenceList>('/backgrounds'),
   getBackground: (index: string) => get<ApiBackground>(`/backgrounds/${sanitizeApiIndex(index)}`),
   listBackgrounds2024: () => get<ApiReferenceList>('/backgrounds', undefined, BASE_URL_2024),
-  getBackground2024: (index: string) => get<ApiBackground>(`/backgrounds/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
+  // 2024 backgrounds have a different shape (proficiencies/feat/equipment_options).
+  // Normalize into the 2014 ApiBackground shape so every consumer works uniformly.
+  getBackground2024: async (index: string): Promise<ApiBackground> => {
+    const raw = await get<Api2024Background>(`/backgrounds/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024)
+    return {
+      index: raw.index,
+      name: raw.name,
+      url: raw.url,
+      starting_proficiencies: raw.proficiencies ?? [],
+      starting_equipment: [],
+      starting_equipment_options: raw.equipment_options ?? [],
+      language_options: undefined,
+      feature: undefined,
+      feat: raw.feat,
+      ability_scores: raw.ability_scores,
+    }
+  },
 
   // Spells: when filtering by class, the API requires the class-scoped endpoint
   // (/classes/{index}/spells) — the ?class= query param on /spells is silently ignored.

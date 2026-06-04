@@ -151,7 +151,7 @@
                 >{{ p.name }}</span>
               </div>
             </div>
-            <div class="space-y-1.5">
+            <div v-if="bgData.feature" class="space-y-1.5">
               <p class="label">Feature: {{ bgData.feature.name }}</p>
               <p
                 v-for="(para, i) in bgData.feature.desc"

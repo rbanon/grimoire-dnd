@@ -94,7 +94,7 @@
                 class="px-3 py-2.5 rounded border border-shadow/50 bg-depths/20 space-y-1"
               >
                 <p class="text-sm font-heading text-vellum">{{ trait.name }}</p>
-                <p v-for="(line, i) in trait.desc" :key="i" class="text-xs font-body text-ash leading-relaxed">{{ line }}</p>
+                <p v-for="(line, i) in traitLines(trait)" :key="i" class="text-xs font-body text-ash leading-relaxed">{{ line }}</p>
               </div>
             </div>
             <p v-else class="text-xs font-body text-mist/60 italic">
@@ -133,7 +133,7 @@
             <div v-else-if="traitDetails.length" class="space-y-2">
               <div v-for="trait in traitDetails" :key="trait.index" class="px-3 py-2.5 rounded border border-shadow/50 bg-depths/20 space-y-1">
                 <p class="text-sm font-heading text-vellum">{{ trait.name }}</p>
-                <p v-for="(line, i) in trait.desc" :key="i" class="text-xs font-body text-ash leading-relaxed">{{ line }}</p>
+                <p v-for="(line, i) in traitLines(trait)" :key="i" class="text-xs font-body text-ash leading-relaxed">{{ line }}</p>
               </div>
             </div>
             <p v-else-if="!raceDetail.traits.length" class="text-xs font-body text-mist/60 italic">
@@ -203,6 +203,9 @@
             <div v-if="subraceTraitDetailsLoading" class="flex justify-center py-2">
               <GrimoireSpinner />
             </div>
+            <p v-else-if="!subraceTraitDetails.length" class="text-xs font-body text-mist/60 italic">
+              Trait details are not available for this subspecies in the SRD API.
+            </p>
             <div v-else class="space-y-2">
               <div
                 v-for="trait in subraceTraitDetails"
@@ -211,7 +214,7 @@
               >
                 <p class="text-sm font-heading text-vellum">{{ trait.name }}</p>
                 <p
-                  v-for="(line, j) in trait.desc"
+                  v-for="(line, j) in traitLines(trait)"
                   :key="j"
                   class="text-xs font-body text-ash leading-relaxed"
                 >{{ line }}</p>
@@ -241,6 +244,14 @@ import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
 const { showValidation } = useBuilderValidation()
+
+// Trait descriptions differ by edition: 2014 uses `desc` (string[]), 2024 uses
+// `description` (single markdown string). Normalize to an array of lines for rendering.
+function traitLines(trait: ApiTrait): string[] {
+  if (trait.desc && trait.desc.length) return trait.desc
+  if (trait.description) return [trait.description]
+  return []
+}
 
 const fieldErrors = computed(() => ({
   race:    showValidation.value && !builder.draft.raceIndex,
@@ -310,13 +321,19 @@ const raceTraitIndices = computed(() => {
   return raceDetail.value?.traits.map(t => t.index) ?? []
 })
 
+// Fetch traits resiliently: a single 404 shouldn't blank the entire list.
+async function fetchTraits(indices: string[], edition: EditionTag): Promise<ApiTrait[]> {
+  const results = await Promise.allSettled(
+    indices.map(i => edition === '2024' ? fiveEApi.getTrait2024(i) : fiveEApi.getTrait(i)),
+  )
+  return results
+    .filter((r): r is PromiseFulfilledResult<ApiTrait> => r.status === 'fulfilled')
+    .map(r => r.value)
+}
+
 const { data: traitDetailsList, isPending: traitDetailsLoading } = useQuery({
   queryKey: computed(() => ['race-traits', raceEdition.value, ...raceTraitIndices.value]),
-  queryFn: () => Promise.all(
-    raceTraitIndices.value.map(i =>
-      raceEdition.value === '2024' ? fiveEApi.getTrait2024(i) : fiveEApi.getTrait(i)
-    )
-  ) as Promise<ApiTrait[]>,
+  queryFn: () => fetchTraits(raceTraitIndices.value, raceEdition.value),
   staleTime: Infinity,
   enabled: computed(() => raceTraitIndices.value.length > 0),
 })
@@ -339,11 +356,7 @@ const subraceTraitIndices = computed(() => subraceDetail.value?.racial_traits.ma
 
 const { data: subraceTraitDetailsList, isPending: subraceTraitDetailsLoading } = useQuery({
   queryKey: computed(() => ['subrace-traits', raceEdition.value, ...subraceTraitIndices.value]),
-  queryFn: () => Promise.all(
-    subraceTraitIndices.value.map(i =>
-      raceEdition.value === '2024' ? fiveEApi.getTrait2024(i) : fiveEApi.getTrait(i)
-    )
-  ) as Promise<ApiTrait[]>,
+  queryFn: () => fetchTraits(subraceTraitIndices.value, raceEdition.value),
   staleTime: Infinity,
   enabled: computed(() => subraceTraitIndices.value.length > 0),
 })

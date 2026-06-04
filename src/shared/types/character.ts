@@ -98,6 +98,7 @@ export const BackgroundSnapshotSchema = z.object({
   name: z.string(),
   skillProficiencies: z.array(z.string()).optional(),
   description: z.string().optional(),
+  edition: z.enum(['2014', '2024']).default('2014'),
 })
 export type BackgroundSnapshot = z.infer<typeof BackgroundSnapshotSchema>
 

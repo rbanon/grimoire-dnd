@@ -145,14 +145,30 @@ export interface ApiBackground {
   index: string
   name: string
   starting_proficiencies: ApiReference[]
-  language_options: ApiProficiencyChoice
+  // 2014-only fields — optional because 2024 backgrounds (normalized) omit them
+  language_options?: ApiProficiencyChoice
   starting_equipment: ApiStartingEquipment[]
   starting_equipment_options: ApiEquipmentOption[]
-  feature: { name: string; desc: string[] }
-  personality_traits: unknown
-  ideals: unknown
-  bonds: unknown
-  flaws: unknown
+  feature?: { name: string; desc: string[] }
+  personality_traits?: unknown
+  ideals?: unknown
+  bonds?: unknown
+  flaws?: unknown
+  // 2024-only extras (carried through normalization for richer display)
+  feat?: ApiReference
+  ability_scores?: ApiReference[]
+  url: string
+}
+
+/** Raw 2024 background — different shape (proficiencies, feat, equipment_options). */
+export interface Api2024Background {
+  index: string
+  name: string
+  ability_scores?: ApiReference[]
+  feat?: ApiReference
+  proficiencies?: ApiReference[]
+  proficiency_choices?: ApiProficiencyChoice[]
+  equipment_options?: ApiEquipmentOption[]
   url: string
 }
 
@@ -264,9 +280,12 @@ export interface ApiFeature {
 export interface ApiTrait {
   index: string
   name: string
-  desc: string[]
-  races: ApiReference[]
-  subraces: ApiReference[]
+  /** 2014 traits use `desc` (array of paragraphs). */
+  desc?: string[]
+  /** 2024 traits use `description` (single markdown string) instead of `desc`. */
+  description?: string
+  races?: ApiReference[]
+  subraces?: ApiReference[]
   url: string
 }
 
