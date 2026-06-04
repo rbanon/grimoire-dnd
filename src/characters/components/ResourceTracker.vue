@@ -9,6 +9,11 @@
         <div class="flex items-center gap-1.5 min-w-0">
           <span class="font-heading text-sm text-vellum truncate">{{ pool.name }}</span>
           <span
+            v-if="getResourceNote(classIndex, pool.id, level)"
+            class="text-2xs font-mono px-1.5 py-0.5 rounded border shrink-0 border-gold-dim/30 text-gold-mid/70"
+            :title="pool.name + ' scales with level'"
+          >{{ getResourceNote(classIndex, pool.id, level) }}</span>
+          <span
             class="text-2xs font-body px-1.5 py-0.5 rounded border shrink-0"
             :class="pool.refreshOn === 'short'
               ? 'border-arcane-base/30 text-arcane-pale/60'
@@ -95,6 +100,7 @@ import { InfoIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
+import { getResourceNote } from '@/character-builder/classMeta'
 import type { ResourcePool } from '@/shared/types/character'
 
 const infoPanel = useInfoPanel()
@@ -102,6 +108,7 @@ const infoPanel = useInfoPanel()
 const props = defineProps<{
   resources: ResourcePool[]
   classIndex: string
+  level: number
 }>()
 
 const emit = defineEmits<{

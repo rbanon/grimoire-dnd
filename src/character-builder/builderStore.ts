@@ -838,7 +838,8 @@ export const useBuilderStore = defineStore('builder', () => {
 
       const character = await buildCharacterFromDraft(id, ts, portrait)
       await characterStore.create(character)
-      await clearDraft()
+      // clearDraft() is called by the caller (CharacterBuilderPage) AFTER router.replace()
+      // so that step transitions don't fire while the overlay is still visible.
       return id
     } catch (err) {
       saveError.value = err instanceof Error ? err.message : 'Could not save character. Please try again.'

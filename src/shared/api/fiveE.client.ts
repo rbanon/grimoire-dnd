@@ -17,7 +17,8 @@ import type {
   SpellQueryParams,
 } from '../types/api'
 
-const BASE_URL = import.meta.env.VITE_5E_API_BASE ?? 'https://www.dnd5eapi.co/api/2014'
+const BASE_URL      = import.meta.env.VITE_5E_API_BASE      ?? 'https://www.dnd5eapi.co/api/2014'
+const BASE_URL_2024 = import.meta.env.VITE_5E_API_BASE_2024 ?? 'https://www.dnd5eapi.co/api/2024'
 const LS_PREFIX = 'dnd5e:1:'
 
 // Serial queue with a gap between requests to stay under the API rate limit.
@@ -68,8 +69,8 @@ export function sanitizeApiIndex(index: string): string {
   return index
 }
 
-async function get<T>(path: string, params?: Record<string, string>): Promise<T> {
-  const url = new URL(`${BASE_URL}${path}`)
+async function get<T>(path: string, params?: Record<string, string>, baseUrl = BASE_URL): Promise<T> {
+  const url = new URL(`${baseUrl}${path}`)
   if (params) {
     for (const [k, v] of Object.entries(params)) {
       if (v !== undefined && v !== '') url.searchParams.set(k, v)
@@ -121,8 +122,9 @@ export const fiveEApi = {
   listProficiencies: () => get<ApiReferenceList>('/proficiencies'),
   listLanguages: () => get<ApiReferenceList>('/languages'),
   listAlignments: () => get<ApiReferenceList>('/alignments'),
-  listFeats: () => get<ApiReferenceList>('/feats'),
-  getFeat: (index: string) => get<ApiFeat>(`/feats/${sanitizeApiIndex(index)}`),
+  // Feats: use the 2024 SRD endpoint — it includes ~40 feats vs only Grappler in 2014
+  listFeats: () => get<ApiReferenceList>('/feats', undefined, BASE_URL_2024),
+  getFeat: (index: string) => get<ApiFeat>(`/feats/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
   listTraits: () => get<ApiReferenceList>('/traits'),
 
   listMagicSchools: () => get<ApiReferenceList>('/magic-schools'),

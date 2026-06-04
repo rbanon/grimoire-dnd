@@ -114,10 +114,13 @@
             <GrimoireSpinner />
           </div>
           <template v-else>
-            <p class="text-xs font-body text-mist">
-              Select a feat from the list below.
-              <span class="text-mist/60">Feats with unmet prerequisites are hidden.</span>
-            </p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="text-xs font-body text-mist">
+                Select a feat from the list below.
+                <span class="text-mist/60">Feats with unmet prerequisites are hidden.</span>
+              </p>
+              <span class="text-2xs font-heading px-1.5 py-0.5 rounded border border-arcane-base/30 text-arcane-pale/70 bg-arcane-deep/10 shrink-0">2024 SRD</span>
+            </div>
             <div class="relative">
               <input
                 v-model="featSearch"
@@ -152,6 +155,31 @@
                 <span v-if="builder.draft.featsByLevel[asiLevel]?.featIndex === feat.index" class="text-gold-dim ml-1">✓</span>
               </button>
             </div>
+            <!-- Feat description preview -->
+            <Transition name="feat-desc">
+              <div
+                v-if="builder.draft.featsByLevel[asiLevel]?.featIndex && builder.draft.featsByLevel[asiLevel]?.featIndex === previewFeatIndex"
+                class="rounded border border-gold-dim/20 bg-depths/40 px-3 py-3 space-y-1.5"
+              >
+                <div v-if="previewFeatLoading" class="space-y-1.5">
+                  <div class="h-3 skeleton rounded-sm w-2/5" />
+                  <div class="h-3 skeleton rounded-sm w-4/5" />
+                  <div class="h-3 skeleton rounded-sm w-3/5" />
+                </div>
+                <template v-else-if="previewFeatData">
+                  <div class="flex items-center gap-2">
+                    <p class="font-heading text-sm text-gold-mid">{{ previewFeatData.name }}</p>
+                    <span class="text-2xs font-heading px-1.5 py-0.5 rounded border border-arcane-base/30 text-arcane-pale/70 bg-arcane-deep/10 shrink-0">2024 SRD</span>
+                  </div>
+                  <p
+                    v-for="(line, i) in previewFeatData.desc"
+                    :key="i"
+                    class="font-body text-xs text-ash leading-relaxed"
+                  >{{ line }}</p>
+                </template>
+              </div>
+            </Transition>
+
             <p v-if="showValidation && !builder.draft.featsByLevel[asiLevel]?.featIndex" class="text-xs font-body text-blood-bright">
               Select a feat to continue.
             </p>
@@ -188,6 +216,17 @@ import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import type { AbilityScores } from '@/shared/types/character'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
+
+// ── Feat description preview ──────────────────────────────────────────────────
+
+const previewFeatIndex = ref<string | null>(null)
+
+const { data: previewFeatData, isPending: previewFeatLoading } = useQuery({
+  queryKey: computed(() => ['feat', previewFeatIndex.value]),
+  queryFn: () => fiveEApi.getFeat(previewFeatIndex.value!),
+  staleTime: Infinity,
+  enabled: computed(() => !!previewFeatIndex.value),
+})
 
 // SRD feats are fixed — embed prerequisites statically to avoid ~50 HTTP requests
 const FEAT_PREREQUISITES: Record<string, { ability_score: { index: string; name: string }; minimum_score: number }[]> = {
@@ -271,6 +310,7 @@ function setType(asiLevel: number, type: 'asi' | 'feat') {
 
 function selectFeat(asiLevel: number, index: string, name: string) {
   builder.setFeatDecision(asiLevel, 'feat', { index, name })
+  previewFeatIndex.value = index
 }
 
 function isLevelComplete(asiLevel: number): boolean {
@@ -318,3 +358,8 @@ function changeAsi(asiLevel: number, key: keyof AbilityScores, delta: number) {
   builder.setAsiAllocation(asiLevel, key, asiAlloc(asiLevel, key) + delta)
 }
 </script>
+
+<style scoped>
+.feat-desc-enter-active, .feat-desc-leave-active { transition: all 0.2s ease; }
+.feat-desc-enter-from, .feat-desc-leave-to { opacity: 0; transform: translateY(-4px); }
+</style>

@@ -19,6 +19,7 @@
       <ResourceTracker
         :resources="character.resources"
         :class-index="character.identity.class.index"
+        :level="character.combat.level"
         @change="onResourceChange"
       />
     </section>

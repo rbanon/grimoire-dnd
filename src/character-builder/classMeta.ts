@@ -860,6 +860,34 @@ const RESOURCE_DEFINITIONS: Partial<Record<string, ResourceDef[]>> = {
   }],
 }
 
+/**
+ * Returns a short annotation for a resource pool that scales with level,
+ * e.g. "d8" for Bardic Inspiration, "+3 dmg" for Rage, "Martial Arts d6" for Ki.
+ */
+export function getResourceNote(classIndex: string, resourceId: string, level: number): string | null {
+  switch (`${classIndex}:${resourceId}`) {
+    case 'bard:bardic-inspiration': {
+      const die = level >= 15 ? 'd12' : level >= 10 ? 'd10' : level >= 5 ? 'd8' : 'd6'
+      return die
+    }
+    case 'barbarian:rage': {
+      const bonus = level >= 16 ? 4 : level >= 9 ? 3 : 2
+      return `+${bonus} dmg`
+    }
+    case 'monk:ki-points': {
+      const die = level >= 17 ? 'd10' : level >= 11 ? 'd8' : level >= 5 ? 'd6' : 'd4'
+      return `Martial Arts ${die}`
+    }
+    default:
+      return null
+  }
+}
+
+/** Number of Sneak Attack d6 dice for a Rogue at the given level. */
+export function getSneakAttackDice(level: number): number {
+  return Math.ceil(level / 2)
+}
+
 export function getClassResources(classIndex: string, level: number, mods: AbilityMods): ResourcePool[] {
   const defs = RESOURCE_DEFINITIONS[classIndex] ?? []
   return defs.flatMap(def => {

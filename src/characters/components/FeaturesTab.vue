@@ -117,6 +117,22 @@
       </div>
     </section>
 
+    <!-- ── Class Mechanics ───────────────────────────────────────────────── -->
+    <section v-if="hasClassMechanics">
+      <div class="rule-gold mb-5">
+        <span>Class Mechanics</span>
+      </div>
+      <div class="card p-4 space-y-3">
+        <div v-for="m in classMechanics" :key="m.label" class="flex items-start gap-3">
+          <span class="text-2xs font-heading tracking-[0.12em] uppercase text-mist/60 w-28 shrink-0 pt-0.5">{{ m.label }}</span>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-mono text-base text-gold-mid leading-none">{{ m.value }}</span>
+            <span class="text-xs font-body text-ash/70 leading-snug">{{ m.detail }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ── Defenses & Senses ─────────────────────────────────────────────── -->
     <section v-if="hasDefenses">
       <div class="rule-gold mb-5">
@@ -196,7 +212,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import type { Character, TraitFeature } from '@/shared/types/character'
 import type { ApiFeature, ApiTrait } from '@/shared/types/api'
-import { getFightingStyleByIndex } from '@/character-builder/classMeta'
+import { getFightingStyleByIndex, getSneakAttackDice } from '@/character-builder/classMeta'
 import FeatureRow from './FeatureRow.vue'
 
 const props = defineProps<{ character: Character }>()
@@ -245,6 +261,29 @@ const hasDefenses = computed(() =>
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
+
+// ── Class mechanics (level-scaled display values) ─────────────────────────────
+
+interface ClassMechanic { label: string; value: string; detail: string }
+
+const classMechanics = computed((): ClassMechanic[] => {
+  const cls = props.character.identity.class.index
+  const lvl = props.character.combat.level
+  const mechanics: ClassMechanic[] = []
+
+  if (cls === 'rogue') {
+    const dice = getSneakAttackDice(lvl)
+    mechanics.push({
+      label: 'Sneak Attack',
+      value: `${dice}d6`,
+      detail: 'Once per turn when you have advantage or an ally is adjacent to the target',
+    })
+  }
+
+  return mechanics
+})
+
+const hasClassMechanics = computed(() => classMechanics.value.length > 0)
 
 // ── Fighting styles ───────────────────────────────────────────────────────────
 
