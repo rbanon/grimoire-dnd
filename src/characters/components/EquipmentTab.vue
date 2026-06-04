@@ -62,6 +62,7 @@
             </optgroup>
           </select>
           <FightingStyleBadges :bonus="offHandBonus" />
+          <span v-if="acHasShield" class="text-2xs font-heading px-1 py-0.5 rounded border border-verdant-base/40 text-verdant-bright bg-verdant-deep/10 self-start">+2 AC</span>
         </div>
 
         <!-- Armor slot -->
@@ -78,7 +79,7 @@
             <option value="">— Empty —</option>
             <option v-for="item in nonShieldArmor" :key="item.id" :value="item.id">{{ item.item.name }}</option>
           </select>
-          <span v-if="effectiveAC > character.combat.armorClass" class="text-2xs font-heading px-1 py-0.5 rounded border border-verdant-base/40 text-verdant-bright bg-verdant-deep/10 self-start">+1 Defense</span>
+          <span v-if="acHasDefenseStyle" class="text-2xs font-heading px-1 py-0.5 rounded border border-verdant-base/40 text-verdant-bright bg-verdant-deep/10 self-start">+1 Defense</span>
         </div>
 
       </div>
@@ -465,7 +466,7 @@ import { useCharactersStore } from '@/characters/store'
 import { useConfirm } from '@/shared/composables/useConfirm'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { computeAllModifiers } from '@/shared/types/character'
-import { computeProficiencyBonus, computeFightingStyleBonuses, computeEffectiveAC, addBonusToDamage, parseBonus } from '@/shared/lib/derivedStats'
+import { computeProficiencyBonus, computeFightingStyleBonuses, addBonusToDamage, parseBonus } from '@/shared/lib/derivedStats'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useToast } from '@/shared/composables/useToast'
 import type { Character, AbilityName, InventoryItem, CombatFavorite, EquippedSlots } from '@/shared/types/character'
@@ -531,13 +532,18 @@ function slottedFSBonus(slot: 'mainHand' | 'offHand') {
 const mainHandBonus = computed(() => slottedFSBonus('mainHand'))
 const offHandBonus  = computed(() => slottedFSBonus('offHand'))
 
-const effectiveAC = computed(() => computeEffectiveAC(
-  props.character.combat.armorClass,
-  props.character.fightingStyles ?? [],
-  slots.value,
-  props.character.inventory,
-  mods.value.dex,
-))
+
+const acHasShield = computed(() => {
+  const offId = slots.value.offHand
+  return !!offId && props.character.inventory.some(i => i.id === offId && i.armorType === 'shield')
+})
+
+const acHasDefenseStyle = computed(() => {
+  const styles = props.character.fightingStyles ?? []
+  if (!styles.includes('defense')) return false
+  const armorId = slots.value.armor
+  return !!armorId && props.character.inventory.some(i => i.id === armorId && i.itemType === 'armor' && i.armorType !== 'shield')
+})
 
 function rollItemAtk(item: InventoryItem, event: MouseEvent) {
   const slot = currentSlot(item.id)

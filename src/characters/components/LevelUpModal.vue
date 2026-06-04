@@ -271,7 +271,7 @@
 
             <!-- Feat picker -->
             <template v-else>
-              <div class="px-5 py-3 border-b border-shadow shrink-0">
+              <div class="px-5 py-3 border-b border-shadow shrink-0 space-y-2">
                 <input
                   v-model="featSearch"
                   type="text"
@@ -279,6 +279,10 @@
                   class="input-base w-full text-sm"
                   autofocus
                 />
+                <div class="flex items-center gap-1.5">
+                  <span class="text-2xs font-heading px-1.5 py-0.5 rounded border border-arcane-base/30 text-arcane-pale/70 bg-arcane-deep/10">2024 SRD</span>
+                  <span class="text-2xs font-body text-mist/50">Feats with unmet prerequisites are hidden.</span>
+                </div>
               </div>
               <div class="overflow-y-auto flex-1 px-4 py-3 space-y-1">
                 <div v-if="featsLoading" class="flex justify-center py-10">

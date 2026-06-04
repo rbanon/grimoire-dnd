@@ -149,14 +149,6 @@
 
         <!-- Step content -->
         <div class="flex-1 overflow-y-auto bg-void relative">
-          <Transition name="fade-overlay">
-            <div
-              v-if="navigating"
-              class="absolute inset-0 z-10 flex items-center justify-center bg-void/90"
-            >
-              <GrimoireSpinner label="Saving character…" />
-            </div>
-          </Transition>
           <Transition :name="transitionName" mode="out-in">
             <component :is="currentStepComponent" :key="builder.draft.currentStep" class="h-full" />
           </Transition>
@@ -243,10 +235,22 @@
 
     </div>
   </div>
+
+  <!-- Full-screen saving overlay — fixed so it covers sidebar, header and step content -->
+  <Teleport to="body">
+    <Transition name="fade-overlay">
+      <div
+        v-if="navigating"
+        class="fixed inset-0 z-[9999] flex items-center justify-center bg-void/95"
+      >
+        <GrimoireSpinner label="Saving character…" />
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ChevronLeftIcon, ChevronRightIcon, CheckIcon,
@@ -382,11 +386,17 @@ function handleBack() {
 
 async function handleSave() {
   navigating.value = true
+  await nextTick() // let the overlay render before blocking the microtask queue
   try {
     const id = await builder.save()
     const failure = await router.replace(`/characters/${id}`)
     // NavigationFailure resolves (doesn't reject) — component stays mounted
-    if (failure) navigating.value = false
+    if (failure) {
+      navigating.value = false
+    } else {
+      // Clear draft after navigation so step transitions don't fire under the overlay
+      builder.clearDraft()
+    }
   } catch {
     // save() threw or router.replace() rejected — reset spinner
     navigating.value = false
