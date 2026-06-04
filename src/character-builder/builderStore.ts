@@ -124,8 +124,12 @@ export interface BuilderDraft {
   // Key = class level, value = map of choiceKey → selected option index
   levelChoices: Record<number, Record<string, string>>
 
+  // Edition flags — tracks which SRD edition was used for race/class selection
+  raceEdition: '2014' | '2024'
+  classEdition: '2014' | '2024'
+
   // Step 6 — Feats & ASI decisions, keyed by class level granting the improvement
-  featsByLevel: Record<number, { type: 'asi' | 'feat'; featIndex?: string; featName?: string }>
+  featsByLevel: Record<number, { type: 'asi' | 'feat'; featIndex?: string; featName?: string; featEdition?: '2014' | '2024' }>
   // Ability allocations for levels where type === 'asi'
   asiAllocations: Record<number, Partial<Record<keyof AbilityScores, number>>>
 
@@ -153,6 +157,7 @@ const defaultDraft = (): BuilderDraft => ({
   age: '', gender: '', height: '', weight: '', eyes: '', skin: '', hair: '',
   appearanceNotes: '', personalityTraits: '', ideals: '', bonds: '', flaws: '', biography: '',
   raceIndex: '', raceName: '', raceSpeed: 30, raceSizeCategory: 'Medium',
+  raceEdition: '2014', classEdition: '2014',
   raceAbilityBonuses: {}, raceLanguageCount: 2, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
   raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [], raceAutoLanguages: [],
@@ -640,8 +645,8 @@ export const useBuilderStore = defineStore('builder', () => {
     else draft.value.asiAllocations[asiLevel][key] = value
   }
 
-  function setFeatDecision(level: number, type: 'asi' | 'feat', feat?: { index: string; name: string }) {
-    draft.value.featsByLevel[level] = { type, featIndex: feat?.index, featName: feat?.name }
+  function setFeatDecision(level: number, type: 'asi' | 'feat', feat?: { index: string; name: string; edition?: '2014' | '2024' }) {
+    draft.value.featsByLevel[level] = { type, featIndex: feat?.index, featName: feat?.name, featEdition: feat?.edition ?? '2024' }
     if (type === 'feat') {
       // Clear any ASI allocation for this level when switching to feat
       delete draft.value.asiAllocations[level]
@@ -731,9 +736,9 @@ export const useBuilderStore = defineStore('builder', () => {
       fightingStyles,
       identity: {
         name: d.name.trim(),
-        race: { index: d.raceIndex, name: d.raceName, speed: d.raceSpeed, sizeCategory: d.raceSizeCategory },
+        race: { index: d.raceIndex, name: d.raceName, speed: d.raceSpeed, sizeCategory: d.raceSizeCategory, edition: d.raceEdition ?? '2014' },
         subrace: d.subraceIndex ? { index: d.subraceIndex, name: d.subraceName } : null,
-        class: { index: d.classIndex, name: d.className, hitDie: d.classHitDie, spellcastingAbility: d.classSpellcastingAbility },
+        class: { index: d.classIndex, name: d.className, hitDie: d.classHitDie, spellcastingAbility: d.classSpellcastingAbility, edition: d.classEdition ?? '2014' },
         subclass: d.subclassIndex ? { index: d.subclassIndex, name: d.subclassName } : null,
         background: { index: d.backgroundIndex, name: d.backgroundName, skillProficiencies: d.backgroundSkillProficiencies, description: d.backgroundDescription || undefined },
         alignment: d.alignment,
@@ -792,6 +797,7 @@ export const useBuilderStore = defineStore('builder', () => {
             source: `Level ${level} Feat`,
             description: '',
             apiIndex: dec.featIndex,
+            apiEdition: dec.featEdition ?? '2024',
           })),
         // Level choices (fighting styles, pact boons, etc.)
         ...Object.entries(d.levelChoices).flatMap(([lvlStr, choices]) => {

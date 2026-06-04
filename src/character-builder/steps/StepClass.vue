@@ -12,15 +12,16 @@
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <PickerCard
           v-for="cls in classes"
-          :key="cls.index"
+          :key="`${cls.edition}:${cls.index}`"
           :name="cls.name"
           :glyph="getClassMeta(cls.index).glyph"
           :flavor="getClassMeta(cls.index).flavor"
           :tags="getClassMeta(cls.index).tags.slice(0, 2)"
           :stats="`d${getClassMeta(cls.index).hitDie}`"
-          :selected="builder.draft.classIndex === cls.index"
+          :selected="builder.draft.classIndex === cls.index && builder.draft.classEdition === cls.edition"
+          :edition="cls.edition"
           show-info
-          @select="selectClass(cls.index, cls.name)"
+          @select="selectClass(cls.index, cls.name, cls.edition)"
           @info="infoPanel.open({ kind: 'class', index: cls.index })"
         />
       </div>
@@ -110,6 +111,7 @@ import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import type { ApiClass, ApiProfChoiceOption, ApiSubclass } from '@/shared/types/api'
+import type { EditionTag } from '@/shared/types/api'
 import PickerCard from '@/character-builder/components/PickerCard.vue'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
@@ -117,35 +119,55 @@ const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
 const { showValidation } = useBuilderValidation()
 
-const { data: classList, isPending: classesLoading, isError: classesError } = useQuery({
-  queryKey: ['classes'],
+const { data: classList2014, isPending: classesLoading2014, isError: classesError2014 } = useQuery({
+  queryKey: ['classes-2014'],
   queryFn: () => fiveEApi.listClasses(),
   staleTime: Infinity,
 })
-const classes = computed(() => classList.value?.results ?? [])
+const { data: classList2024, isPending: classesLoading2024 } = useQuery({
+  queryKey: ['classes-2024'],
+  queryFn: () => fiveEApi.listClasses2024(),
+  staleTime: Infinity,
+})
+
+const classesLoading = computed(() => classesLoading2014.value || classesLoading2024.value)
+const classesError   = computed(() => classesError2014.value)
+
+// Merge both editions; 2014 first, then 2024. Same class name → both appear.
+const classes = computed(() => [
+  ...(classList2014.value?.results ?? []).map(c => ({ ...c, edition: '2014' as EditionTag })),
+  ...(classList2024.value?.results ?? []).map(c => ({ ...c, edition: '2024' as EditionTag })),
+])
+
+// Selected class edition (tracked separately from index since same index exists in both)
+const selectedEdition = computed(() => builder.draft.classEdition ?? '2014')
 
 const subclassIndex = computed(() => builder.draft.subclassIndex)
 const { data: subclassDetail, isPending: subclassDetailLoading } = useQuery({
-  queryKey: computed(() => ['subclass-detail', subclassIndex.value]),
-  queryFn: () => fiveEApi.getSubclass(subclassIndex.value) as Promise<ApiSubclass>,
+  queryKey: computed(() => ['subclass-detail', subclassIndex.value, selectedEdition.value]),
+  queryFn: () => selectedEdition.value === '2024'
+    ? fiveEApi.getSubclass2024(subclassIndex.value) as Promise<ApiSubclass>
+    : fiveEApi.getSubclass(subclassIndex.value) as Promise<ApiSubclass>,
   staleTime: Infinity,
   enabled: computed(() => !!subclassIndex.value),
 })
 
-async function selectClass(index: string, name: string) {
+async function selectClass(index: string, name: string, edition: EditionTag) {
   builder.draft.classIndex = index
   builder.draft.className = name
+  builder.draft.classEdition = edition
   builder.draft.subclassIndex = ''
   builder.draft.subclassName = ''
   builder.draft.availableSubclasses = []
 
   const meta = getClassMeta(index)
   builder.draft.classHitDie = meta.hitDie
-
   builder.draft.selectedSkills = []
 
   try {
-    const detail: ApiClass = await fiveEApi.getClass(index)
+    const detail: ApiClass = edition === '2024'
+      ? await fiveEApi.getClass2024(index)
+      : await fiveEApi.getClass(index)
     builder.draft.classSpellcastingAbility = detail.spellcasting?.spellcasting_ability?.index ?? null
     builder.draft.availableSubclasses = detail.subclasses.map(s => ({ index: s.index, name: s.name }))
 

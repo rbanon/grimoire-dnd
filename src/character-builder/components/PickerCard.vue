@@ -17,6 +17,16 @@
       style="background: linear-gradient(90deg, transparent, rgba(212,168,67,0.6), transparent)"
     />
 
+    <!-- Edition badge (top-right corner) -->
+    <div v-if="edition" class="absolute top-2 right-2 z-10">
+      <span
+        class="text-2xs font-heading px-1.5 py-0.5 rounded border"
+        :class="edition === '2024'
+          ? 'border-arcane-base/40 text-arcane-pale/80 bg-arcane-deep/15'
+          : 'border-gold-dim/40 text-gold-dim/70 bg-gold-dim/8'"
+      >{{ edition }}</span>
+    </div>
+
     <!-- Glyph + actions row -->
     <div class="flex items-start justify-between gap-2">
       <span
@@ -77,6 +87,7 @@ defineProps<{
   tags?: string[]
   stats?: string
   showInfo?: boolean
+  edition?: '2014' | '2024'
 }>()
 
 const emit = defineEmits<{

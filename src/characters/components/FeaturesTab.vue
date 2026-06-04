@@ -71,8 +71,8 @@
           v-for="feat in character.features"
           :key="feat.id"
           :name="feat.name"
-          :description="feat.apiIndex && !feat.description ? (descCache[feat.apiIndex] ?? '') : feat.description"
-          :loading="!!feat.apiIndex && !feat.description && loadingDesc[feat.apiIndex] === true"
+          :description="feat.apiIndex && !feat.description ? (descCache[`${feat.apiEdition ?? '2024'}:${feat.apiIndex}`] ?? '') : feat.description"
+          :loading="!!feat.apiIndex && !feat.description && loadingDesc[`${feat.apiEdition ?? '2024'}:${feat.apiIndex}`] === true"
           :source="feat.source ?? ''"
           :open="expanded.has(feat.id)"
           @toggle="toggleExpand(feat.id, feat)"
@@ -221,20 +221,28 @@ const props = defineProps<{ character: Character }>()
 
 const expanded = ref<Set<string>>(new Set())
 
-// Cache for lazily-fetched feat descriptions (keyed by apiIndex)
+// Cache for lazily-fetched feat descriptions (keyed by `${edition}:${apiIndex}`)
 const descCache = ref<Record<string, string>>({})
 const loadingDesc = ref<Record<string, boolean>>({})
 
-async function fetchFeatDesc(apiIndex: string) {
-  if (descCache.value[apiIndex] !== undefined || loadingDesc.value[apiIndex]) return
-  loadingDesc.value = { ...loadingDesc.value, [apiIndex]: true }
+async function fetchFeatDesc(apiIndex: string, edition: '2014' | '2024' = '2024') {
+  const cacheKey = `${edition}:${apiIndex}`
+  if (descCache.value[cacheKey] !== undefined || loadingDesc.value[cacheKey]) return
+  loadingDesc.value = { ...loadingDesc.value, [cacheKey]: true }
   try {
-    const feat = await fiveEApi.getFeat(apiIndex)
-    descCache.value = { ...descCache.value, [apiIndex]: feat.desc.join('\n\n') }
+    let text: string
+    if (edition === '2024') {
+      const feat = await fiveEApi.getFeat2024(apiIndex)
+      text = feat.description
+    } else {
+      const feat = await fiveEApi.getFeat2014(apiIndex)
+      text = feat.desc.join('\n\n')
+    }
+    descCache.value = { ...descCache.value, [cacheKey]: text }
   } catch {
-    descCache.value = { ...descCache.value, [apiIndex]: '' }
+    descCache.value = { ...descCache.value, [cacheKey]: '' }
   } finally {
-    loadingDesc.value = { ...loadingDesc.value, [apiIndex]: false }
+    loadingDesc.value = { ...loadingDesc.value, [cacheKey]: false }
   }
 }
 
@@ -245,7 +253,7 @@ function toggleExpand(id: string, feat?: TraitFeature) {
   expanded.value = new Set(expanded.value)
   // Lazy-fetch description for API-backed feats with empty stored description
   if (feat?.apiIndex && !feat.description && expanded.value.has(id)) {
-    fetchFeatDesc(feat.apiIndex)
+    fetchFeatDesc(feat.apiIndex, feat.apiEdition ?? '2024')
   }
 }
 

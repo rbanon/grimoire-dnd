@@ -75,6 +75,44 @@
       </div>
     </section>
 
+    <!-- ── Edition Info ──────────────────────────────────────────────────────── -->
+    <section class="space-y-3">
+      <p class="label">Content Edition</p>
+      <div class="card p-4 space-y-3 border-shadow/50">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-heading text-sm text-stone">{{ character.identity.race.name }}</span>
+          <span
+            class="text-2xs font-heading px-1.5 py-0.5 rounded border"
+            :class="(character.identity.race.edition ?? '2014') === '2024'
+              ? 'border-arcane-base/40 text-arcane-pale/80 bg-arcane-deep/15'
+              : 'border-gold-dim/40 text-gold-dim/70 bg-gold-dim/8'"
+          >{{ character.identity.race.edition ?? '2014' }} SRD</span>
+          <span class="text-mist/40">·</span>
+          <span class="font-heading text-sm text-stone">{{ character.identity.class.name }}</span>
+          <span
+            class="text-2xs font-heading px-1.5 py-0.5 rounded border"
+            :class="(character.identity.class.edition ?? '2014') === '2024'
+              ? 'border-arcane-base/40 text-arcane-pale/80 bg-arcane-deep/15'
+              : 'border-gold-dim/40 text-gold-dim/70 bg-gold-dim/8'"
+          >{{ character.identity.class.edition ?? '2014' }} SRD</span>
+        </div>
+
+        <div class="border-t border-shadow/30 pt-3 space-y-2">
+          <p class="font-body text-xs text-ash/80 leading-relaxed">
+            This app uses content from the D&amp;D 5e <span class="font-heading text-stone">2014 SRD</span> and,
+            where available, the <span class="font-heading text-stone">2024 SRD</span>.
+            Races, classes, and feats from both editions can be mixed freely.
+          </p>
+          <p class="font-body text-xs text-mist/60 leading-relaxed">
+            <span class="text-ash/60 font-heading text-2xs uppercase tracking-wide">Not available in 2024 API · </span>
+            Spell lists (2014 data used for all characters) ·
+            Class feature descriptions per level ·
+            Fixed ability score bonuses from species (player distributes freely per 2024 rules).
+          </p>
+        </div>
+      </div>
+    </section>
+
   </div>
 </template>
 

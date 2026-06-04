@@ -279,10 +279,7 @@
                   class="input-base w-full text-sm"
                   autofocus
                 />
-                <div class="flex items-center gap-1.5">
-                  <span class="text-2xs font-heading px-1.5 py-0.5 rounded border border-arcane-base/30 text-arcane-pale/70 bg-arcane-deep/10">2024 SRD</span>
-                  <span class="text-2xs font-body text-mist/50">Feats with unmet prerequisites are hidden.</span>
-                </div>
+                <p class="text-2xs font-body text-mist/50">Shows feats from 2014 and 2024 SRD.</p>
               </div>
               <div class="overflow-y-auto flex-1 px-4 py-3 space-y-1">
                 <div v-if="featsLoading" class="flex justify-center py-10">
@@ -295,22 +292,60 @@
                   <div
                     v-for="feat in filteredFeats"
                     :key="feat.index"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded border cursor-pointer transition-all"
+                    class="px-3 py-2.5 rounded border cursor-pointer transition-all space-y-0.5"
                     :class="selectedFeat?.index === feat.index
                       ? 'border-gold-mid/60 bg-gold-dim/15'
                       : 'border-shadow hover:border-gold-dim/30 hover:bg-depths/40'"
-                    @click="selectedFeat = { index: feat.index, name: feat.name }"
+                    @click="selectedFeat = { index: feat.index, name: feat.name, edition: feat.edition }"
                   >
-                    <div
-                      class="mt-0.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all"
-                      :class="selectedFeat?.index === feat.index ? 'border-gold-mid bg-gold-mid/30' : 'border-mist/40'"
-                    >
-                      <span v-if="selectedFeat?.index === feat.index" class="w-1.5 h-1.5 rounded-full bg-gold-mid block" />
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="mt-0.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all"
+                        :class="selectedFeat?.index === feat.index ? 'border-gold-mid bg-gold-mid/30' : 'border-mist/40'"
+                      >
+                        <span v-if="selectedFeat?.index === feat.index" class="w-1.5 h-1.5 rounded-full bg-gold-mid block" />
+                      </div>
+                      <p class="font-heading text-sm flex-1" :class="selectedFeat?.index === feat.index ? 'text-gold-mid' : 'text-ash'">
+                        {{ feat.name }}
+                      </p>
+                      <span class="text-2xs font-heading text-arcane-pale/50 shrink-0">2024 SRD</span>
                     </div>
-                    <p class="font-heading text-sm flex-1" :class="selectedFeat?.index === feat.index ? 'text-gold-mid' : 'text-ash'">
-                      {{ feat.name }}
-                    </p>
                   </div>
+
+                  <!-- Description + prerequisites for selected feat -->
+                  <Transition name="feat-desc">
+                    <div
+                      v-if="selectedFeat"
+                      class="rounded border border-gold-dim/20 bg-depths/40 px-3 py-3 space-y-1.5"
+                    >
+                      <div v-if="selectedFeatLoading" class="space-y-1.5">
+                        <div class="h-3 skeleton rounded-sm w-2/5" />
+                        <div class="h-3 skeleton rounded-sm w-4/5" />
+                        <div class="h-3 skeleton rounded-sm w-3/5" />
+                      </div>
+                      <template v-else-if="selectedFeatData">
+                        <div class="flex items-center gap-2">
+                          <p class="font-heading text-sm text-gold-mid">{{ selectedFeatData.name }}</p>
+                          <span
+                            class="text-2xs font-heading px-1.5 py-0.5 rounded border shrink-0"
+                            :class="selectedFeat?.edition === '2024'
+                              ? 'border-arcane-base/30 text-arcane-pale/70 bg-arcane-deep/10'
+                              : 'border-gold-dim/30 text-gold-dim/70 bg-gold-dim/8'"
+                          >{{ selectedFeat?.edition }} SRD</span>
+                        </div>
+                        <div v-if="formatPrerequisites(selectedFeatData)" class="flex items-start gap-2">
+                          <span class="text-2xs font-heading tracking-wide uppercase text-mist/60 shrink-0 mt-px">Requires</span>
+                          <span class="font-body text-xs text-stone">{{ formatPrerequisites(selectedFeatData) }}</span>
+                        </div>
+                        <!-- 2014: desc[] array -->
+                        <template v-if="'desc' in selectedFeatData">
+                          <p v-for="(line, i) in (selectedFeatData as any).desc" :key="i" class="font-body text-xs text-ash leading-relaxed">{{ line }}</p>
+                        </template>
+                        <!-- 2024: description string -->
+                        <p v-else class="font-body text-xs text-ash leading-relaxed whitespace-pre-line">{{ (selectedFeatData as any).description }}</p>
+                      </template>
+                    </div>
+                  </Transition>
                 </template>
               </div>
             </template>
@@ -586,6 +621,7 @@ import {
 } from '@/character-builder/classMeta'
 import type { SpellSlotsMax } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
+import type { ApiFeat, Api2024Feat } from '@/shared/types/api'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
@@ -725,9 +761,9 @@ const asiCanProceed = computed(() =>
   asiPointsRemaining.value === 0 || !ASI_ABILITIES.some(k => canAsiIncrement(k)),
 )
 
-// ── Feat picker ───────────────────────────────────────────────────────────────
+// ── Feat picker — merged 2014 + 2024 ─────────────────────────────────────────
 
-const FEAT_PREREQUISITES: Record<string, { ability_score: { index: string; name: string }; minimum_score: number }[]> = {
+const FEAT_PREREQUISITES_2014: Record<string, { ability_score: { index: string; name: string }; minimum_score: number }[]> = {
   athlete:             [{ ability_score: { index: 'str', name: 'Strength' },     minimum_score: 13 }],
   'defensive-duelist': [{ ability_score: { index: 'dex', name: 'Dexterity' },   minimum_score: 13 }],
   grappler:            [{ ability_score: { index: 'str', name: 'Strength' },     minimum_score: 13 }],
@@ -739,19 +775,30 @@ const FEAT_PREREQUISITES: Record<string, { ability_score: { index: string; name:
 }
 
 const featChoice   = ref<'asi' | 'feat'>('asi')
-const selectedFeat = ref<{ index: string; name: string } | null>(null)
+const selectedFeat = ref<{ index: string; name: string; edition: '2014' | '2024' } | null>(null)
 const featSearch   = ref('')
 
-const { data: featData, isPending: featsLoading } = useQuery({
-  queryKey: ['feats'],
-  queryFn: () => fiveEApi.listFeats(),
+const { data: featData2014, isPending: featsLoading2014 } = useQuery({
+  queryKey: ['feats-2014'],
+  queryFn: () => fiveEApi.listFeats2014(),
   staleTime: Infinity,
   enabled: computed(() => props.show && isAsiLevel.value),
 })
-const allFeats = computed(() => featData.value?.results ?? [])
+const { data: featData2024, isPending: featsLoading2024 } = useQuery({
+  queryKey: ['feats-2024'],
+  queryFn: () => fiveEApi.listFeats2024(),
+  staleTime: Infinity,
+  enabled: computed(() => props.show && isAsiLevel.value),
+})
+const featsLoading = computed(() => featsLoading2014.value || featsLoading2024.value)
+const allFeats = computed(() => [
+  ...(featData2014.value?.results ?? []).map(f => ({ ...f, edition: '2014' as const, key: `2014:${f.index}` })),
+  ...(featData2024.value?.results ?? []).map(f => ({ ...f, edition: '2024' as const, key: `2024:${f.index}` })),
+])
 
-function featMeetsPrerequisites(featIndex: string): boolean {
-  const prerequisites = FEAT_PREREQUISITES[featIndex]
+function featMeetsPrerequisites(featIndex: string, edition: '2014' | '2024'): boolean {
+  if (edition === '2024') return true // 2024 prerequisites shown from API, not pre-filtered
+  const prerequisites = FEAT_PREREQUISITES_2014[featIndex]
   if (!prerequisites || prerequisites.length === 0) return true
   return prerequisites.every(
     prereq => props.character.abilityScores[prereq.ability_score.index as keyof AbilityScores] >= prereq.minimum_score,
@@ -761,8 +808,47 @@ function featMeetsPrerequisites(featIndex: string): boolean {
 const filteredFeats = computed(() => {
   const q = featSearch.value.toLowerCase().trim()
   const list = q ? allFeats.value.filter(f => f.name.toLowerCase().includes(q)) : allFeats.value
-  return list.filter(f => featMeetsPrerequisites(f.index))
+  return list.filter(f => featMeetsPrerequisites(f.index, f.edition))
 })
+
+// Fetch 2014 or 2024 detail based on selected feat edition
+const { data: selectedFeat2014Data, isPending: selectedFeatLoading2014 } = useQuery({
+  queryKey: computed(() => ['feat-2014', selectedFeat.value?.index]),
+  queryFn:  () => fiveEApi.getFeat2014(selectedFeat.value!.index),
+  staleTime: Infinity,
+  enabled: computed(() => !!selectedFeat.value?.index && selectedFeat.value.edition === '2014'),
+})
+const { data: selectedFeat2024Data, isPending: selectedFeatLoading2024 } = useQuery({
+  queryKey: computed(() => ['feat-2024', selectedFeat.value?.index]),
+  queryFn:  () => fiveEApi.getFeat2024(selectedFeat.value!.index),
+  staleTime: Infinity,
+  enabled: computed(() => !!selectedFeat.value?.index && selectedFeat.value.edition === '2024'),
+})
+const selectedFeatLoading = computed(() => selectedFeatLoading2014.value || selectedFeatLoading2024.value)
+const selectedFeatData = computed(() =>
+  selectedFeat.value?.edition === '2014' ? selectedFeat2014Data.value ?? null
+  : selectedFeat.value?.edition === '2024' ? selectedFeat2024Data.value ?? null
+  : null,
+)
+
+function formatPrerequisites(feat: typeof selectedFeatData.value): string {
+  if (!feat) return ''
+  if ('desc' in feat) {
+    // ApiFeat (2014)
+    return (feat as ApiFeat).prerequisites.map(p => {
+      if (p.ability_score && p.minimum_score != null) return `${p.ability_score.name} ${p.minimum_score}+`
+      if (p.proficiency) return `Proficiency: ${p.proficiency.name}`
+      if (p.minimum_level) return `Level ${p.minimum_level}+`
+      return ''
+    }).filter(Boolean).join(' · ')
+  }
+  // Api2024Feat
+  const f = feat as Api2024Feat
+  const parts: string[] = []
+  if (f.prerequisites.minimum_level) parts.push(`Level ${f.prerequisites.minimum_level}+`)
+  if (f.prerequisite_options?.desc) parts.push(f.prerequisite_options.desc)
+  return parts.join(' · ')
+}
 
 function setFeatChoice(choice: 'asi' | 'feat') {
   featChoice.value = choice
@@ -1059,4 +1145,6 @@ function confirm() {
 .levelup-fade-enter-from .relative { transform: scale(0.95); }
 .scrollbar-none { scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
+.feat-desc-enter-active, .feat-desc-leave-active { transition: all 0.2s ease; }
+.feat-desc-enter-from, .feat-desc-leave-to { opacity: 0; transform: translateY(-4px); }
 </style>

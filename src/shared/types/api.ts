@@ -272,11 +272,67 @@ export interface ApiTrait {
 
 // ── Feats ─────────────────────────────────────────────────────────────────────
 
+export interface ApiFeatPrerequisite {
+  type?: string
+  ability_score?: ApiReference
+  minimum_score?: number
+  proficiency?: ApiReference
+  minimum_level?: number
+  spell?: ApiReference
+}
+
 export interface ApiFeat {
   index: string
   name: string
   desc: string[]
-  prerequisites: { ability_score: ApiReference; minimum_score: number }[]
+  prerequisites: ApiFeatPrerequisite[]
+  url: string
+}
+
+// ── 2024 Edition types ────────────────────────────────────────────────────────
+
+export type EditionTag = '2014' | '2024'
+
+/** 2024 species — replaces /races. No ability_bonuses, no languages, no starting_proficiencies. */
+export interface Api2024Species {
+  index: string
+  name: string
+  type: string
+  size: string
+  speed: number
+  traits: ApiReference[]
+  subspecies: ApiReference[]
+  url: string
+}
+
+/** 2024 subspecies — replaces /subraces. */
+export interface Api2024Subspecies {
+  index: string
+  name: string
+  species: ApiReference
+  traits: ApiReference[]
+  url: string
+}
+
+/** 2024 feat — uses `description` string (markdown) instead of `desc` array. */
+export interface Api2024Feat {
+  index: string
+  name: string
+  description: string
+  prerequisites: { minimum_level?: number }
+  prerequisite_options?: {
+    desc: string
+    type: string
+    choose: number
+    from: {
+      option_set_type: string
+      options: Array<{
+        option_type: string
+        ability_score?: { index: string; name: string }
+        minimum_score?: number
+      }>
+    }
+  }
   url: string
 }
 

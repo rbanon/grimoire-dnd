@@ -13,6 +13,9 @@ import type {
   ApiFeature,
   ApiTrait,
   ApiFeat,
+  Api2024Species,
+  Api2024Subspecies,
+  Api2024Feat,
   ApiClassLevel,
   SpellQueryParams,
 } from '../types/api'
@@ -122,9 +125,26 @@ export const fiveEApi = {
   listProficiencies: () => get<ApiReferenceList>('/proficiencies'),
   listLanguages: () => get<ApiReferenceList>('/languages'),
   listAlignments: () => get<ApiReferenceList>('/alignments'),
-  // Feats: use the 2024 SRD endpoint — it includes ~40 feats vs only Grappler in 2014
+  // Feats — both editions exposed separately for combined picker
+  listFeats2014: () => get<ApiReferenceList>('/feats'),
+  getFeat2014:   (index: string) => get<ApiFeat>(`/feats/${sanitizeApiIndex(index)}`),
+  listFeats2024: () => get<ApiReferenceList>('/feats', undefined, BASE_URL_2024),
+  getFeat2024:   (index: string) => get<Api2024Feat>(`/feats/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
+  /** @deprecated use listFeats2024 or listFeats2014 */
   listFeats: () => get<ApiReferenceList>('/feats', undefined, BASE_URL_2024),
-  getFeat: (index: string) => get<ApiFeat>(`/feats/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
+  /** @deprecated use getFeat2024 or getFeat2014 */
+  getFeat: (index: string) => get<ApiFeat>(`/feats/${sanitizeApiIndex(index)}`),
+
+  // 2024 species (replaces races), subspecies (replaces subraces)
+  listSpecies:    () => get<ApiReferenceList>('/species', undefined, BASE_URL_2024),
+  getSpecies:     (index: string) => get<Api2024Species>(`/species/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
+  listSubspecies: () => get<ApiReferenceList>('/subspecies', undefined, BASE_URL_2024),
+  getSubspecies:  (index: string) => get<Api2024Subspecies>(`/subspecies/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
+
+  // 2024 classes and subclasses
+  listClasses2024:  () => get<ApiReferenceList>('/classes', undefined, BASE_URL_2024),
+  getClass2024:     (index: string) => get<ApiClass>(`/classes/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
+  getSubclass2024:  (index: string) => get<ApiSubclass>(`/subclasses/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
   listTraits: () => get<ApiReferenceList>('/traits'),
 
   listMagicSchools: () => get<ApiReferenceList>('/magic-schools'),
