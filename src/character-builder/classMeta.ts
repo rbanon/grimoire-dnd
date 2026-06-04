@@ -112,6 +112,7 @@ export interface RaceMeta {
 }
 
 export const RACE_META: Record<string, RaceMeta> = {
+  // 2014 SRD races
   dragonborn: { glyph: '🐉', flavor: 'Born of dragons, proud and self-sufficient', traits: ['Breath Weapon', 'Damage Resistance'] },
   dwarf:      { glyph: '⛏', flavor: 'Stout and hardy, known for their determination and skill', traits: ['Darkvision', 'Dwarven Resilience', 'Stonecunning'] },
   elf:        { glyph: '✧', flavor: 'A magical people of otherworldly grace', traits: ['Darkvision', 'Keen Senses', 'Fey Ancestry', 'Trance'] },
@@ -121,6 +122,9 @@ export const RACE_META: Record<string, RaceMeta> = {
   halfling:   { glyph: '◉', flavor: 'Small but nimble folk with surprising luck', traits: ['Lucky', 'Brave', 'Halfling Nimbleness'] },
   human:      { glyph: '⊕', flavor: 'Ambitious and adaptable, humans shape the world', traits: ['Extra Skill Proficiency', 'Bonus Feat (optional)'] },
   tiefling:   { glyph: '⌬', flavor: 'Marked by infernal heritage, tieflings are both feared and alluring', traits: ['Darkvision', 'Hellish Resistance', 'Infernal Legacy'] },
+  // 2024 SRD species (new entries)
+  goliath:    { glyph: '⛰', flavor: 'Towering descendants of giants, blessed with giant ancestry', traits: ['Giant Ancestry', 'Large Form', 'Powerful Build'] },
+  orc:        { glyph: '🪓', flavor: 'Fierce and relentless, orcs carry the might of ancient warriors', traits: ['Darkvision', 'Adrenaline Rush', 'Relentless Endurance'] },
 }
 
 // ─── Spell profiles ───────────────────────────────────────────────────────────
@@ -734,6 +738,8 @@ export function getRaceTraits(raceIndex: string, subraceIndex?: string): RaceTra
   if (['elf', 'dwarf', 'gnome', 'half-elf', 'half-orc', 'tiefling'].includes(raceIndex)) {
     senses.push('Darkvision 60 ft.')
   }
+  // 2024 species with different darkvision range
+  if (raceIndex === 'orc') senses.push('Darkvision 120 ft.')
   if (raceIndex === 'tiefling') resistances.push('fire')
   if (raceIndex === 'dwarf')    resistances.push('poison')
   if (raceIndex === 'dragonborn' && subraceIndex) {

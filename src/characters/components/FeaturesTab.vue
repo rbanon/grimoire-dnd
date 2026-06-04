@@ -211,7 +211,7 @@ import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import type { Character, TraitFeature } from '@/shared/types/character'
-import type { ApiFeature, ApiTrait } from '@/shared/types/api'
+import type { ApiFeature, ApiTrait, Api2024Species, Api2024Subspecies } from '@/shared/types/api'
 import { getFightingStyleByIndex, getSneakAttackDice } from '@/character-builder/classMeta'
 import FeatureRow from './FeatureRow.vue'
 
@@ -357,8 +357,9 @@ const classFeaturesByLevel = computed(() => {
 
 // ── Race & subrace traits ─────────────────────────────────────────────────────
 
-const raceIndex = computed(() => props.character.identity.race.index)
+const raceIndex    = computed(() => props.character.identity.race.index)
 const subraceIndex = computed(() => props.character.identity.subrace?.index ?? null)
+const raceEdition  = computed(() => props.character.identity.race.edition ?? '2014')
 
 const {
   isPending: racePending,
@@ -366,8 +367,17 @@ const {
   data: raceData,
   refetch: raceRefetch,
 } = useQuery({
-  queryKey: computed(() => ['race-traits', raceIndex.value, subraceIndex.value]),
+  queryKey: computed(() => ['race-traits', raceEdition.value, raceIndex.value, subraceIndex.value]),
   queryFn: async () => {
+    if (raceEdition.value === '2024') {
+      const species = await fiveEApi.getSpecies(raceIndex.value) as Api2024Species
+      const traitRefs = [...species.traits]
+      if (subraceIndex.value) {
+        const subspecies = await fiveEApi.getSubspecies(subraceIndex.value) as Api2024Subspecies
+        traitRefs.push(...subspecies.traits)
+      }
+      return Promise.all(traitRefs.map(t => fiveEApi.getTrait(t.index)))
+    }
     const [race, subrace] = await Promise.all([
       fiveEApi.getRace(raceIndex.value),
       subraceIndex.value ? fiveEApi.getSubrace(subraceIndex.value) : null,
@@ -384,6 +394,12 @@ const {
 const allRaceTraits = computed(() => raceData.value ?? [])
 
 function traitSource(trait: ApiTrait): string {
+  if (raceEdition.value === '2024') {
+    // For 2024 subspecies we can't match via trait.subraces — just use species name
+    return props.character.identity.subrace
+      ? props.character.identity.subrace.name
+      : props.character.identity.race.name
+  }
   if (subraceIndex.value && trait.subraces.some(s => s.index === subraceIndex.value)) {
     return props.character.identity.subrace!.name
   }
