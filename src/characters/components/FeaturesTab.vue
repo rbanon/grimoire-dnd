@@ -71,10 +71,11 @@
           v-for="feat in character.features"
           :key="feat.id"
           :name="feat.name"
-          :description="feat.description"
+          :description="feat.apiIndex && !feat.description ? (descCache[feat.apiIndex] ?? '') : feat.description"
+          :loading="!!feat.apiIndex && !feat.description && loadingDesc[feat.apiIndex] === true"
           :source="feat.source ?? ''"
           :open="expanded.has(feat.id)"
-          @toggle="toggleExpand(feat.id)"
+          @toggle="toggleExpand(feat.id, feat)"
         />
       </div>
     </section>
@@ -116,6 +117,55 @@
       </div>
     </section>
 
+    <!-- ── Defenses & Senses ─────────────────────────────────────────────── -->
+    <section v-if="hasDefenses">
+      <div class="rule-gold mb-5">
+        <span>Defenses &amp; Senses</span>
+      </div>
+      <div class="card p-4 space-y-3">
+        <div v-if="character.resistances.length > 0" class="flex items-start gap-3">
+          <span class="text-2xs font-heading tracking-[0.12em] uppercase text-mist/60 w-20 shrink-0 pt-0.5">Resistant</span>
+          <div class="flex flex-wrap gap-1.5">
+            <span
+              v-for="r in character.resistances"
+              :key="r"
+              class="px-2 py-0.5 rounded text-xs font-heading border border-arcane-base/35 text-arcane-pale bg-arcane-deep/10"
+            >{{ capitalize(r) }}</span>
+          </div>
+        </div>
+        <div v-if="character.immunities.length > 0" class="flex items-start gap-3">
+          <span class="text-2xs font-heading tracking-[0.12em] uppercase text-mist/60 w-20 shrink-0 pt-0.5">Immune</span>
+          <div class="flex flex-wrap gap-1.5">
+            <span
+              v-for="r in character.immunities"
+              :key="r"
+              class="px-2 py-0.5 rounded text-xs font-heading border border-gold-dim/40 text-gold-mid bg-gold-dim/10"
+            >{{ capitalize(r) }}</span>
+          </div>
+        </div>
+        <div v-if="character.vulnerabilities.length > 0" class="flex items-start gap-3">
+          <span class="text-2xs font-heading tracking-[0.12em] uppercase text-mist/60 w-20 shrink-0 pt-0.5">Vulnerable</span>
+          <div class="flex flex-wrap gap-1.5">
+            <span
+              v-for="r in character.vulnerabilities"
+              :key="r"
+              class="px-2 py-0.5 rounded text-xs font-heading border border-blood-base/40 text-blood-mid bg-blood-deep/10"
+            >{{ capitalize(r) }}</span>
+          </div>
+        </div>
+        <div v-if="character.senses.length > 0" class="flex items-start gap-3">
+          <span class="text-2xs font-heading tracking-[0.12em] uppercase text-mist/60 w-20 shrink-0 pt-0.5">Senses</span>
+          <div class="flex flex-wrap gap-1.5">
+            <span
+              v-for="s in character.senses"
+              :key="s"
+              class="px-2 py-0.5 rounded text-xs font-heading border border-shadow text-stone"
+            >{{ s }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ── Background Feature ─────────────────────────────────────────────── -->
     <section v-if="bgData || bgPending">
       <div class="rule-gold mb-5">
@@ -144,7 +194,7 @@
 import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
-import type { Character } from '@/shared/types/character'
+import type { Character, TraitFeature } from '@/shared/types/character'
 import type { ApiFeature, ApiTrait } from '@/shared/types/api'
 import { getFightingStyleByIndex } from '@/character-builder/classMeta'
 import FeatureRow from './FeatureRow.vue'
@@ -154,11 +204,46 @@ const props = defineProps<{ character: Character }>()
 // ── Expanded state ────────────────────────────────────────────────────────────
 
 const expanded = ref<Set<string>>(new Set())
-function toggleExpand(id: string) {
+
+// Cache for lazily-fetched feat descriptions (keyed by apiIndex)
+const descCache = ref<Record<string, string>>({})
+const loadingDesc = ref<Record<string, boolean>>({})
+
+async function fetchFeatDesc(apiIndex: string) {
+  if (descCache.value[apiIndex] !== undefined || loadingDesc.value[apiIndex]) return
+  loadingDesc.value = { ...loadingDesc.value, [apiIndex]: true }
+  try {
+    const feat = await fiveEApi.getFeat(apiIndex)
+    descCache.value = { ...descCache.value, [apiIndex]: feat.desc.join('\n\n') }
+  } catch {
+    descCache.value = { ...descCache.value, [apiIndex]: '' }
+  } finally {
+    loadingDesc.value = { ...loadingDesc.value, [apiIndex]: false }
+  }
+}
+
+function toggleExpand(id: string, feat?: TraitFeature) {
   if (expanded.value.has(id)) expanded.value.delete(id)
   else expanded.value.add(id)
   // trigger reactivity
   expanded.value = new Set(expanded.value)
+  // Lazy-fetch description for API-backed feats with empty stored description
+  if (feat?.apiIndex && !feat.description && expanded.value.has(id)) {
+    fetchFeatDesc(feat.apiIndex)
+  }
+}
+
+// ── Defenses & senses ─────────────────────────────────────────────────────────
+
+const hasDefenses = computed(() =>
+  props.character.resistances.length > 0 ||
+  props.character.immunities.length > 0 ||
+  props.character.vulnerabilities.length > 0 ||
+  props.character.senses.length > 0,
+)
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 // ── Fighting styles ───────────────────────────────────────────────────────────

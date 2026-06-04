@@ -284,15 +284,15 @@ async function selectRace(index: string, name: string) {
     const userChosenLanguages = builder.draft.selectedLanguages.filter(l => !oldRaceLanguages.includes(l))
     builder.draft.raceAutoLanguages = newRaceLanguages
     builder.draft.selectedLanguages = [...new Set([...newRaceLanguages, ...userChosenLanguages])]
-    builder.draft.raceSkillProficiencies = detail.starting_proficiencies
+    builder.draft.raceSkillProficiencies = (detail.starting_proficiencies ?? [])
       .filter(p => p.index.startsWith('skill-'))
       .map(p => p.index.replace(/^skill-/, ''))
     if (detail.starting_proficiency_options) {
       builder.draft.raceProfChoices = detail.starting_proficiency_options.choose
-      builder.draft.raceProfOptions = detail.starting_proficiency_options.from.options
+      builder.draft.raceProfOptions = (detail.starting_proficiency_options.from?.options ?? [])
         .map(o => ({ index: o.item.index, name: o.item.name }))
     }
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[StepRace] selectRace failed:', err) }
 }
 
 async function selectSubrace(index: string, name: string) {
@@ -306,7 +306,7 @@ async function selectSubrace(index: string, name: string) {
       acc[key] = (acc[key] ?? 0) + ab.bonus
       return acc
     }, {} as Record<string, number>)
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[StepRace] selectSubrace failed:', err) }
 }
 </script>
 

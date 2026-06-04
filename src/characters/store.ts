@@ -101,7 +101,7 @@ export const useCharactersStore = defineStore('characters', () => {
     const stored = storageGet(LOCAL_KEY, z.array(z.unknown()))
     if (!stored) { characters.value = []; return }
     characters.value = stored.flatMap((raw) => {
-      try { return [migrateCharacter(raw)] } catch { return [] }
+      try { return [migrateCharacter(raw)] } catch (e) { console.warn('[characters] Failed to migrate character:', e); return [] }
     })
   }
 
@@ -129,7 +129,7 @@ export const useCharactersStore = defineStore('characters', () => {
     }
     const rows = (data ?? []) as Array<{ data: unknown }>
     characters.value = rows.flatMap((row) => {
-      try { return [migrateCharacter(row.data)] } catch { return [] }
+      try { return [migrateCharacter(row.data)] } catch (e) { console.warn('[characters] Failed to migrate cloud character:', e); return [] }
     })
     return true
   }

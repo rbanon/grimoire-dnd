@@ -13,7 +13,8 @@ export function storageGet<T>(key: string, schema: z.ZodSchema<T>): T | null {
       return null
     }
     return result.data
-  } catch {
+  } catch (e) {
+    console.warn(`[storage] Failed to read key "${key}":`, e)
     return null
   }
 }

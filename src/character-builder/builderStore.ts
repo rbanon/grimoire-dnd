@@ -791,6 +791,7 @@ export const useBuilderStore = defineStore('builder', () => {
             name: dec.featName ?? dec.featIndex ?? '',
             source: `Level ${level} Feat`,
             description: '',
+            apiIndex: dec.featIndex,
           })),
         // Level choices (fighting styles, pact boons, etc.)
         ...Object.entries(d.levelChoices).flatMap(([lvlStr, choices]) => {

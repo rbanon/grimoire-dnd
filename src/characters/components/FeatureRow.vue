@@ -30,12 +30,21 @@
     <!-- Description -->
     <div v-show="open" class="px-4 pb-4">
       <div class="border-t border-shadow/40 pt-3">
-        <p
-          v-for="(para, i) in paragraphs"
-          :key="i"
-          class="font-body text-sm text-ash leading-relaxed"
-          :class="i > 0 ? 'mt-2' : ''"
-        >{{ para }}</p>
+        <template v-if="loading">
+          <div class="h-3 skeleton rounded-sm w-4/5 mb-2" />
+          <div class="h-3 skeleton rounded-sm w-3/5" />
+        </template>
+        <template v-else-if="paragraphs.length === 0">
+          <p class="font-body text-sm text-mist/50 italic">No description available.</p>
+        </template>
+        <template v-else>
+          <p
+            v-for="(para, i) in paragraphs"
+            :key="i"
+            class="font-body text-sm text-ash leading-relaxed"
+            :class="i > 0 ? 'mt-2' : ''"
+          >{{ para }}</p>
+        </template>
       </div>
     </div>
   </div>
@@ -51,6 +60,7 @@ const props = defineProps<{
   source: string
   isSubclass?: boolean
   open: boolean
+  loading?: boolean
 }>()
 
 defineEmits<{ toggle: [] }>()

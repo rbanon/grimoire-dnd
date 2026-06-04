@@ -336,6 +336,7 @@ export const TraitFeatureSchema = z.object({
   name: z.string(),
   source: z.string().optional(), // "Race", "Class", "Background", "Custom"
   description: z.string(),
+  apiIndex: z.string().optional(), // 5e API feat index, used for lazy description fetch
 })
 export type TraitFeature = z.infer<typeof TraitFeatureSchema>
 
@@ -360,10 +361,10 @@ export const CharacterSchema = z.object({
   savingThrowProficiencies: SavingThrowProficienciesSchema,
   languages: z.array(z.string()),
   otherProficiencies: z.array(z.string()),
-  resistances: z.array(z.string()),
-  immunities: z.array(z.string()),
-  vulnerabilities: z.array(z.string()),
-  senses: z.array(z.string()),
+  resistances: z.array(z.string()).default([]),
+  immunities: z.array(z.string()).default([]),
+  vulnerabilities: z.array(z.string()).default([]),
+  senses: z.array(z.string()).default([]),
   fightingStyles: z.array(z.string()).default([]),
   equippedSlots: EquippedSlotsSchema.default(DEFAULT_EQUIPPED_SLOTS),
   attacks: z.array(AttackSchema),

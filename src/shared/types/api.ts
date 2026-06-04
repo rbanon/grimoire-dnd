@@ -107,7 +107,7 @@ export interface ApiRace {
   age: string
   size: string
   size_description: string
-  starting_proficiencies: ApiReference[]
+  starting_proficiencies?: ApiReference[]
   starting_proficiency_options?: ApiProficiencyChoice
   languages: ApiReference[]
   language_desc: string
