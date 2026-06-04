@@ -319,7 +319,7 @@ export interface Api2024Feat {
   index: string
   name: string
   description: string
-  prerequisites: { minimum_level?: number }
+  prerequisites?: { minimum_level?: number }
   prerequisite_options?: {
     desc: string
     type: string

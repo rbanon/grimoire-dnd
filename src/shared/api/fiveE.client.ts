@@ -168,6 +168,7 @@ export const fiveEApi = {
     get<ApiClassLevel[]>(`/classes/${sanitizeApiIndex(classIndex)}/levels`),
   getFeature: (index: string) => get<ApiFeature>(`/features/${sanitizeApiIndex(index)}`),
 
-  // Race/subrace traits
+  // Race/subrace traits (2014 and 2024 — trait indices differ between editions)
   getTrait: (index: string) => get<ApiTrait>(`/traits/${sanitizeApiIndex(index)}`),
+  getTrait2024: (index: string) => get<ApiTrait>(`/traits/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
 }

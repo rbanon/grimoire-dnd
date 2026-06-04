@@ -161,7 +161,7 @@
 
         <template v-else-if="bgDetail">
           <!-- Feature -->
-          <div class="space-y-2">
+          <div v-if="bgDetail.feature" class="space-y-2">
             <p class="text-2xs font-heading tracking-wide uppercase text-mist">Feature</p>
             <div class="px-3 py-2.5 rounded border border-shadow/50 bg-depths/20 space-y-1">
               <p class="text-sm font-heading text-vellum">{{ bgDetail.feature.name }}</p>

@@ -11,7 +11,7 @@
       <div v-else-if="classesError" class="text-sm text-blood-bright">Failed to load classes.</div>
       <template v-else>
         <!-- 2014 Classes -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <PickerCard
             v-for="cls in classes2014"
             :key="`2014:${cls.index}`"
@@ -36,7 +36,7 @@
         </div>
 
         <!-- 2024 Classes -->
-        <div v-if="classes2024.length" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div v-if="classes2024.length" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <PickerCard
             v-for="cls in classes2024"
             :key="`2024:${cls.index}`"

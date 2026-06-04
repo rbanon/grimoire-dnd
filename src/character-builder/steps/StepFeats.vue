@@ -333,10 +333,12 @@ function format2014Prerequisites(feat: ApiFeat): string {
 
 function format2024Prerequisites(feat: Api2024Feat): string {
   const parts: string[] = []
-  if (feat.prerequisites.minimum_level) parts.push(`Level ${feat.prerequisites.minimum_level}+`)
+  if (feat.prerequisites?.minimum_level) parts.push(`Level ${feat.prerequisites.minimum_level}+`)
   if (feat.prerequisite_options) {
-    const opts = feat.prerequisite_options.from.options
-      .map(o => o.ability_score ? `${o.ability_score.name} ${o.minimum_score ?? ''}+` : '')
+    const opts = (feat.prerequisite_options.from?.options ?? [])
+      .map((o: { ability_score?: { name: string }; minimum_score?: number }) =>
+        o.ability_score ? `${o.ability_score.name} ${o.minimum_score ?? ''}+` : ''
+      )
       .filter(Boolean)
     if (opts.length) parts.push(`${feat.prerequisite_options.desc || opts.join(' or ')}`)
   }

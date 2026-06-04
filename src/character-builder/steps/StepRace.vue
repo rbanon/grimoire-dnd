@@ -11,7 +11,7 @@
       <div v-else-if="racesError" class="text-sm text-blood-bright">Failed to load races.</div>
       <template v-else>
         <!-- 2014 Races -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <PickerCard
             v-for="race in races2014"
             :key="`2014:${race.index}`"
@@ -35,7 +35,7 @@
         </div>
 
         <!-- 2024 Species -->
-        <div v-if="species2024.length" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div v-if="species2024.length" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <PickerCard
             v-for="race in species2024"
             :key="`2024:${race.index}`"
@@ -306,7 +306,11 @@ const raceTraitIndices = computed(() => {
 
 const { data: traitDetailsList, isPending: traitDetailsLoading } = useQuery({
   queryKey: computed(() => ['race-traits', raceEdition.value, ...raceTraitIndices.value]),
-  queryFn: () => Promise.all(raceTraitIndices.value.map(i => fiveEApi.getTrait(i))) as Promise<ApiTrait[]>,
+  queryFn: () => Promise.all(
+    raceTraitIndices.value.map(i =>
+      raceEdition.value === '2024' ? fiveEApi.getTrait2024(i) : fiveEApi.getTrait(i)
+    )
+  ) as Promise<ApiTrait[]>,
   staleTime: Infinity,
   enabled: computed(() => raceTraitIndices.value.length > 0),
 })
