@@ -105,6 +105,8 @@ export const fiveEApi = {
 
   listBackgrounds: () => get<ApiReferenceList>('/backgrounds'),
   getBackground: (index: string) => get<ApiBackground>(`/backgrounds/${sanitizeApiIndex(index)}`),
+  listBackgrounds2024: () => get<ApiReferenceList>('/backgrounds', undefined, BASE_URL_2024),
+  getBackground2024: (index: string) => get<ApiBackground>(`/backgrounds/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
 
   // Spells: when filtering by class, the API requires the class-scoped endpoint
   // (/classes/{index}/spells) — the ?class= query param on /spells is silently ignored.

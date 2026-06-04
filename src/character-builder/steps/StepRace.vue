@@ -9,21 +9,48 @@
         <GrimoireSpinner />
       </div>
       <div v-else-if="racesError" class="text-sm text-blood-bright">Failed to load races.</div>
-      <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        <PickerCard
-          v-for="race in allRaces"
-          :key="`${race.edition}:${race.index}`"
-          :name="race.name"
-          :glyph="getRaceMeta(race.index).glyph"
-          :flavor="getRaceMeta(race.index).flavor"
-          :tags="getRaceMeta(race.index).traits.slice(0, 2)"
-          :selected="builder.draft.raceIndex === race.index && builder.draft.raceEdition === race.edition"
-          :edition="race.edition"
-          show-info
-          @select="selectRace(race.index, race.name, race.edition)"
-          @info="infoPanel.open({ kind: 'race', index: race.index })"
-        />
-      </div>
+      <template v-else>
+        <!-- 2014 Races -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <PickerCard
+            v-for="race in races2014"
+            :key="`2014:${race.index}`"
+            :name="race.name"
+            :glyph="getRaceMeta(race.index).glyph"
+            :flavor="getRaceMeta(race.index).flavor"
+            :tags="getRaceMeta(race.index).traits.slice(0, 2)"
+            :selected="builder.draft.raceIndex === race.index && builder.draft.raceEdition === '2014'"
+            :edition="race.edition"
+            show-info
+            @select="selectRace(race.index, race.name, race.edition)"
+            @info="infoPanel.open({ kind: 'race', index: race.index })"
+          />
+        </div>
+
+        <!-- 2014 / 2024 separator -->
+        <div v-if="species2024.length" class="flex items-center gap-3 py-1">
+          <div class="flex-1 h-px bg-shadow/50" />
+          <span class="text-2xs font-heading tracking-widest uppercase text-arcane-pale/50">2024 Species</span>
+          <div class="flex-1 h-px bg-shadow/50" />
+        </div>
+
+        <!-- 2024 Species -->
+        <div v-if="species2024.length" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <PickerCard
+            v-for="race in species2024"
+            :key="`2024:${race.index}`"
+            :name="race.name"
+            :glyph="getRaceMeta(race.index).glyph"
+            :flavor="getRaceMeta(race.index).flavor"
+            :tags="getRaceMeta(race.index).traits.slice(0, 2)"
+            :selected="builder.draft.raceIndex === race.index && builder.draft.raceEdition === '2024'"
+            :edition="race.edition"
+            show-info
+            @select="selectRace(race.index, race.name, race.edition)"
+            @info="infoPanel.open({ kind: 'race', index: race.index })"
+          />
+        </div>
+      </template>
       <p v-if="fieldErrors.race" class="mt-2 text-xs font-body text-blood-bright">
         Select a race to continue.
       </p>
@@ -228,10 +255,25 @@ const { data: speciesList2024, isPending: racesLoading2024 } = useQuery({
 })
 
 const racesLoading = computed(() => racesLoading2014.value || racesLoading2024.value)
-const allRaces = computed(() => [
-  ...(raceList2014.value?.results ?? []).map(r => ({ ...r, edition: '2014' as EditionTag })),
-  ...(speciesList2024.value?.results ?? []).map(r => ({ ...r, edition: '2024' as EditionTag })),
-])
+const races2014 = computed(() =>
+  (raceList2014.value?.results ?? []).map(r => ({ ...r, edition: '2014' as EditionTag }))
+)
+const species2024 = computed(() =>
+  (speciesList2024.value?.results ?? []).map(r => ({ ...r, edition: '2024' as EditionTag }))
+)
+
+// Auto-grant languages for 2024 species (API doesn't provide language data)
+const SPECIES_LANGUAGES_2024: Record<string, string[]> = {
+  'tiefling':   ['common', 'infernal'],
+  'elf':        ['common', 'elvish'],
+  'dwarf':      ['common', 'dwarvish'],
+  'gnome':      ['common', 'gnomish'],
+  'halfling':   ['common', 'halfling'],
+  'human':      ['common'],
+  'dragonborn': ['common', 'draconic'],
+  'goliath':    ['common', 'giant'],
+  'orc':        ['common', 'orc'],
+}
 
 const raceEdition = computed(() => builder.draft.raceEdition ?? '2014')
 
@@ -313,11 +355,16 @@ async function selectRace(index: string, name: string, edition: EditionTag) {
     try {
       const detail: Api2024Species = await fiveEApi.getSpecies(index)
       builder.draft.raceSpeed = detail.speed
-      builder.draft.raceSizeCategory = detail.size
+      builder.draft.raceSizeCategory = String(detail.size ?? 'Medium')
       // 2024 species don't grant fixed ability bonuses — player distributes freely
       builder.draft.raceAbilityBonuses = {}
-      builder.draft.raceLanguageCount = 1 // no language data in 2024 species
-      builder.draft.raceAutoLanguages = []
+      // Auto-grant languages from hardcoded map (2024 API has no language data)
+      const autoLangs = SPECIES_LANGUAGES_2024[index] ?? ['common']
+      const prevAutoLangs = builder.draft.raceAutoLanguages ?? []
+      const userChosen = builder.draft.selectedLanguages.filter(l => !prevAutoLangs.includes(l))
+      builder.draft.raceAutoLanguages = autoLangs
+      builder.draft.raceLanguageCount = autoLangs.length
+      builder.draft.selectedLanguages = [...new Set([...autoLangs, ...userChosen])]
       builder.draft.availableSubraces = detail.subspecies.map(s => ({ index: s.index, name: s.name }))
     } catch (err) { console.warn('[StepRace] selectSpecies (2024) failed:', err) }
     return

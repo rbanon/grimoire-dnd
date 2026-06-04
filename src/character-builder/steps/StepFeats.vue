@@ -313,7 +313,12 @@ const { data: previewFeat2024Data, isPending: previewLoading2024 } = useQuery({
   enabled: computed(() => !!previewFeat.value && previewFeat.value.edition === '2024'),
 })
 
-const previewFeatLoading = computed(() => previewLoading2014.value || previewLoading2024.value)
+// Only check the relevant query's loading state — disabled queries in TanStack Query v5
+// report isPending:true even though they never fetch, which would hide the data forever.
+const previewFeatLoading = computed(() => {
+  if (!previewFeat.value) return false
+  return previewFeat.value.edition === '2014' ? previewLoading2014.value : previewLoading2024.value
+})
 const previewFeat2014 = computed(() => previewFeat.value?.edition === '2014' ? previewFeat2014Data.value ?? null : null)
 const previewFeat2024 = computed(() => previewFeat.value?.edition === '2024' ? previewFeat2024Data.value ?? null : null)
 

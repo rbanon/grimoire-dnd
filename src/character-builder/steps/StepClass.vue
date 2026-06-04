@@ -9,22 +9,50 @@
         <GrimoireSpinner label="Loading classes" />
       </div>
       <div v-else-if="classesError" class="text-sm text-blood-bright">Failed to load classes.</div>
-      <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        <PickerCard
-          v-for="cls in classes"
-          :key="`${cls.edition}:${cls.index}`"
-          :name="cls.name"
-          :glyph="getClassMeta(cls.index).glyph"
-          :flavor="getClassMeta(cls.index).flavor"
-          :tags="getClassMeta(cls.index).tags.slice(0, 2)"
-          :stats="`d${getClassMeta(cls.index).hitDie}`"
-          :selected="builder.draft.classIndex === cls.index && builder.draft.classEdition === cls.edition"
-          :edition="cls.edition"
-          show-info
-          @select="selectClass(cls.index, cls.name, cls.edition)"
-          @info="infoPanel.open({ kind: 'class', index: cls.index })"
-        />
-      </div>
+      <template v-else>
+        <!-- 2014 Classes -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <PickerCard
+            v-for="cls in classes2014"
+            :key="`2014:${cls.index}`"
+            :name="cls.name"
+            :glyph="getClassMeta(cls.index).glyph"
+            :flavor="getClassMeta(cls.index).flavor"
+            :tags="getClassMeta(cls.index).tags.slice(0, 2)"
+            :stats="`d${getClassMeta(cls.index).hitDie}`"
+            :selected="builder.draft.classIndex === cls.index && builder.draft.classEdition === '2014'"
+            :edition="cls.edition"
+            show-info
+            @select="selectClass(cls.index, cls.name, cls.edition)"
+            @info="infoPanel.open({ kind: 'class', index: cls.index })"
+          />
+        </div>
+
+        <!-- 2014 / 2024 separator -->
+        <div v-if="classes2024.length" class="flex items-center gap-3 py-1">
+          <div class="flex-1 h-px bg-shadow/50" />
+          <span class="text-2xs font-heading tracking-widest uppercase text-arcane-pale/50">2024 Classes</span>
+          <div class="flex-1 h-px bg-shadow/50" />
+        </div>
+
+        <!-- 2024 Classes -->
+        <div v-if="classes2024.length" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <PickerCard
+            v-for="cls in classes2024"
+            :key="`2024:${cls.index}`"
+            :name="cls.name"
+            :glyph="getClassMeta(cls.index).glyph"
+            :flavor="getClassMeta(cls.index).flavor"
+            :tags="getClassMeta(cls.index).tags.slice(0, 2)"
+            :stats="`d${getClassMeta(cls.index).hitDie}`"
+            :selected="builder.draft.classIndex === cls.index && builder.draft.classEdition === '2024'"
+            :edition="cls.edition"
+            show-info
+            @select="selectClass(cls.index, cls.name, cls.edition)"
+            @info="infoPanel.open({ kind: 'class', index: cls.index })"
+          />
+        </div>
+      </template>
 
       <p v-if="showValidation && !builder.draft.classIndex" class="text-xs font-body text-blood-bright">
         Selecciona una clase para continuar.
@@ -133,11 +161,12 @@ const { data: classList2024, isPending: classesLoading2024 } = useQuery({
 const classesLoading = computed(() => classesLoading2014.value || classesLoading2024.value)
 const classesError   = computed(() => classesError2014.value)
 
-// Merge both editions; 2014 first, then 2024. Same class name → both appear.
-const classes = computed(() => [
-  ...(classList2014.value?.results ?? []).map(c => ({ ...c, edition: '2014' as EditionTag })),
-  ...(classList2024.value?.results ?? []).map(c => ({ ...c, edition: '2024' as EditionTag })),
-])
+const classes2014 = computed(() =>
+  (classList2014.value?.results ?? []).map(c => ({ ...c, edition: '2014' as EditionTag }))
+)
+const classes2024 = computed(() =>
+  (classList2024.value?.results ?? []).map(c => ({ ...c, edition: '2024' as EditionTag }))
+)
 
 // Selected class edition (tracked separately from index since same index exists in both)
 const selectedEdition = computed(() => builder.draft.classEdition ?? '2014')

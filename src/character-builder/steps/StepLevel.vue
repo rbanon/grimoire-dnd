@@ -28,30 +28,11 @@
           </div>
         </div>
 
-        <!-- Stats panel: Leveling | Prof Bonus | Max HP -->
+        <!-- Stats panel: Prof Bonus | Max HP -->
         <div class="level-stat-card flex flex-col rounded-lg border border-shadow/60 bg-depths/30 overflow-hidden">
 
-          <!-- Leveling toggle -->
-          <div class="flex flex-1 items-center justify-between px-4 py-3">
-            <span class="text-xs font-heading text-mist uppercase tracking-widest">Leveling</span>
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-heading text-ash">{{ builder.draft.useMilestones ? 'Milestone' : 'XP' }}</span>
-              <button
-                type="button"
-                class="w-9 h-5 rounded-full border transition-all duration-200 flex items-center px-0.5"
-                :class="builder.draft.useMilestones
-                  ? 'bg-gold-dim/30 border-gold-mid/50 justify-end'
-                  : 'bg-shadow border-shadow justify-start'"
-                @click="builder.draft.useMilestones = !builder.draft.useMilestones"
-              >
-                <div class="w-4 h-4 rounded-full transition-all duration-200"
-                  :class="builder.draft.useMilestones ? 'bg-gold-mid' : 'bg-mist'" />
-              </button>
-            </div>
-          </div>
-
           <!-- Prof Bonus -->
-          <div class="flex flex-1 items-center justify-between px-4 py-3 border-t border-shadow/40">
+          <div class="flex flex-1 items-center justify-between px-4 py-3">
             <span class="text-xs font-heading text-mist uppercase tracking-widest">Prof Bonus</span>
             <span class="font-heading text-xl leading-none text-gold-mid">+{{ profBonus }}</span>
           </div>

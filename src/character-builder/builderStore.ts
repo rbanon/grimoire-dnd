@@ -124,9 +124,10 @@ export interface BuilderDraft {
   // Key = class level, value = map of choiceKey → selected option index
   levelChoices: Record<number, Record<string, string>>
 
-  // Edition flags — tracks which SRD edition was used for race/class selection
+  // Edition flags — tracks which SRD edition was used for race/class/background selection
   raceEdition: '2014' | '2024'
   classEdition: '2014' | '2024'
+  backgroundEdition: '2014' | '2024'
 
   // Step 6 — Feats & ASI decisions, keyed by class level granting the improvement
   featsByLevel: Record<number, { type: 'asi' | 'feat'; featIndex?: string; featName?: string; featEdition?: '2014' | '2024' }>
@@ -157,7 +158,7 @@ const defaultDraft = (): BuilderDraft => ({
   age: '', gender: '', height: '', weight: '', eyes: '', skin: '', hair: '',
   appearanceNotes: '', personalityTraits: '', ideals: '', bonds: '', flaws: '', biography: '',
   raceIndex: '', raceName: '', raceSpeed: 30, raceSizeCategory: 'Medium',
-  raceEdition: '2014', classEdition: '2014',
+  raceEdition: '2014', classEdition: '2014', backgroundEdition: '2014',
   raceAbilityBonuses: {}, raceLanguageCount: 2, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
   raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [], raceAutoLanguages: [],
@@ -736,7 +737,7 @@ export const useBuilderStore = defineStore('builder', () => {
       fightingStyles,
       identity: {
         name: d.name.trim(),
-        race: { index: d.raceIndex, name: d.raceName, speed: d.raceSpeed, sizeCategory: d.raceSizeCategory, edition: d.raceEdition ?? '2014' },
+        race: { index: d.raceIndex, name: d.raceName, speed: d.raceSpeed, sizeCategory: d.raceSizeCategory || 'Medium', edition: d.raceEdition ?? '2014' },
         subrace: d.subraceIndex ? { index: d.subraceIndex, name: d.subraceName } : null,
         class: { index: d.classIndex, name: d.className, hitDie: d.classHitDie, spellcastingAbility: d.classSpellcastingAbility, edition: d.classEdition ?? '2014' },
         subclass: d.subclassIndex ? { index: d.subclassIndex, name: d.subclassName } : null,
@@ -848,7 +849,18 @@ export const useBuilderStore = defineStore('builder', () => {
       // so that step transitions don't fire while the overlay is still visible.
       return id
     } catch (err) {
-      saveError.value = err instanceof Error ? err.message : 'Could not save character. Please try again.'
+      if (err instanceof z.ZodError) {
+        const messages = err.issues.map((issue: { path: PropertyKey[]; message: string }) => {
+          const path = issue.path.join('.')
+          if (path.includes('sizeCategory') || path.includes('identity.race')) return 'Race data incomplete — try re-selecting your race.'
+          if (path.includes('identity.class')) return 'Class data incomplete — try re-selecting your class.'
+          if (path.includes('name')) return 'Character name is required.'
+          return issue.message
+        })
+        saveError.value = [...new Set(messages)].join(' · ')
+      } else {
+        saveError.value = err instanceof Error ? err.message : 'Could not save character. Please try again.'
+      }
       throw err
     } finally {
       saving.value = false
