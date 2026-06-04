@@ -220,9 +220,12 @@ const { data: langData, isPending: languagesLoading } = useQuery({
 })
 const languages = computed(() => langData.value?.results ?? [])
 
+const bgEdition = computed(() => builder.draft.backgroundEdition ?? '2014')
 const { data: bgDetail } = useQuery({
-  queryKey: computed(() => ['background-detail', builder.draft.backgroundIndex]),
-  queryFn: () => fiveEApi.getBackground(builder.draft.backgroundIndex) as Promise<ApiBackground>,
+  queryKey: computed(() => [bgEdition.value, 'background-detail', builder.draft.backgroundIndex]),
+  queryFn: () => bgEdition.value === '2024'
+    ? fiveEApi.getBackground2024(builder.draft.backgroundIndex) as Promise<ApiBackground>
+    : fiveEApi.getBackground(builder.draft.backgroundIndex) as Promise<ApiBackground>,
   staleTime: Infinity,
   enabled: computed(() => !!builder.draft.backgroundIndex && builder.draft.backgroundIndex !== 'custom'),
 })
@@ -232,7 +235,7 @@ const bgLanguageChoices = computed(() => builder.draft.backgroundLanguageChoices
 // Background auto skills for display (convert stored indices to display names via bgDetail)
 const bgDisplaySkills = computed(() => {
   if (bgDetail.value) {
-    return bgDetail.value.starting_proficiencies
+    return (bgDetail.value.starting_proficiencies ?? [])
       .filter(p => p.index.startsWith('skill-'))
       .map(p => p.name)
   }

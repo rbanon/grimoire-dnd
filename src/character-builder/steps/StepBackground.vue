@@ -282,10 +282,10 @@ const { data: bgDetail, isPending: bgDetailLoading } = useQuery({
 })
 
 const skillProfs = computed(() =>
-  bgDetail.value?.starting_proficiencies.filter(p => p.index.startsWith('skill-')) ?? [],
+  (bgDetail.value?.starting_proficiencies ?? []).filter(p => p.index.startsWith('skill-')),
 )
 const toolProfs = computed(() =>
-  bgDetail.value?.starting_proficiencies.filter(p => !p.index.startsWith('skill-')) ?? [],
+  (bgDetail.value?.starting_proficiencies ?? []).filter(p => !p.index.startsWith('skill-')),
 )
 
 // ── Custom skill picker ───────────────────────────────────────────────────────

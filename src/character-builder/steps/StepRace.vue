@@ -84,10 +84,10 @@
             </p>
           </div>
           <!-- Traits -->
-          <div v-if="speciesDetail.traits.length" class="space-y-2">
+          <div class="space-y-2">
             <p class="text-2xs font-heading tracking-wide uppercase text-mist">Species Traits</p>
-            <div v-if="traitDetailsLoading" class="flex justify-center py-2"><GrimoireSpinner /></div>
-            <div v-else class="space-y-2">
+            <div v-if="traitDetailsLoading && speciesDetail.traits.length" class="flex justify-center py-2"><GrimoireSpinner /></div>
+            <div v-else-if="traitDetails.length" class="space-y-2">
               <div
                 v-for="trait in traitDetails"
                 :key="trait.index"
@@ -97,6 +97,9 @@
                 <p v-for="(line, i) in trait.desc" :key="i" class="text-xs font-body text-ash leading-relaxed">{{ line }}</p>
               </div>
             </div>
+            <p v-else class="text-xs font-body text-mist/60 italic">
+              Trait details are not available for this species in the 2024 SRD API.
+            </p>
           </div>
         </template>
 
@@ -124,15 +127,18 @@
             </div>
             <p v-if="raceDetail.language_desc" class="text-xs font-body text-mist/70 italic leading-relaxed">{{ raceDetail.language_desc }}</p>
           </div>
-          <div v-if="raceDetail.traits.length" class="space-y-2">
+          <div class="space-y-2">
             <p class="text-2xs font-heading tracking-wide uppercase text-mist">Racial Traits</p>
-            <div v-if="traitDetailsLoading" class="flex justify-center py-2"><GrimoireSpinner /></div>
-            <div v-else class="space-y-2">
+            <div v-if="traitDetailsLoading && raceDetail.traits.length" class="flex justify-center py-2"><GrimoireSpinner /></div>
+            <div v-else-if="traitDetails.length" class="space-y-2">
               <div v-for="trait in traitDetails" :key="trait.index" class="px-3 py-2.5 rounded border border-shadow/50 bg-depths/20 space-y-1">
                 <p class="text-sm font-heading text-vellum">{{ trait.name }}</p>
                 <p v-for="(line, i) in trait.desc" :key="i" class="text-xs font-body text-ash leading-relaxed">{{ line }}</p>
               </div>
             </div>
+            <p v-else-if="!raceDetail.traits.length" class="text-xs font-body text-mist/60 italic">
+              No specific racial traits listed for this race.
+            </p>
           </div>
           <p v-if="raceDetail.size_description" class="text-xs font-body text-mist/60 italic leading-relaxed">{{ raceDetail.size_description }}</p>
         </template>
@@ -333,7 +339,11 @@ const subraceTraitIndices = computed(() => subraceDetail.value?.racial_traits.ma
 
 const { data: subraceTraitDetailsList, isPending: subraceTraitDetailsLoading } = useQuery({
   queryKey: computed(() => ['subrace-traits', raceEdition.value, ...subraceTraitIndices.value]),
-  queryFn: () => Promise.all(subraceTraitIndices.value.map(i => fiveEApi.getTrait(i))) as Promise<ApiTrait[]>,
+  queryFn: () => Promise.all(
+    subraceTraitIndices.value.map(i =>
+      raceEdition.value === '2024' ? fiveEApi.getTrait2024(i) : fiveEApi.getTrait(i)
+    )
+  ) as Promise<ApiTrait[]>,
   staleTime: Infinity,
   enabled: computed(() => subraceTraitIndices.value.length > 0),
 })
