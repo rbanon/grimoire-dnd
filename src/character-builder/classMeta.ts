@@ -905,6 +905,17 @@ export function getSneakAttackDice(level: number): number {
   return Math.ceil(level / 2)
 }
 
+/**
+ * Total number of skills that gain Expertise (double proficiency) at the given level.
+ * Rogue: 2 at level 1, +2 at level 6. Bard: 2 at level 3, +2 at level 10.
+ * (Uses the 2014-SRD timing the rest of CLASS_LEVELS is built on.)
+ */
+export function getExpertiseCount(classIndex: string, level: number): number {
+  if (classIndex === 'rogue') return level >= 6 ? 4 : 2
+  if (classIndex === 'bard')  return level >= 10 ? 4 : level >= 3 ? 2 : 0
+  return 0
+}
+
 export function getClassResources(classIndex: string, level: number, mods: AbilityMods): ResourcePool[] {
   const defs = RESOURCE_DEFINITIONS[classIndex] ?? []
   return defs.flatMap(def => {

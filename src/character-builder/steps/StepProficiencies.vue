@@ -130,56 +130,109 @@
       </div>
     </section>
 
+    <!-- Expertise (Rogue / Bard) -->
+    <section v-if="expertiseCount > 0" class="space-y-4">
+      <div class="rule-gold">
+        <span>Expertise</span>
+        <span
+          class="text-xs ml-2 font-body"
+          :class="expertiseChosen === expertiseNeed ? 'text-arcane-pale' : 'text-mist'"
+        >
+          {{ expertiseChosen }}/{{ expertiseNeed }} selected
+        </span>
+      </div>
+      <p class="text-xs font-body -mt-2 text-mist">
+        {{ builder.draft.className }} doubles its proficiency bonus on
+        {{ expertiseCount }} chosen skill{{ expertiseCount > 1 ? 's' : '' }}. Pick from skills you're already proficient in.
+      </p>
+      <p v-if="showValidation && expertiseChosen < expertiseNeed" class="text-xs font-body text-blood-bright">
+        Choose {{ expertiseNeed - expertiseChosen }} more skill{{ expertiseNeed - expertiseChosen > 1 ? 's' : '' }} for Expertise.
+      </p>
+
+      <p v-if="proficientSkills.length === 0" class="text-xs font-body text-mist/60 italic">
+        Choose your skill proficiencies above first.
+      </p>
+      <div v-else class="flex flex-wrap gap-2">
+        <button
+          v-for="skill in proficientSkills"
+          :key="skill.index"
+          type="button"
+          class="px-3 py-1.5 rounded text-sm font-heading tracking-wide border transition-all duration-150"
+          :class="isExpertise(skill.index)
+            ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale'
+            : canSelectMoreExpertise
+              ? 'border-shadow text-ash hover:border-arcane-base/30 hover:text-stone'
+              : 'border-shadow text-mist/40 cursor-not-allowed opacity-50'"
+          :disabled="!isExpertise(skill.index) && !canSelectMoreExpertise"
+          @click="toggleExpertise(skill.index)"
+        >
+          {{ skill.name }}
+          <span v-if="isExpertise(skill.index)" class="ml-1 text-arcane-pale/80">★</span>
+        </button>
+      </div>
+      <p v-if="builder.draft.classIndex === 'rogue'" class="text-2xs font-body text-mist/50 italic">
+        Note: Rogues may instead take Expertise in Thieves' Tools — adjust on the character sheet if preferred.
+      </p>
+    </section>
+
     <!-- Languages -->
     <section class="space-y-4">
       <div class="rule-gold">
         <span>Languages</span>
         <span
+          v-if="choiceBudget > 0"
           class="text-xs ml-2 font-body"
-          :class="langCount > maxLanguages ? 'text-blood-bright' : langCount === maxLanguages ? 'text-gold-mid' : 'text-mist'"
+          :class="chosenCount === choiceBudget ? 'text-gold-mid' : 'text-mist'"
         >
-          {{ langCount }}/{{ maxLanguages }} selected
+          {{ chosenCount }}/{{ choiceBudget }} chosen
         </span>
       </div>
 
-      <p
-        v-if="langCount < maxLanguages"
-        class="text-xs font-body -mt-2"
-        :class="showValidation ? 'text-blood-bright' : 'text-mist'"
-      >
-        Choose {{ maxLanguages - langCount }} more language{{ maxLanguages - langCount > 1 ? 's' : '' }}.
-      </p>
-
-      <div class="flex items-start gap-2 px-3 py-2 rounded border border-shadow/40 bg-depths/20">
-        <span class="text-gold-dim/60 text-xs shrink-0 mt-0.5">ℹ</span>
-        <p class="text-xs font-body text-mist">
-          <span class="text-stone">{{ builder.draft.raceName }}</span> grants
-          <span class="text-stone">{{ builder.draft.raceLanguageCount }}</span> language{{ builder.draft.raceLanguageCount !== 1 ? 's' : '' }} (e.g. Common + racial).
-          <template v-if="bgLanguageChoices > 0">
-            Your background adds <span class="text-stone">{{ bgLanguageChoices }}</span> of your choice.
-          </template>
-          Select up to <span class="text-stone">{{ maxLanguages }}</span> total.
-        </p>
+      <!-- Granted racial languages (read-only) -->
+      <div v-if="autoLanguageNames.length" class="space-y-1.5">
+        <p class="text-2xs font-heading tracking-wide uppercase text-mist">Granted by {{ builder.draft.raceName || 'your race' }}</p>
+        <div class="flex flex-wrap gap-2">
+          <span
+            v-for="name in autoLanguageNames"
+            :key="name"
+            class="px-2.5 py-1 rounded border border-gold-dim/25 bg-gold-dim/8 text-xs font-heading text-gold-dim"
+          >{{ name }}</span>
+        </div>
       </div>
 
-      <div v-if="languagesLoading" class="flex justify-center py-4"><GrimoireSpinner /></div>
-      <div v-else class="flex flex-wrap gap-2">
-        <button
-          v-for="lang in languages"
-          :key="lang.index"
-          type="button"
-          class="px-3 py-1.5 rounded text-sm font-heading tracking-wide border transition-all duration-150"
-          :class="isLangSelected(lang.index)
-            ? 'border-gold-mid/50 bg-gold-dim/10 text-gold-deep'
-            : canSelectMoreLang || isLangSelected(lang.index)
-              ? 'border-shadow text-ash hover:border-gold-dim/20 hover:text-stone'
-              : 'border-shadow text-mist/40 cursor-not-allowed opacity-50'"
-          @click="toggleLang(lang.index)"
+      <template v-if="choiceBudget > 0">
+        <p
+          v-if="chosenCount < choiceBudget"
+          class="text-xs font-body"
+          :class="showValidation ? 'text-blood-bright' : 'text-mist'"
         >
-          {{ lang.name }}
-          <span v-if="isLangSelected(lang.index)" class="ml-1 text-gold-dim">✓</span>
-        </button>
-      </div>
+          Choose {{ choiceBudget - chosenCount }} more language{{ choiceBudget - chosenCount > 1 ? 's' : '' }}
+          <span class="text-mist/60">({{ builder.draft.raceLanguageChoices > 0 ? 'racial + ' : '' }}background choice).</span>
+        </p>
+
+        <div v-if="languagesLoading" class="flex justify-center py-4"><GrimoireSpinner /></div>
+        <div v-else class="flex flex-wrap gap-2">
+          <button
+            v-for="lang in selectableLanguages"
+            :key="lang.index"
+            type="button"
+            class="px-3 py-1.5 rounded text-sm font-heading tracking-wide border transition-all duration-150"
+            :class="isLangSelected(lang.index)
+              ? 'border-gold-mid/50 bg-gold-dim/10 text-gold-deep'
+              : canSelectMoreLang
+                ? 'border-shadow text-ash hover:border-gold-dim/20 hover:text-stone'
+                : 'border-shadow text-mist/40 cursor-not-allowed opacity-50'"
+            :disabled="!isLangSelected(lang.index) && !canSelectMoreLang"
+            @click="toggleLang(lang.index)"
+          >
+            {{ lang.name }}
+            <span v-if="isLangSelected(lang.index)" class="ml-1 text-gold-dim">✓</span>
+          </button>
+        </div>
+      </template>
+      <p v-else class="text-xs font-body text-mist/60 italic">
+        No additional languages to choose.
+      </p>
     </section>
 
     <div class="h-4" />
@@ -187,10 +240,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { CheckIcon, InfoIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { useBuilderStore } from '@/character-builder/builderStore'
+import { getExpertiseCount } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
@@ -244,9 +298,20 @@ const bgDisplaySkills = computed(() => {
     s.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
   )
 })
-const maxLanguages = computed(() => builder.draft.raceLanguageCount + bgLanguageChoices.value)
-const langCount = computed(() => builder.draft.selectedLanguages.length)
-const canSelectMoreLang = computed(() => langCount.value < maxLanguages.value)
+// Fixed racial languages are auto-granted and read-only. The choosable budget = the
+// race's extra language choice(s) (Human/Half-Elf +1) plus the background's choices.
+const autoLanguages = computed(() => builder.draft.raceAutoLanguages ?? [])
+const autoLanguageNames = computed(() =>
+  autoLanguages.value.map(i => languages.value.find(l => l.index === i)?.name
+    ?? i.charAt(0).toUpperCase() + i.slice(1)),
+)
+const choiceBudget = computed(() => builder.draft.raceLanguageChoices + bgLanguageChoices.value)
+const chosenLanguages = computed(() => builder.draft.selectedLanguages.filter(l => !autoLanguages.value.includes(l)))
+const chosenCount = computed(() => chosenLanguages.value.length)
+const canSelectMoreLang = computed(() => chosenCount.value < choiceBudget.value)
+const isAutoLang = (index: string) => autoLanguages.value.includes(index)
+// Only languages NOT already granted by the race are choosable.
+const selectableLanguages = computed(() => languages.value.filter(l => !isAutoLang(l.index)))
 
 const maxSkills = computed(() => builder.draft.classSkillChoices || 2)
 // Background and race skills don't consume class skill picks
@@ -284,12 +349,75 @@ function toggleSkill(index: string) {
   }
 }
 
-function isLangSelected(index: string) { return builder.draft.selectedLanguages.includes(index) }
+function isLangSelected(index: string) {
+  return builder.draft.selectedLanguages.includes(index) && !isAutoLang(index)
+}
 function toggleLang(index: string) {
-  if (isLangSelected(index)) {
+  if (isAutoLang(index)) return // racial languages are fixed
+  if (builder.draft.selectedLanguages.includes(index)) {
     builder.draft.selectedLanguages = builder.draft.selectedLanguages.filter(l => l !== index)
   } else if (canSelectMoreLang.value) {
-    builder.draft.selectedLanguages.push(index)
+    builder.draft.selectedLanguages = [...builder.draft.selectedLanguages, index]
   }
 }
+
+// Drop chosen languages beyond the budget (e.g. after switching to a race with fewer
+// choices). Runs immediately so a stale over-selection is corrected on entering this step.
+watch(choiceBudget, (budget) => {
+  if (chosenCount.value > budget) {
+    const keep = chosenLanguages.value.slice(0, budget)
+    builder.draft.selectedLanguages = [...autoLanguages.value, ...keep]
+  }
+}, { immediate: true })
+
+// ── Expertise (Rogue L1/L6, Bard L3/L10) ──────────────────────────────────────
+
+// All skills (unfiltered by class options) for index→name lookup, since a proficient
+// skill may come from the background/race and lie outside the class skill options.
+const allSkills = computed(() => skillData.value?.results ?? [])
+
+// The proficient-skill pool = class-chosen + background + race skills (same set built
+// into skillProficiencies). Expertise can only be applied to these.
+const proficientSkillIndices = computed(() => [...new Set([
+  ...builder.draft.selectedSkills,
+  ...builder.draft.backgroundSkillProficiencies,
+  ...builder.draft.raceSkillProficiencies,
+])])
+
+const proficientSkills = computed(() =>
+  proficientSkillIndices.value
+    .map(i => allSkills.value.find(s => s.index === i) ?? { index: i, name: prettifySkill(i) })
+    .sort((a, b) => a.name.localeCompare(b.name)),
+)
+
+function prettifySkill(index: string): string {
+  return index.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
+const expertiseCount = computed(() =>
+  getExpertiseCount(builder.draft.classIndex, builder.draft.level),
+)
+// Can't pick more expertise skills than you have proficiencies in.
+const expertiseNeed = computed(() => Math.min(expertiseCount.value, proficientSkillIndices.value.length))
+const expertiseChosen = computed(() =>
+  builder.draft.expertiseSkills.filter(s => proficientSkillIndices.value.includes(s)).length,
+)
+const canSelectMoreExpertise = computed(() => expertiseChosen.value < expertiseNeed.value)
+
+function isExpertise(index: string) { return builder.draft.expertiseSkills.includes(index) }
+function toggleExpertise(index: string) {
+  if (isExpertise(index)) {
+    builder.draft.expertiseSkills = builder.draft.expertiseSkills.filter(s => s !== index)
+  } else if (canSelectMoreExpertise.value && proficientSkillIndices.value.includes(index)) {
+    builder.draft.expertiseSkills = [...builder.draft.expertiseSkills, index]
+  }
+}
+
+// Drop any expertise picks that are no longer proficient (e.g. a class skill was deselected).
+watch(proficientSkillIndices, (pool) => {
+  const valid = builder.draft.expertiseSkills.filter(s => pool.includes(s))
+  if (valid.length !== builder.draft.expertiseSkills.length) {
+    builder.draft.expertiseSkills = valid
+  }
+})
 </script>

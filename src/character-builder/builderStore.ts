@@ -8,7 +8,7 @@ import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
 import { uploadPortraitBlob } from '@/shared/lib/uploadPortrait'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount } from '@/character-builder/classMeta'
 
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 11
@@ -65,7 +65,8 @@ export interface BuilderDraft {
   raceSpeed: number
   raceSizeCategory: string
   raceAbilityBonuses: Partial<Record<keyof AbilityScores, number>>
-  raceLanguageCount: number
+  raceLanguageCount: number          // number of FIXED racial languages (auto-granted)
+  raceLanguageChoices: number        // extra languages the race lets you choose (Human/Half-Elf +1)
   subraceIndex: string
   subraceName: string
   subraceAbilityBonuses: Partial<Record<keyof AbilityScores, number>>
@@ -123,6 +124,9 @@ export interface BuilderDraft {
   // Step 4 — Proficiencies
   selectedSkills: string[]
   selectedLanguages: string[]
+  // Skills upgraded to Expertise (double proficiency) — Rogue (L1/L6), Bard (L3/L10).
+  // Must be a subset of the proficient-skill pool (class + background + race skills).
+  expertiseSkills: string[]
 
   // Step 5 — Equipment (simplified for MVP)
   useStartingEquipment: boolean
@@ -170,7 +174,7 @@ const defaultDraft = (): BuilderDraft => ({
   appearanceNotes: '', personalityTraits: '', ideals: '', bonds: '', flaws: '', biography: '',
   raceIndex: '', raceName: '', raceSpeed: 30, raceSizeCategory: 'Medium',
   raceEdition: '2014', classEdition: '2014', backgroundEdition: '2014',
-  raceAbilityBonuses: {}, raceLanguageCount: 2, subraceIndex: '', subraceName: '',
+  raceAbilityBonuses: {}, raceLanguageCount: 2, raceLanguageChoices: 0, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
   raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [], raceAutoLanguages: [],
   backgroundIndex: '', backgroundName: '', backgroundDescription: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [], backgroundLanguageChoices: 0,
@@ -186,7 +190,7 @@ const defaultDraft = (): BuilderDraft => ({
   standardArrayAssignments: {},
   rolledAbilityScores: [],
   rollAssignments: {},
-  selectedSkills: [], selectedLanguages: [],
+  selectedSkills: [], selectedLanguages: [], expertiseSkills: [],
   useStartingEquipment: true, manualGold: 0,
   equipmentCurrency: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
   equipmentChoicesDone: true,
@@ -200,7 +204,7 @@ const defaultDraft = (): BuilderDraft => ({
 
 const DRAFT_ARRAY_FIELDS = [
   'selectedCantrips', 'selectedSpells', 'selectedPreparedSpells', 'rolledHpPerLevel', 'rolledAbilityScores',
-  'selectedSkills', 'selectedLanguages', 'startingInventory', 'raceProfOptions',
+  'selectedSkills', 'selectedLanguages', 'expertiseSkills', 'startingInventory', 'raceProfOptions',
   'availableSubraces', 'availableSubclasses', 'backgroundSkillProficiencies',
   'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs', 'raceSkillProficiencies',
   'tomeCantrips', 'selectedInvocations', 'raceAutoLanguages', 'backgroundAbilityOptions',
@@ -480,6 +484,28 @@ export const useBuilderStore = defineStore('builder', () => {
         })(),
         draft.value.raceProfChoices > 0 && draft.value.selectedRaceProfs.length < draft.value.raceProfChoices
           ? `Choose ${draft.value.raceProfChoices} race proficiency tool${draft.value.raceProfChoices > 1 ? 's' : ''} (${draft.value.selectedRaceProfs.length} selected)` : '',
+        // Expertise (Rogue L1/L6, Bard L3/L10) — pick N from already-proficient skills
+        (() => {
+          const required = getExpertiseCount(draft.value.classIndex, draft.value.level)
+          if (required === 0) return ''
+          const pool = new Set([
+            ...draft.value.selectedSkills,
+            ...draft.value.backgroundSkillProficiencies,
+            ...draft.value.raceSkillProficiencies,
+          ])
+          const need = Math.min(required, pool.size) // can't exceed proficient skills available
+          const chosen = draft.value.expertiseSkills.filter(s => pool.has(s)).length
+          return chosen < need
+            ? `Choose ${need} skill${need > 1 ? 's' : ''} for Expertise (${chosen} selected)` : ''
+        })(),
+        // Languages: must choose the race + background language picks (fixed racial langs excluded)
+        (() => {
+          const budget = draft.value.raceLanguageChoices + draft.value.backgroundLanguageChoices
+          if (budget === 0) return ''
+          const auto = new Set(draft.value.raceAutoLanguages)
+          const chosen = draft.value.selectedLanguages.filter(l => !auto.has(l)).length
+          return chosen < budget ? `Choose ${budget} language${budget > 1 ? 's' : ''} (${chosen} selected)` : ''
+        })(),
       ].filter(Boolean),
       8:  spellErrors,
       9: [
@@ -692,6 +718,7 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value.selectedPreparedSpells = []
     draft.value.tomeCantrips = []
     draft.value.selectedInvocations = []
+    draft.value.expertiseSkills = []
   })
 
   // Re-validate currentStep whenever skippable conditions change
@@ -798,7 +825,8 @@ export const useBuilderStore = defineStore('builder', () => {
         useMilestones: d.useMilestones,
       },
       skillProficiencies: [...new Set([...d.selectedSkills, ...d.backgroundSkillProficiencies, ...d.raceSkillProficiencies])]
-        .reduce((acc, s) => ({ ...acc, [s]: 'proficient' }), {}),
+        // Expertise only applies to skills the character is actually proficient in
+        .reduce((acc, s) => ({ ...acc, [s]: d.expertiseSkills.includes(s) ? 'expertise' : 'proficient' }), {}),
       savingThrowProficiencies: savingThrows,
       languages: d.selectedLanguages,
       otherProficiencies: [

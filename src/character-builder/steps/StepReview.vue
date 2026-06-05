@@ -74,6 +74,7 @@
       <!-- Left column -->
       <div class="space-y-4">
         <ReviewSection title="Proficiencies" :items="skillLabels" :empty="'None selected'" />
+        <ReviewSection v-if="expertiseLabels.length > 0" title="Expertise" :items="expertiseLabels" :empty="'None'" />
         <ReviewSection title="Languages" :items="d.selectedLanguages" :empty="'None selected'" />
       </div>
 
@@ -232,6 +233,9 @@ const keyStats = computed(() => [
 ])
 
 const skillLabels = computed(() => d.value.selectedSkills)
+const expertiseLabels = computed(() =>
+  d.value.expertiseSkills.map(s => s.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')),
+)
 
 const profile = computed(() => getSpellProfile(d.value.classIndex))
 const isPreparedCaster = computed(() => profile.value?.castingType === 'prepared')
