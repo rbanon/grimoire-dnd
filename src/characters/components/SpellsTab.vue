@@ -116,6 +116,29 @@
         </div>
       </div>
 
+      <!-- ── Arcane Recovery (Wizard) ───────────────────────────────────────── -->
+      <div
+        v-if="isWizard && activeLevels.length > 0"
+        class="flex items-center gap-3 px-3 py-2.5 rounded border border-arcane-base/25 bg-arcane-deep/10"
+      >
+        <SparklesIcon :size="15" class="text-arcane-pale/70 shrink-0" />
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-heading text-arcane-pale leading-tight">Arcane Recovery</p>
+          <p class="text-2xs font-body text-mist leading-tight mt-0.5">
+            <template v-if="arcaneRecoveryAvailable">Recover up to {{ arcaneRecoveryBudget }} slot levels (1/long rest)</template>
+            <template v-else-if="!arcaneRecoveryHasUse">Already used today — recharges on a long rest</template>
+            <template v-else>No expended slots of level 1–5 to recover</template>
+          </p>
+        </div>
+        <button
+          type="button"
+          class="btn-secondary text-xs py-1.5 px-3 shrink-0"
+          :class="arcaneRecoveryAvailable ? '' : 'opacity-40 cursor-not-allowed'"
+          :disabled="!arcaneRecoveryAvailable"
+          @click="showArcaneRecovery = true"
+        >Recover</button>
+      </div>
+
       <section
         v-for="lvl in activeLevels"
         :key="lvl"
@@ -229,6 +252,14 @@
       @close="castingSpell = null"
       @cast="onCastSpell"
     />
+
+    <!-- Arcane Recovery modal (Wizard) -->
+    <ArcaneRecoveryModal
+      :show="showArcaneRecovery"
+      :character="props.character"
+      @close="showArcaneRecovery = false"
+      @confirm="onArcaneRecovery"
+    />
   </div>
 </template>
 
@@ -240,7 +271,7 @@ import { useConfirm } from '@/shared/composables/useConfirm'
 import { computeAllModifiers } from '@/shared/types/character'
 import { computeProficiencyBonus, computeSpellSaveDC, computeSpellAttackBonus } from '@/shared/lib/derivedStats'
 import { getSpellProfile, getMaxSpellLevel, getSpellSlots } from '@/character-builder/classMeta'
-import type { Character, SpellReference, CombatFavorite, ResourcePool } from '@/shared/types/character'
+import type { Character, SpellReference, CombatFavorite, ResourcePool, SpellSlotsByLevel } from '@/shared/types/character'
 import { generateId } from '@/shared/lib/uuid'
 import CantripCard from './CantripCard.vue'
 import CantripPickerModal from './CantripPickerModal.vue'
@@ -248,6 +279,7 @@ import SpellCard from './SpellCard.vue'
 import SpellPickerModal from './SpellPickerModal.vue'
 import CastSpellModal from './CastSpellModal.vue'
 import ManagePreparedModal from './ManagePreparedModal.vue'
+import ArcaneRecoveryModal from './ArcaneRecoveryModal.vue'
 
 const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
@@ -258,6 +290,7 @@ const showCantripPicker = ref(false)
 const showManagePrepared = ref(false)
 const spellPickerLevel = ref<number | null>(null)
 const castingSpell = ref<SpellReference | null>(null)
+const showArcaneRecovery = ref(false)
 
 const cantripLimit = computed(() => {
   const profile = getSpellProfile(props.character.identity.class.index)
@@ -405,6 +438,39 @@ const allKnownSpellIndices = computed(() => {
     ...sc.value.spellsPrepared.map(s => s.index),
   ])]
 })
+
+// ── Arcane Recovery (Wizard) ──────────────────────────────────────────────────
+
+const isWizard = computed(() => props.character.identity.class.index === 'wizard' && !!sc.value)
+const arcaneRecoveryResource = computed(() =>
+  props.character.resources.find(r => r.id === 'arcane-recovery') ?? null,
+)
+const arcaneRecoveryHasUse = computed(() => (arcaneRecoveryResource.value?.current ?? 0) >= 1)
+const arcaneRecoveryBudget = computed(() => Math.ceil(props.character.combat.level / 2))
+const arcaneRecoveryHasRecoverable = computed(() =>
+  !!sc.value && [1, 2, 3, 4, 5].some(l => (sc.value!.slotsUsed[slotKey(l)] ?? 0) > 0),
+)
+const arcaneRecoveryAvailable = computed(() =>
+  isWizard.value && arcaneRecoveryHasUse.value && arcaneRecoveryHasRecoverable.value,
+)
+
+async function onArcaneRecovery(recovery: Partial<SpellSlotsByLevel>) {
+  if (!sc.value) return
+  const newUsed = { ...sc.value.slotsUsed }
+  for (const [key, n] of Object.entries(recovery)) {
+    const k = key as SlotKey
+    newUsed[k] = Math.max(0, (newUsed[k] ?? 0) - (n ?? 0))
+  }
+  // Consume the once-per-day use
+  const resources = props.character.resources.map(r =>
+    r.id === 'arcane-recovery' ? { ...r, current: Math.max(0, r.current - 1) } : r,
+  )
+  await store.update(props.character.id, {
+    spellcasting: { ...sc.value, slotsUsed: newUsed },
+    resources,
+  })
+  showArcaneRecovery.value = false
+}
 
 // ── Slot toggle ───────────────────────────────────────────────────────────────
 
