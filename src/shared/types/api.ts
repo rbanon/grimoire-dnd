@@ -117,6 +117,7 @@ export interface ApiRace {
   starting_proficiencies?: ApiReference[]
   starting_proficiency_options?: ApiProficiencyChoice
   languages: ApiReference[]
+  language_options?: ApiProficiencyChoice  // extra language choices (Human/Half-Elf +1)
   language_desc: string
   traits: ApiReference[]
   subraces: ApiReference[]

@@ -381,6 +381,7 @@ async function selectRace(index: string, name: string, edition: EditionTag) {
   builder.draft.selectedRaceProfs = []
   builder.draft.raceSkillProficiencies = []
   builder.draft.raceAbilityBonuses = {}
+  builder.draft.raceLanguageChoices = 0
 
   if (edition === '2024') {
     try {
@@ -416,6 +417,8 @@ async function selectRace(index: string, name: string, edition: EditionTag) {
     const newRaceLanguages = detail.languages.map(l => l.index)
     const userChosenLanguages = builder.draft.selectedLanguages.filter(l => !oldRaceLanguages.includes(l))
     builder.draft.raceAutoLanguages = newRaceLanguages
+    // Races like Human/Half-Elf let you choose extra language(s) on top of the fixed ones
+    builder.draft.raceLanguageChoices = detail.language_options?.choose ?? 0
     builder.draft.selectedLanguages = [...new Set([...newRaceLanguages, ...userChosenLanguages])]
     builder.draft.raceSkillProficiencies = (detail.starting_proficiencies ?? [])
       .filter(p => p.index.startsWith('skill-'))

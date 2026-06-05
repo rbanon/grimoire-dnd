@@ -65,7 +65,8 @@ export interface BuilderDraft {
   raceSpeed: number
   raceSizeCategory: string
   raceAbilityBonuses: Partial<Record<keyof AbilityScores, number>>
-  raceLanguageCount: number
+  raceLanguageCount: number          // number of FIXED racial languages (auto-granted)
+  raceLanguageChoices: number        // extra languages the race lets you choose (Human/Half-Elf +1)
   subraceIndex: string
   subraceName: string
   subraceAbilityBonuses: Partial<Record<keyof AbilityScores, number>>
@@ -173,7 +174,7 @@ const defaultDraft = (): BuilderDraft => ({
   appearanceNotes: '', personalityTraits: '', ideals: '', bonds: '', flaws: '', biography: '',
   raceIndex: '', raceName: '', raceSpeed: 30, raceSizeCategory: 'Medium',
   raceEdition: '2014', classEdition: '2014', backgroundEdition: '2014',
-  raceAbilityBonuses: {}, raceLanguageCount: 2, subraceIndex: '', subraceName: '',
+  raceAbilityBonuses: {}, raceLanguageCount: 2, raceLanguageChoices: 0, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
   raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [], raceAutoLanguages: [],
   backgroundIndex: '', backgroundName: '', backgroundDescription: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [], backgroundLanguageChoices: 0,
@@ -496,6 +497,14 @@ export const useBuilderStore = defineStore('builder', () => {
           const chosen = draft.value.expertiseSkills.filter(s => pool.has(s)).length
           return chosen < need
             ? `Choose ${need} skill${need > 1 ? 's' : ''} for Expertise (${chosen} selected)` : ''
+        })(),
+        // Languages: must choose the race + background language picks (fixed racial langs excluded)
+        (() => {
+          const budget = draft.value.raceLanguageChoices + draft.value.backgroundLanguageChoices
+          if (budget === 0) return ''
+          const auto = new Set(draft.value.raceAutoLanguages)
+          const chosen = draft.value.selectedLanguages.filter(l => !auto.has(l)).length
+          return chosen < budget ? `Choose ${budget} language${budget > 1 ? 's' : ''} (${chosen} selected)` : ''
         })(),
       ].filter(Boolean),
       8:  spellErrors,
