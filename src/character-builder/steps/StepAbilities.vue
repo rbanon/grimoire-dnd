@@ -55,6 +55,12 @@
         Racial ability bonuses from <span class="text-stone font-heading">{{ builder.draft.raceName }}</span> are applied on top of your chosen scores and shown in the final total.
       </div>
 
+      <!-- 2024 background bonus note -->
+      <div v-if="hasBackgroundBonuses" class="flex items-start gap-2 text-xs font-body text-mist px-3 py-2.5 rounded border border-arcane-base/20 bg-arcane-deep/10">
+        <InfoIcon :size="13" class="shrink-0 mt-px text-arcane-pale/70" />
+        The ability score increase from your <span class="text-stone font-heading">{{ builder.draft.backgroundName }}</span> background (chosen in Step IV) is applied on top and shown in the final total.
+      </div>
+
       <p v-if="showValidation && builder.pointsRemaining > 0" class="text-xs font-body text-blood-bright">
         {{ builder.pointsRemaining }} point{{ builder.pointsRemaining !== 1 ? 's' : '' }} left to spend — allocate all points to continue.
       </p>
@@ -165,6 +171,9 @@
             <p v-if="racialBonus(ab.key)" class="text-2xs font-heading text-verdant-bright mt-1">
               +{{ racialBonus(ab.key) }} racial
             </p>
+            <p v-if="backgroundBonus(ab.key)" class="text-2xs font-heading text-arcane-pale mt-0.5">
+              +{{ backgroundBonus(ab.key) }} background
+            </p>
           </div>
 
           <div class="flex flex-wrap gap-1 justify-center">
@@ -233,6 +242,9 @@
           <p v-if="racialBonus(ab.key)" class="text-2xs text-verdant-bright font-heading">
             +{{ racialBonus(ab.key) }} racial
           </p>
+          <p v-if="backgroundBonus(ab.key)" class="text-2xs text-arcane-pale font-heading">
+            +{{ backgroundBonus(ab.key) }} background
+          </p>
           <p v-if="totalAsiBonus(ab.key)" class="text-2xs text-gold-mid font-heading">
             +{{ totalAsiBonus(ab.key) }} ASI
           </p>
@@ -279,9 +291,17 @@ const abilityDefs = [
 const racialBonus = (key: keyof AbilityScores) =>
   (builder.draft.raceAbilityBonuses[key] ?? 0) + (builder.draft.subraceAbilityBonuses[key] ?? 0)
 
+// 2024 background ability score increase (chosen in Step IV)
+const backgroundBonus = (key: keyof AbilityScores) =>
+  builder.draft.backgroundAbilityBonuses[key] ?? 0
+
 const hasRacialBonuses = computed(() =>
   Object.values(builder.draft.raceAbilityBonuses).some(v => v !== 0) ||
   Object.values(builder.draft.subraceAbilityBonuses).some(v => v !== 0),
+)
+
+const hasBackgroundBonuses = computed(() =>
+  Object.values(builder.draft.backgroundAbilityBonuses).some(v => (v ?? 0) !== 0),
 )
 
 const effectiveScore = (key: keyof AbilityScores) => builder.effectiveScores[key]

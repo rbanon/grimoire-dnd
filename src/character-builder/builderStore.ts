@@ -78,6 +78,12 @@ export interface BuilderDraft {
   backgroundSkillProficiencies: string[]
   backgroundToolProficiencies: string[]
   backgroundLanguageChoices: number
+  // 2024 background grants an ability score increase (+2/+1 or +1/+1/+1) among these
+  // listed abilities, plus an Origin Feat.
+  backgroundAbilityOptions: string[]                                   // e.g. ['str','dex','con']
+  backgroundAbilityBonuses: Partial<Record<keyof AbilityScores, number>>
+  backgroundFeatIndex: string
+  backgroundFeatName: string
 
   // Step 2 — Class
   classIndex: string
@@ -163,6 +169,7 @@ const defaultDraft = (): BuilderDraft => ({
   subraceAbilityBonuses: {}, availableSubraces: [],
   raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [], raceAutoLanguages: [],
   backgroundIndex: '', backgroundName: '', backgroundDescription: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [], backgroundLanguageChoices: 0,
+  backgroundAbilityOptions: [], backgroundAbilityBonuses: {}, backgroundFeatIndex: '', backgroundFeatName: '',
   classIndex: '', className: '', classHitDie: 8, classSpellcastingAbility: null,
   classSkillChoices: 2, classSkillOptions: [],
   subclassIndex: '', subclassName: '', availableSubclasses: [],
@@ -188,13 +195,13 @@ const DRAFT_ARRAY_FIELDS = [
   'selectedSkills', 'selectedLanguages', 'startingInventory', 'raceProfOptions',
   'availableSubraces', 'availableSubclasses', 'backgroundSkillProficiencies',
   'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs', 'raceSkillProficiencies',
-  'tomeCantrips', 'selectedInvocations', 'raceAutoLanguages',
+  'tomeCantrips', 'selectedInvocations', 'raceAutoLanguages', 'backgroundAbilityOptions',
 ] as const
 
 const DRAFT_OBJ_FIELDS = [
   'baseScores', 'spellsByLevel', 'asiAllocations', 'featsByLevel', 'levelChoices',
   'standardArrayAssignments', 'rollAssignments', 'raceAbilityBonuses',
-  'subraceAbilityBonuses', 'holySymbolDescriptions',
+  'subraceAbilityBonuses', 'holySymbolDescriptions', 'backgroundAbilityBonuses',
 ] as const
 
 const DraftSchema = z.object({ currentStep: z.number() })
@@ -218,16 +225,18 @@ export const useBuilderStore = defineStore('builder', () => {
   const isSpellcaster = computed(() => draft.value.classSpellcastingAbility !== null)
   const totalSteps = computed(() => isSpellcaster.value ? TOTAL_STEPS : TOTAL_STEPS - 1)
 
-  // Effective ability scores (base + racial bonuses + ASI allocations), capped at 20
+  // Effective ability scores, capped at 20:
+  //   base + racial + subrace + 2024 background increase + ASI allocations
   const effectiveScores = computed<AbilityScores>(() => {
     const b = draft.value.baseScores
     const rb = draft.value.raceAbilityBonuses
     const sb = draft.value.subraceAbilityBonuses
+    const bg = draft.value.backgroundAbilityBonuses
     const allAsis = draft.value.asiAllocations
     const keys: (keyof AbilityScores)[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
     return keys.reduce((acc, k) => {
       const asiTotal = Object.values(allAsis).reduce((sum, alloc) => sum + (alloc[k] ?? 0), 0)
-      acc[k] = Math.min(20, b[k] + (rb[k] ?? 0) + (sb[k] ?? 0) + asiTotal)
+      acc[k] = Math.min(20, b[k] + (rb[k] ?? 0) + (sb[k] ?? 0) + (bg[k] ?? 0) + asiTotal)
       return acc
     }, {} as AbilityScores)
   })
@@ -438,6 +447,10 @@ export const useBuilderStore = defineStore('builder', () => {
         !draft.value.backgroundIndex ? 'Select a background' : '',
         draft.value.backgroundIndex === 'custom' && !draft.value.backgroundName.trim() ? 'Enter a background name' : '',
         draft.value.backgroundIndex === 'custom' && draft.value.backgroundSkillProficiencies.length < 2 ? 'Choose 2 skills for your custom background' : '',
+        // 2024 backgrounds: the +2/+1 (or +1/+1/+1) ability score increase must be fully allocated
+        draft.value.backgroundEdition === '2024' && draft.value.backgroundAbilityOptions.length > 0
+          && Object.values(draft.value.backgroundAbilityBonuses).reduce((s, v) => s + (v ?? 0), 0) !== 3
+          ? 'Allocate the background ability score increase (+2/+1 or +1/+1/+1)' : '',
       ].filter(Boolean),
       5:  abilityErrors,
       6:  featErrors,
@@ -789,6 +802,15 @@ export const useBuilderStore = defineStore('builder', () => {
       resources: getClassResources(d.classIndex, d.level, computeAllModifiers(effectiveScores.value)),
       favoriteSpells: [],
       features: [
+        // 2024 background Origin Feat (lazy description via apiIndex/apiEdition)
+        ...(d.backgroundFeatIndex ? [{
+          id: generateId(),
+          name: d.backgroundFeatName || d.backgroundFeatIndex,
+          source: `${d.backgroundName || 'Background'} (Origin Feat)`,
+          description: '',
+          apiIndex: d.backgroundFeatIndex,
+          apiEdition: '2024' as const,
+        }] : []),
         // Feats chosen at ASI levels
         ...Object.entries(d.featsByLevel)
           .filter(([, dec]) => dec.type === 'feat' && dec.featIndex)

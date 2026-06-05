@@ -180,16 +180,54 @@
               {{ bgDetail.feat.name }}
             </span>
           </div>
+          <!-- 2024 Ability Score Increase allocator (+2/+1 or +1/+1/+1) -->
           <div v-if="bgDetail.ability_scores?.length" class="space-y-2">
-            <p class="text-2xs font-heading tracking-wide uppercase text-mist">Ability Scores</p>
-            <div class="flex flex-wrap gap-1.5">
+            <div class="flex items-baseline justify-between gap-2">
+              <p class="text-2xs font-heading tracking-wide uppercase text-mist">Ability Score Increase</p>
               <span
+                class="text-2xs font-heading tabular-nums"
+                :class="abilityAllocValid ? 'text-arcane-pale' : 'text-mist/60'"
+              >{{ abilityAllocTotal }}/3 points</span>
+            </div>
+            <p class="text-2xs font-body text-mist/60">Distribute <span class="text-stone">+2 / +1</span> to two of these, or <span class="text-stone">+1 / +1 / +1</span> to all three.</p>
+            <div class="grid grid-cols-3 gap-2">
+              <div
                 v-for="ab in bgDetail.ability_scores"
                 :key="ab.index"
-                class="px-2 py-0.5 rounded border border-gold-dim/25 bg-gold-dim/8 text-xs font-heading text-gold-dim"
-              >{{ ab.name }}</span>
+                class="flex flex-col items-center gap-1.5 px-2 py-2.5 rounded border"
+                :class="(builder.draft.backgroundAbilityBonuses[ab.index as keyof AbilityScores] ?? 0) > 0
+                  ? 'border-arcane-base/40 bg-arcane-deep/10'
+                  : 'border-shadow bg-depths/30'"
+              >
+                <span class="text-2xs font-heading tracking-[0.12em] uppercase text-mist">{{ ab.name }}</span>
+                <span class="font-heading text-lg leading-none"
+                  :class="(builder.draft.backgroundAbilityBonuses[ab.index as keyof AbilityScores] ?? 0) > 0 ? 'text-arcane-pale' : 'text-mist/40'"
+                >+{{ builder.draft.backgroundAbilityBonuses[ab.index as keyof AbilityScores] ?? 0 }}</span>
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    class="w-6 h-6 flex items-center justify-center rounded border text-sm font-heading transition-all"
+                    :class="(builder.draft.backgroundAbilityBonuses[ab.index as keyof AbilityScores] ?? 0) > 0
+                      ? 'border-shadow text-mist hover:border-blood-base/50 hover:text-blood-mid'
+                      : 'border-shadow/20 text-mist/20 cursor-not-allowed'"
+                    :disabled="(builder.draft.backgroundAbilityBonuses[ab.index as keyof AbilityScores] ?? 0) === 0"
+                    @click="changeBgAbility(ab.index, -1)"
+                  >−</button>
+                  <button
+                    type="button"
+                    class="w-6 h-6 flex items-center justify-center rounded border text-sm font-heading transition-all"
+                    :class="canIncreaseBgAbility(ab.index)
+                      ? 'border-shadow text-mist hover:border-arcane-base/50 hover:text-arcane-pale'
+                      : 'border-shadow/20 text-mist/20 cursor-not-allowed'"
+                    :disabled="!canIncreaseBgAbility(ab.index)"
+                    @click="changeBgAbility(ab.index, 1)"
+                  >+</button>
+                </div>
+              </div>
             </div>
-            <p class="text-2xs font-body text-mist/60 italic">2024 backgrounds let you increase these ability scores (+2/+1 or +1/+1/+1).</p>
+            <p v-if="showValidation && !abilityAllocValid" class="text-xs font-body text-blood-bright">
+              Allocate exactly +2/+1 to two abilities, or +1/+1/+1 to all three ({{ abilityAllocTotal }}/3).
+            </p>
           </div>
 
           <!-- Auto proficiencies -->
@@ -252,6 +290,7 @@ import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import { SKILLS } from '@/shared/lib/skillAbilityMap'
 import type { ApiBackground } from '@/shared/types/api'
+import type { AbilityScores } from '@/shared/types/character'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
 const builder = useBuilderStore()
@@ -307,6 +346,32 @@ const toolProfs = computed(() =>
   (bgDetail.value?.starting_proficiencies ?? []).filter(p => !p.index.startsWith('skill-')),
 )
 
+// ── 2024 background ability score increase (+2/+1 or +1/+1/+1) ────────────────
+const abilityAllocTotal = computed(() =>
+  Object.values(builder.draft.backgroundAbilityBonuses).reduce((s, v) => s + (v ?? 0), 0),
+)
+// With a cap of +2 per ability across exactly 3 options, total === 3 is reachable only as
+// [2,1] (two abilities) or [1,1,1] (all three) — both valid 2024 patterns.
+const abilityAllocValid = computed(() => abilityAllocTotal.value === 3)
+
+function canIncreaseBgAbility(index: string): boolean {
+  const key = index as keyof AbilityScores
+  const current = builder.draft.backgroundAbilityBonuses[key] ?? 0
+  return current < 2 && abilityAllocTotal.value < 3
+}
+
+function changeBgAbility(index: string, delta: number) {
+  const key = index as keyof AbilityScores
+  const current = builder.draft.backgroundAbilityBonuses[key] ?? 0
+  if (delta > 0 && !canIncreaseBgAbility(index)) return
+  if (delta < 0 && current === 0) return
+  const next = { ...builder.draft.backgroundAbilityBonuses }
+  const val = current + delta
+  if (val <= 0) delete next[key]
+  else next[key] = val
+  builder.draft.backgroundAbilityBonuses = next
+}
+
 // ── Custom skill picker ───────────────────────────────────────────────────────
 
 const customSkillCount = computed(() => builder.draft.backgroundSkillProficiencies.length)
@@ -333,6 +398,12 @@ function selectCustom() {
   builder.draft.backgroundSkillProficiencies = []
   builder.draft.backgroundToolProficiencies = []
   builder.draft.backgroundLanguageChoices = 2
+  // Clear any 2024 background grants so they don't leak into ability scores/features
+  builder.draft.backgroundEdition = '2014'
+  builder.draft.backgroundAbilityOptions = []
+  builder.draft.backgroundAbilityBonuses = {}
+  builder.draft.backgroundFeatIndex = ''
+  builder.draft.backgroundFeatName = ''
 }
 
 async function selectBackground(index: string, name: string, edition: '2014' | '2024' = '2014') {
@@ -342,6 +413,11 @@ async function selectBackground(index: string, name: string, edition: '2014' | '
   builder.draft.backgroundDescription = ''
   builder.draft.backgroundSkillProficiencies = []
   builder.draft.backgroundToolProficiencies = []
+  // Reset 2024-only background grants
+  builder.draft.backgroundAbilityOptions = []
+  builder.draft.backgroundAbilityBonuses = {}
+  builder.draft.backgroundFeatIndex = ''
+  builder.draft.backgroundFeatName = ''
 
   try {
     const detail: ApiBackground = edition === '2024'
@@ -354,6 +430,14 @@ async function selectBackground(index: string, name: string, edition: '2014' | '
       .filter(p => !p.index.startsWith('skill-'))
       .map(p => p.name)
     builder.draft.backgroundLanguageChoices = detail.language_options?.choose ?? 0
+    // 2024: capture the ability score options and the Origin Feat
+    if (edition === '2024') {
+      builder.draft.backgroundAbilityOptions = (detail.ability_scores ?? []).map(a => a.index)
+      if (detail.feat) {
+        builder.draft.backgroundFeatIndex = detail.feat.index
+        builder.draft.backgroundFeatName = detail.feat.name
+      }
+    }
   } catch { /* ignore */ }
 }
 </script>

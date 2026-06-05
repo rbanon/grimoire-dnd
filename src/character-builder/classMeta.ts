@@ -717,17 +717,19 @@ export interface RaceTraits {
 }
 
 // Dragonborn: subraceIndex from the 5e API e.g. 'dragonborn-black', 'dragonborn-red'
-const DRAGONBORN_ANCESTRY_RESISTANCE: Record<string, string> = {
-  'dragonborn-black':  'acid',
-  'dragonborn-blue':   'lightning',
-  'dragonborn-brass':  'fire',
-  'dragonborn-bronze': 'lightning',
-  'dragonborn-copper': 'acid',
-  'dragonborn-gold':   'fire',
-  'dragonborn-green':  'poison',
-  'dragonborn-red':    'fire',
-  'dragonborn-silver': 'cold',
-  'dragonborn-white':  'cold',
+// Damage resistance by dragon color. Keyed by the color suffix so it works for both the
+// 2014 style (`dragonborn-red`) and the 2024 subspecies style (`draconic-ancestor-red`).
+const DRAGON_COLOR_RESISTANCE: Record<string, string> = {
+  black:  'acid',
+  blue:   'lightning',
+  brass:  'fire',
+  bronze: 'lightning',
+  copper: 'acid',
+  gold:   'fire',
+  green:  'poison',
+  red:    'fire',
+  silver: 'cold',
+  white:  'cold',
 }
 
 export function getRaceTraits(raceIndex: string, subraceIndex?: string): RaceTraits {
@@ -740,10 +742,19 @@ export function getRaceTraits(raceIndex: string, subraceIndex?: string): RaceTra
   }
   // 2024 species with different darkvision range
   if (raceIndex === 'orc') senses.push('Darkvision 120 ft.')
-  if (raceIndex === 'tiefling') resistances.push('fire')
-  if (raceIndex === 'dwarf')    resistances.push('poison')
+  if (raceIndex === 'dwarf') resistances.push('poison')
+  if (raceIndex === 'tiefling') {
+    // 2024 Tiefling resistance depends on the Fiendish Legacy subspecies;
+    // 2014 Tiefling (no subrace in the SRD) is always fire.
+    const legacy = subraceIndex?.startsWith('fiendish-legacy-')
+      ? (subraceIndex.split('-').pop() ?? '')
+      : ''
+    const byLegacy: Record<string, string> = { abyssal: 'poison', chthonic: 'necrotic', infernal: 'fire' }
+    resistances.push(byLegacy[legacy] ?? 'fire')
+  }
   if (raceIndex === 'dragonborn' && subraceIndex) {
-    const dmgType = DRAGONBORN_ANCESTRY_RESISTANCE[subraceIndex]
+    const color = subraceIndex.split('-').pop() ?? ''
+    const dmgType = DRAGON_COLOR_RESISTANCE[color]
     if (dmgType) resistances.push(dmgType)
   }
 
