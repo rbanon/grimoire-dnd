@@ -122,6 +122,31 @@
               </template>
             </div>
           </Transition>
+
+          <!-- Druid Circle of the Land — land-type choice -->
+          <Transition name="expand">
+            <div v-if="isDruidLand" class="mt-3 space-y-2">
+              <div class="flex items-center gap-2">
+                <label class="label mb-0">Land Type</label>
+                <span class="text-2xs font-body text-mist/60">determines your Circle Spells</span>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="opt in landTypeOptions"
+                  :key="opt.value"
+                  type="button"
+                  class="px-3 py-1.5 rounded text-sm font-heading tracking-wide border transition-all duration-150"
+                  :class="builder.draft.druidLandType === opt.value
+                    ? 'border-gold-mid/60 bg-gold-dim/15 text-gold-deep'
+                    : 'border-gold-dim/25 bg-depths text-stone hover:border-gold-dim/50 hover:text-vellum hover:bg-gold-dim/5'"
+                  @click="builder.draft.druidLandType = opt.value"
+                >{{ opt.label }}</button>
+              </div>
+              <p v-if="showValidation && !builder.draft.druidLandType" class="text-xs font-body text-blood-bright">
+                Choose a land type to continue.
+              </p>
+            </div>
+          </Transition>
         </div>
       </Transition>
     </section>
@@ -131,7 +156,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import { getClassMeta } from '@/character-builder/classMeta'
@@ -212,15 +237,50 @@ async function selectClass(index: string, name: string, edition: EditionTag) {
   } catch { /* ignore */ }
 }
 
+// Druid Circle of the Land: spells are gated by a chosen land type (feature prereq).
+const isDruidLand = computed(() =>
+  builder.draft.classIndex === 'druid' && builder.draft.subclassSpells.some(s => s.feature),
+)
+const landTypeOptions = computed(() => {
+  const feats = [...new Set(builder.draft.subclassSpells.map(s => s.feature).filter(Boolean) as string[])]
+  return feats
+    .map(f => ({ value: f, label: f.replace(/^Circle of the Land:\s*/i, '') }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+})
+
 function toggleSubclass(index: string, name: string) {
   if (builder.draft.subclassIndex === index) {
     builder.draft.subclassIndex = ''
     builder.draft.subclassName = ''
+    builder.draft.subclassSpells = []
+    builder.draft.druidLandType = ''
   } else {
     builder.draft.subclassIndex = index
     builder.draft.subclassName = name
   }
 }
+
+// Capture subclass-granted spells (2014 spellcasting subclasses) into the draft.
+// Each entry keeps the unlock level (class level) and, for Druid Circle of the Land,
+// the land-type feature gate. Actual spell levels are resolved later (build / pickers).
+watch(subclassDetail, (detail) => {
+  if (!builder.draft.subclassIndex || detail?.index !== builder.draft.subclassIndex) return
+  builder.draft.subclassSpells = (detail.spells ?? []).map(s => {
+    const lvl  = s.prerequisites.find(p => p.type === 'level')
+    const feat = s.prerequisites.find(p => p.type === 'feature')
+    return {
+      index: s.spell.index,
+      name: s.spell.name,
+      unlockLevel: lvl ? (parseInt(lvl.name.replace(/\D+/g, ''), 10) || 1) : 1,
+      feature: feat?.name,
+    }
+  })
+  // Drop a stale land-type pick if it's no longer offered
+  const features = new Set(builder.draft.subclassSpells.map(s => s.feature).filter(Boolean) as string[])
+  if (builder.draft.druidLandType && !features.has(builder.draft.druidLandType)) {
+    builder.draft.druidLandType = ''
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>

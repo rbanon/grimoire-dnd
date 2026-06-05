@@ -317,6 +317,9 @@ export const SpellcastingStateSchema = z.object({
   spellsKnown: z.array(SpellReferenceSchema),
   spellsPrepared: z.array(SpellReferenceSchema),
   cantripsKnown: z.array(SpellReferenceSchema),
+  // Subclass-granted spells that are always prepared and don't count against the prepared
+  // limit (Cleric domain, Paladin oath, Druid circle spells). Locked on the sheet.
+  alwaysPreparedSpells: z.array(SpellReferenceSchema).default([]),
   ritualCasting: z.boolean().default(false),
 })
 export type SpellcastingState = z.infer<typeof SpellcastingStateSchema>

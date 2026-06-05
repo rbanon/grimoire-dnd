@@ -138,12 +138,20 @@ export interface ApiSubrace {
 
 // ── Subclasses ────────────────────────────────────────────────────────────────
 
+/** A spell granted/expanded by a subclass, with the level/feature prerequisite. */
+export interface ApiSubclassSpell {
+  prerequisites: { index: string; type: string; name: string; url: string }[]
+  spell: ApiReference
+}
+
 export interface ApiSubclass {
   index: string
   name: string
   class: ApiReference
   subclass_flavor: string
   desc: string[]
+  // 2014 spellcasting subclasses only: domain/oath/circle/expanded spells.
+  spells?: ApiSubclassSpell[]
   url: string
 }
 

@@ -8,7 +8,8 @@ import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
 import { uploadPortraitBlob } from '@/shared/lib/uploadPortrait'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount, getSubclassSpellMode } from '@/character-builder/classMeta'
+import { fiveEApi } from '@/shared/api/fiveE.client'
 
 const DRAFT_KEY = 'builder-draft'
 const TOTAL_STEPS = 11
@@ -99,6 +100,10 @@ export interface BuilderDraft {
   subclassIndex: string
   subclassName: string
   availableSubclasses: { index: string; name: string }[]
+  // Spells granted/expanded by the subclass (2014 only). unlockLevel = class level required;
+  // feature = land-type gate for Druid Circle of the Land (e.g. "Circle of the Land: Arctic").
+  subclassSpells: { index: string; name: string; unlockLevel: number; feature?: string }[]
+  druidLandType: string  // chosen land-type feature for Druid Circle of the Land
   level: number
   useMilestones: boolean
   hpMethod: 'average' | 'max' | 'manual' | 'roll'
@@ -183,6 +188,7 @@ const defaultDraft = (): BuilderDraft => ({
   classIndex: '', className: '', classHitDie: 8, classSpellcastingAbility: null,
   classSkillChoices: 2, classSkillOptions: [],
   subclassIndex: '', subclassName: '', availableSubclasses: [],
+  subclassSpells: [], druidLandType: '',
   level: 1, useMilestones: false, hpMethod: 'average', manualMaxHp: 8, rolledHpPerLevel: [],
   holySymbolDescriptions: {},
   abilityMethod: 'pointbuy',
@@ -208,7 +214,7 @@ const DRAFT_ARRAY_FIELDS = [
   'availableSubraces', 'availableSubclasses', 'backgroundSkillProficiencies',
   'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs', 'raceSkillProficiencies',
   'tomeCantrips', 'selectedInvocations', 'raceAutoLanguages', 'backgroundAbilityOptions',
-  'backgroundProfChoices', 'selectedBackgroundProfs',
+  'backgroundProfChoices', 'selectedBackgroundProfs', 'subclassSpells',
 ] as const
 
 const DRAFT_OBJ_FIELDS = [
@@ -226,6 +232,21 @@ const DraftSchema = z.object({ currentStep: z.number() })
     for (const f of DRAFT_OBJ_FIELDS) if (typeof d[f] !== 'object' || d[f] === null) delete d[f]
     return d
   })
+
+// Resolve the subclass always-prepared spells granted at the character's level (with the
+// Druid land-type gate), fetching each spell's real level for the SpellReference.
+async function resolveAlwaysPreparedSpells(d: BuilderDraft): Promise<{ index: string; name: string; level: number }[]> {
+  if (getSubclassSpellMode(d.classIndex) !== 'always-prepared' || d.subclassSpells.length === 0) return []
+  const granted = d.subclassSpells.filter(s =>
+    s.unlockLevel <= d.level && (!s.feature || s.feature === d.druidLandType),
+  )
+  const uniq = [...new Map(granted.map(s => [s.index, s])).values()]
+  if (uniq.length === 0) return []
+  const details = await Promise.allSettled(uniq.map(s => fiveEApi.getSpell(s.index)))
+  return details.flatMap((r, i) =>
+    r.status === 'fulfilled' ? [{ index: uniq[i].index, name: uniq[i].name, level: r.value.level }] : [],
+  )
+}
 
 export const useBuilderStore = defineStore('builder', () => {
   const draft = ref<BuilderDraft>(defaultDraft())
@@ -428,6 +449,9 @@ export const useBuilderStore = defineStore('builder', () => {
         !draft.value.classIndex ? 'Select a class' : '',
         draft.value.classIndex && draft.value.availableSubclasses.length > 0 && !draft.value.subclassIndex
           ? 'Select a subclass' : '',
+        // Druid Circle of the Land must pick a land type (gates the circle spells)
+        draft.value.classIndex === 'druid' && draft.value.subclassSpells.some(s => s.feature) && !draft.value.druidLandType
+          ? 'Choose a land type for Circle of the Land' : '',
       ].filter(Boolean),
       2:  (() => {
         if (!draft.value.classIndex) return []
@@ -719,6 +743,8 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value.tomeCantrips = []
     draft.value.selectedInvocations = []
     draft.value.expertiseSkills = []
+    draft.value.subclassSpells = []
+    draft.value.druidLandType = ''
   })
 
   // Re-validate currentStep whenever skippable conditions change
@@ -763,6 +789,11 @@ export const useBuilderStore = defineStore('builder', () => {
       const castingType = getSpellProfile(d.classIndex)?.castingType ?? 'known'
       const finalCantrips = castingType === 'known' ? activeCantrips.value : d.selectedCantrips
       const finalSpells   = castingType === 'known' ? activeSpells.value   : d.selectedSpells
+
+      // Subclass always-prepared spells (Cleric domain / Paladin oath / Druid circle):
+      // granted free, never count against the prepared limit. Resolve their real levels.
+      const alwaysPreparedSpells = await resolveAlwaysPreparedSpells(d)
+
       spellcasting = {
         spellcastingAbility: d.classSpellcastingAbility as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha',
         slotsMax:  getSpellSlots(d.classIndex, d.level),
@@ -771,6 +802,7 @@ export const useBuilderStore = defineStore('builder', () => {
         spellsKnown:    castingType === 'prepared' ? d.selectedSpells : finalSpells,
         spellsPrepared: castingType === 'prepared' ? d.selectedPreparedSpells
           : castingType === 'spellbook' ? finalSpells : [],
+        alwaysPreparedSpells,
         // Wizard, Cleric, and Druid have the Ritual Casting class feature at level 1.
         // Bard (College of Lore) gets it at level 3, but subclass tracking is out of MVP scope.
         ritualCasting: ['wizard', 'cleric', 'druid'].includes(d.classIndex),

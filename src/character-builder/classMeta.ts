@@ -916,6 +916,20 @@ export function getExpertiseCount(classIndex: string, level: number): number {
   return 0
 }
 
+/**
+ * How a subclass's granted spells behave:
+ *  - 'always-prepared': free, always prepared, don't count against the limit
+ *    (Cleric domain, Paladin oath, Druid circle spells).
+ *  - 'expanded': added to the spells you may CHOOSE to learn (Warlock patron list).
+ *  - null: this class's subclasses don't grant spells.
+ */
+export function getSubclassSpellMode(classIndex: string): 'always-prepared' | 'expanded' | null {
+  const ct = getSpellProfile(classIndex)?.castingType
+  if (ct === 'prepared' || ct === 'spellbook') return 'always-prepared'
+  if (ct === 'known') return 'expanded'
+  return null
+}
+
 export function getClassResources(classIndex: string, level: number, mods: AbilityMods): ResourcePool[] {
   const defs = RESOURCE_DEFINITIONS[classIndex] ?? []
   return defs.flatMap(def => {

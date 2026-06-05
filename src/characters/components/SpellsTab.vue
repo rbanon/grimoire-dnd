@@ -410,23 +410,29 @@ function pactResourceSync(newSlotsUsed: number): { resources?: ResourcePool[] } 
 
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
 
+const alwaysPreparedSpells = computed(() => sc.value?.alwaysPreparedSpells ?? [])
+
 const activeLevels = computed(() => {
   if (!sc.value) return []
   return LEVELS.filter(lvl => {
     const hasSlots = maxSlots(lvl) > 0
     const hasSpells = sc.value!.spellsKnown.some(s => s.level === lvl) ||
-                      sc.value!.spellsPrepared.some(s => s.level === lvl)
+                      sc.value!.spellsPrepared.some(s => s.level === lvl) ||
+                      alwaysPreparedSpells.value.some(s => s.level === lvl)
     return hasSlots || hasSpells
   })
 })
 
 function spellsAtLevel(lvl: number) {
   if (!sc.value) return []
-  const knownAt   = sc.value.spellsKnown.filter(s => s.level === lvl)
+  const knownAt    = sc.value.spellsKnown.filter(s => s.level === lvl)
   const preparedAt = sc.value.spellsPrepared.filter(s => s.level === lvl)
+  const grantedAt  = alwaysPreparedSpells.value.filter(s => s.level === lvl)
   const seen = new Set<string>()
-  const result: (SpellReference & { prepared: boolean })[] = []
-  for (const s of preparedAt) { seen.add(s.index); result.push({ ...s, prepared: true }) }
+  const result: (SpellReference & { prepared: boolean; granted?: boolean })[] = []
+  // Subclass always-prepared spells first (locked)
+  for (const s of grantedAt)  { seen.add(s.index); result.push({ ...s, prepared: true, granted: true }) }
+  for (const s of preparedAt) { if (!seen.has(s.index)) { seen.add(s.index); result.push({ ...s, prepared: true }) } }
   for (const s of knownAt)    { if (!seen.has(s.index)) result.push({ ...s, prepared: false }) }
   return result
 }
