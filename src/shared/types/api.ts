@@ -81,7 +81,14 @@ export interface ApiEqMultiple {
   items: ApiEqOptionEntry[]
 }
 
-export type ApiEqOptionEntry = ApiEqCountedRef | ApiEqChoice | ApiEqMultiple
+/** A money grant inside an option (e.g. 2024 background "B) 50 GP"). */
+export interface ApiEqMoney {
+  option_type: 'money'
+  count: number
+  unit: string // 'cp' | 'sp' | 'ep' | 'gp' | 'pp'
+}
+
+export type ApiEqOptionEntry = ApiEqCountedRef | ApiEqChoice | ApiEqMultiple | ApiEqMoney
 
 export interface ApiEquipmentOption {
   desc: string

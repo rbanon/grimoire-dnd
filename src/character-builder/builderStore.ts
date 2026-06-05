@@ -127,6 +127,8 @@ export interface BuilderDraft {
   // Step 5 — Equipment (simplified for MVP)
   useStartingEquipment: boolean
   manualGold: number
+  // Coins granted by the chosen starting-equipment options (e.g. background "B) 50 GP")
+  equipmentCurrency: { cp: number; sp: number; ep: number; gp: number; pp: number }
   equipmentChoicesDone: boolean
 
   // Step 2 — Level choices (fighting style, pact boon, etc.)
@@ -185,7 +187,9 @@ const defaultDraft = (): BuilderDraft => ({
   rolledAbilityScores: [],
   rollAssignments: {},
   selectedSkills: [], selectedLanguages: [],
-  useStartingEquipment: true, manualGold: 0, equipmentChoicesDone: true,
+  useStartingEquipment: true, manualGold: 0,
+  equipmentCurrency: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
+  equipmentChoicesDone: true,
   startingInventory: [],
   levelChoices: {},
   featsByLevel: {},
@@ -207,6 +211,7 @@ const DRAFT_OBJ_FIELDS = [
   'baseScores', 'spellsByLevel', 'asiAllocations', 'featsByLevel', 'levelChoices',
   'standardArrayAssignments', 'rollAssignments', 'raceAbilityBonuses',
   'subraceAbilityBonuses', 'holySymbolDescriptions', 'backgroundAbilityBonuses',
+  'equipmentCurrency',
 ] as const
 
 const DraftSchema = z.object({ currentStep: z.number() })
@@ -811,7 +816,10 @@ export const useBuilderStore = defineStore('builder', () => {
       })(),
       attacks: [],
       inventory: d.startingInventory,
-      currency: { cp: 0, sp: 0, ep: 0, gp: d.manualGold, pp: 0 },
+      // Equipment path → coins granted by the chosen options; gold path → manual gold input
+      currency: d.useStartingEquipment
+        ? { ...d.equipmentCurrency }
+        : { cp: 0, sp: 0, ep: 0, gp: d.manualGold, pp: 0 },
       spellcasting,
       resources: getClassResources(d.classIndex, d.level, computeAllModifiers(effectiveScores.value)),
       favoriteSpells: [],

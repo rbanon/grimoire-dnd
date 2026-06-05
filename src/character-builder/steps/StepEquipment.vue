@@ -226,13 +226,25 @@
                     </div>
                   </template>
 
+                  <!-- Money grant -->
+                  <template v-for="(slot, si) in variant.slots" :key="`money-${si}`">
+                    <div
+                      v-if="slot.kind === 'money'"
+                      class="flex items-center gap-2 px-3 py-2 rounded border border-gold-dim/30 bg-gold-dim/8"
+                    >
+                      <span class="text-gold-mid shrink-0">◎</span>
+                      <span class="text-sm font-heading text-gold-mid">{{ formatMoney(slot.amount, slot.unit) }}</span>
+                      <span class="text-2xs font-body text-mist">added to your purse</span>
+                    </div>
+                  </template>
+
                 </div>
               </div>
             </div>
           </section>
 
           <!-- Summary -->
-          <section v-if="summaryItems.length > 0" class="space-y-3">
+          <section v-if="summaryItems.length > 0 || hasEquipmentCurrency" class="space-y-3">
             <p class="text-2xs font-heading tracking-wide uppercase text-mist">Your Starting Inventory</p>
             <div class="card p-4 divide-y divide-shadow/40">
               <div
@@ -256,6 +268,14 @@
                       ? 'border-gold-dim/30 text-gold-dim'
                       : 'border-shadow text-mist'"
                 >{{ inv.itemType }}</span>
+              </div>
+              <!-- Granted coins -->
+              <div v-if="hasEquipmentCurrency" class="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                <span class="text-base w-6 text-center shrink-0 text-gold-mid">◎</span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-heading text-gold-mid">{{ equipmentCurrencyLabel }}</p>
+                </div>
+                <span class="text-2xs font-heading px-1.5 py-0.5 rounded border border-gold-dim/30 text-gold-dim shrink-0">coins</span>
               </div>
             </div>
           </section>
@@ -305,6 +325,7 @@ import type {
   ApiEqCountedRef,
   ApiEqCategoryRef,
   ApiEqChoice,
+  ApiEqMoney,
   ApiEqOptionsArray,
   ApiReference,
   ApiEquipment,
@@ -334,6 +355,7 @@ function editionFromUrl(url?: string): EquipEdition {
 type Slot =
   | { kind: 'item'; ref: ApiReference; quantity: number }
   | { kind: 'category'; categoryRef: ApiReference }
+  | { kind: 'money'; amount: number; unit: string }
 
 interface Variant {
   slots: Slot[]
@@ -383,6 +405,10 @@ function parseEntry(entry: ApiEqOptionEntry): Slot[] {
     const e = entry as ApiEqCountedRef
     return [{ kind: 'item', ref: e.of, quantity: e.count }]
   }
+  if (entry.option_type === 'money') {
+    const e = entry as ApiEqMoney
+    return [{ kind: 'money', amount: e.count, unit: e.unit }]
+  }
   if (entry.option_type === 'multiple') {
     return entry.items.flatMap(parseEntry)
   }
@@ -400,10 +426,15 @@ function parseEntry(entry: ApiEqOptionEntry): Slot[] {
   return []
 }
 
+function formatMoney(amount: number, unit: string): string {
+  return `${amount} ${unit.toUpperCase()}`
+}
+
 function slotLabel(slot: Slot): string {
   if (slot.kind === 'item') {
     return slot.quantity > 1 ? `${slot.quantity}× ${slot.ref.name}` : slot.ref.name
   }
+  if (slot.kind === 'money') return formatMoney(slot.amount, slot.unit)
   return `Any ${slot.categoryRef.name}`
 }
 
@@ -769,6 +800,28 @@ watch(resolvedInventory, (items) => {
   builder.draft.startingInventory = items
 }, { deep: true })
 
+// Coins granted by chosen options (e.g. background "B) 50 GP") → applied to the character
+// in the equipment path. Class/background starting-equipment options use gp in the SRD,
+// but accumulate per-unit to be safe.
+const resolvedCurrency = computed(() => {
+  const cur = { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }
+  for (const [giStr, vi] of Object.entries(choices.value)) {
+    const variant = optionGroups.value[Number(giStr)]?.variants[vi]
+    if (!variant) continue
+    for (const slot of variant.slots) {
+      if (slot.kind === 'money') {
+        const u = slot.unit.toLowerCase()
+        if (u in cur) cur[u as keyof typeof cur] += slot.amount
+      }
+    }
+  }
+  return cur
+})
+
+watch(resolvedCurrency, (cur) => {
+  builder.draft.equipmentCurrency = cur
+}, { deep: true, immediate: true })
+
 watchEffect(() => {
   if (!builder.draft.useStartingEquipment || classLoading.value || bgLoading.value) {
     builder.draft.equipmentChoicesDone = true
@@ -779,6 +832,15 @@ watchEffect(() => {
 })
 
 // ── Summary helpers ───────────────────────────────────────────────────────────
+
+const UNIT_ORDER: (keyof typeof resolvedCurrency.value)[] = ['pp', 'gp', 'ep', 'sp', 'cp']
+const hasEquipmentCurrency = computed(() => UNIT_ORDER.some(u => resolvedCurrency.value[u] > 0))
+const equipmentCurrencyLabel = computed(() =>
+  UNIT_ORDER
+    .filter(u => resolvedCurrency.value[u] > 0)
+    .map(u => `${resolvedCurrency.value[u]} ${u.toUpperCase()}`)
+    .join(', '),
+)
 
 interface SummaryEntry { name: string; quantity: number; icon: string }
 
