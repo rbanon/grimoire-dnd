@@ -130,6 +130,51 @@
       </div>
     </section>
 
+    <!-- Expertise (Rogue / Bard) -->
+    <section v-if="expertiseCount > 0" class="space-y-4">
+      <div class="rule-gold">
+        <span>Expertise</span>
+        <span
+          class="text-xs ml-2 font-body"
+          :class="expertiseChosen === expertiseNeed ? 'text-arcane-pale' : 'text-mist'"
+        >
+          {{ expertiseChosen }}/{{ expertiseNeed }} selected
+        </span>
+      </div>
+      <p class="text-xs font-body -mt-2 text-mist">
+        {{ builder.draft.className }} doubles its proficiency bonus on
+        {{ expertiseCount }} chosen skill{{ expertiseCount > 1 ? 's' : '' }}. Pick from skills you're already proficient in.
+      </p>
+      <p v-if="showValidation && expertiseChosen < expertiseNeed" class="text-xs font-body text-blood-bright">
+        Choose {{ expertiseNeed - expertiseChosen }} more skill{{ expertiseNeed - expertiseChosen > 1 ? 's' : '' }} for Expertise.
+      </p>
+
+      <p v-if="proficientSkills.length === 0" class="text-xs font-body text-mist/60 italic">
+        Choose your skill proficiencies above first.
+      </p>
+      <div v-else class="flex flex-wrap gap-2">
+        <button
+          v-for="skill in proficientSkills"
+          :key="skill.index"
+          type="button"
+          class="px-3 py-1.5 rounded text-sm font-heading tracking-wide border transition-all duration-150"
+          :class="isExpertise(skill.index)
+            ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale'
+            : canSelectMoreExpertise
+              ? 'border-shadow text-ash hover:border-arcane-base/30 hover:text-stone'
+              : 'border-shadow text-mist/40 cursor-not-allowed opacity-50'"
+          :disabled="!isExpertise(skill.index) && !canSelectMoreExpertise"
+          @click="toggleExpertise(skill.index)"
+        >
+          {{ skill.name }}
+          <span v-if="isExpertise(skill.index)" class="ml-1 text-arcane-pale/80">★</span>
+        </button>
+      </div>
+      <p v-if="builder.draft.classIndex === 'rogue'" class="text-2xs font-body text-mist/50 italic">
+        Note: Rogues may instead take Expertise in Thieves' Tools — adjust on the character sheet if preferred.
+      </p>
+    </section>
+
     <!-- Languages -->
     <section class="space-y-4">
       <div class="rule-gold">
@@ -187,10 +232,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { CheckIcon, InfoIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { useBuilderStore } from '@/character-builder/builderStore'
+import { getExpertiseCount } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
@@ -292,4 +338,55 @@ function toggleLang(index: string) {
     builder.draft.selectedLanguages.push(index)
   }
 }
+
+// ── Expertise (Rogue L1/L6, Bard L3/L10) ──────────────────────────────────────
+
+// All skills (unfiltered by class options) for index→name lookup, since a proficient
+// skill may come from the background/race and lie outside the class skill options.
+const allSkills = computed(() => skillData.value?.results ?? [])
+
+// The proficient-skill pool = class-chosen + background + race skills (same set built
+// into skillProficiencies). Expertise can only be applied to these.
+const proficientSkillIndices = computed(() => [...new Set([
+  ...builder.draft.selectedSkills,
+  ...builder.draft.backgroundSkillProficiencies,
+  ...builder.draft.raceSkillProficiencies,
+])])
+
+const proficientSkills = computed(() =>
+  proficientSkillIndices.value
+    .map(i => allSkills.value.find(s => s.index === i) ?? { index: i, name: prettifySkill(i) })
+    .sort((a, b) => a.name.localeCompare(b.name)),
+)
+
+function prettifySkill(index: string): string {
+  return index.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
+const expertiseCount = computed(() =>
+  getExpertiseCount(builder.draft.classIndex, builder.draft.level),
+)
+// Can't pick more expertise skills than you have proficiencies in.
+const expertiseNeed = computed(() => Math.min(expertiseCount.value, proficientSkillIndices.value.length))
+const expertiseChosen = computed(() =>
+  builder.draft.expertiseSkills.filter(s => proficientSkillIndices.value.includes(s)).length,
+)
+const canSelectMoreExpertise = computed(() => expertiseChosen.value < expertiseNeed.value)
+
+function isExpertise(index: string) { return builder.draft.expertiseSkills.includes(index) }
+function toggleExpertise(index: string) {
+  if (isExpertise(index)) {
+    builder.draft.expertiseSkills = builder.draft.expertiseSkills.filter(s => s !== index)
+  } else if (canSelectMoreExpertise.value && proficientSkillIndices.value.includes(index)) {
+    builder.draft.expertiseSkills = [...builder.draft.expertiseSkills, index]
+  }
+}
+
+// Drop any expertise picks that are no longer proficient (e.g. a class skill was deselected).
+watch(proficientSkillIndices, (pool) => {
+  const valid = builder.draft.expertiseSkills.filter(s => pool.includes(s))
+  if (valid.length !== builder.draft.expertiseSkills.length) {
+    builder.draft.expertiseSkills = valid
+  }
+})
 </script>
