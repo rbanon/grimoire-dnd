@@ -314,7 +314,11 @@ const { data: speciesDetail2024, isPending: raceDetailLoading2024 } = useQuery({
 
 const raceDetail = computed(() => raceEdition.value === '2024' ? null : raceDetail2014.value ?? null)
 const speciesDetail = computed(() => raceEdition.value === '2024' ? speciesDetail2024.value ?? null : null)
-const raceDetailLoading = computed(() => raceDetailLoading2014.value || raceDetailLoading2024.value)
+// Only the active edition's query matters — a DISABLED query reports isPending:true in
+// TanStack v5, so `loading2014 || loading2024` would keep the spinner stuck forever.
+const raceDetailLoading = computed(() =>
+  raceEdition.value === '2024' ? raceDetailLoading2024.value : raceDetailLoading2014.value
+)
 
 const raceTraitIndices = computed(() => {
   if (raceEdition.value === '2024') return speciesDetail.value?.traits.map(t => t.index) ?? []

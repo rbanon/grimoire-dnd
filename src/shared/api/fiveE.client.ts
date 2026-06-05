@@ -170,11 +170,15 @@ export const fiveEApi = {
   listDamageTypes: () => get<ApiReferenceList>('/damage-types'),
   listConditions: () => get<ApiReferenceList>('/conditions'),
 
-  // Equipment — no server-side filtering; fetch all, index client-side
+  // Equipment — no server-side filtering; fetch all, index client-side.
+  // 2024 has its own equipment endpoint with some differing indices (e.g. 2024 `arrows`
+  // vs 2014 `arrow`), so fetch from the edition that owns each item's ref.url.
   listEquipment: () => get<ApiReferenceList>('/equipment'),
   getEquipment: (index: string) => get<ApiEquipment>(`/equipment/${sanitizeApiIndex(index)}`),
+  getEquipment2024: (index: string) => get<ApiEquipment>(`/equipment/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
   listEquipmentCategories: () => get<ApiReferenceList>('/equipment-categories'),
   getEquipmentCategory: (index: string) => get<ApiEquipmentCategory>(`/equipment-categories/${sanitizeApiIndex(index)}`),
+  getEquipmentCategory2024: (index: string) => get<ApiEquipmentCategory>(`/equipment-categories/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
 
   // Magic items — no server-side filtering
   listMagicItems: () => get<ApiReferenceList>('/magic-items'),
