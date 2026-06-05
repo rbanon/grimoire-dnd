@@ -157,6 +157,8 @@ const props = defineProps<{
   limit?: number
   initialLevel?: number
   maxLevel?: number
+  /** Subclass-expanded spells addable to this caster's options (e.g. Warlock patron list). */
+  extraSpells?: { index: string; name: string; level: number }[]
 }>()
 
 const emit = defineEmits<{
@@ -189,7 +191,15 @@ const { data, isPending: loading } = useQuery({
   enabled: computed(() => props.show && !!props.classIndex),
 })
 
-const allSpells = computed(() => data.value?.results ?? [])
+const allSpells = computed(() => {
+  const base = data.value?.results ?? []
+  const extra = (props.extraSpells ?? []).filter(s => s.level === selectedLevel.value)
+  if (extra.length === 0) return base
+  const seen = new Set(base.map(s => s.index))
+  const merged = [...base]
+  for (const s of extra) if (!seen.has(s.index)) merged.push({ index: s.index, name: s.name, url: '' })
+  return merged.sort((a, b) => a.name.localeCompare(b.name))
+})
 
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
