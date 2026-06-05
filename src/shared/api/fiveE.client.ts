@@ -122,6 +122,7 @@ export const fiveEApi = {
       feature: undefined,
       feat: raw.feat,
       ability_scores: raw.ability_scores,
+      proficiency_choices: raw.proficiency_choices ?? [],
     }
   },
 

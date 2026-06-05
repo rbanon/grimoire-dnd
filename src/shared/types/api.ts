@@ -157,6 +157,8 @@ export interface ApiBackground {
   // 2024-only extras (carried through normalization for richer display)
   feat?: ApiReference
   ability_scores?: ApiReference[]
+  // Tool/proficiency choices (2024 backgrounds; 2014 occasionally). Each group: choose N.
+  proficiency_choices?: ApiProficiencyChoice[]
   url: string
 }
 

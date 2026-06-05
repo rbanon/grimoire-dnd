@@ -247,6 +247,39 @@
             </div>
           </div>
 
+          <!-- Tool / proficiency choice (e.g. Soldier 2024 → choose a Gaming Set) -->
+          <div
+            v-for="(group, gi) in builder.draft.backgroundProfChoices"
+            :key="`profchoice-${gi}`"
+            class="space-y-2"
+          >
+            <div class="flex items-baseline justify-between gap-2">
+              <p class="text-2xs font-heading tracking-wide uppercase text-mist">{{ group.desc }}</p>
+              <span
+                class="text-2xs font-heading tabular-nums"
+                :class="profGroupChosenCount(gi) === group.choose ? 'text-arcane-pale' : 'text-mist/60'"
+              >{{ profGroupChosenCount(gi) }}/{{ group.choose }}</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              <button
+                v-for="opt in group.options"
+                :key="opt.index"
+                type="button"
+                class="text-left px-3 py-2 rounded border text-xs font-heading tracking-wide transition-all duration-100"
+                :class="isProfSelected(opt.index)
+                  ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale'
+                  : profGroupChosenCount(gi) >= group.choose
+                    ? 'border-shadow/40 text-mist/40 cursor-not-allowed'
+                    : 'border-shadow text-ash hover:border-arcane-base/25 hover:text-stone'"
+                :disabled="!isProfSelected(opt.index) && profGroupChosenCount(gi) >= group.choose"
+                @click="toggleBackgroundProf(gi, opt.index)"
+              >{{ opt.name.replace(/^Tool:\s*/, '') }}</button>
+            </div>
+            <p v-if="showValidation && profGroupChosenCount(gi) < group.choose" class="text-xs font-body text-blood-bright">
+              Choose {{ group.choose - profGroupChosenCount(gi) }} more to continue.
+            </p>
+          </div>
+
           <!-- Language options -->
           <div v-if="bgDetail.language_options?.choose" class="flex items-start gap-2 px-3 py-2 rounded border border-shadow/40 bg-depths/20">
             <span class="text-gold-dim/60 text-xs shrink-0 mt-0.5">ℹ</span>
@@ -372,6 +405,28 @@ function changeBgAbility(index: string, delta: number) {
   builder.draft.backgroundAbilityBonuses = next
 }
 
+// ── Background tool / proficiency choices (e.g. choose one Gaming Set) ────────
+function isProfSelected(index: string): boolean {
+  return builder.draft.selectedBackgroundProfs.includes(index)
+}
+
+function profGroupChosenCount(gi: number): number {
+  const group = builder.draft.backgroundProfChoices[gi]
+  if (!group) return 0
+  return builder.draft.selectedBackgroundProfs.filter(idx => group.options.some(o => o.index === idx)).length
+}
+
+function toggleBackgroundProf(gi: number, index: string) {
+  const group = builder.draft.backgroundProfChoices[gi]
+  if (!group) return
+  const selected = builder.draft.selectedBackgroundProfs
+  if (selected.includes(index)) {
+    builder.draft.selectedBackgroundProfs = selected.filter(i => i !== index)
+  } else if (profGroupChosenCount(gi) < group.choose) {
+    builder.draft.selectedBackgroundProfs = [...selected, index]
+  }
+}
+
 // ── Custom skill picker ───────────────────────────────────────────────────────
 
 const customSkillCount = computed(() => builder.draft.backgroundSkillProficiencies.length)
@@ -404,6 +459,8 @@ function selectCustom() {
   builder.draft.backgroundAbilityBonuses = {}
   builder.draft.backgroundFeatIndex = ''
   builder.draft.backgroundFeatName = ''
+  builder.draft.backgroundProfChoices = []
+  builder.draft.selectedBackgroundProfs = []
 }
 
 async function selectBackground(index: string, name: string, edition: '2014' | '2024' = '2014') {
@@ -418,6 +475,8 @@ async function selectBackground(index: string, name: string, edition: '2014' | '
   builder.draft.backgroundAbilityBonuses = {}
   builder.draft.backgroundFeatIndex = ''
   builder.draft.backgroundFeatName = ''
+  builder.draft.backgroundProfChoices = []
+  builder.draft.selectedBackgroundProfs = []
 
   try {
     const detail: ApiBackground = edition === '2024'
@@ -430,6 +489,15 @@ async function selectBackground(index: string, name: string, edition: '2014' | '
       .filter(p => !p.index.startsWith('skill-'))
       .map(p => p.name)
     builder.draft.backgroundLanguageChoices = detail.language_options?.choose ?? 0
+    // Tool/proficiency choices (e.g. Soldier 2024 → choose one Gaming Set). Works for any
+    // edition that exposes proficiency_choices.
+    builder.draft.backgroundProfChoices = (detail.proficiency_choices ?? []).map(g => ({
+      desc: g.desc,
+      choose: g.choose,
+      options: (g.from?.options ?? [])
+        .filter(o => o.option_type === 'reference' && o.item)
+        .map(o => ({ index: o.item.index, name: o.item.name })),
+    }))
     // 2024: capture the ability score options and the Origin Feat
     if (edition === '2024') {
       builder.draft.backgroundAbilityOptions = (detail.ability_scores ?? []).map(a => a.index)

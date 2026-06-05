@@ -84,6 +84,9 @@ export interface BuilderDraft {
   backgroundAbilityBonuses: Partial<Record<keyof AbilityScores, number>>
   backgroundFeatIndex: string
   backgroundFeatName: string
+  // Tool/proficiency choices (e.g. Soldier 2024 → choose one Gaming Set)
+  backgroundProfChoices: { desc: string; choose: number; options: { index: string; name: string }[] }[]
+  selectedBackgroundProfs: string[]                                    // chosen proficiency indices
 
   // Step 2 — Class
   classIndex: string
@@ -170,6 +173,7 @@ const defaultDraft = (): BuilderDraft => ({
   raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [], raceAutoLanguages: [],
   backgroundIndex: '', backgroundName: '', backgroundDescription: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [], backgroundLanguageChoices: 0,
   backgroundAbilityOptions: [], backgroundAbilityBonuses: {}, backgroundFeatIndex: '', backgroundFeatName: '',
+  backgroundProfChoices: [], selectedBackgroundProfs: [],
   classIndex: '', className: '', classHitDie: 8, classSpellcastingAbility: null,
   classSkillChoices: 2, classSkillOptions: [],
   subclassIndex: '', subclassName: '', availableSubclasses: [],
@@ -196,6 +200,7 @@ const DRAFT_ARRAY_FIELDS = [
   'availableSubraces', 'availableSubclasses', 'backgroundSkillProficiencies',
   'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs', 'raceSkillProficiencies',
   'tomeCantrips', 'selectedInvocations', 'raceAutoLanguages', 'backgroundAbilityOptions',
+  'backgroundProfChoices', 'selectedBackgroundProfs',
 ] as const
 
 const DRAFT_OBJ_FIELDS = [
@@ -451,6 +456,10 @@ export const useBuilderStore = defineStore('builder', () => {
         draft.value.backgroundEdition === '2024' && draft.value.backgroundAbilityOptions.length > 0
           && Object.values(draft.value.backgroundAbilityBonuses).reduce((s, v) => s + (v ?? 0), 0) !== 3
           ? 'Allocate the background ability score increase (+2/+1 or +1/+1/+1)' : '',
+        // Background tool/proficiency choices (e.g. Soldier → choose a Gaming Set)
+        draft.value.backgroundProfChoices.some(g =>
+          draft.value.selectedBackgroundProfs.filter(idx => g.options.some(o => o.index === idx)).length < g.choose,
+        ) ? 'Choose your background tool proficiency' : '',
       ].filter(Boolean),
       5:  abilityErrors,
       6:  featErrors,
@@ -789,6 +798,11 @@ export const useBuilderStore = defineStore('builder', () => {
       languages: d.selectedLanguages,
       otherProficiencies: [
         ...d.backgroundToolProficiencies,
+        // Chosen background tool/proficiency (e.g. selected Gaming Set), name stripped of "Tool:" prefix
+        ...d.backgroundProfChoices
+          .flatMap(g => g.options)
+          .filter(o => d.selectedBackgroundProfs.includes(o.index))
+          .map(o => o.name.replace(/^Tool:\s*/, '')),
         ...d.raceProfOptions.filter(p => d.selectedRaceProfs.includes(p.index)).map(p => p.name),
       ],
       ...(() => {
