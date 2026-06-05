@@ -9,41 +9,75 @@
         <GrimoireSpinner />
       </div>
       <div v-else-if="backgroundsError" class="text-sm text-blood-bright">Failed to load backgrounds.</div>
-      <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        <div
-          v-for="bg in backgrounds"
-          :key="bg.index"
-          class="group relative flex items-center rounded border text-sm font-heading tracking-wide transition-all duration-150 cursor-pointer"
-          :class="builder.draft.backgroundIndex === bg.index
-            ? 'border-gold-mid/60 bg-gold-dim/10 text-gold-deep'
-            : 'border-shadow bg-abyss text-ash hover:border-gold-dim/25 hover:text-stone hover:bg-depths'"
-          @click="selectBackground(bg.index, bg.name)"
-        >
-          <span class="flex-1 px-4 py-3 text-left">{{ bg.name }}</span>
-          <button
-            type="button"
-            class="shrink-0 px-2.5 py-3 text-mist/60 hover:text-ash opacity-0 group-hover:opacity-100 transition-all"
-            aria-label="Background details"
-            @click.stop="infoPanel.open({ kind: 'background', index: bg.index })"
+      <template v-else>
+        <!-- 2014 Backgrounds -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div
+            v-for="bg in backgrounds2014"
+            :key="`2014:${bg.index}`"
+            class="group relative flex items-center rounded border text-sm font-heading tracking-wide transition-all duration-150 cursor-pointer"
+            :class="builder.draft.backgroundIndex === bg.index && builder.draft.backgroundEdition === '2014'
+              ? 'border-gold-mid/60 bg-gold-dim/10 text-gold-deep'
+              : 'border-shadow bg-abyss text-ash hover:border-gold-dim/25 hover:text-stone hover:bg-depths'"
+            @click="selectBackground(bg.index, bg.name, '2014')"
           >
-            <InfoIcon :size="12" />
-          </button>
+            <span class="flex-1 px-4 py-3 text-left">{{ bg.name }}</span>
+            <button
+              type="button"
+              class="shrink-0 px-2.5 py-3 text-mist/60 hover:text-ash opacity-0 group-hover:opacity-100 transition-all"
+              aria-label="Background details"
+              @click.stop="infoPanel.open({ kind: 'background', index: bg.index })"
+            >
+              <InfoIcon :size="12" />
+            </button>
+          </div>
+
+          <!-- Custom background tile -->
+          <div
+            class="flex items-center rounded border text-sm font-heading tracking-wide transition-all duration-150 cursor-pointer"
+            :class="isCustom
+              ? 'border-arcane-base/60 bg-arcane-deep/10 text-arcane-pale'
+              : 'border-shadow border-dashed bg-abyss text-mist hover:border-arcane-base/30 hover:text-ash hover:bg-depths'"
+            @click="selectCustom"
+          >
+            <span class="flex-1 px-4 py-3 text-left flex items-center gap-2">
+              <PencilIcon :size="12" class="shrink-0 opacity-60" />
+              Custom
+            </span>
+          </div>
         </div>
 
-        <!-- Custom background tile -->
-        <div
-          class="flex items-center rounded border text-sm font-heading tracking-wide transition-all duration-150 cursor-pointer"
-          :class="isCustom
-            ? 'border-arcane-base/60 bg-arcane-deep/10 text-arcane-pale'
-            : 'border-shadow border-dashed bg-abyss text-mist hover:border-arcane-base/30 hover:text-ash hover:bg-depths'"
-          @click="selectCustom"
-        >
-          <span class="flex-1 px-4 py-3 text-left flex items-center gap-2">
-            <PencilIcon :size="12" class="shrink-0 opacity-60" />
-            Custom
-          </span>
+        <!-- 2014 / 2024 separator -->
+        <div v-if="backgrounds2024.length" class="flex items-center gap-3 py-1">
+          <div class="flex-1 h-px bg-shadow/50" />
+          <span class="text-2xs font-heading tracking-widest uppercase text-arcane-pale/50">2024 Backgrounds</span>
+          <div class="flex-1 h-px bg-shadow/50" />
         </div>
-      </div>
+
+        <!-- 2024 Backgrounds -->
+        <div v-if="backgrounds2024.length" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div
+            v-for="bg in backgrounds2024"
+            :key="`2024:${bg.index}`"
+            class="group relative flex items-center rounded border text-sm font-heading tracking-wide transition-all duration-150 cursor-pointer"
+            :class="builder.draft.backgroundIndex === bg.index && builder.draft.backgroundEdition === '2024'
+              ? 'border-arcane-base/60 bg-arcane-deep/10 text-arcane-pale'
+              : 'border-shadow bg-abyss text-ash hover:border-arcane-base/15 hover:text-stone hover:bg-depths'"
+            @click="selectBackground(bg.index, bg.name, '2024')"
+          >
+            <span class="flex-1 px-4 py-3 text-left">{{ bg.name }}</span>
+            <span class="text-2xs font-heading text-arcane-pale/50 px-1 shrink-0">24</span>
+            <button
+              type="button"
+              class="shrink-0 px-2.5 py-3 text-mist/60 hover:text-ash opacity-0 group-hover:opacity-100 transition-all"
+              aria-label="Background details"
+              @click.stop="infoPanel.open({ kind: 'background', index: bg.index })"
+            >
+              <InfoIcon :size="12" />
+            </button>
+          </div>
+        </div>
+      </template>
       <p v-if="fieldErrors.background" class="text-xs font-body text-blood-bright">
         {{ fieldErrors.backgroundMessage }}
       </p>
@@ -126,8 +160,8 @@
         </div>
 
         <template v-else-if="bgDetail">
-          <!-- Feature -->
-          <div class="space-y-2">
+          <!-- Feature (2014) -->
+          <div v-if="bgDetail.feature" class="space-y-2">
             <p class="text-2xs font-heading tracking-wide uppercase text-mist">Feature</p>
             <div class="px-3 py-2.5 rounded border border-shadow/50 bg-depths/20 space-y-1">
               <p class="text-sm font-heading text-vellum">{{ bgDetail.feature.name }}</p>
@@ -137,6 +171,63 @@
                 class="text-xs font-body text-ash leading-relaxed"
               >{{ line }}</p>
             </div>
+          </div>
+
+          <!-- Origin Feat + Ability Scores (2024) -->
+          <div v-if="bgDetail.feat" class="space-y-2">
+            <p class="text-2xs font-heading tracking-wide uppercase text-mist">Origin Feat</p>
+            <span class="inline-block px-2.5 py-1 rounded border border-arcane-base/30 bg-arcane-deep/10 text-xs font-heading text-arcane-pale">
+              {{ bgDetail.feat.name }}
+            </span>
+          </div>
+          <!-- 2024 Ability Score Increase allocator (+2/+1 or +1/+1/+1) -->
+          <div v-if="bgDetail.ability_scores?.length" class="space-y-2">
+            <div class="flex items-baseline justify-between gap-2">
+              <p class="text-2xs font-heading tracking-wide uppercase text-mist">Ability Score Increase</p>
+              <span
+                class="text-2xs font-heading tabular-nums"
+                :class="abilityAllocValid ? 'text-arcane-pale' : 'text-mist/60'"
+              >{{ abilityAllocTotal }}/3 points</span>
+            </div>
+            <p class="text-2xs font-body text-mist/60">Distribute <span class="text-stone">+2 / +1</span> to two of these, or <span class="text-stone">+1 / +1 / +1</span> to all three.</p>
+            <div class="grid grid-cols-3 gap-2">
+              <div
+                v-for="ab in bgDetail.ability_scores"
+                :key="ab.index"
+                class="flex flex-col items-center gap-1.5 px-2 py-2.5 rounded border"
+                :class="(builder.draft.backgroundAbilityBonuses[ab.index as keyof AbilityScores] ?? 0) > 0
+                  ? 'border-arcane-base/40 bg-arcane-deep/10'
+                  : 'border-shadow bg-depths/30'"
+              >
+                <span class="text-2xs font-heading tracking-[0.12em] uppercase text-mist">{{ ab.name }}</span>
+                <span class="font-heading text-lg leading-none"
+                  :class="(builder.draft.backgroundAbilityBonuses[ab.index as keyof AbilityScores] ?? 0) > 0 ? 'text-arcane-pale' : 'text-mist/40'"
+                >+{{ builder.draft.backgroundAbilityBonuses[ab.index as keyof AbilityScores] ?? 0 }}</span>
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    class="w-6 h-6 flex items-center justify-center rounded border text-sm font-heading transition-all"
+                    :class="(builder.draft.backgroundAbilityBonuses[ab.index as keyof AbilityScores] ?? 0) > 0
+                      ? 'border-shadow text-mist hover:border-blood-base/50 hover:text-blood-mid'
+                      : 'border-shadow/20 text-mist/20 cursor-not-allowed'"
+                    :disabled="(builder.draft.backgroundAbilityBonuses[ab.index as keyof AbilityScores] ?? 0) === 0"
+                    @click="changeBgAbility(ab.index, -1)"
+                  >−</button>
+                  <button
+                    type="button"
+                    class="w-6 h-6 flex items-center justify-center rounded border text-sm font-heading transition-all"
+                    :class="canIncreaseBgAbility(ab.index)
+                      ? 'border-shadow text-mist hover:border-arcane-base/50 hover:text-arcane-pale'
+                      : 'border-shadow/20 text-mist/20 cursor-not-allowed'"
+                    :disabled="!canIncreaseBgAbility(ab.index)"
+                    @click="changeBgAbility(ab.index, 1)"
+                  >+</button>
+                </div>
+              </div>
+            </div>
+            <p v-if="showValidation && !abilityAllocValid" class="text-xs font-body text-blood-bright">
+              Allocate exactly +2/+1 to two abilities, or +1/+1/+1 to all three ({{ abilityAllocTotal }}/3).
+            </p>
           </div>
 
           <!-- Auto proficiencies -->
@@ -154,6 +245,39 @@
                 class="px-2 py-0.5 rounded border border-shadow text-xs font-heading text-ash"
               >{{ prof.name }}</span>
             </div>
+          </div>
+
+          <!-- Tool / proficiency choice (e.g. Soldier 2024 → choose a Gaming Set) -->
+          <div
+            v-for="(group, gi) in builder.draft.backgroundProfChoices"
+            :key="`profchoice-${gi}`"
+            class="space-y-2"
+          >
+            <div class="flex items-baseline justify-between gap-2">
+              <p class="text-2xs font-heading tracking-wide uppercase text-mist">{{ group.desc }}</p>
+              <span
+                class="text-2xs font-heading tabular-nums"
+                :class="profGroupChosenCount(gi) === group.choose ? 'text-arcane-pale' : 'text-mist/60'"
+              >{{ profGroupChosenCount(gi) }}/{{ group.choose }}</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              <button
+                v-for="opt in group.options"
+                :key="opt.index"
+                type="button"
+                class="text-left px-3 py-2 rounded border text-xs font-heading tracking-wide transition-all duration-100"
+                :class="isProfSelected(opt.index)
+                  ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale'
+                  : profGroupChosenCount(gi) >= group.choose
+                    ? 'border-shadow/40 text-mist/40 cursor-not-allowed'
+                    : 'border-shadow text-ash hover:border-arcane-base/25 hover:text-stone'"
+                :disabled="!isProfSelected(opt.index) && profGroupChosenCount(gi) >= group.choose"
+                @click="toggleBackgroundProf(gi, opt.index)"
+              >{{ opt.name.replace(/^Tool:\s*/, '') }}</button>
+            </div>
+            <p v-if="showValidation && profGroupChosenCount(gi) < group.choose" class="text-xs font-body text-blood-bright">
+              Choose {{ group.choose - profGroupChosenCount(gi) }} more to continue.
+            </p>
           </div>
 
           <!-- Language options -->
@@ -199,6 +323,7 @@ import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import { SKILLS } from '@/shared/lib/skillAbilityMap'
 import type { ApiBackground } from '@/shared/types/api'
+import type { AbilityScores } from '@/shared/types/character'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
 const builder = useBuilderStore()
@@ -219,30 +344,88 @@ const fieldErrors = computed(() => ({
       : 'Choose 2 skills for your custom background.',
 }))
 
-const { data: bgList, isPending: backgroundsLoading, isError: backgroundsError } = useQuery({
-  queryKey: ['backgrounds'],
+const { data: bgList2014, isPending: backgroundsLoading2014, isError: backgroundsError } = useQuery({
+  queryKey: ['backgrounds-2014'],
   queryFn: () => fiveEApi.listBackgrounds(),
   staleTime: Infinity,
 })
-const backgrounds = computed(() => bgList.value?.results ?? [])
+const { data: bgList2024, isPending: backgroundsLoading2024 } = useQuery({
+  queryKey: ['backgrounds-2024'],
+  queryFn: () => fiveEApi.listBackgrounds2024(),
+  staleTime: Infinity,
+})
+const backgroundsLoading = computed(() => backgroundsLoading2014.value || backgroundsLoading2024.value)
+const backgrounds2014 = computed(() => bgList2014.value?.results ?? [])
+const backgrounds2024 = computed(() => bgList2024.value?.results ?? [])
 
 // ── Background detail (standard only) ────────────────────────────────────────
 
 const bgIndex = computed(() => isCustom.value ? '' : builder.draft.backgroundIndex)
+const bgEdition = computed(() => builder.draft.backgroundEdition ?? '2014')
 
 const { data: bgDetail, isPending: bgDetailLoading } = useQuery({
-  queryKey: computed(() => ['background-detail', bgIndex.value]),
-  queryFn: () => fiveEApi.getBackground(bgIndex.value) as Promise<ApiBackground>,
+  queryKey: computed(() => [bgEdition.value, 'background-detail', bgIndex.value]),
+  queryFn: () => bgEdition.value === '2024'
+    ? fiveEApi.getBackground2024(bgIndex.value) as Promise<ApiBackground>
+    : fiveEApi.getBackground(bgIndex.value) as Promise<ApiBackground>,
   staleTime: Infinity,
   enabled: computed(() => !!bgIndex.value),
 })
 
 const skillProfs = computed(() =>
-  bgDetail.value?.starting_proficiencies.filter(p => p.index.startsWith('skill-')) ?? [],
+  (bgDetail.value?.starting_proficiencies ?? []).filter(p => p.index.startsWith('skill-')),
 )
 const toolProfs = computed(() =>
-  bgDetail.value?.starting_proficiencies.filter(p => !p.index.startsWith('skill-')) ?? [],
+  (bgDetail.value?.starting_proficiencies ?? []).filter(p => !p.index.startsWith('skill-')),
 )
+
+// ── 2024 background ability score increase (+2/+1 or +1/+1/+1) ────────────────
+const abilityAllocTotal = computed(() =>
+  Object.values(builder.draft.backgroundAbilityBonuses).reduce((s, v) => s + (v ?? 0), 0),
+)
+// With a cap of +2 per ability across exactly 3 options, total === 3 is reachable only as
+// [2,1] (two abilities) or [1,1,1] (all three) — both valid 2024 patterns.
+const abilityAllocValid = computed(() => abilityAllocTotal.value === 3)
+
+function canIncreaseBgAbility(index: string): boolean {
+  const key = index as keyof AbilityScores
+  const current = builder.draft.backgroundAbilityBonuses[key] ?? 0
+  return current < 2 && abilityAllocTotal.value < 3
+}
+
+function changeBgAbility(index: string, delta: number) {
+  const key = index as keyof AbilityScores
+  const current = builder.draft.backgroundAbilityBonuses[key] ?? 0
+  if (delta > 0 && !canIncreaseBgAbility(index)) return
+  if (delta < 0 && current === 0) return
+  const next = { ...builder.draft.backgroundAbilityBonuses }
+  const val = current + delta
+  if (val <= 0) delete next[key]
+  else next[key] = val
+  builder.draft.backgroundAbilityBonuses = next
+}
+
+// ── Background tool / proficiency choices (e.g. choose one Gaming Set) ────────
+function isProfSelected(index: string): boolean {
+  return builder.draft.selectedBackgroundProfs.includes(index)
+}
+
+function profGroupChosenCount(gi: number): number {
+  const group = builder.draft.backgroundProfChoices[gi]
+  if (!group) return 0
+  return builder.draft.selectedBackgroundProfs.filter(idx => group.options.some(o => o.index === idx)).length
+}
+
+function toggleBackgroundProf(gi: number, index: string) {
+  const group = builder.draft.backgroundProfChoices[gi]
+  if (!group) return
+  const selected = builder.draft.selectedBackgroundProfs
+  if (selected.includes(index)) {
+    builder.draft.selectedBackgroundProfs = selected.filter(i => i !== index)
+  } else if (profGroupChosenCount(gi) < group.choose) {
+    builder.draft.selectedBackgroundProfs = [...selected, index]
+  }
+}
 
 // ── Custom skill picker ───────────────────────────────────────────────────────
 
@@ -270,24 +453,59 @@ function selectCustom() {
   builder.draft.backgroundSkillProficiencies = []
   builder.draft.backgroundToolProficiencies = []
   builder.draft.backgroundLanguageChoices = 2
+  // Clear any 2024 background grants so they don't leak into ability scores/features
+  builder.draft.backgroundEdition = '2014'
+  builder.draft.backgroundAbilityOptions = []
+  builder.draft.backgroundAbilityBonuses = {}
+  builder.draft.backgroundFeatIndex = ''
+  builder.draft.backgroundFeatName = ''
+  builder.draft.backgroundProfChoices = []
+  builder.draft.selectedBackgroundProfs = []
 }
 
-async function selectBackground(index: string, name: string) {
+async function selectBackground(index: string, name: string, edition: '2014' | '2024' = '2014') {
   builder.draft.backgroundIndex = index
   builder.draft.backgroundName = name
+  builder.draft.backgroundEdition = edition
   builder.draft.backgroundDescription = ''
   builder.draft.backgroundSkillProficiencies = []
   builder.draft.backgroundToolProficiencies = []
+  // Reset 2024-only background grants
+  builder.draft.backgroundAbilityOptions = []
+  builder.draft.backgroundAbilityBonuses = {}
+  builder.draft.backgroundFeatIndex = ''
+  builder.draft.backgroundFeatName = ''
+  builder.draft.backgroundProfChoices = []
+  builder.draft.selectedBackgroundProfs = []
 
   try {
-    const detail: ApiBackground = await fiveEApi.getBackground(index)
-    builder.draft.backgroundSkillProficiencies = detail.starting_proficiencies
+    const detail: ApiBackground = edition === '2024'
+      ? await fiveEApi.getBackground2024(index)
+      : await fiveEApi.getBackground(index)
+    builder.draft.backgroundSkillProficiencies = (detail.starting_proficiencies ?? [])
       .filter(p => p.index.startsWith('skill-'))
       .map(p => p.index.replace(/^skill-/, ''))
-    builder.draft.backgroundToolProficiencies = detail.starting_proficiencies
+    builder.draft.backgroundToolProficiencies = (detail.starting_proficiencies ?? [])
       .filter(p => !p.index.startsWith('skill-'))
       .map(p => p.name)
     builder.draft.backgroundLanguageChoices = detail.language_options?.choose ?? 0
+    // Tool/proficiency choices (e.g. Soldier 2024 → choose one Gaming Set). Works for any
+    // edition that exposes proficiency_choices.
+    builder.draft.backgroundProfChoices = (detail.proficiency_choices ?? []).map(g => ({
+      desc: g.desc,
+      choose: g.choose,
+      options: (g.from?.options ?? [])
+        .filter(o => o.option_type === 'reference' && o.item)
+        .map(o => ({ index: o.item.index, name: o.item.name })),
+    }))
+    // 2024: capture the ability score options and the Origin Feat
+    if (edition === '2024') {
+      builder.draft.backgroundAbilityOptions = (detail.ability_scores ?? []).map(a => a.index)
+      if (detail.feat) {
+        builder.draft.backgroundFeatIndex = detail.feat.index
+        builder.draft.backgroundFeatName = detail.feat.name
+      }
+    }
   } catch { /* ignore */ }
 }
 </script>

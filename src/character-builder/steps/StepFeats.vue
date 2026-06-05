@@ -114,13 +114,9 @@
             <GrimoireSpinner />
           </div>
           <template v-else>
-            <div class="flex items-center gap-2 flex-wrap">
-              <p class="text-xs font-body text-mist">
-                Select a feat from the list below.
-                <span class="text-mist/60">Feats with unmet prerequisites are hidden.</span>
-              </p>
-              <span class="text-2xs font-heading px-1.5 py-0.5 rounded border border-arcane-base/30 text-arcane-pale/70 bg-arcane-deep/10 shrink-0">2024 SRD</span>
-            </div>
+            <p class="text-xs font-body text-mist">
+              Select a feat. <span class="text-mist/60">Shows feats from both 2014 and 2024 SRD.</span>
+            </p>
             <div class="relative">
               <input
                 v-model="featSearch"
@@ -130,35 +126,36 @@
               />
             </div>
             <p v-if="filteredFeats.length === 0 && featSearch" class="text-xs font-body text-mist/60 italic">No feats match your search.</p>
-            <div v-else-if="filteredFeats.length === 0" class="space-y-1.5">
-              <p class="text-xs font-body text-mist/60 italic">No feats meet your current prerequisites.</p>
-              <div v-for="r in unmetFeatReasons" :key="r.name" class="text-xs font-body text-mist/50">
-                <span class="text-ash">{{ r.name }}</span> requires
-                <span v-for="(req, i) in r.requirements" :key="i">
-                  {{ req.name }} {{ req.minimum }}
-                  <span class="text-mist/40">(yours: {{ req.current }})</span>{{ i < r.requirements.length - 1 ? ', ' : '' }}
-                </span>
-              </div>
-            </div>
+            <p v-else-if="filteredFeats.length === 0" class="text-xs font-body text-mist/60 italic">No feats available.</p>
             <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-64 overflow-y-auto pr-1">
               <button
                 v-for="feat in filteredFeats"
-                :key="feat.index"
+                :key="feat.key"
                 type="button"
-                class="px-3 py-2 rounded border text-sm font-heading tracking-wide text-left transition-all"
-                :class="builder.draft.featsByLevel[asiLevel]?.featIndex === feat.index
-                  ? 'border-gold-mid/50 bg-gold-dim/10 text-gold-deep'
-                  : 'border-shadow text-ash hover:border-gold-dim/20 hover:text-stone'"
-                @click="selectFeat(asiLevel, feat.index, feat.name)"
+                class="px-3 py-2 rounded border text-left transition-all flex flex-col gap-0.5"
+                :class="builder.draft.featsByLevel[asiLevel]?.featIndex === feat.index && builder.draft.featsByLevel[asiLevel]?.featEdition === feat.edition
+                  ? 'border-gold-mid/50 bg-gold-dim/10'
+                  : 'border-shadow hover:border-gold-dim/20 hover:bg-depths/40'"
+                @click="selectFeat(asiLevel, feat.index, feat.name, feat.edition)"
               >
-                {{ feat.name }}
-                <span v-if="builder.draft.featsByLevel[asiLevel]?.featIndex === feat.index" class="text-gold-dim ml-1">✓</span>
+                <span class="flex items-center justify-between gap-1 w-full">
+                  <span
+                    class="font-heading text-sm tracking-wide leading-snug"
+                    :class="builder.draft.featsByLevel[asiLevel]?.featIndex === feat.index && builder.draft.featsByLevel[asiLevel]?.featEdition === feat.edition ? 'text-gold-deep' : 'text-ash'"
+                  >{{ feat.name }}</span>
+                  <span v-if="builder.draft.featsByLevel[asiLevel]?.featIndex === feat.index && builder.draft.featsByLevel[asiLevel]?.featEdition === feat.edition" class="text-gold-dim shrink-0">✓</span>
+                </span>
+                <span
+                  class="text-2xs font-heading"
+                  :class="feat.edition === '2024' ? 'text-arcane-pale/50' : 'text-gold-dim/50'"
+                >{{ feat.edition }} SRD</span>
               </button>
             </div>
+
             <!-- Feat description preview -->
             <Transition name="feat-desc">
               <div
-                v-if="builder.draft.featsByLevel[asiLevel]?.featIndex && builder.draft.featsByLevel[asiLevel]?.featIndex === previewFeatIndex"
+                v-if="previewFeat && (builder.draft.featsByLevel[asiLevel]?.featIndex === previewFeat.index && builder.draft.featsByLevel[asiLevel]?.featEdition === previewFeat.edition)"
                 class="rounded border border-gold-dim/20 bg-depths/40 px-3 py-3 space-y-1.5"
               >
                 <div v-if="previewFeatLoading" class="space-y-1.5">
@@ -166,16 +163,29 @@
                   <div class="h-3 skeleton rounded-sm w-4/5" />
                   <div class="h-3 skeleton rounded-sm w-3/5" />
                 </div>
-                <template v-else-if="previewFeatData">
+                <!-- 2014 feat preview -->
+                <template v-else-if="previewFeat2014">
                   <div class="flex items-center gap-2">
-                    <p class="font-heading text-sm text-gold-mid">{{ previewFeatData.name }}</p>
+                    <p class="font-heading text-sm text-gold-mid">{{ previewFeat2014.name }}</p>
+                    <span class="text-2xs font-heading px-1.5 py-0.5 rounded border border-gold-dim/30 text-gold-dim/70 bg-gold-dim/8 shrink-0">2014 SRD</span>
+                  </div>
+                  <div v-if="format2014Prerequisites(previewFeat2014)" class="flex items-start gap-2">
+                    <span class="text-2xs font-heading tracking-wide uppercase text-mist/60 shrink-0 mt-px">Requires</span>
+                    <span class="font-body text-xs text-stone">{{ format2014Prerequisites(previewFeat2014) }}</span>
+                  </div>
+                  <p v-for="(line, i) in previewFeat2014.desc" :key="i" class="font-body text-xs text-ash leading-relaxed">{{ line }}</p>
+                </template>
+                <!-- 2024 feat preview -->
+                <template v-else-if="previewFeat2024">
+                  <div class="flex items-center gap-2">
+                    <p class="font-heading text-sm text-gold-mid">{{ previewFeat2024.name }}</p>
                     <span class="text-2xs font-heading px-1.5 py-0.5 rounded border border-arcane-base/30 text-arcane-pale/70 bg-arcane-deep/10 shrink-0">2024 SRD</span>
                   </div>
-                  <p
-                    v-for="(line, i) in previewFeatData.desc"
-                    :key="i"
-                    class="font-body text-xs text-ash leading-relaxed"
-                  >{{ line }}</p>
+                  <div v-if="format2024Prerequisites(previewFeat2024)" class="flex items-start gap-2">
+                    <span class="text-2xs font-heading tracking-wide uppercase text-mist/60 shrink-0 mt-px">Requires</span>
+                    <span class="font-body text-xs text-stone">{{ format2024Prerequisites(previewFeat2024) }}</span>
+                  </div>
+                  <p class="font-body text-xs text-ash leading-relaxed whitespace-pre-line">{{ previewFeat2024.description }}</p>
                 </template>
               </div>
             </Transition>
@@ -215,30 +225,8 @@ import { getAsiLevels } from '@/character-builder/classMeta'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import type { AbilityScores } from '@/shared/types/character'
+import type { ApiFeat, Api2024Feat, EditionTag } from '@/shared/types/api'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
-
-// ── Feat description preview ──────────────────────────────────────────────────
-
-const previewFeatIndex = ref<string | null>(null)
-
-const { data: previewFeatData, isPending: previewFeatLoading } = useQuery({
-  queryKey: computed(() => ['feat', previewFeatIndex.value]),
-  queryFn: () => fiveEApi.getFeat(previewFeatIndex.value!),
-  staleTime: Infinity,
-  enabled: computed(() => !!previewFeatIndex.value),
-})
-
-// SRD feats are fixed — embed prerequisites statically to avoid ~50 HTTP requests
-const FEAT_PREREQUISITES: Record<string, { ability_score: { index: string; name: string }; minimum_score: number }[]> = {
-  athlete:             [{ ability_score: { index: 'str', name: 'Strength' },     minimum_score: 13 }],
-  'defensive-duelist': [{ ability_score: { index: 'dex', name: 'Dexterity' },   minimum_score: 13 }],
-  grappler:            [{ ability_score: { index: 'str', name: 'Strength' },     minimum_score: 13 }],
-  'inspiring-leader':  [{ ability_score: { index: 'cha', name: 'Charisma' },    minimum_score: 13 }],
-  'keen-mind':         [{ ability_score: { index: 'int', name: 'Intelligence' }, minimum_score: 13 }],
-  linguist:            [{ ability_score: { index: 'int', name: 'Intelligence' }, minimum_score: 13 }],
-  observant:           [{ ability_score: { index: 'int', name: 'Intelligence' }, minimum_score: 13 }],
-  skulker:             [{ ability_score: { index: 'dex', name: 'Dexterity' },   minimum_score: 13 }],
-}
 
 const builder = useBuilderStore()
 const { showValidation } = useBuilderValidation()
@@ -255,48 +243,107 @@ const abilityDefs = [
 const allAsiLevels = computed(() => getAsiLevels(builder.draft.classIndex))
 const activeAsiLevels = computed(() => allAsiLevels.value.filter(l => l <= builder.draft.level))
 
-// ── Feat picker ───────────────────────────────────────────────────────────────
+// ── Feat picker — merged 2014 + 2024 ─────────────────────────────────────────
 
 const featSearch = ref('')
 
-const { data: featData, isPending: featsLoading } = useQuery({
-  queryKey: ['feats'],
-  queryFn: () => fiveEApi.listFeats(),
+const { data: featData2014, isPending: featsLoading2014 } = useQuery({
+  queryKey: ['feats-2014'],
+  queryFn: () => fiveEApi.listFeats2014(),
   staleTime: Infinity,
 })
-const allFeats = computed(() => featData.value?.results ?? [])
+const { data: featData2024, isPending: featsLoading2024 } = useQuery({
+  queryKey: ['feats-2024'],
+  queryFn: () => fiveEApi.listFeats2024(),
+  staleTime: Infinity,
+})
 
-function featMeetsPrerequisites(featIndex: string): boolean {
-  const prerequisites = FEAT_PREREQUISITES[featIndex]
-  if (!prerequisites || prerequisites.length === 0) return true
-  const scores = builder.effectiveScores
-  return prerequisites.every(
-    prereq => scores[prereq.ability_score.index as keyof AbilityScores] >= prereq.minimum_score,
-  )
+const featsLoading = computed(() => featsLoading2014.value || featsLoading2024.value)
+
+// Merged list with edition tag. Composite key = `${edition}:${index}`
+const allFeats = computed(() => [
+  ...(featData2014.value?.results ?? []).map(f => ({ ...f, edition: '2014' as EditionTag, key: `2014:${f.index}` })),
+  ...(featData2024.value?.results ?? []).map(f => ({ ...f, edition: '2024' as EditionTag, key: `2024:${f.index}` })),
+])
+
+// Static prerequisites for 2014 feats (2024 prereqs fetched from API on selection)
+const FEAT_PREREQUISITES_2014: Record<string, { ability_score: { index: string; name: string }; minimum_score: number }[]> = {
+  athlete:             [{ ability_score: { index: 'str', name: 'Strength' },     minimum_score: 13 }],
+  'defensive-duelist': [{ ability_score: { index: 'dex', name: 'Dexterity' },   minimum_score: 13 }],
+  grappler:            [{ ability_score: { index: 'str', name: 'Strength' },     minimum_score: 13 }],
+  'inspiring-leader':  [{ ability_score: { index: 'cha', name: 'Charisma' },    minimum_score: 13 }],
+  'keen-mind':         [{ ability_score: { index: 'int', name: 'Intelligence' }, minimum_score: 13 }],
+  linguist:            [{ ability_score: { index: 'int', name: 'Intelligence' }, minimum_score: 13 }],
+  observant:           [{ ability_score: { index: 'int', name: 'Intelligence' }, minimum_score: 13 }],
+  skulker:             [{ ability_score: { index: 'dex', name: 'Dexterity' },   minimum_score: 13 }],
+}
+
+function featMeetsPrerequisites(featIndex: string, edition: EditionTag): boolean {
+  if (edition === '2014') {
+    const prerequisites = FEAT_PREREQUISITES_2014[featIndex]
+    if (!prerequisites || prerequisites.length === 0) return true
+    const scores = builder.effectiveScores
+    return prerequisites.every(prereq => scores[prereq.ability_score.index as keyof AbilityScores] >= prereq.minimum_score)
+  }
+  // 2024 prerequisites checked from API data after selection; show all by default
+  return true
 }
 
 const filteredFeats = computed(() => {
   const q = featSearch.value.toLowerCase().trim()
   const list = q ? allFeats.value.filter(f => f.name.toLowerCase().includes(q)) : allFeats.value
-  return list.filter(f => featMeetsPrerequisites(f.index))
+  return list.filter(f => featMeetsPrerequisites(f.index, f.edition))
 })
 
-const unmetFeatReasons = computed(() => {
-  const scores = builder.effectiveScores
-  return allFeats.value
-    .filter(f => !featMeetsPrerequisites(f.index))
-    .map(f => {
-      const prerequisites = FEAT_PREREQUISITES[f.index]
-      if (!prerequisites) return null
-      const requirements = prerequisites.map(p => ({
-        name: p.ability_score.name,
-        minimum: p.minimum_score,
-        current: scores[p.ability_score.index as keyof AbilityScores],
-      }))
-      return { name: f.name, requirements }
-    })
-    .filter(Boolean) as { name: string; requirements: { name: string; minimum: number; current: number }[] }[]
+// ── Feat preview — handles both 2014 (desc[]) and 2024 (description string) ──
+
+type PreviewKey = { index: string; edition: EditionTag } | null
+const previewFeat = ref<PreviewKey>(null)
+
+const { data: previewFeat2014Data, isPending: previewLoading2014 } = useQuery({
+  queryKey: computed(() => ['feat-2014', previewFeat.value?.index]),
+  queryFn:  () => fiveEApi.getFeat2014(previewFeat.value!.index),
+  staleTime: Infinity,
+  enabled: computed(() => !!previewFeat.value && previewFeat.value.edition === '2014'),
 })
+const { data: previewFeat2024Data, isPending: previewLoading2024 } = useQuery({
+  queryKey: computed(() => ['feat-2024', previewFeat.value?.index]),
+  queryFn:  () => fiveEApi.getFeat2024(previewFeat.value!.index),
+  staleTime: Infinity,
+  enabled: computed(() => !!previewFeat.value && previewFeat.value.edition === '2024'),
+})
+
+// Only check the relevant query's loading state — disabled queries in TanStack Query v5
+// report isPending:true even though they never fetch, which would hide the data forever.
+const previewFeatLoading = computed(() => {
+  if (!previewFeat.value) return false
+  return previewFeat.value.edition === '2014' ? previewLoading2014.value : previewLoading2024.value
+})
+const previewFeat2014 = computed(() => previewFeat.value?.edition === '2014' ? previewFeat2014Data.value ?? null : null)
+const previewFeat2024 = computed(() => previewFeat.value?.edition === '2024' ? previewFeat2024Data.value ?? null : null)
+
+function format2014Prerequisites(feat: ApiFeat): string {
+  return feat.prerequisites.map(p => {
+    if (p.ability_score && p.minimum_score != null) return `${p.ability_score.name} ${p.minimum_score}+`
+    if (p.proficiency) return `Proficiency: ${p.proficiency.name}`
+    if (p.minimum_level) return `Level ${p.minimum_level}+`
+    return ''
+  }).filter(Boolean).join(' · ')
+}
+
+function format2024Prerequisites(feat: Api2024Feat): string {
+  const parts: string[] = []
+  if (feat.prerequisites?.minimum_level) parts.push(`Level ${feat.prerequisites.minimum_level}+`)
+  if (feat.prerequisite_options) {
+    const opts = (feat.prerequisite_options.from?.options ?? [])
+      .map((o: { ability_score?: { name: string }; minimum_score?: number }) =>
+        o.ability_score ? `${o.ability_score.name} ${o.minimum_score ?? ''}+` : ''
+      )
+      .filter(Boolean)
+    if (opts.length) parts.push(`${feat.prerequisite_options.desc || opts.join(' or ')}`)
+  }
+  return parts.join(' · ')
+}
 
 // ── ASI/Feat type per level ───────────────────────────────────────────────────
 
@@ -308,9 +355,9 @@ function setType(asiLevel: number, type: 'asi' | 'feat') {
   builder.setFeatDecision(asiLevel, type)
 }
 
-function selectFeat(asiLevel: number, index: string, name: string) {
-  builder.setFeatDecision(asiLevel, 'feat', { index, name })
-  previewFeatIndex.value = index
+function selectFeat(asiLevel: number, index: string, name: string, edition: EditionTag) {
+  builder.setFeatDecision(asiLevel, 'feat', { index, name, edition })
+  previewFeat.value = { index, edition }
 }
 
 function isLevelComplete(asiLevel: number): boolean {

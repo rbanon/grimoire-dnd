@@ -112,6 +112,7 @@ export interface RaceMeta {
 }
 
 export const RACE_META: Record<string, RaceMeta> = {
+  // 2014 SRD races
   dragonborn: { glyph: '🐉', flavor: 'Born of dragons, proud and self-sufficient', traits: ['Breath Weapon', 'Damage Resistance'] },
   dwarf:      { glyph: '⛏', flavor: 'Stout and hardy, known for their determination and skill', traits: ['Darkvision', 'Dwarven Resilience', 'Stonecunning'] },
   elf:        { glyph: '✧', flavor: 'A magical people of otherworldly grace', traits: ['Darkvision', 'Keen Senses', 'Fey Ancestry', 'Trance'] },
@@ -121,6 +122,9 @@ export const RACE_META: Record<string, RaceMeta> = {
   halfling:   { glyph: '◉', flavor: 'Small but nimble folk with surprising luck', traits: ['Lucky', 'Brave', 'Halfling Nimbleness'] },
   human:      { glyph: '⊕', flavor: 'Ambitious and adaptable, humans shape the world', traits: ['Extra Skill Proficiency', 'Bonus Feat (optional)'] },
   tiefling:   { glyph: '⌬', flavor: 'Marked by infernal heritage, tieflings are both feared and alluring', traits: ['Darkvision', 'Hellish Resistance', 'Infernal Legacy'] },
+  // 2024 SRD species (new entries)
+  goliath:    { glyph: '⛰', flavor: 'Towering descendants of giants, blessed with giant ancestry', traits: ['Giant Ancestry', 'Large Form', 'Powerful Build'] },
+  orc:        { glyph: '🪓', flavor: 'Fierce and relentless, orcs carry the might of ancient warriors', traits: ['Darkvision', 'Adrenaline Rush', 'Relentless Endurance'] },
 }
 
 // ─── Spell profiles ───────────────────────────────────────────────────────────
@@ -713,17 +717,19 @@ export interface RaceTraits {
 }
 
 // Dragonborn: subraceIndex from the 5e API e.g. 'dragonborn-black', 'dragonborn-red'
-const DRAGONBORN_ANCESTRY_RESISTANCE: Record<string, string> = {
-  'dragonborn-black':  'acid',
-  'dragonborn-blue':   'lightning',
-  'dragonborn-brass':  'fire',
-  'dragonborn-bronze': 'lightning',
-  'dragonborn-copper': 'acid',
-  'dragonborn-gold':   'fire',
-  'dragonborn-green':  'poison',
-  'dragonborn-red':    'fire',
-  'dragonborn-silver': 'cold',
-  'dragonborn-white':  'cold',
+// Damage resistance by dragon color. Keyed by the color suffix so it works for both the
+// 2014 style (`dragonborn-red`) and the 2024 subspecies style (`draconic-ancestor-red`).
+const DRAGON_COLOR_RESISTANCE: Record<string, string> = {
+  black:  'acid',
+  blue:   'lightning',
+  brass:  'fire',
+  bronze: 'lightning',
+  copper: 'acid',
+  gold:   'fire',
+  green:  'poison',
+  red:    'fire',
+  silver: 'cold',
+  white:  'cold',
 }
 
 export function getRaceTraits(raceIndex: string, subraceIndex?: string): RaceTraits {
@@ -734,10 +740,21 @@ export function getRaceTraits(raceIndex: string, subraceIndex?: string): RaceTra
   if (['elf', 'dwarf', 'gnome', 'half-elf', 'half-orc', 'tiefling'].includes(raceIndex)) {
     senses.push('Darkvision 60 ft.')
   }
-  if (raceIndex === 'tiefling') resistances.push('fire')
-  if (raceIndex === 'dwarf')    resistances.push('poison')
+  // 2024 species with different darkvision range
+  if (raceIndex === 'orc') senses.push('Darkvision 120 ft.')
+  if (raceIndex === 'dwarf') resistances.push('poison')
+  if (raceIndex === 'tiefling') {
+    // 2024 Tiefling resistance depends on the Fiendish Legacy subspecies;
+    // 2014 Tiefling (no subrace in the SRD) is always fire.
+    const legacy = subraceIndex?.startsWith('fiendish-legacy-')
+      ? (subraceIndex.split('-').pop() ?? '')
+      : ''
+    const byLegacy: Record<string, string> = { abyssal: 'poison', chthonic: 'necrotic', infernal: 'fire' }
+    resistances.push(byLegacy[legacy] ?? 'fire')
+  }
   if (raceIndex === 'dragonborn' && subraceIndex) {
-    const dmgType = DRAGONBORN_ANCESTRY_RESISTANCE[subraceIndex]
+    const color = subraceIndex.split('-').pop() ?? ''
+    const dmgType = DRAGON_COLOR_RESISTANCE[color]
     if (dmgType) resistances.push(dmgType)
   }
 

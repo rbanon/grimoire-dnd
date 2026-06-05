@@ -151,12 +151,13 @@ import { fiveEApi } from '@/shared/api/fiveE.client'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 import type { ApiEquipment } from '@/shared/types/api'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   show: boolean
   title: string
   categoryIndex: string
   selected: string
-}>()
+  edition?: '2014' | '2024'
+}>(), { edition: '2014' })
 
 const emit = defineEmits<{
   close: []
@@ -187,18 +188,26 @@ watch(() => props.show, (val) => {
 
 // ── Category items (names only) ───────────────────────────────────────────────
 const { data: categoryData } = useQuery({
-  queryKey: computed(() => ['eq-category', props.categoryIndex]),
-  queryFn: () => fiveEApi.getEquipmentCategory(props.categoryIndex),
+  queryKey: computed(() => [props.edition, 'eq-category', props.categoryIndex]),
+  queryFn: () => props.edition === '2024'
+    ? fiveEApi.getEquipmentCategory2024(props.categoryIndex)
+    : fiveEApi.getEquipmentCategory(props.categoryIndex),
   enabled: computed(() => props.show && !!props.categoryIndex),
   staleTime: Infinity,
 })
 
 const itemRefs = computed(() => categoryData.value?.equipment ?? [])
 
-// ── Fetch all item details for the category ───────────────────────────────────
+// ── Fetch all item details for the category (resilient: skip individual 404s) ──
 const { data: allDetails, isPending: loading } = useQuery({
-  queryKey: computed(() => ['eq-cat-details', props.categoryIndex, itemRefs.value.length]),
-  queryFn: () => Promise.all(itemRefs.value.map(r => fiveEApi.getEquipment(r.index))),
+  queryKey: computed(() => [props.edition, 'eq-cat-details', props.categoryIndex, itemRefs.value.length]),
+  queryFn: async () => {
+    const getEq = (i: string) => props.edition === '2024' ? fiveEApi.getEquipment2024(i) : fiveEApi.getEquipment(i)
+    const settled = await Promise.allSettled(itemRefs.value.map(r => getEq(r.index)))
+    return settled
+      .filter((s): s is PromiseFulfilledResult<ApiEquipment> => s.status === 'fulfilled')
+      .map(s => s.value)
+  },
   enabled: computed(() => props.show && itemRefs.value.length > 0),
   staleTime: Infinity,
 })

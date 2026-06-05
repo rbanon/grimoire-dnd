@@ -78,6 +78,15 @@ export interface BuilderDraft {
   backgroundSkillProficiencies: string[]
   backgroundToolProficiencies: string[]
   backgroundLanguageChoices: number
+  // 2024 background grants an ability score increase (+2/+1 or +1/+1/+1) among these
+  // listed abilities, plus an Origin Feat.
+  backgroundAbilityOptions: string[]                                   // e.g. ['str','dex','con']
+  backgroundAbilityBonuses: Partial<Record<keyof AbilityScores, number>>
+  backgroundFeatIndex: string
+  backgroundFeatName: string
+  // Tool/proficiency choices (e.g. Soldier 2024 → choose one Gaming Set)
+  backgroundProfChoices: { desc: string; choose: number; options: { index: string; name: string }[] }[]
+  selectedBackgroundProfs: string[]                                    // chosen proficiency indices
 
   // Step 2 — Class
   classIndex: string
@@ -124,8 +133,13 @@ export interface BuilderDraft {
   // Key = class level, value = map of choiceKey → selected option index
   levelChoices: Record<number, Record<string, string>>
 
+  // Edition flags — tracks which SRD edition was used for race/class/background selection
+  raceEdition: '2014' | '2024'
+  classEdition: '2014' | '2024'
+  backgroundEdition: '2014' | '2024'
+
   // Step 6 — Feats & ASI decisions, keyed by class level granting the improvement
-  featsByLevel: Record<number, { type: 'asi' | 'feat'; featIndex?: string; featName?: string }>
+  featsByLevel: Record<number, { type: 'asi' | 'feat'; featIndex?: string; featName?: string; featEdition?: '2014' | '2024' }>
   // Ability allocations for levels where type === 'asi'
   asiAllocations: Record<number, Partial<Record<keyof AbilityScores, number>>>
 
@@ -153,10 +167,13 @@ const defaultDraft = (): BuilderDraft => ({
   age: '', gender: '', height: '', weight: '', eyes: '', skin: '', hair: '',
   appearanceNotes: '', personalityTraits: '', ideals: '', bonds: '', flaws: '', biography: '',
   raceIndex: '', raceName: '', raceSpeed: 30, raceSizeCategory: 'Medium',
+  raceEdition: '2014', classEdition: '2014', backgroundEdition: '2014',
   raceAbilityBonuses: {}, raceLanguageCount: 2, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
   raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [], raceAutoLanguages: [],
   backgroundIndex: '', backgroundName: '', backgroundDescription: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [], backgroundLanguageChoices: 0,
+  backgroundAbilityOptions: [], backgroundAbilityBonuses: {}, backgroundFeatIndex: '', backgroundFeatName: '',
+  backgroundProfChoices: [], selectedBackgroundProfs: [],
   classIndex: '', className: '', classHitDie: 8, classSpellcastingAbility: null,
   classSkillChoices: 2, classSkillOptions: [],
   subclassIndex: '', subclassName: '', availableSubclasses: [],
@@ -182,13 +199,14 @@ const DRAFT_ARRAY_FIELDS = [
   'selectedSkills', 'selectedLanguages', 'startingInventory', 'raceProfOptions',
   'availableSubraces', 'availableSubclasses', 'backgroundSkillProficiencies',
   'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs', 'raceSkillProficiencies',
-  'tomeCantrips', 'selectedInvocations', 'raceAutoLanguages',
+  'tomeCantrips', 'selectedInvocations', 'raceAutoLanguages', 'backgroundAbilityOptions',
+  'backgroundProfChoices', 'selectedBackgroundProfs',
 ] as const
 
 const DRAFT_OBJ_FIELDS = [
   'baseScores', 'spellsByLevel', 'asiAllocations', 'featsByLevel', 'levelChoices',
   'standardArrayAssignments', 'rollAssignments', 'raceAbilityBonuses',
-  'subraceAbilityBonuses', 'holySymbolDescriptions',
+  'subraceAbilityBonuses', 'holySymbolDescriptions', 'backgroundAbilityBonuses',
 ] as const
 
 const DraftSchema = z.object({ currentStep: z.number() })
@@ -212,16 +230,18 @@ export const useBuilderStore = defineStore('builder', () => {
   const isSpellcaster = computed(() => draft.value.classSpellcastingAbility !== null)
   const totalSteps = computed(() => isSpellcaster.value ? TOTAL_STEPS : TOTAL_STEPS - 1)
 
-  // Effective ability scores (base + racial bonuses + ASI allocations), capped at 20
+  // Effective ability scores, capped at 20:
+  //   base + racial + subrace + 2024 background increase + ASI allocations
   const effectiveScores = computed<AbilityScores>(() => {
     const b = draft.value.baseScores
     const rb = draft.value.raceAbilityBonuses
     const sb = draft.value.subraceAbilityBonuses
+    const bg = draft.value.backgroundAbilityBonuses
     const allAsis = draft.value.asiAllocations
     const keys: (keyof AbilityScores)[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
     return keys.reduce((acc, k) => {
       const asiTotal = Object.values(allAsis).reduce((sum, alloc) => sum + (alloc[k] ?? 0), 0)
-      acc[k] = Math.min(20, b[k] + (rb[k] ?? 0) + (sb[k] ?? 0) + asiTotal)
+      acc[k] = Math.min(20, b[k] + (rb[k] ?? 0) + (sb[k] ?? 0) + (bg[k] ?? 0) + asiTotal)
       return acc
     }, {} as AbilityScores)
   })
@@ -432,6 +452,14 @@ export const useBuilderStore = defineStore('builder', () => {
         !draft.value.backgroundIndex ? 'Select a background' : '',
         draft.value.backgroundIndex === 'custom' && !draft.value.backgroundName.trim() ? 'Enter a background name' : '',
         draft.value.backgroundIndex === 'custom' && draft.value.backgroundSkillProficiencies.length < 2 ? 'Choose 2 skills for your custom background' : '',
+        // 2024 backgrounds: the +2/+1 (or +1/+1/+1) ability score increase must be fully allocated
+        draft.value.backgroundEdition === '2024' && draft.value.backgroundAbilityOptions.length > 0
+          && Object.values(draft.value.backgroundAbilityBonuses).reduce((s, v) => s + (v ?? 0), 0) !== 3
+          ? 'Allocate the background ability score increase (+2/+1 or +1/+1/+1)' : '',
+        // Background tool/proficiency choices (e.g. Soldier → choose a Gaming Set)
+        draft.value.backgroundProfChoices.some(g =>
+          draft.value.selectedBackgroundProfs.filter(idx => g.options.some(o => o.index === idx)).length < g.choose,
+        ) ? 'Choose your background tool proficiency' : '',
       ].filter(Boolean),
       5:  abilityErrors,
       6:  featErrors,
@@ -640,8 +668,8 @@ export const useBuilderStore = defineStore('builder', () => {
     else draft.value.asiAllocations[asiLevel][key] = value
   }
 
-  function setFeatDecision(level: number, type: 'asi' | 'feat', feat?: { index: string; name: string }) {
-    draft.value.featsByLevel[level] = { type, featIndex: feat?.index, featName: feat?.name }
+  function setFeatDecision(level: number, type: 'asi' | 'feat', feat?: { index: string; name: string; edition?: '2014' | '2024' }) {
+    draft.value.featsByLevel[level] = { type, featIndex: feat?.index, featName: feat?.name, featEdition: feat?.edition ?? '2024' }
     if (type === 'feat') {
       // Clear any ASI allocation for this level when switching to feat
       delete draft.value.asiAllocations[level]
@@ -731,11 +759,11 @@ export const useBuilderStore = defineStore('builder', () => {
       fightingStyles,
       identity: {
         name: d.name.trim(),
-        race: { index: d.raceIndex, name: d.raceName, speed: d.raceSpeed, sizeCategory: d.raceSizeCategory },
+        race: { index: d.raceIndex, name: d.raceName, speed: d.raceSpeed, sizeCategory: d.raceSizeCategory || 'Medium', edition: d.raceEdition ?? '2014' },
         subrace: d.subraceIndex ? { index: d.subraceIndex, name: d.subraceName } : null,
-        class: { index: d.classIndex, name: d.className, hitDie: d.classHitDie, spellcastingAbility: d.classSpellcastingAbility },
+        class: { index: d.classIndex, name: d.className, hitDie: d.classHitDie, spellcastingAbility: d.classSpellcastingAbility, edition: d.classEdition ?? '2014' },
         subclass: d.subclassIndex ? { index: d.subclassIndex, name: d.subclassName } : null,
-        background: { index: d.backgroundIndex, name: d.backgroundName, skillProficiencies: d.backgroundSkillProficiencies, description: d.backgroundDescription || undefined },
+        background: { index: d.backgroundIndex, name: d.backgroundName, skillProficiencies: d.backgroundSkillProficiencies, description: d.backgroundDescription || undefined, edition: d.backgroundEdition ?? '2014' },
         alignment: d.alignment,
         age: d.age || undefined,
         gender: d.gender || undefined,
@@ -770,6 +798,11 @@ export const useBuilderStore = defineStore('builder', () => {
       languages: d.selectedLanguages,
       otherProficiencies: [
         ...d.backgroundToolProficiencies,
+        // Chosen background tool/proficiency (e.g. selected Gaming Set), name stripped of "Tool:" prefix
+        ...d.backgroundProfChoices
+          .flatMap(g => g.options)
+          .filter(o => d.selectedBackgroundProfs.includes(o.index))
+          .map(o => o.name.replace(/^Tool:\s*/, '')),
         ...d.raceProfOptions.filter(p => d.selectedRaceProfs.includes(p.index)).map(p => p.name),
       ],
       ...(() => {
@@ -783,6 +816,15 @@ export const useBuilderStore = defineStore('builder', () => {
       resources: getClassResources(d.classIndex, d.level, computeAllModifiers(effectiveScores.value)),
       favoriteSpells: [],
       features: [
+        // 2024 background Origin Feat (lazy description via apiIndex/apiEdition)
+        ...(d.backgroundFeatIndex ? [{
+          id: generateId(),
+          name: d.backgroundFeatName || d.backgroundFeatIndex,
+          source: `${d.backgroundName || 'Background'} (Origin Feat)`,
+          description: '',
+          apiIndex: d.backgroundFeatIndex,
+          apiEdition: '2024' as const,
+        }] : []),
         // Feats chosen at ASI levels
         ...Object.entries(d.featsByLevel)
           .filter(([, dec]) => dec.type === 'feat' && dec.featIndex)
@@ -792,6 +834,7 @@ export const useBuilderStore = defineStore('builder', () => {
             source: `Level ${level} Feat`,
             description: '',
             apiIndex: dec.featIndex,
+            apiEdition: dec.featEdition ?? '2024',
           })),
         // Level choices (fighting styles, pact boons, etc.)
         ...Object.entries(d.levelChoices).flatMap(([lvlStr, choices]) => {
@@ -842,7 +885,18 @@ export const useBuilderStore = defineStore('builder', () => {
       // so that step transitions don't fire while the overlay is still visible.
       return id
     } catch (err) {
-      saveError.value = err instanceof Error ? err.message : 'Could not save character. Please try again.'
+      if (err instanceof z.ZodError) {
+        const messages = err.issues.map((issue: { path: PropertyKey[]; message: string }) => {
+          const path = issue.path.join('.')
+          if (path.includes('sizeCategory') || path.includes('identity.race')) return 'Race data incomplete — try re-selecting your race.'
+          if (path.includes('identity.class')) return 'Class data incomplete — try re-selecting your class.'
+          if (path.includes('name')) return 'Character name is required.'
+          return issue.message
+        })
+        saveError.value = [...new Set(messages)].join(' · ')
+      } else {
+        saveError.value = err instanceof Error ? err.message : 'Could not save character. Please try again.'
+      }
       throw err
     } finally {
       saving.value = false

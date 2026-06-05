@@ -65,6 +65,7 @@ export const ClassSnapshotSchema = z.object({
   name: z.string(),
   hitDie: z.number().int(),
   spellcastingAbility: z.string().nullable(),
+  edition: z.enum(['2014', '2024']).default('2014'),
 })
 export type ClassSnapshot = z.infer<typeof ClassSnapshotSchema>
 
@@ -81,6 +82,7 @@ export const RaceSnapshotSchema = z.object({
   speed: z.number().int(),
   sizeCategory: z.string(),
   abilityBonuses: z.record(AbilityNameSchema, z.number()).optional(),
+  edition: z.enum(['2014', '2024']).default('2014'),
 })
 export type RaceSnapshot = z.infer<typeof RaceSnapshotSchema>
 
@@ -96,6 +98,7 @@ export const BackgroundSnapshotSchema = z.object({
   name: z.string(),
   skillProficiencies: z.array(z.string()).optional(),
   description: z.string().optional(),
+  edition: z.enum(['2014', '2024']).default('2014'),
 })
 export type BackgroundSnapshot = z.infer<typeof BackgroundSnapshotSchema>
 
@@ -337,6 +340,7 @@ export const TraitFeatureSchema = z.object({
   source: z.string().optional(), // "Race", "Class", "Background", "Custom"
   description: z.string(),
   apiIndex: z.string().optional(), // 5e API feat index, used for lazy description fetch
+  apiEdition: z.enum(['2014', '2024']).optional(), // which API edition to fetch description from
 })
 export type TraitFeature = z.infer<typeof TraitFeatureSchema>
 

@@ -71,8 +71,8 @@
           v-for="feat in character.features"
           :key="feat.id"
           :name="feat.name"
-          :description="feat.apiIndex && !feat.description ? (descCache[feat.apiIndex] ?? '') : feat.description"
-          :loading="!!feat.apiIndex && !feat.description && loadingDesc[feat.apiIndex] === true"
+          :description="feat.apiIndex && !feat.description ? (descCache[`${feat.apiEdition ?? '2024'}:${feat.apiIndex}`] ?? '') : feat.description"
+          :loading="!!feat.apiIndex && !feat.description && loadingDesc[`${feat.apiEdition ?? '2024'}:${feat.apiIndex}`] === true"
           :source="feat.source ?? ''"
           :open="expanded.has(feat.id)"
           @toggle="toggleExpand(feat.id, feat)"
@@ -109,7 +109,7 @@
           v-for="trait in allRaceTraits"
           :key="trait.index"
           :name="trait.name"
-          :description="trait.desc.join('\n\n')"
+          :description="traitDescription(trait)"
           :source="traitSource(trait)"
           :open="expanded.has(trait.index)"
           @toggle="toggleExpand(trait.index)"
@@ -193,10 +193,20 @@
         <div class="h-3 skeleton rounded-sm w-3/5" />
       </div>
 
+      <!-- 2014 background feature -->
       <FeatureRow
-        v-else-if="bgData"
+        v-else-if="bgData && bgData.feature"
         :name="bgData.feature.name"
         :description="bgData.feature.desc.join('\n\n')"
+        source="Background"
+        :open="expanded.has('bg-feature')"
+        @toggle="toggleExpand('bg-feature')"
+      />
+      <!-- 2024 background origin feat -->
+      <FeatureRow
+        v-else-if="bgData && bgData.feat"
+        :name="bgData.feat.name"
+        description="Origin feat granted by this background (2024 rules)."
         source="Background"
         :open="expanded.has('bg-feature')"
         @toggle="toggleExpand('bg-feature')"
@@ -211,7 +221,7 @@ import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import type { Character, TraitFeature } from '@/shared/types/character'
-import type { ApiFeature, ApiTrait } from '@/shared/types/api'
+import type { ApiFeature, ApiTrait, Api2024Species, Api2024Subspecies } from '@/shared/types/api'
 import { getFightingStyleByIndex, getSneakAttackDice } from '@/character-builder/classMeta'
 import FeatureRow from './FeatureRow.vue'
 
@@ -221,20 +231,28 @@ const props = defineProps<{ character: Character }>()
 
 const expanded = ref<Set<string>>(new Set())
 
-// Cache for lazily-fetched feat descriptions (keyed by apiIndex)
+// Cache for lazily-fetched feat descriptions (keyed by `${edition}:${apiIndex}`)
 const descCache = ref<Record<string, string>>({})
 const loadingDesc = ref<Record<string, boolean>>({})
 
-async function fetchFeatDesc(apiIndex: string) {
-  if (descCache.value[apiIndex] !== undefined || loadingDesc.value[apiIndex]) return
-  loadingDesc.value = { ...loadingDesc.value, [apiIndex]: true }
+async function fetchFeatDesc(apiIndex: string, edition: '2014' | '2024' = '2024') {
+  const cacheKey = `${edition}:${apiIndex}`
+  if (descCache.value[cacheKey] !== undefined || loadingDesc.value[cacheKey]) return
+  loadingDesc.value = { ...loadingDesc.value, [cacheKey]: true }
   try {
-    const feat = await fiveEApi.getFeat(apiIndex)
-    descCache.value = { ...descCache.value, [apiIndex]: feat.desc.join('\n\n') }
+    let text: string
+    if (edition === '2024') {
+      const feat = await fiveEApi.getFeat2024(apiIndex)
+      text = feat.description
+    } else {
+      const feat = await fiveEApi.getFeat2014(apiIndex)
+      text = feat.desc.join('\n\n')
+    }
+    descCache.value = { ...descCache.value, [cacheKey]: text }
   } catch {
-    descCache.value = { ...descCache.value, [apiIndex]: '' }
+    descCache.value = { ...descCache.value, [cacheKey]: '' }
   } finally {
-    loadingDesc.value = { ...loadingDesc.value, [apiIndex]: false }
+    loadingDesc.value = { ...loadingDesc.value, [cacheKey]: false }
   }
 }
 
@@ -245,7 +263,7 @@ function toggleExpand(id: string, feat?: TraitFeature) {
   expanded.value = new Set(expanded.value)
   // Lazy-fetch description for API-backed feats with empty stored description
   if (feat?.apiIndex && !feat.description && expanded.value.has(id)) {
-    fetchFeatDesc(feat.apiIndex)
+    fetchFeatDesc(feat.apiIndex, feat.apiEdition ?? '2024')
   }
 }
 
@@ -349,8 +367,9 @@ const classFeaturesByLevel = computed(() => {
 
 // ── Race & subrace traits ─────────────────────────────────────────────────────
 
-const raceIndex = computed(() => props.character.identity.race.index)
+const raceIndex    = computed(() => props.character.identity.race.index)
 const subraceIndex = computed(() => props.character.identity.subrace?.index ?? null)
+const raceEdition  = computed(() => props.character.identity.race.edition ?? '2014')
 
 const {
   isPending: racePending,
@@ -358,8 +377,17 @@ const {
   data: raceData,
   refetch: raceRefetch,
 } = useQuery({
-  queryKey: computed(() => ['race-traits', raceIndex.value, subraceIndex.value]),
+  queryKey: computed(() => ['race-traits', raceEdition.value, raceIndex.value, subraceIndex.value]),
   queryFn: async () => {
+    if (raceEdition.value === '2024') {
+      const species = await fiveEApi.getSpecies(raceIndex.value) as Api2024Species
+      const traitRefs = [...species.traits]
+      if (subraceIndex.value) {
+        const subspecies = await fiveEApi.getSubspecies(subraceIndex.value) as Api2024Subspecies
+        traitRefs.push(...subspecies.traits)
+      }
+      return fetchTraits(traitRefs.map(t => t.index), '2024')
+    }
     const [race, subrace] = await Promise.all([
       fiveEApi.getRace(raceIndex.value),
       subraceIndex.value ? fiveEApi.getSubrace(subraceIndex.value) : null,
@@ -368,15 +396,37 @@ const {
       ...race.traits,
       ...(subrace?.racial_traits ?? []),
     ]
-    return Promise.all(traitRefs.map(t => fiveEApi.getTrait(t.index)))
+    return fetchTraits(traitRefs.map(t => t.index), '2014')
   },
   staleTime: Infinity,
 })
 
+// Fetch traits resiliently: a single 404 shouldn't blank the whole list.
+async function fetchTraits(indices: string[], edition: '2014' | '2024'): Promise<ApiTrait[]> {
+  const results = await Promise.allSettled(
+    indices.map(i => edition === '2024' ? fiveEApi.getTrait2024(i) : fiveEApi.getTrait(i)),
+  )
+  return results
+    .filter((r): r is PromiseFulfilledResult<ApiTrait> => r.status === 'fulfilled')
+    .map(r => r.value)
+}
+
 const allRaceTraits = computed(() => raceData.value ?? [])
 
+// Trait descriptions: 2014 uses `desc` (string[]), 2024 uses `description` (string).
+function traitDescription(trait: ApiTrait): string {
+  if (trait.desc && trait.desc.length) return trait.desc.join('\n\n')
+  return trait.description ?? ''
+}
+
 function traitSource(trait: ApiTrait): string {
-  if (subraceIndex.value && trait.subraces.some(s => s.index === subraceIndex.value)) {
+  if (raceEdition.value === '2024') {
+    // For 2024 subspecies we can't match via trait.subraces — just use species name
+    return props.character.identity.subrace
+      ? props.character.identity.subrace.name
+      : props.character.identity.race.name
+  }
+  if (subraceIndex.value && trait.subraces?.some(s => s.index === subraceIndex.value)) {
     return props.character.identity.subrace!.name
   }
   return props.character.identity.race.name
@@ -385,10 +435,13 @@ function traitSource(trait: ApiTrait): string {
 // ── Background feature ────────────────────────────────────────────────────────
 
 const bgIndex = computed(() => props.character.identity.background.index)
+const bgEdition = computed(() => props.character.identity.background.edition ?? '2014')
 
 const { isLoading: bgPending, data: bgData } = useQuery({
-  queryKey: computed(() => ['background', bgIndex.value]),
-  queryFn: () => fiveEApi.getBackground(bgIndex.value),
+  queryKey: computed(() => [bgEdition.value, 'background', bgIndex.value]),
+  queryFn: () => bgEdition.value === '2024'
+    ? fiveEApi.getBackground2024(bgIndex.value)
+    : fiveEApi.getBackground(bgIndex.value),
   staleTime: Infinity,
   enabled: computed(() => !!bgIndex.value && bgIndex.value !== 'custom'),
 })

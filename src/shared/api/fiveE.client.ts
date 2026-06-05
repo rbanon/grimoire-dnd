@@ -5,6 +5,7 @@ import type {
   ApiSubrace,
   ApiSubclass,
   ApiBackground,
+  Api2024Background,
   ApiSpell,
   ApiEquipment,
   ApiEquipmentCategory,
@@ -13,6 +14,9 @@ import type {
   ApiFeature,
   ApiTrait,
   ApiFeat,
+  Api2024Species,
+  Api2024Subspecies,
+  Api2024Feat,
   ApiClassLevel,
   SpellQueryParams,
 } from '../types/api'
@@ -102,6 +106,25 @@ export const fiveEApi = {
 
   listBackgrounds: () => get<ApiReferenceList>('/backgrounds'),
   getBackground: (index: string) => get<ApiBackground>(`/backgrounds/${sanitizeApiIndex(index)}`),
+  listBackgrounds2024: () => get<ApiReferenceList>('/backgrounds', undefined, BASE_URL_2024),
+  // 2024 backgrounds have a different shape (proficiencies/feat/equipment_options).
+  // Normalize into the 2014 ApiBackground shape so every consumer works uniformly.
+  getBackground2024: async (index: string): Promise<ApiBackground> => {
+    const raw = await get<Api2024Background>(`/backgrounds/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024)
+    return {
+      index: raw.index,
+      name: raw.name,
+      url: raw.url,
+      starting_proficiencies: raw.proficiencies ?? [],
+      starting_equipment: [],
+      starting_equipment_options: raw.equipment_options ?? [],
+      language_options: undefined,
+      feature: undefined,
+      feat: raw.feat,
+      ability_scores: raw.ability_scores,
+      proficiency_choices: raw.proficiency_choices ?? [],
+    }
+  },
 
   // Spells: when filtering by class, the API requires the class-scoped endpoint
   // (/classes/{index}/spells) — the ?class= query param on /spells is silently ignored.
@@ -122,20 +145,41 @@ export const fiveEApi = {
   listProficiencies: () => get<ApiReferenceList>('/proficiencies'),
   listLanguages: () => get<ApiReferenceList>('/languages'),
   listAlignments: () => get<ApiReferenceList>('/alignments'),
-  // Feats: use the 2024 SRD endpoint — it includes ~40 feats vs only Grappler in 2014
+  // Feats — both editions exposed separately for combined picker
+  listFeats2014: () => get<ApiReferenceList>('/feats'),
+  getFeat2014:   (index: string) => get<ApiFeat>(`/feats/${sanitizeApiIndex(index)}`),
+  listFeats2024: () => get<ApiReferenceList>('/feats', undefined, BASE_URL_2024),
+  getFeat2024:   (index: string) => get<Api2024Feat>(`/feats/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
+  /** @deprecated use listFeats2024 or listFeats2014 */
   listFeats: () => get<ApiReferenceList>('/feats', undefined, BASE_URL_2024),
-  getFeat: (index: string) => get<ApiFeat>(`/feats/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
+  /** @deprecated use getFeat2024 or getFeat2014 */
+  getFeat: (index: string) => get<ApiFeat>(`/feats/${sanitizeApiIndex(index)}`),
+
+  // 2024 species (replaces races), subspecies (replaces subraces)
+  listSpecies:    () => get<ApiReferenceList>('/species', undefined, BASE_URL_2024),
+  getSpecies:     (index: string) => get<Api2024Species>(`/species/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
+  listSubspecies: () => get<ApiReferenceList>('/subspecies', undefined, BASE_URL_2024),
+  getSubspecies:  (index: string) => get<Api2024Subspecies>(`/subspecies/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
+
+  // 2024 classes and subclasses
+  listClasses2024:  () => get<ApiReferenceList>('/classes', undefined, BASE_URL_2024),
+  getClass2024:     (index: string) => get<ApiClass>(`/classes/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
+  getSubclass2024:  (index: string) => get<ApiSubclass>(`/subclasses/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
   listTraits: () => get<ApiReferenceList>('/traits'),
 
   listMagicSchools: () => get<ApiReferenceList>('/magic-schools'),
   listDamageTypes: () => get<ApiReferenceList>('/damage-types'),
   listConditions: () => get<ApiReferenceList>('/conditions'),
 
-  // Equipment — no server-side filtering; fetch all, index client-side
+  // Equipment — no server-side filtering; fetch all, index client-side.
+  // 2024 has its own equipment endpoint with some differing indices (e.g. 2024 `arrows`
+  // vs 2014 `arrow`), so fetch from the edition that owns each item's ref.url.
   listEquipment: () => get<ApiReferenceList>('/equipment'),
   getEquipment: (index: string) => get<ApiEquipment>(`/equipment/${sanitizeApiIndex(index)}`),
+  getEquipment2024: (index: string) => get<ApiEquipment>(`/equipment/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
   listEquipmentCategories: () => get<ApiReferenceList>('/equipment-categories'),
   getEquipmentCategory: (index: string) => get<ApiEquipmentCategory>(`/equipment-categories/${sanitizeApiIndex(index)}`),
+  getEquipmentCategory2024: (index: string) => get<ApiEquipmentCategory>(`/equipment-categories/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
 
   // Magic items — no server-side filtering
   listMagicItems: () => get<ApiReferenceList>('/magic-items'),
@@ -146,6 +190,7 @@ export const fiveEApi = {
     get<ApiClassLevel[]>(`/classes/${sanitizeApiIndex(classIndex)}/levels`),
   getFeature: (index: string) => get<ApiFeature>(`/features/${sanitizeApiIndex(index)}`),
 
-  // Race/subrace traits
+  // Race/subrace traits (2014 and 2024 — trait indices differ between editions)
   getTrait: (index: string) => get<ApiTrait>(`/traits/${sanitizeApiIndex(index)}`),
+  getTrait2024: (index: string) => get<ApiTrait>(`/traits/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
 }

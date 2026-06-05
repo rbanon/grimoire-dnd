@@ -281,6 +281,7 @@
       :show="pickerOpen"
       :title="`Choose: ${pickerCategoryName}`"
       :category-index="pickerCategoryIndex"
+      :edition="pickerCategoryEdition"
       :selected="pickerCurrentValue"
       @close="pickerOpen = false"
       @select="onPickerSelect"
@@ -320,6 +321,14 @@ function rollGold() {
   builder.draft.manualGold = rollStartingGold(builder.draft.classIndex)
 }
 
+// Each ApiReference carries a `url` like `/api/2024/equipment/arrows` — the edition that
+// owns the resource. Items from a 2024 background/class must be fetched from 2024
+// (e.g. 2024 `arrows` doesn't exist as `arrows` in 2014, only `arrow`).
+type EquipEdition = '2014' | '2024'
+function editionFromUrl(url?: string): EquipEdition {
+  return url?.includes('/api/2024/') ? '2024' : '2014'
+}
+
 // ── Normalized types ──────────────────────────────────────────────────────────
 
 type Slot =
@@ -339,16 +348,22 @@ interface OptionGroup {
 
 // ── Data fetching ─────────────────────────────────────────────────────────────
 
+const classEdition = computed(() => builder.draft.classEdition ?? '2014')
 const { data: classData, isPending: classLoading } = useQuery({
-  queryKey: computed(() => ['class', builder.draft.classIndex]),
-  queryFn: () => fiveEApi.getClass(builder.draft.classIndex),
+  queryKey: computed(() => [classEdition.value, 'class', builder.draft.classIndex]),
+  queryFn: () => classEdition.value === '2024'
+    ? fiveEApi.getClass2024(builder.draft.classIndex)
+    : fiveEApi.getClass(builder.draft.classIndex),
   enabled: computed(() => !!builder.draft.classIndex),
   staleTime: Infinity,
 })
 
+const bgEdition = computed(() => builder.draft.backgroundEdition ?? '2014')
 const { data: bgData, isLoading: bgLoading } = useQuery({
-  queryKey: computed(() => ['background', builder.draft.backgroundIndex]),
-  queryFn: () => fiveEApi.getBackground(builder.draft.backgroundIndex),
+  queryKey: computed(() => [bgEdition.value, 'background', builder.draft.backgroundIndex]),
+  queryFn: () => bgEdition.value === '2024'
+    ? fiveEApi.getBackground2024(builder.draft.backgroundIndex)
+    : fiveEApi.getBackground(builder.draft.backgroundIndex),
   enabled: computed(() => !!builder.draft.backgroundIndex && builder.draft.backgroundIndex !== 'custom'),
   staleTime: Infinity,
 })
@@ -435,12 +450,17 @@ function variantLabel(vi: number): string {
 const pickerOpen = ref(false)
 const pickerCategoryIndex = ref('')
 const pickerCategoryName = ref('')
+const pickerCategoryEdition = ref<EquipEdition>('2014')
 const pickerKey = ref('')   // e.g. "0_1"
+// Edition of each category-picked item, keyed like categorySelections, so we fetch the
+// chosen item's details from the right endpoint.
+const categorySelectionEditions = ref<Record<string, EquipEdition>>({})
 
 function openPicker(gi: number, si: number, categoryRef: ApiReference) {
   pickerKey.value = `${gi}_${si}`
   pickerCategoryIndex.value = categoryRef.index
   pickerCategoryName.value = categoryRef.name
+  pickerCategoryEdition.value = editionFromUrl(categoryRef.url)
   pickerOpen.value = true
 }
 
@@ -448,57 +468,79 @@ const pickerCurrentValue = computed(() => categorySelections.value[pickerKey.val
 
 function onPickerSelect(index: string) {
   categorySelections.value[pickerKey.value] = index
+  categorySelectionEditions.value[pickerKey.value] = pickerCategoryEdition.value
   pickerOpen.value = false
 }
 
 // ── Pre-fetch category lists ──────────────────────────────────────────────────
 
-const allCategoryIndices = computed<string[]>(() => {
-  const seen = new Set<string>()
+// Resilient, edition-aware multi-fetch helper (individual 404s are skipped).
+async function fetchEquipment(items: { index: string; edition: EquipEdition }[]): Promise<ApiEquipment[]> {
+  const settled = await Promise.allSettled(
+    items.map(it => it.edition === '2024' ? fiveEApi.getEquipment2024(it.index) : fiveEApi.getEquipment(it.index)),
+  )
+  return settled
+    .filter((s): s is PromiseFulfilledResult<ApiEquipment> => s.status === 'fulfilled')
+    .map(s => s.value)
+}
+
+const allCategoryItems = computed<{ index: string; edition: EquipEdition }[]>(() => {
+  const map = new Map<string, EquipEdition>()
   for (const group of optionGroups.value) {
     for (const variant of group.variants) {
       for (const slot of variant.slots) {
-        if (slot.kind === 'category') seen.add(slot.categoryRef.index)
+        if (slot.kind === 'category' && !map.has(slot.categoryRef.index)) {
+          map.set(slot.categoryRef.index, editionFromUrl(slot.categoryRef.url))
+        }
       }
     }
   }
-  return [...seen].sort()
+  return [...map].map(([index, edition]) => ({ index, edition }))
 })
 
 useQuery({
-  queryKey: computed(() => ['eq-categories', ...allCategoryIndices.value]),
-  queryFn: () => Promise.all(allCategoryIndices.value.map(i => fiveEApi.getEquipmentCategory(i))),
-  enabled: computed(() => allCategoryIndices.value.length > 0),
+  queryKey: computed(() => ['eq-categories', ...allCategoryItems.value.map(c => `${c.edition}:${c.index}`)]),
+  queryFn: async () => {
+    const settled = await Promise.allSettled(
+      allCategoryItems.value.map(c => c.edition === '2024'
+        ? fiveEApi.getEquipmentCategory2024(c.index)
+        : fiveEApi.getEquipmentCategory(c.index)),
+    )
+    return settled.filter(s => s.status === 'fulfilled')
+  },
+  enabled: computed(() => allCategoryItems.value.length > 0),
   staleTime: Infinity,
 })
 
-// ── Collect all equipment indices to fetch details for ────────────────────────
+// ── Collect all equipment items (with edition) to fetch details for ───────────
 
-const allItemIndices = computed<string[]>(() => {
-  const seen = new Set<string>()
+const allItems = computed<{ index: string; edition: EquipEdition }[]>(() => {
+  const map = new Map<string, EquipEdition>()
+  const add = (index: string, edition: EquipEdition) => { if (index && !map.has(index)) map.set(index, edition) }
 
-  for (const f of fixedItems.value) seen.add(f.equipment.index)
+  for (const f of fixedItems.value) add(f.equipment.index, editionFromUrl(f.equipment.url))
 
   // Fetch all variant items upfront so stat lines are available before selection
   for (const group of optionGroups.value) {
     for (const variant of group.variants) {
       for (const slot of variant.slots) {
-        if (slot.kind === 'item') seen.add(slot.ref.index)
+        if (slot.kind === 'item') add(slot.ref.index, editionFromUrl(slot.ref.url))
       }
     }
   }
 
-  for (const idx of Object.values(categorySelections.value)) {
-    if (idx) seen.add(idx)
+  // Category-picked items — edition tracked at selection time
+  for (const [key, idx] of Object.entries(categorySelections.value)) {
+    if (idx) add(idx, categorySelectionEditions.value[key] ?? '2014')
   }
 
-  return [...seen].sort()
+  return [...map].map(([index, edition]) => ({ index, edition }))
 })
 
 const { data: equipDetailList } = useQuery({
-  queryKey: computed(() => ['eq-details', ...allItemIndices.value]),
-  queryFn: () => Promise.all(allItemIndices.value.map(i => fiveEApi.getEquipment(i))),
-  enabled: computed(() => allItemIndices.value.length > 0),
+  queryKey: computed(() => ['eq-details', ...allItems.value.map(it => `${it.edition}:${it.index}`)]),
+  queryFn: () => fetchEquipment(allItems.value),
+  enabled: computed(() => allItems.value.length > 0),
   staleTime: Infinity,
 })
 
