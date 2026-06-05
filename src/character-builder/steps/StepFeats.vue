@@ -125,11 +125,11 @@
                 placeholder="Search feats..."
               />
             </div>
-            <p v-if="filteredFeats.length === 0 && featSearch" class="text-xs font-body text-mist/60 italic">No feats match your search.</p>
-            <p v-else-if="filteredFeats.length === 0" class="text-xs font-body text-mist/60 italic">No feats available.</p>
+            <p v-if="availableFeats(asiLevel).length === 0 && featSearch" class="text-xs font-body text-mist/60 italic">No feats match your search.</p>
+            <p v-else-if="availableFeats(asiLevel).length === 0" class="text-xs font-body text-mist/60 italic">No feats meet the prerequisites at this level.</p>
             <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-64 overflow-y-auto pr-1">
               <button
-                v-for="feat in filteredFeats"
+                v-for="feat in availableFeats(asiLevel)"
                 :key="feat.key"
                 type="button"
                 class="px-3 py-2 rounded border text-left transition-all flex flex-col gap-0.5"
@@ -266,7 +266,7 @@ const allFeats = computed(() => [
   ...(featData2024.value?.results ?? []).map(f => ({ ...f, edition: '2024' as EditionTag, key: `2024:${f.index}` })),
 ])
 
-// Static prerequisites for 2014 feats (2024 prereqs fetched from API on selection)
+// Static prerequisites for 2014 feats (only Grappler exists in the 2014 SRD free tier).
 const FEAT_PREREQUISITES_2014: Record<string, { ability_score: { index: string; name: string }; minimum_score: number }[]> = {
   athlete:             [{ ability_score: { index: 'str', name: 'Strength' },     minimum_score: 13 }],
   'defensive-duelist': [{ ability_score: { index: 'dex', name: 'Dexterity' },   minimum_score: 13 }],
@@ -278,22 +278,54 @@ const FEAT_PREREQUISITES_2014: Record<string, { ability_score: { index: string; 
   skulker:             [{ ability_score: { index: 'dex', name: 'Dexterity' },   minimum_score: 13 }],
 }
 
-function featMeetsPrerequisites(featIndex: string, edition: EditionTag): boolean {
+// Only Fighter/Paladin/Ranger gain the "Fighting Style" feature (prereq for the
+// fighting-style feats). Matches getFightingStyleOptions in classMeta.
+const CLASSES_WITH_FIGHTING_STYLE = new Set(['fighter', 'paladin', 'ranger'])
+
+// Static prerequisites for the 17 SRD 2024 feats (derived from /api/2024/feats/:id).
+interface Prereq2024 {
+  minLevel?: number
+  needsFightingStyle?: boolean
+  abilityAny?: { abilities: (keyof AbilityScores)[]; min: number }
+}
+const FEAT_PREREQUISITES_2024: Record<string, Prereq2024> = {
+  'ability-score-improvement':  { minLevel: 4 },
+  grappler:                     { minLevel: 4, abilityAny: { abilities: ['str', 'dex'], min: 13 } },
+  archery:                      { needsFightingStyle: true },
+  defense:                      { needsFightingStyle: true },
+  'great-weapon-fighting':      { needsFightingStyle: true },
+  'two-weapon-fighting':        { needsFightingStyle: true },
+  'boon-of-combat-prowess':     { minLevel: 19 },
+  'boon-of-dimensional-travel': { minLevel: 19 },
+  'boon-of-fate':               { minLevel: 19 },
+  'boon-of-irresistible-offense': { minLevel: 19 },
+  'boon-of-spell-recall':       { minLevel: 19 },
+  'boon-of-the-night-spirit':   { minLevel: 19 },
+  'boon-of-truesight':          { minLevel: 19 },
+}
+
+// `asiLevel` is the class level at which the feat is taken — used for minimum-level prereqs
+// (e.g. Epic Boons require level 19, so they only appear in a level-19+ ASI slot).
+function featMeetsPrerequisites(featIndex: string, edition: EditionTag, asiLevel: number): boolean {
+  const scores = builder.effectiveScores
   if (edition === '2014') {
     const prerequisites = FEAT_PREREQUISITES_2014[featIndex]
     if (!prerequisites || prerequisites.length === 0) return true
-    const scores = builder.effectiveScores
     return prerequisites.every(prereq => scores[prereq.ability_score.index as keyof AbilityScores] >= prereq.minimum_score)
   }
-  // 2024 prerequisites checked from API data after selection; show all by default
+  const pre = FEAT_PREREQUISITES_2024[featIndex]
+  if (!pre) return true
+  if (pre.minLevel && asiLevel < pre.minLevel) return false
+  if (pre.needsFightingStyle && !CLASSES_WITH_FIGHTING_STYLE.has(builder.draft.classIndex)) return false
+  if (pre.abilityAny && !pre.abilityAny.abilities.some(a => scores[a] >= pre.abilityAny!.min)) return false
   return true
 }
 
-const filteredFeats = computed(() => {
+function availableFeats(asiLevel: number) {
   const q = featSearch.value.toLowerCase().trim()
   const list = q ? allFeats.value.filter(f => f.name.toLowerCase().includes(q)) : allFeats.value
-  return list.filter(f => featMeetsPrerequisites(f.index, f.edition))
-})
+  return list.filter(f => featMeetsPrerequisites(f.index, f.edition, asiLevel))
+}
 
 // ── Feat preview — handles both 2014 (desc[]) and 2024 (description string) ──
 
