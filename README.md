@@ -11,13 +11,29 @@ A fully-featured **Single Page Application** for creating and managing Dungeons 
 
 ## Features
 
+### Multi-edition content — 2014 **and** 2024 SRD
+
+Races, classes, feats, and backgrounds can be picked from **either edition**, shown side
+by side with edition badges. The two SRD editions have very different data shapes, all
+handled transparently:
+
+- **Species (2024)** alongside Races (2014) — 2024 adds Goliath & Orc, uses subspecies
+  (Elven Lineage, Fiendish Legacy, Draconic Ancestor…), and grants no fixed ability bonuses
+- **Backgrounds (2024)** apply their full ruleset: the **+2/+1 (or +1/+1/+1) ability score
+  increase**, the **Origin Feat**, skill & tool proficiencies (including choices like the
+  Soldier's Gaming Set), and equipment
+- **Feats (2024)** — 17 feats incl. fighting styles and Epic Boons (vs. Grappler only in 2014)
+- Edition-correct trait, equipment, and proficiency lookups (e.g. 2024 `description` vs 2014
+  `desc`, 2024 `arrows` vs 2014 `arrow`); spells & per-level class features use 2014 data
+  (2024 doesn't expose them)
+
 ### Character Builder
 11-step wizard covering the full D&D 5e character creation process:
 
-- **Class & Subclass** — all 12 SRD classes; subclass selection at the correct level per class
+- **Class & Subclass** — all 12 SRD classes (2014 + 2024); subclass selection at the correct level per class
 - **Level & Features** — set level 1–20; class features displayed per level with choice UI (fighting styles, pact boons, eldritch invocations)
-- **Race & Subrace** — speed, ASI bonuses, traits, languages, and racial proficiencies fetched live from the 5e API; race resistances and Darkvision auto-applied
-- **Background** — skill proficiencies, tool proficiencies, and starting languages
+- **Race / Species & Subrace** — speed, ASI bonuses, traits, languages, and racial proficiencies fetched live from the 5e API; race resistances and Darkvision auto-applied (2024 species distribute ability bonuses via the background)
+- **Background** — skill & tool proficiencies and starting languages; 2024 backgrounds add ability score increase allocation, an Origin Feat, and tool-choice pickers
 - **Ability Scores** — point buy, standard array (drag & drop), manual entry, or 4d6-drop-lowest roll
 - **Feats & ASI** — feat picker with prerequisite filtering at every ASI level
 - **Skills & Proficiencies** — class, background, and racial origins clearly distinguished
