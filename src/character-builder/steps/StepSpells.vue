@@ -296,7 +296,7 @@
         :known-spells="activeSpellsBeforeLevel(showSpellPickerForLevel!)"
         :max-level="getMaxSpellLevel(builder.draft.classIndex, showSpellPickerForLevel!)"
         :limit="activeSpellsBeforeLevel(showSpellPickerForLevel!).length + spellsGainedAt(showSpellPickerForLevel!)"
-        :extra-spells="warlockExtraSpells"
+        :extra-spells="subclassExtraSpells"
         @close="showSpellPickerForLevel = null"
         @add="(spells) => onSpellPickedAtLevel(showSpellPickerForLevel!, spells)"
       />
@@ -311,7 +311,7 @@
         :known-spells="activeSpellsBeforeLevel(showReplacementPickerForLevel!).filter(s => s.index !== replacingFromIndex[showReplacementPickerForLevel!])"
         :max-level="getMaxSpellLevel(builder.draft.classIndex, showReplacementPickerForLevel!)"
         :limit="activeSpellsBeforeLevel(showReplacementPickerForLevel!).length"
-        :extra-spells="warlockExtraSpells"
+        :extra-spells="subclassExtraSpells"
         @close="showReplacementPickerForLevel = null"
         @add="(spells) => onReplacementPickedAtLevel(showReplacementPickerForLevel!, spells)"
       />
@@ -515,6 +515,7 @@ import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import {
   getSpellProfile, getMaxSpellLevel, getSpellSlots,
   cantripsGainedAtLevel, spellsGainedAtLevel, getFirstSpellLevel, getSubclassSpellMode,
+  selectGrantedSubclassSpells,
 } from '@/character-builder/classMeta'
 import { computeModifier } from '@/shared/types/character'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
@@ -550,7 +551,7 @@ const { data: expandedSpellDetails } = useQuery({
   enabled: computed(() => expandedSubclassSpells.value.length > 0),
   staleTime: Infinity,
 })
-const warlockExtraSpells = computed(() => {
+const subclassExtraSpells = computed(() => {
   const byIndex = new Map((expandedSpellDetails.value ?? []).map(d => [d.index, d.level]))
   return expandedSubclassSpells.value
     .filter(s => byIndex.has(s.index))
@@ -560,9 +561,8 @@ const warlockExtraSpells = computed(() => {
 // Names of the always-prepared subclass spells granted at this level (for the info banner).
 const grantedSubclassSpellNames = computed(() => {
   if (getSubclassSpellMode(builder.draft.classIndex) !== 'always-prepared') return []
-  return [...new Set(builder.draft.subclassSpells
-    .filter(s => s.unlockLevel <= builder.draft.level && (!s.feature || s.feature === builder.draft.druidLandType))
-    .map(s => s.name))]
+  const granted = selectGrantedSubclassSpells(builder.draft.subclassSpells, builder.draft.level, builder.draft.druidLandType)
+  return [...new Set(granted.map(s => s.name))]
 })
 
 // ── Per-level helpers ─────────────────────────────────────────────────────────

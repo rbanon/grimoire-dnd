@@ -195,10 +195,10 @@ const allSpells = computed(() => {
   const base = data.value?.results ?? []
   const extra = (props.extraSpells ?? []).filter(s => s.level === selectedLevel.value)
   if (extra.length === 0) return base
+  // Append subclass-expanded options not already in the class list (preserve base order)
   const seen = new Set(base.map(s => s.index))
-  const merged = [...base]
-  for (const s of extra) if (!seen.has(s.index)) merged.push({ index: s.index, name: s.name, url: '' })
-  return merged.sort((a, b) => a.name.localeCompare(b.name))
+  const added = extra.filter(s => !seen.has(s.index)).map(s => ({ index: s.index, name: s.name, url: '' }))
+  return [...base, ...added]
 })
 
 const filtered = computed(() => {

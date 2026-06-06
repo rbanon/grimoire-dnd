@@ -159,7 +159,7 @@
 import { computed, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useBuilderStore } from '@/character-builder/builderStore'
-import { getClassMeta } from '@/character-builder/classMeta'
+import { getClassMeta, parseSubclassSpells } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
@@ -265,16 +265,7 @@ function toggleSubclass(index: string, name: string) {
 // the land-type feature gate. Actual spell levels are resolved later (build / pickers).
 watch(subclassDetail, (detail) => {
   if (!builder.draft.subclassIndex || detail?.index !== builder.draft.subclassIndex) return
-  builder.draft.subclassSpells = (detail.spells ?? []).map(s => {
-    const lvl  = s.prerequisites.find(p => p.type === 'level')
-    const feat = s.prerequisites.find(p => p.type === 'feature')
-    return {
-      index: s.spell.index,
-      name: s.spell.name,
-      unlockLevel: lvl ? (parseInt(lvl.name.replace(/\D+/g, ''), 10) || 1) : 1,
-      feature: feat?.name,
-    }
-  })
+  builder.draft.subclassSpells = parseSubclassSpells(detail.spells)
   // Drop a stale land-type pick if it's no longer offered
   const features = new Set(builder.draft.subclassSpells.map(s => s.feature).filter(Boolean) as string[])
   if (builder.draft.druidLandType && !features.has(builder.draft.druidLandType)) {

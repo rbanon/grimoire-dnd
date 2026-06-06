@@ -4,6 +4,7 @@
 // srd-class-data.json — regenerate with: node scripts/generate-srd-data.mjs
 import srdData from '@/shared/data/srd-class-data.json'
 import type { ResourcePool } from '@/shared/types/character'
+import type { ApiSubclassSpell } from '@/shared/types/api'
 
 export interface ClassMeta {
   glyph: string
@@ -928,6 +929,34 @@ export function getSubclassSpellMode(classIndex: string): 'always-prepared' | 'e
   if (ct === 'prepared' || ct === 'spellbook') return 'always-prepared'
   if (ct === 'known') return 'expanded'
   return null
+}
+
+/** A subclass spell with its unlock (class) level and optional feature gate (Druid land). */
+export interface SubclassSpellEntry { index: string; name: string; unlockLevel: number; feature?: string }
+
+/** Parse the API `spells` field of a subclass into draft-friendly entries. */
+export function parseSubclassSpells(spells: ApiSubclassSpell[] | undefined): SubclassSpellEntry[] {
+  return (spells ?? []).map(s => {
+    const levelPre   = s.prerequisites.find(p => p.type === 'level')
+    const featurePre = s.prerequisites.find(p => p.type === 'feature')
+    // Unlock level from the level prereq — prefer the url segment (".../levels/3"),
+    // fall back to digits in the name ("Cleric 3"); default 1.
+    const fromUrl  = parseInt(levelPre?.url?.split('/').pop() ?? '', 10)
+    const fromName = parseInt((levelPre?.name ?? '').replace(/\D+/g, ''), 10)
+    return {
+      index: s.spell.index,
+      name: s.spell.name,
+      unlockLevel: fromUrl || fromName || 1,
+      feature: featurePre?.name,
+    }
+  })
+}
+
+/** Subset of subclass spells granted at a given character level (with the Druid land gate). */
+export function selectGrantedSubclassSpells(
+  spells: SubclassSpellEntry[], level: number, landType: string,
+): SubclassSpellEntry[] {
+  return spells.filter(s => s.unlockLevel <= level && (!s.feature || s.feature === landType))
 }
 
 export function getClassResources(classIndex: string, level: number, mods: AbilityMods): ResourcePool[] {

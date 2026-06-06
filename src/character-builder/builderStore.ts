@@ -8,7 +8,7 @@ import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
 import { uploadPortraitBlob } from '@/shared/lib/uploadPortrait'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount, getSubclassSpellMode } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount, getSubclassSpellMode, selectGrantedSubclassSpells } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 
 const DRAFT_KEY = 'builder-draft'
@@ -237,9 +237,7 @@ const DraftSchema = z.object({ currentStep: z.number() })
 // Druid land-type gate), fetching each spell's real level for the SpellReference.
 async function resolveAlwaysPreparedSpells(d: BuilderDraft): Promise<{ index: string; name: string; level: number }[]> {
   if (getSubclassSpellMode(d.classIndex) !== 'always-prepared' || d.subclassSpells.length === 0) return []
-  const granted = d.subclassSpells.filter(s =>
-    s.unlockLevel <= d.level && (!s.feature || s.feature === d.druidLandType),
-  )
+  const granted = selectGrantedSubclassSpells(d.subclassSpells, d.level, d.druidLandType)
   const uniq = [...new Map(granted.map(s => [s.index, s])).values()]
   if (uniq.length === 0) return []
   const details = await Promise.allSettled(uniq.map(s => fiveEApi.getSpell(s.index)))
