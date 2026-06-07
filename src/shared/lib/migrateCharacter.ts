@@ -22,9 +22,12 @@ export function migrateCharacter(raw: unknown): Character {
   let data = result.data as Record<string, unknown>
 
   // ── 1.0 → 1.1 ────────────────────────────────────────────────────────────
-  // if (data.schemaVersion === '1.0') {
-  //   data = { ...data, newField: defaultValue, schemaVersion: '1.1' }
-  // }
+  // Removed the legacy `attacks` field (always []; superseded by combatFavorites).
+  // No transform needed — CharacterSchema.parse strips the now-unknown key — but we
+  // bump the version so the change is explicit and auditable.
+  if (data.schemaVersion === '1.0') {
+    data = { ...data, schemaVersion: '1.1' }
+  }
   // ─────────────────────────────────────────────────────────────────────────
 
   data = { ...data, schemaVersion: CURRENT_SCHEMA_VERSION }

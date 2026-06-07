@@ -842,7 +842,6 @@ export const useBuilderStore = defineStore('builder', () => {
         const t = getRaceTraits(d.raceIndex, d.subraceIndex || undefined)
         return { resistances: t.resistances, immunities: t.immunities, vulnerabilities: [], senses: t.senses }
       })(),
-      attacks: [],
       inventory: d.startingInventory,
       // Equipment path → coins granted by the chosen options; gold path → manual gold input
       currency: d.useStartingEquipment

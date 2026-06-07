@@ -28,7 +28,6 @@ const validChar = {
   languages: [],
   otherProficiencies: [],
   resistances: [], immunities: [], vulnerabilities: [], senses: [],
-  attacks: [],
   inventory: [],
   currency: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
   spellcasting: null,
@@ -54,6 +53,13 @@ describe('migrateCharacter', () => {
     const { schemaVersion: _v, ...withoutVersion } = validChar
     const result = migrateCharacter(withoutVersion)
     expect(result.schemaVersion).toBe(CURRENT_SCHEMA_VERSION)
+  })
+
+  it('strips the legacy 1.0 attacks field on migration to 1.1', () => {
+    const legacy = { ...validChar, schemaVersion: '1.0', attacks: [{ id: 'x', name: 'Longsword' }] }
+    const result = migrateCharacter(legacy)
+    expect(result.schemaVersion).toBe('1.1')
+    expect('attacks' in result).toBe(false)
   })
 
   it('throws on non-object input', () => {
