@@ -3,9 +3,15 @@
 
     <!-- Name row -->
     <div class="flex items-center gap-2">
+      <!-- Granted (always-prepared) spells are locked -->
+      <span
+        v-if="spell.granted"
+        class="text-arcane-pale text-2xs shrink-0"
+        title="Always prepared (subclass)"
+      >◆</span>
       <!-- Clickable prepare toggle in edit mode for prepared casters -->
       <button
-        v-if="spellEditMode && canTogglePrepared"
+        v-else-if="spellEditMode && canTogglePrepared"
         type="button"
         class="shrink-0 w-5 h-5 flex items-center justify-center rounded transition-all"
         :class="spell.prepared
@@ -24,6 +30,7 @@
         title="Cast spell"
         @click="$emit('cast')"
       >{{ spell.name }}</button>
+      <span v-if="spell.granted" class="shrink-0 text-2xs font-heading px-1.5 py-px rounded-sm border border-arcane-base/30 text-arcane-pale/70 bg-arcane-deep/10">Subclass</span>
       <!-- Favorite toggle -->
       <button
         type="button"
@@ -45,7 +52,7 @@
         <InfoIcon :size="12" />
       </button>
       <button
-        v-if="spellEditMode"
+        v-if="spellEditMode && !spell.granted"
         type="button"
         class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-mist/30 hover:text-blood-bright hover:bg-blood-deep/20 transition-all"
         title="Remove spell"
@@ -98,7 +105,7 @@ import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import type { SpellReference } from '@/shared/types/character'
 
 const props = defineProps<{
-  spell: SpellReference & { prepared: boolean }
+  spell: SpellReference & { prepared: boolean; granted?: boolean }
   spellEditMode: boolean
   isFavorite: boolean
   canTogglePrepared?: boolean

@@ -2,6 +2,16 @@
   <div class="max-w-3xl mx-auto px-6 py-8 space-y-8">
     <div class="rule-gold"><span>Spells</span></div>
 
+    <!-- Subclass always-prepared spells (Cleric domain / Paladin oath / Druid circle) -->
+    <div v-if="grantedSubclassSpellNames.length" class="flex items-start gap-2 px-3 py-2.5 rounded border border-arcane-base/25 bg-arcane-deep/10">
+      <span class="text-arcane-pale/70 text-xs shrink-0 mt-0.5">◆</span>
+      <p class="text-xs font-body text-mist">
+        <span class="text-arcane-pale font-heading">{{ builder.draft.subclassName }}</span> grants these
+        <span class="text-stone">always-prepared</span> spells (free, don't count against your limit):
+        <span class="text-stone">{{ grantedSubclassSpellNames.join(', ') }}</span>.
+      </p>
+    </div>
+
     <!-- Spellcasting info -->
     <div class="card p-5 border-arcane-base/20 bg-arcane-deep/10">
       <div class="flex items-start gap-3">
@@ -286,6 +296,7 @@
         :known-spells="activeSpellsBeforeLevel(showSpellPickerForLevel!)"
         :max-level="getMaxSpellLevel(builder.draft.classIndex, showSpellPickerForLevel!)"
         :limit="activeSpellsBeforeLevel(showSpellPickerForLevel!).length + spellsGainedAt(showSpellPickerForLevel!)"
+        :extra-spells="subclassExtraSpells"
         @close="showSpellPickerForLevel = null"
         @add="(spells) => onSpellPickedAtLevel(showSpellPickerForLevel!, spells)"
       />
@@ -300,6 +311,7 @@
         :known-spells="activeSpellsBeforeLevel(showReplacementPickerForLevel!).filter(s => s.index !== replacingFromIndex[showReplacementPickerForLevel!])"
         :max-level="getMaxSpellLevel(builder.draft.classIndex, showReplacementPickerForLevel!)"
         :limit="activeSpellsBeforeLevel(showReplacementPickerForLevel!).length"
+        :extra-spells="subclassExtraSpells"
         @close="showReplacementPickerForLevel = null"
         @add="(spells) => onReplacementPickedAtLevel(showReplacementPickerForLevel!, spells)"
       />
@@ -502,7 +514,8 @@ import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import {
   getSpellProfile, getMaxSpellLevel, getSpellSlots,
-  cantripsGainedAtLevel, spellsGainedAtLevel, getFirstSpellLevel,
+  cantripsGainedAtLevel, spellsGainedAtLevel, getFirstSpellLevel, getSubclassSpellMode,
+  selectGrantedSubclassSpells,
 } from '@/character-builder/classMeta'
 import { computeModifier } from '@/shared/types/character'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
@@ -523,6 +536,34 @@ const spellAbilityName = computed(() =>
 
 const profile  = computed(() => getSpellProfile(builder.draft.classIndex))
 const levelIdx = computed(() => builder.draft.level - 1)
+
+// ── Subclass expanded spells (Warlock patron list) ────────────────────────────
+// These become additional options the known caster may learn. We resolve each spell's
+// real level so the picker shows it under the right spell-level tab.
+const expandedSubclassSpells = computed(() =>
+  getSubclassSpellMode(builder.draft.classIndex) === 'expanded'
+    ? builder.draft.subclassSpells.filter(s => s.unlockLevel <= builder.draft.level)
+    : [],
+)
+const { data: expandedSpellDetails } = useQuery({
+  queryKey: computed(() => ['expanded-spell-levels', ...expandedSubclassSpells.value.map(s => s.index)]),
+  queryFn: () => Promise.all(expandedSubclassSpells.value.map(s => fiveEApi.getSpell(s.index))),
+  enabled: computed(() => expandedSubclassSpells.value.length > 0),
+  staleTime: Infinity,
+})
+const subclassExtraSpells = computed(() => {
+  const byIndex = new Map((expandedSpellDetails.value ?? []).map(d => [d.index, d.level]))
+  return expandedSubclassSpells.value
+    .filter(s => byIndex.has(s.index))
+    .map(s => ({ index: s.index, name: s.name, level: byIndex.get(s.index)! }))
+})
+
+// Names of the always-prepared subclass spells granted at this level (for the info banner).
+const grantedSubclassSpellNames = computed(() => {
+  if (getSubclassSpellMode(builder.draft.classIndex) !== 'always-prepared') return []
+  const granted = selectGrantedSubclassSpells(builder.draft.subclassSpells, builder.draft.level, builder.draft.druidLandType)
+  return [...new Set(granted.map(s => s.name))]
+})
 
 // ── Per-level helpers ─────────────────────────────────────────────────────────
 

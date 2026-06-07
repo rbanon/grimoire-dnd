@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel, getFirstSpellLevel } from './classMeta'
+import {
+  getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel, getFirstSpellLevel,
+  getSubclassSpellMode, parseSubclassSpells, selectGrantedSubclassSpells, getExpertiseCount,
+} from './classMeta'
+import type { ApiSubclassSpell } from '@/shared/types/api'
 
 describe('getSpellProfile', () => {
   it('returns null for martial classes', () => {
@@ -173,5 +177,102 @@ describe('getAsiLevels', () => {
   it('unknown class returns empty array', () => {
     expect(getAsiLevels('artificer')).toEqual([])
     expect(getAsiLevels('')).toEqual([])
+  })
+})
+
+describe('getSubclassSpellMode', () => {
+  it('prepared casters grant always-prepared subclass spells', () => {
+    expect(getSubclassSpellMode('cleric')).toBe('always-prepared')
+    expect(getSubclassSpellMode('paladin')).toBe('always-prepared')
+    expect(getSubclassSpellMode('druid')).toBe('always-prepared')
+  })
+
+  it('known casters (warlock) get an expanded list', () => {
+    expect(getSubclassSpellMode('warlock')).toBe('expanded')
+    expect(getSubclassSpellMode('bard')).toBe('expanded')
+  })
+
+  it('non-spellcasters return null', () => {
+    expect(getSubclassSpellMode('fighter')).toBeNull()
+    expect(getSubclassSpellMode('rogue')).toBeNull()
+    expect(getSubclassSpellMode('')).toBeNull()
+  })
+})
+
+describe('parseSubclassSpells', () => {
+  const spells: ApiSubclassSpell[] = [
+    {
+      prerequisites: [{ index: 'cleric-1', type: 'level', name: 'Cleric 1', url: '/api/2014/classes/cleric/levels/1' }],
+      spell: { index: 'bless', name: 'Bless', url: '/api/2014/spells/bless' },
+    },
+    {
+      prerequisites: [{ index: 'cleric-5', type: 'level', name: 'Cleric 5', url: '/api/2014/classes/cleric/levels/5' }],
+      spell: { index: 'revivify', name: 'Revivify', url: '/api/2014/spells/revivify' },
+    },
+    {
+      prerequisites: [
+        { index: 'druid-3', type: 'level', name: 'Druid 3', url: '/api/2014/classes/druid/levels/3' },
+        { index: 'land-arctic', type: 'feature', name: 'Circle of the Land: Arctic', url: '' },
+      ],
+      spell: { index: 'hold-person', name: 'Hold Person', url: '/api/2014/spells/hold-person' },
+    },
+  ]
+
+  it('parses the unlock level and feature gate', () => {
+    const out = parseSubclassSpells(spells)
+    expect(out[0]).toEqual({ index: 'bless', name: 'Bless', unlockLevel: 1, feature: undefined })
+    expect(out[1].unlockLevel).toBe(5)
+    expect(out[2]).toEqual({ index: 'hold-person', name: 'Hold Person', unlockLevel: 3, feature: 'Circle of the Land: Arctic' })
+  })
+
+  it('handles undefined / empty', () => {
+    expect(parseSubclassSpells(undefined)).toEqual([])
+    expect(parseSubclassSpells([])).toEqual([])
+  })
+
+  it('falls back to level 1 when the prereq is missing', () => {
+    const out = parseSubclassSpells([{ prerequisites: [], spell: { index: 'x', name: 'X', url: '' } }])
+    expect(out[0].unlockLevel).toBe(1)
+  })
+})
+
+describe('selectGrantedSubclassSpells', () => {
+  const entries = [
+    { index: 'bless', name: 'Bless', unlockLevel: 1 },
+    { index: 'revivify', name: 'Revivify', unlockLevel: 5 },
+    { index: 'hold-person', name: 'Hold Person', unlockLevel: 3, feature: 'Circle of the Land: Arctic' },
+    { index: 'spike-growth', name: 'Spike Growth', unlockLevel: 3, feature: 'Circle of the Land: Coast' },
+  ]
+
+  it('includes only spells unlocked at or below the character level', () => {
+    const out = selectGrantedSubclassSpells(entries, 3, '')
+    expect(out.map(s => s.index)).toContain('bless')
+    expect(out.map(s => s.index)).not.toContain('revivify')
+  })
+
+  it('applies the land-type gate (Druid Circle of the Land)', () => {
+    const arctic = selectGrantedSubclassSpells(entries, 3, 'Circle of the Land: Arctic')
+    expect(arctic.map(s => s.index)).toEqual(['bless', 'hold-person'])
+    const coast = selectGrantedSubclassSpells(entries, 5, 'Circle of the Land: Coast')
+    expect(coast.map(s => s.index)).toEqual(['bless', 'revivify', 'spike-growth'])
+  })
+})
+
+describe('getExpertiseCount', () => {
+  it('rogue: 2 at level 1, 4 at level 6+', () => {
+    expect(getExpertiseCount('rogue', 1)).toBe(2)
+    expect(getExpertiseCount('rogue', 5)).toBe(2)
+    expect(getExpertiseCount('rogue', 6)).toBe(4)
+  })
+
+  it('bard: 0 below 3, 2 at 3, 4 at 10+', () => {
+    expect(getExpertiseCount('bard', 2)).toBe(0)
+    expect(getExpertiseCount('bard', 3)).toBe(2)
+    expect(getExpertiseCount('bard', 10)).toBe(4)
+  })
+
+  it('other classes have no expertise', () => {
+    expect(getExpertiseCount('fighter', 20)).toBe(0)
+    expect(getExpertiseCount('wizard', 20)).toBe(0)
   })
 })
