@@ -26,7 +26,7 @@
               type="button"
               class="shrink-0 px-2.5 py-3 text-mist/60 hover:text-ash opacity-0 group-hover:opacity-100 transition-all"
               aria-label="Background details"
-              @click.stop="infoPanel.open({ kind: 'background', index: bg.index })"
+              @click.stop="infoPanel.open({ kind: 'background', index: bg.index, edition: '2014' })"
             >
               <InfoIcon :size="12" />
             </button>
@@ -71,7 +71,7 @@
               type="button"
               class="shrink-0 px-2.5 py-3 text-mist/60 hover:text-ash opacity-0 group-hover:opacity-100 transition-all"
               aria-label="Background details"
-              @click.stop="infoPanel.open({ kind: 'background', index: bg.index })"
+              @click.stop="infoPanel.open({ kind: 'background', index: bg.index, edition: '2024' })"
             >
               <InfoIcon :size="12" />
             </button>

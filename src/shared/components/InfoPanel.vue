@@ -44,6 +44,9 @@
               <span class="badge-gold text-xs">Speed {{ raceData.speed }} ft.</span>
               <span class="badge-gold text-xs">Size {{ raceData.size }}</span>
             </div>
+            <p v-if="targetEdition === '2024'" class="text-xs font-body text-mist italic leading-relaxed">
+              2024 species don't grant fixed ability bonuses or languages — you choose those during character creation.
+            </p>
             <div v-if="raceData.ability_bonuses.length" class="space-y-1.5">
               <p class="label">Ability Score Bonuses</p>
               <div class="flex flex-wrap gap-1.5">
@@ -427,21 +430,33 @@ const skillIndex   = computed(() => isSkill.value   ? (panel.target.value as Ext
 const itemIndex    = computed(() => isItem.value    ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'item' }>)!.index : '')
 const featureIndex = computed(() => isFeature.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'feature' }>)!.index : '')
 
+// Edition of the current target (race/class/background/item carry it); defaults to 2014.
+const targetEdition = computed<'2014' | '2024'>(() => {
+  const t = panel.target.value as { edition?: '2014' | '2024' } | null
+  return t?.edition ?? '2014'
+})
+
 const { data: raceData,  isFetching: raceFetching,  isError: raceError  } = useQuery({
-  queryKey: computed(() => ['race-detail',  raceIndex.value]),
-  queryFn:  () => fiveEApi.getRace(raceIndex.value),
+  queryKey: computed(() => ['race-detail',  raceIndex.value, targetEdition.value]),
+  queryFn:  () => targetEdition.value === '2024'
+    ? fiveEApi.getSpeciesAsRace(raceIndex.value)
+    : fiveEApi.getRace(raceIndex.value),
   staleTime: Infinity,
   enabled:  isRace,
 })
 const { data: classData, isFetching: classFetching, isError: classError } = useQuery({
-  queryKey: computed(() => ['class-detail', classIndex.value]),
-  queryFn:  () => fiveEApi.getClass(classIndex.value),
+  queryKey: computed(() => ['class-detail', classIndex.value, targetEdition.value]),
+  queryFn:  () => targetEdition.value === '2024'
+    ? fiveEApi.getClass2024(classIndex.value)
+    : fiveEApi.getClass(classIndex.value),
   staleTime: Infinity,
   enabled:  isClass,
 })
 const { data: bgData,    isFetching: bgFetching,    isError: bgError    } = useQuery({
-  queryKey: computed(() => ['bg-detail',    bgIndex.value]),
-  queryFn:  () => fiveEApi.getBackground(bgIndex.value),
+  queryKey: computed(() => ['bg-detail',    bgIndex.value, targetEdition.value]),
+  queryFn:  () => targetEdition.value === '2024'
+    ? fiveEApi.getBackground2024(bgIndex.value)
+    : fiveEApi.getBackground(bgIndex.value),
   staleTime: Infinity,
   enabled:  isBackground,
 })

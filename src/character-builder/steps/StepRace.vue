@@ -23,7 +23,7 @@
             :edition="race.edition"
             show-info
             @select="selectRace(race.index, race.name, race.edition)"
-            @info="infoPanel.open({ kind: 'race', index: race.index })"
+            @info="infoPanel.open({ kind: 'race', index: race.index, edition: race.edition })"
           />
         </div>
 
@@ -47,7 +47,7 @@
             :edition="race.edition"
             show-info
             @select="selectRace(race.index, race.name, race.edition)"
-            @info="infoPanel.open({ kind: 'race', index: race.index })"
+            @info="infoPanel.open({ kind: 'race', index: race.index, edition: race.edition })"
           />
         </div>
       </template>

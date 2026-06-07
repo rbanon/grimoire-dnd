@@ -24,7 +24,7 @@
             :edition="cls.edition"
             show-info
             @select="selectClass(cls.index, cls.name, cls.edition)"
-            @info="infoPanel.open({ kind: 'class', index: cls.index })"
+            @info="infoPanel.open({ kind: 'class', index: cls.index, edition: cls.edition })"
           />
         </div>
 
@@ -49,7 +49,7 @@
             :edition="cls.edition"
             show-info
             @select="selectClass(cls.index, cls.name, cls.edition)"
-            @info="infoPanel.open({ kind: 'class', index: cls.index })"
+            @info="infoPanel.open({ kind: 'class', index: cls.index, edition: cls.edition })"
           />
         </div>
       </template>
