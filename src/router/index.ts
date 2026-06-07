@@ -38,6 +38,11 @@ export const router = createRouter({
           name: 'items',
           component: () => import('@/items/pages/ItemBrowserPage.vue'),
         },
+        {
+          path: 'monsters',
+          name: 'monsters',
+          component: () => import('@/monsters/pages/MonsterBrowserPage.vue'),
+        },
         // Campaigns (auth required)
         {
           path: 'campaigns',

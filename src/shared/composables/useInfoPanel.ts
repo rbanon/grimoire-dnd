@@ -12,6 +12,7 @@ export type InfoTarget =
   | { kind: 'alignment';  value: string }
   | { kind: 'item';       index: string; edition?: InfoEdition }
   | { kind: 'feature';    index: string; name: string }
+  | { kind: 'monster';    index: string }
   | { kind: 'exhaustion' }
 
 const _target = ref<InfoTarget | null>(null)
