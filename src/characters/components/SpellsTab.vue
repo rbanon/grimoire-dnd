@@ -139,6 +139,25 @@
         >Recover</button>
       </div>
 
+      <!-- ── Font of Magic (Sorcerer) ───────────────────────────────────────── -->
+      <div
+        v-if="isSorcerer && sorceryPool"
+        class="flex items-center gap-3 px-3 py-2.5 rounded border border-arcane-base/25 bg-arcane-deep/10"
+      >
+        <SparklesIcon :size="15" class="text-arcane-pale/70 shrink-0" />
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-heading text-arcane-pale leading-tight">Font of Magic</p>
+          <p class="text-2xs font-body text-mist leading-tight mt-0.5">
+            {{ sorceryPool.current }}/{{ sorceryPool.max }} sorcery points · convert to/from spell slots
+          </p>
+        </div>
+        <button
+          type="button"
+          class="btn-secondary text-xs py-1.5 px-3 shrink-0"
+          @click="showFontOfMagic = true"
+        >Convert</button>
+      </div>
+
       <section
         v-for="lvl in activeLevels"
         :key="lvl"
@@ -260,6 +279,14 @@
       @close="showArcaneRecovery = false"
       @confirm="onArcaneRecovery"
     />
+
+    <!-- Font of Magic modal (Sorcerer) -->
+    <FontOfMagicModal
+      :show="showFontOfMagic"
+      :character="props.character"
+      @close="showFontOfMagic = false"
+      @convert="onFontOfMagic"
+    />
   </div>
 </template>
 
@@ -280,6 +307,7 @@ import SpellPickerModal from './SpellPickerModal.vue'
 import CastSpellModal from './CastSpellModal.vue'
 import ManagePreparedModal from './ManagePreparedModal.vue'
 import ArcaneRecoveryModal from './ArcaneRecoveryModal.vue'
+import FontOfMagicModal from './FontOfMagicModal.vue'
 
 const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
@@ -291,6 +319,7 @@ const showManagePrepared = ref(false)
 const spellPickerLevel = ref<number | null>(null)
 const castingSpell = ref<SpellReference | null>(null)
 const showArcaneRecovery = ref(false)
+const showFontOfMagic = ref(false)
 
 const cantripLimit = computed(() => {
   const profile = getSpellProfile(props.character.identity.class.index)
@@ -453,6 +482,26 @@ const arcaneRecoveryHasRecoverable = computed(() =>
 const arcaneRecoveryAvailable = computed(() =>
   isWizard.value && arcaneRecoveryHasUse.value && arcaneRecoveryHasRecoverable.value,
 )
+
+// ── Font of Magic (Sorcerer) ──────────────────────────────────────────────────
+const isSorcerer = computed(() => props.character.identity.class.index === 'sorcerer' && !!sc.value)
+const sorceryPool = computed(() => props.character.resources.find(r => r.id === 'sorcery-points') ?? null)
+
+async function onFontOfMagic(payload: { slotLevel: number; slotDelta: 1 | -1; sorceryPointsDelta: number }) {
+  if (!sc.value) return
+  const key = slotKey(payload.slotLevel)
+  const max = sc.value.slotsMax[key] ?? 0
+  const nextUsed = Math.min(max, Math.max(0, (sc.value.slotsUsed[key] ?? 0) + payload.slotDelta))
+  const resources = props.character.resources.map(r =>
+    r.id === 'sorcery-points'
+      ? { ...r, current: Math.min(r.max, Math.max(0, r.current + payload.sorceryPointsDelta)) }
+      : r,
+  )
+  await store.update(props.character.id, {
+    spellcasting: { ...sc.value, slotsUsed: { ...sc.value.slotsUsed, [key]: nextUsed } },
+    resources,
+  })
+}
 
 async function onArcaneRecovery(recovery: Partial<SpellSlotsByLevel>) {
   if (!sc.value) return

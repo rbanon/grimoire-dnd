@@ -22,6 +22,27 @@
         :level="character.combat.level"
         @change="onResourceChange"
       />
+
+      <!-- Lay on Hands (Paladin) -->
+      <div
+        v-if="layOnHandsPool"
+        class="flex items-center gap-3 px-3 py-2.5 rounded border border-gold-dim/30 bg-gold-dim/5"
+      >
+        <HeartHandshakeIcon :size="15" class="text-gold-mid/80 shrink-0" />
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-heading text-gold-mid leading-tight">Lay on Hands</p>
+          <p class="text-2xs font-body text-mist leading-tight mt-0.5">
+            {{ layOnHandsPool.current }}/{{ layOnHandsPool.max }} HP pool · heal or cure
+          </p>
+        </div>
+        <button
+          type="button"
+          class="btn-secondary text-xs py-1.5 px-3 shrink-0"
+          :class="layOnHandsPool.current > 0 ? '' : 'opacity-40 cursor-not-allowed'"
+          :disabled="layOnHandsPool.current <= 0"
+          @click="showLayOnHands = true"
+        >Use</button>
+      </div>
     </section>
 
     <!-- Empty state -->
@@ -211,12 +232,19 @@
       @close="castingFav = null"
     />
 
+    <LayOnHandsModal
+      :show="showLayOnHands"
+      :character="character"
+      @spend="onLayOnHands"
+      @close="showLayOnHands = false"
+    />
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { PlusIcon, XIcon, SwordIcon, StarIcon } from 'lucide-vue-next'
+import { PlusIcon, XIcon, SwordIcon, StarIcon, HeartHandshakeIcon } from 'lucide-vue-next'
 import { useCharactersStore } from '@/characters/store'
 import { useRoll } from '@/shared/composables/useRoll'
 import { useConfirm } from '@/shared/composables/useConfirm'
@@ -230,6 +258,7 @@ import CastSpellModal from './CastSpellModal.vue'
 import FavoriteSpellCard from './FavoriteSpellCard.vue'
 import ResourceTracker from './ResourceTracker.vue'
 import FightingStyleBadges from './FightingStyleBadges.vue'
+import LayOnHandsModal from './LayOnHandsModal.vue'
 
 const props = defineProps<{ character: Character; editMode: boolean }>()
 const store = useCharactersStore()
@@ -360,6 +389,27 @@ function rollWeaponDmg(fav: CombatFavorite) {
   rollDamage(dmgFormula, `${fav.weaponName} Damage`,
     (bonus.damage > 0 || bonus.rerollLowDice) ? parts.join(' ') : undefined,
     bonus.rerollLowDice)
+}
+
+// ── Lay on Hands (Paladin) ────────────────────────────────────────────────────
+const showLayOnHands = ref(false)
+const layOnHandsPool = computed(() => props.character.resources.find(r => r.id === 'lay-on-hands') ?? null)
+
+async function onLayOnHands({ amount, healSelf }: { amount: number; healSelf: boolean }) {
+  const pool = layOnHandsPool.value
+  if (!pool) return
+  const spend = Math.min(amount, pool.current)
+  if (spend <= 0) return
+  const resources = props.character.resources.map(r =>
+    r.id === 'lay-on-hands' ? { ...r, current: r.current - spend } : r,
+  )
+  const update: Partial<Character> = { resources }
+  if (healSelf) {
+    const c = props.character.combat
+    update.combat = { ...c, currentHp: Math.min(c.maxHp, c.currentHp + spend) }
+  }
+  await store.update(props.character.id, update)
+  showLayOnHands.value = false
 }
 
 async function onResourceChange(pools: ResourcePool[]) {
