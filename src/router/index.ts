@@ -52,6 +52,13 @@ export const router = createRouter({
           meta: { requiresAuth: true },
         },
         {
+          path: 'campaigns/:id/edit',
+          name: 'campaign-edit',
+          component: () => import('@/campaigns/pages/CampaignFormPage.vue'),
+          props: true,
+          meta: { requiresAuth: true },
+        },
+        {
           path: 'campaigns/:id',
           name: 'campaign-detail',
           component: () => import('@/campaigns/pages/CampaignDetailPage.vue'),
