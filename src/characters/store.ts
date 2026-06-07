@@ -60,7 +60,6 @@ function makeDefaultCharacter(partial: Partial<Character> = {}): Character {
     immunities: [],
     vulnerabilities: [],
     senses: [],
-    attacks: [],
     inventory: [],
     currency: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
     spellcasting: null,

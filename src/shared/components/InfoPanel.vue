@@ -44,6 +44,9 @@
               <span class="badge-gold text-xs">Speed {{ raceData.speed }} ft.</span>
               <span class="badge-gold text-xs">Size {{ raceData.size }}</span>
             </div>
+            <p v-if="targetEdition === '2024'" class="text-xs font-body text-mist italic leading-relaxed">
+              2024 species don't grant fixed ability bonuses or languages — you choose those during character creation.
+            </p>
             <div v-if="raceData.ability_bonuses.length" class="space-y-1.5">
               <p class="label">Ability Score Bonuses</p>
               <div class="flex flex-wrap gap-1.5">
@@ -355,6 +358,77 @@
             >{{ para }}</p>
           </template>
 
+          <!-- Monster -->
+          <template v-else-if="panel.target.value?.kind === 'monster' && monsterData">
+            <p class="text-sm font-body text-mist italic -mt-1">
+              {{ monsterData.size }} {{ monsterData.type }}{{ monsterData.subtype ? ` (${monsterData.subtype})` : '' }}, {{ monsterData.alignment }}
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <span class="badge-gold text-xs">AC {{ monsterAc }}</span>
+              <span class="badge-gold text-xs">HP {{ monsterData.hit_points }}{{ monsterData.hit_dice ? ` (${monsterData.hit_dice})` : '' }}</span>
+              <span class="badge-arcane text-xs">CR {{ formatCR(monsterData.challenge_rating) }}</span>
+              <span class="px-2 py-0.5 rounded text-xs font-heading text-mist bg-depths/60 border border-shadow">{{ monsterData.xp }} XP</span>
+            </div>
+            <div v-if="monsterSpeed" class="space-y-1">
+              <p class="label">Speed</p>
+              <p class="text-sm font-body text-ash capitalize">{{ monsterSpeed }}</p>
+            </div>
+
+            <!-- Ability scores -->
+            <div class="grid grid-cols-6 gap-1 text-center">
+              <div v-for="a in MONSTER_ABILITIES" :key="a.key" class="card p-1.5">
+                <p class="text-2xs font-heading tracking-wide text-mist">{{ a.label }}</p>
+                <p class="text-sm font-heading text-vellum">{{ (monsterData as any)[a.key] }}</p>
+                <p class="text-2xs font-body text-stone">{{ abilityMod((monsterData as any)[a.key]) }}</p>
+              </div>
+            </div>
+
+            <div v-if="monsterSaves.length" class="space-y-1">
+              <p class="label">Saving Throws</p>
+              <p class="text-sm font-body text-ash">{{ monsterSaves.join(', ') }}</p>
+            </div>
+            <div v-if="monsterSkills.length" class="space-y-1">
+              <p class="label">Skills</p>
+              <p class="text-sm font-body text-ash">{{ monsterSkills.join(', ') }}</p>
+            </div>
+            <div v-if="monsterData.damage_resistances.length || monsterData.damage_immunities.length || monsterData.damage_vulnerabilities.length || monsterData.condition_immunities.length" class="space-y-1">
+              <p v-if="monsterData.damage_vulnerabilities.length" class="text-sm font-body text-ash"><span class="text-mist">Vulnerabilities:</span> {{ monsterData.damage_vulnerabilities.join(', ') }}</p>
+              <p v-if="monsterData.damage_resistances.length" class="text-sm font-body text-ash"><span class="text-mist">Resistances:</span> {{ monsterData.damage_resistances.join(', ') }}</p>
+              <p v-if="monsterData.damage_immunities.length" class="text-sm font-body text-ash"><span class="text-mist">Damage Immunities:</span> {{ monsterData.damage_immunities.join(', ') }}</p>
+              <p v-if="monsterData.condition_immunities.length" class="text-sm font-body text-ash"><span class="text-mist">Condition Immunities:</span> {{ monsterData.condition_immunities.map(c => c.name).join(', ') }}</p>
+            </div>
+            <div v-if="monsterSenses" class="space-y-1">
+              <p class="label">Senses</p>
+              <p class="text-sm font-body text-ash capitalize">{{ monsterSenses }}</p>
+            </div>
+            <div v-if="monsterData.languages" class="space-y-1">
+              <p class="label">Languages</p>
+              <p class="text-sm font-body text-ash">{{ monsterData.languages }}</p>
+            </div>
+
+            <div v-if="monsterData.special_abilities?.length" class="space-y-2">
+              <p class="label">Traits</p>
+              <div v-for="ab in monsterData.special_abilities" :key="ab.name" class="space-y-0.5">
+                <p class="text-sm font-heading text-stone">{{ ab.name }}</p>
+                <p class="text-xs font-body text-ash leading-relaxed">{{ ab.desc }}</p>
+              </div>
+            </div>
+            <div v-if="monsterData.actions?.length" class="space-y-2">
+              <p class="label">Actions</p>
+              <div v-for="ac in monsterData.actions" :key="ac.name" class="space-y-0.5">
+                <p class="text-sm font-heading text-blood-pale">{{ ac.name }}</p>
+                <p class="text-xs font-body text-ash leading-relaxed">{{ ac.desc }}</p>
+              </div>
+            </div>
+            <div v-if="monsterData.legendary_actions?.length" class="space-y-2">
+              <p class="label">Legendary Actions</p>
+              <div v-for="ac in monsterData.legendary_actions" :key="ac.name" class="space-y-0.5">
+                <p class="text-sm font-heading text-gold-mid">{{ ac.name }}</p>
+                <p class="text-xs font-body text-ash leading-relaxed">{{ ac.desc }}</p>
+              </div>
+            </div>
+          </template>
+
           <!-- Alignment -->
           <template v-else-if="panel.target.value?.kind === 'alignment' && alignmentInfo">
             <p class="text-xs font-heading tracking-widest text-mist uppercase">{{ alignmentInfo.nickname }}</p>
@@ -418,6 +492,7 @@ const isSpell      = computed(() => panel.target.value?.kind === 'spell')
 const isSkill      = computed(() => panel.target.value?.kind === 'skill')
 const isItem       = computed(() => panel.target.value?.kind === 'item')
 const isFeature    = computed(() => panel.target.value?.kind === 'feature')
+const isMonster    = computed(() => panel.target.value?.kind === 'monster')
 
 const raceIndex    = computed(() => isRace.value    ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'race' }>)!.index : '')
 const classIndex   = computed(() => isClass.value   ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'class' }>)!.index : '')
@@ -426,22 +501,35 @@ const spellIndex   = computed(() => isSpell.value   ? (panel.target.value as Ext
 const skillIndex   = computed(() => isSkill.value   ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'skill' }>)!.index : '')
 const itemIndex    = computed(() => isItem.value    ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'item' }>)!.index : '')
 const featureIndex = computed(() => isFeature.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'feature' }>)!.index : '')
+const monsterIndex = computed(() => isMonster.value ? (panel.target.value as Extract<typeof panel.target.value, { kind: 'monster' }>)!.index : '')
+
+// Edition of the current target (race/class/background/item carry it); defaults to 2014.
+const targetEdition = computed<'2014' | '2024'>(() => {
+  const t = panel.target.value as { edition?: '2014' | '2024' } | null
+  return t?.edition ?? '2014'
+})
 
 const { data: raceData,  isFetching: raceFetching,  isError: raceError  } = useQuery({
-  queryKey: computed(() => ['race-detail',  raceIndex.value]),
-  queryFn:  () => fiveEApi.getRace(raceIndex.value),
+  queryKey: computed(() => ['race-detail',  raceIndex.value, targetEdition.value]),
+  queryFn:  () => targetEdition.value === '2024'
+    ? fiveEApi.getSpeciesAsRace(raceIndex.value)
+    : fiveEApi.getRace(raceIndex.value),
   staleTime: Infinity,
   enabled:  isRace,
 })
 const { data: classData, isFetching: classFetching, isError: classError } = useQuery({
-  queryKey: computed(() => ['class-detail', classIndex.value]),
-  queryFn:  () => fiveEApi.getClass(classIndex.value),
+  queryKey: computed(() => ['class-detail', classIndex.value, targetEdition.value]),
+  queryFn:  () => targetEdition.value === '2024'
+    ? fiveEApi.getClass2024(classIndex.value)
+    : fiveEApi.getClass(classIndex.value),
   staleTime: Infinity,
   enabled:  isClass,
 })
 const { data: bgData,    isFetching: bgFetching,    isError: bgError    } = useQuery({
-  queryKey: computed(() => ['bg-detail',    bgIndex.value]),
-  queryFn:  () => fiveEApi.getBackground(bgIndex.value),
+  queryKey: computed(() => ['bg-detail',    bgIndex.value, targetEdition.value]),
+  queryFn:  () => targetEdition.value === '2024'
+    ? fiveEApi.getBackground2024(bgIndex.value)
+    : fiveEApi.getBackground(bgIndex.value),
   staleTime: Infinity,
   enabled:  isBackground,
 })
@@ -469,6 +557,12 @@ const { data: featureData, isFetching: featureFetching, isError: featureError } 
   staleTime: Infinity,
   enabled:  isFeature,
 })
+const { data: monsterData, isFetching: monsterFetching, isError: monsterError } = useQuery({
+  queryKey: computed(() => ['monster-detail', monsterIndex.value]),
+  queryFn:  () => fiveEApi.getMonster(monsterIndex.value),
+  staleTime: Infinity,
+  enabled:  isMonster,
+})
 
 const isLoading = computed(() => {
   const k = panel.target.value?.kind
@@ -479,6 +573,7 @@ const isLoading = computed(() => {
   if (k === 'skill')      return skillFetching.value
   if (k === 'item')       return itemFetching.value
   if (k === 'feature')    return featureFetching.value
+  if (k === 'monster')    return monsterFetching.value
   return false
 })
 
@@ -491,6 +586,7 @@ const isError = computed(() => {
   if (k === 'skill')      return skillError.value
   if (k === 'item')       return itemError.value
   if (k === 'feature')    return featureError.value
+  if (k === 'monster')    return monsterError.value
   return false
 })
 
@@ -604,6 +700,7 @@ const entityGlyph = computed(() => {
   if (t.kind === 'alignment')   return ALIGNMENT_INFO[t.value]?.glyph ?? '◎'
   if (t.kind === 'item')        return ITEM_CATEGORY_GLYPH[itemData.value?.equipment_category.index ?? ''] ?? '⚙'
   if (t.kind === 'feature')     return getClassMeta(featureData.value?.class.index ?? '').glyph
+  if (t.kind === 'monster')     return '🐉'
   if (t.kind === 'exhaustion')  return '😵'
   return ''
 })
@@ -618,6 +715,7 @@ const entityName = computed(() => {
   if (t.kind === 'skill')       return skillData.value?.name   ?? t.index
   if (t.kind === 'item')        return itemData.value?.name    ?? t.index
   if (t.kind === 'feature')     return featureData.value?.name ?? t.name
+  if (t.kind === 'monster')     return monsterData.value?.name ?? t.index
   if (t.kind === 'alignment')   return t.value
   if (t.kind === 'exhaustion')  return 'Exhaustion'
   return ''
@@ -629,6 +727,60 @@ const kindBadge = computed(() => {
   if (k === 'feature')    return 'feature'
   return k ?? ''
 })
+
+// ── Monster stat-block helpers ────────────────────────────────────────────────
+
+function abilityMod(score: number): string {
+  const mod = Math.floor((score - 10) / 2)
+  return mod >= 0 ? `+${mod}` : `${mod}`
+}
+
+const MONSTER_ABILITIES = [
+  { key: 'strength',     label: 'STR' },
+  { key: 'dexterity',    label: 'DEX' },
+  { key: 'constitution', label: 'CON' },
+  { key: 'intelligence', label: 'INT' },
+  { key: 'wisdom',       label: 'WIS' },
+  { key: 'charisma',     label: 'CHA' },
+] as const
+
+/** Fractional CRs (0, 1/8, 1/4, 1/2) come back as decimals from the API. */
+function formatCR(cr: number): string {
+  if (cr === 0.125) return '1/8'
+  if (cr === 0.25) return '1/4'
+  if (cr === 0.5) return '1/2'
+  return String(cr)
+}
+
+const monsterAc = computed(() => monsterData.value?.armor_class?.[0]?.value ?? '—')
+
+const monsterSpeed = computed(() => {
+  const s = monsterData.value?.speed
+  if (!s) return ''
+  return Object.entries(s)
+    .map(([k, v]) => (v === true ? k : `${k} ${v}`))
+    .join(', ')
+})
+
+const monsterSenses = computed(() => {
+  const s = monsterData.value?.senses
+  if (!s) return ''
+  return Object.entries(s)
+    .map(([k, v]) => `${k.replace(/_/g, ' ')} ${v}`)
+    .join(', ')
+})
+
+const monsterSaves = computed(() =>
+  (monsterData.value?.proficiencies ?? [])
+    .filter((p) => p.proficiency.index.startsWith('saving-throw-'))
+    .map((p) => `${p.proficiency.name.replace('Saving Throw: ', '')} +${p.value}`),
+)
+
+const monsterSkills = computed(() =>
+  (monsterData.value?.proficiencies ?? [])
+    .filter((p) => p.proficiency.index.startsWith('skill-'))
+    .map((p) => `${p.proficiency.name.replace('Skill: ', '')} +${p.value}`),
+)
 </script>
 
 <style scoped>

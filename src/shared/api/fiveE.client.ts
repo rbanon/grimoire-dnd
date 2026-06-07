@@ -10,6 +10,7 @@ import type {
   ApiEquipment,
   ApiEquipmentCategory,
   ApiMagicItem,
+  ApiMonster,
   ApiSkill,
   ApiFeature,
   ApiTrait,
@@ -158,6 +159,17 @@ export const fiveEApi = {
   // 2024 species (replaces races), subspecies (replaces subraces)
   listSpecies:    () => get<ApiReferenceList>('/species', undefined, BASE_URL_2024),
   getSpecies:     (index: string) => get<Api2024Species>(`/species/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
+  // 2024 species lack ability_bonuses/languages/age (chosen freely at creation).
+  // Normalize into the 2014 ApiRace shape so the info panel renders uniformly;
+  // the absent fields stay empty and their sections simply don't show.
+  getSpeciesAsRace: async (index: string): Promise<ApiRace> => {
+    const s = await get<Api2024Species>(`/species/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024)
+    return {
+      index: s.index, name: s.name, speed: s.speed, size: s.size,
+      ability_bonuses: [], alignment: '', age: '', size_description: '',
+      languages: [], language_desc: '', traits: s.traits, subraces: s.subspecies, url: s.url,
+    }
+  },
   listSubspecies: () => get<ApiReferenceList>('/subspecies', undefined, BASE_URL_2024),
   getSubspecies:  (index: string) => get<Api2024Subspecies>(`/subspecies/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
 
@@ -184,6 +196,11 @@ export const fiveEApi = {
   // Magic items — no server-side filtering
   listMagicItems: () => get<ApiReferenceList>('/magic-items'),
   getMagicItem: (index: string) => get<ApiMagicItem>(`/magic-items/${sanitizeApiIndex(index)}`),
+
+  // Monsters — the list endpoint supports a server-side challenge_rating filter.
+  listMonsters: (challengeRating?: number) =>
+    get<ApiReferenceList>('/monsters', challengeRating !== undefined ? { challenge_rating: String(challengeRating) } : undefined),
+  getMonster: (index: string) => get<ApiMonster>(`/monsters/${sanitizeApiIndex(index)}`),
 
   // Class features
   getClassLevels: (classIndex: string) =>

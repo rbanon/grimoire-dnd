@@ -774,6 +774,32 @@ const FEAT_PREREQUISITES_2014: Record<string, { ability_score: { index: string; 
   skulker:             [{ ability_score: { index: 'dex', name: 'Dexterity' },   minimum_score: 13 }],
 }
 
+// Only Fighter/Paladin/Ranger gain the "Fighting Style" feature (prereq for the
+// fighting-style feats). Mirrors StepFeats in the builder.
+const CLASSES_WITH_FIGHTING_STYLE = new Set(['fighter', 'paladin', 'ranger'])
+
+// Static prerequisites for the 17 SRD 2024 feats (derived from /api/2024/feats/:id).
+interface Prereq2024 {
+  minLevel?: number
+  needsFightingStyle?: boolean
+  abilityAny?: { abilities: (keyof AbilityScores)[]; min: number }
+}
+const FEAT_PREREQUISITES_2024: Record<string, Prereq2024> = {
+  'ability-score-improvement':  { minLevel: 4 },
+  grappler:                     { minLevel: 4, abilityAny: { abilities: ['str', 'dex'], min: 13 } },
+  archery:                      { needsFightingStyle: true },
+  defense:                      { needsFightingStyle: true },
+  'great-weapon-fighting':      { needsFightingStyle: true },
+  'two-weapon-fighting':        { needsFightingStyle: true },
+  'boon-of-combat-prowess':     { minLevel: 19 },
+  'boon-of-dimensional-travel': { minLevel: 19 },
+  'boon-of-fate':               { minLevel: 19 },
+  'boon-of-irresistible-offense': { minLevel: 19 },
+  'boon-of-spell-recall':       { minLevel: 19 },
+  'boon-of-the-night-spirit':   { minLevel: 19 },
+  'boon-of-truesight':          { minLevel: 19 },
+}
+
 const featChoice   = ref<'asi' | 'feat'>('asi')
 const selectedFeat = ref<{ index: string; name: string; edition: '2014' | '2024' } | null>(null)
 const featSearch   = ref('')
@@ -796,19 +822,27 @@ const allFeats = computed(() => [
   ...(featData2024.value?.results ?? []).map(f => ({ ...f, edition: '2024' as const, key: `2024:${f.index}` })),
 ])
 
-function featMeetsPrerequisites(featIndex: string, edition: '2014' | '2024'): boolean {
-  if (edition === '2024') return true // 2024 prerequisites shown from API, not pre-filtered
-  const prerequisites = FEAT_PREREQUISITES_2014[featIndex]
-  if (!prerequisites || prerequisites.length === 0) return true
-  return prerequisites.every(
-    prereq => props.character.abilityScores[prereq.ability_score.index as keyof AbilityScores] >= prereq.minimum_score,
-  )
+// `asiLevel` is the class level the feat is taken at (the level being attained on
+// level-up) — used for minimum-level prereqs (e.g. Epic Boons require level 19).
+function featMeetsPrerequisites(featIndex: string, edition: '2014' | '2024', asiLevel: number): boolean {
+  const scores = props.character.abilityScores
+  if (edition === '2014') {
+    const prerequisites = FEAT_PREREQUISITES_2014[featIndex]
+    if (!prerequisites || prerequisites.length === 0) return true
+    return prerequisites.every(prereq => scores[prereq.ability_score.index as keyof AbilityScores] >= prereq.minimum_score)
+  }
+  const pre = FEAT_PREREQUISITES_2024[featIndex]
+  if (!pre) return true
+  if (pre.minLevel && asiLevel < pre.minLevel) return false
+  if (pre.needsFightingStyle && !CLASSES_WITH_FIGHTING_STYLE.has(classIndex.value)) return false
+  if (pre.abilityAny && !pre.abilityAny.abilities.some(a => scores[a] >= pre.abilityAny!.min)) return false
+  return true
 }
 
 const filteredFeats = computed(() => {
   const q = featSearch.value.toLowerCase().trim()
   const list = q ? allFeats.value.filter(f => f.name.toLowerCase().includes(q)) : allFeats.value
-  return list.filter(f => featMeetsPrerequisites(f.index, f.edition))
+  return list.filter(f => featMeetsPrerequisites(f.index, f.edition, newLevel.value))
 })
 
 // Fetch 2014 or 2024 detail based on selected feat edition

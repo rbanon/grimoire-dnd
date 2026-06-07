@@ -262,19 +262,6 @@ export const CombatFavoriteSchema = z.object({
 })
 export type CombatFavorite = z.infer<typeof CombatFavoriteSchema>
 
-// ─── Attacks (legacy — kept for schema compat, no longer used in UI) ──────────
-
-export const AttackSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  attackBonus: z.string().optional(),
-  damage: z.string().optional(),
-  damageType: z.string().optional(),
-  range: z.string().optional(),
-  notes: z.string().max(500).optional(),
-})
-export type Attack = z.infer<typeof AttackSchema>
-
 // ─── Spells ───────────────────────────────────────────────────────────────────
 
 export const SpellReferenceSchema = z.object({
@@ -349,7 +336,7 @@ export type TraitFeature = z.infer<typeof TraitFeatureSchema>
 
 // ─── Full Character ───────────────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = '1.0' as const
+export const CURRENT_SCHEMA_VERSION = '1.1' as const
 
 export const CharacterSchema = z.object({
   // Meta
@@ -374,7 +361,6 @@ export const CharacterSchema = z.object({
   senses: z.array(z.string()).default([]),
   fightingStyles: z.array(z.string()).default([]),
   equippedSlots: EquippedSlotsSchema.default(DEFAULT_EQUIPPED_SLOTS),
-  attacks: z.array(AttackSchema),
   combatFavorites: z.array(CombatFavoriteSchema).default([]),
   inventory: z.array(InventoryItemSchema),
   currency: CurrencySchema,

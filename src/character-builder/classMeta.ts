@@ -866,11 +866,20 @@ const RESOURCE_DEFINITIONS: Partial<Record<string, ResourceDef[]>> = {
     refreshOn: 'long',
     max: (level) => level >= 2 ? level : 0,
   }],
-  warlock: [{
-    id: 'pact-slots', name: 'Pact Magic Slots',
-    refreshOn: 'short',
-    max: (level) => level >= 17 ? 4 : level >= 11 ? 3 : level >= 2 ? 2 : 1,
-  }],
+  warlock: [
+    {
+      id: 'pact-slots', name: 'Pact Magic Slots',
+      refreshOn: 'short',
+      max: (level) => level >= 17 ? 4 : level >= 11 ? 3 : level >= 2 ? 2 : 1,
+    },
+    // Mystic Arcanum: one free casting each of a 6th–9th-level spell, 1/long rest,
+    // unlocked at warlock 11/13/15/17. Tracked as separate 1-use pools; getClassResources
+    // filters out levels not yet reached (max 0).
+    { id: 'mystic-arcanum-6', name: 'Mystic Arcanum (6th)', refreshOn: 'long', max: (level) => level >= 11 ? 1 : 0 },
+    { id: 'mystic-arcanum-7', name: 'Mystic Arcanum (7th)', refreshOn: 'long', max: (level) => level >= 13 ? 1 : 0 },
+    { id: 'mystic-arcanum-8', name: 'Mystic Arcanum (8th)', refreshOn: 'long', max: (level) => level >= 15 ? 1 : 0 },
+    { id: 'mystic-arcanum-9', name: 'Mystic Arcanum (9th)', refreshOn: 'long', max: (level) => level >= 17 ? 1 : 0 },
+  ],
   wizard: [{
     id: 'arcane-recovery', name: 'Arcane Recovery',
     refreshOn: 'long',

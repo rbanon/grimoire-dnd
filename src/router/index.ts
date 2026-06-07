@@ -38,6 +38,11 @@ export const router = createRouter({
           name: 'items',
           component: () => import('@/items/pages/ItemBrowserPage.vue'),
         },
+        {
+          path: 'monsters',
+          name: 'monsters',
+          component: () => import('@/monsters/pages/MonsterBrowserPage.vue'),
+        },
         // Campaigns (auth required)
         {
           path: 'campaigns',
@@ -49,6 +54,13 @@ export const router = createRouter({
           path: 'campaigns/new',
           name: 'campaign-new',
           component: () => import('@/campaigns/pages/CampaignFormPage.vue'),
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'campaigns/:id/edit',
+          name: 'campaign-edit',
+          component: () => import('@/campaigns/pages/CampaignFormPage.vue'),
+          props: true,
           meta: { requiresAuth: true },
         },
         {

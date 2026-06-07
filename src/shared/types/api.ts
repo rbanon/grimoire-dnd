@@ -258,6 +258,47 @@ export interface ApiMagicItem {
   url: string
 }
 
+// ── Monsters ──────────────────────────────────────────────────────────────────
+
+export interface ApiMonsterAction {
+  name: string
+  desc: string
+}
+
+export interface ApiMonster {
+  index: string
+  name: string
+  size: string
+  type: string
+  subtype?: string | null
+  alignment: string
+  armor_class: { type: string; value: number }[]
+  hit_points: number
+  hit_dice: string
+  hit_points_roll?: string
+  speed: Record<string, string | boolean>
+  strength: number
+  dexterity: number
+  constitution: number
+  intelligence: number
+  wisdom: number
+  charisma: number
+  proficiencies: { value: number; proficiency: ApiReference }[]
+  damage_vulnerabilities: string[]
+  damage_resistances: string[]
+  damage_immunities: string[]
+  condition_immunities: ApiReference[]
+  senses: Record<string, string | number>
+  languages: string
+  challenge_rating: number
+  proficiency_bonus?: number
+  xp: number
+  special_abilities?: ApiMonsterAction[]
+  actions?: ApiMonsterAction[]
+  legendary_actions?: ApiMonsterAction[]
+  url: string
+}
+
 // ── Filters ───────────────────────────────────────────────────────────────────
 
 export interface SpellQueryParams {

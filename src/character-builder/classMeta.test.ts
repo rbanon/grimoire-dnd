@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel, getFirstSpellLevel,
   getSubclassSpellMode, parseSubclassSpells, selectGrantedSubclassSpells, getExpertiseCount,
+  getClassResources,
 } from './classMeta'
 import type { ApiSubclassSpell } from '@/shared/types/api'
 
@@ -274,5 +275,36 @@ describe('getExpertiseCount', () => {
   it('other classes have no expertise', () => {
     expect(getExpertiseCount('fighter', 20)).toBe(0)
     expect(getExpertiseCount('wizard', 20)).toBe(0)
+  })
+})
+
+describe('getClassResources — warlock Mystic Arcanum', () => {
+  const noMods = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }
+  const arcana = (level: number) =>
+    getClassResources('warlock', level, noMods).filter(r => r.id.startsWith('mystic-arcanum-'))
+
+  it('grants no arcanum below level 11', () => {
+    expect(arcana(10)).toEqual([])
+  })
+
+  it('unlocks one arcanum level at a time (11→6th, 13→7th, 15→8th, 17→9th)', () => {
+    expect(arcana(11).map(r => r.id)).toEqual(['mystic-arcanum-6'])
+    expect(arcana(13).map(r => r.id)).toEqual(['mystic-arcanum-6', 'mystic-arcanum-7'])
+    expect(arcana(15).map(r => r.id)).toEqual(['mystic-arcanum-6', 'mystic-arcanum-7', 'mystic-arcanum-8'])
+    expect(arcana(17).map(r => r.id)).toEqual(['mystic-arcanum-6', 'mystic-arcanum-7', 'mystic-arcanum-8', 'mystic-arcanum-9'])
+  })
+
+  it('each arcanum is a single use that recovers on a long rest', () => {
+    for (const pool of arcana(20)) {
+      expect(pool.max).toBe(1)
+      expect(pool.current).toBe(1)
+      expect(pool.refreshOn).toBe('long')
+    }
+  })
+
+  it('still grants the pact-magic slots pool alongside the arcana', () => {
+    const ids = getClassResources('warlock', 17, noMods).map(r => r.id)
+    expect(ids).toContain('pact-slots')
+    expect(ids).toHaveLength(5)
   })
 })
