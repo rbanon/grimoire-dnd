@@ -322,6 +322,12 @@ const WARLOCK_PACT_BOONS = [
   { index: 'tome',  name: 'Pact of the Tome',   desc: 'Receive a Book of Shadows granting three additional cantrips from any class list' },
 ]
 
+/**
+ * `source` tag stamped on a character feature that represents an Eldritch Invocation.
+ * Single source of truth — used to write, find, and match invocation features.
+ */
+export const INVOCATION_FEATURE_SOURCE = 'Eldritch Invocation'
+
 export const ELDRITCH_INVOCATIONS: { index: string; name: string; desc: string; prereqLevel: number }[] = [
   // Level 2+
   { index: 'agonizing-blast',          name: 'Agonizing Blast',           desc: 'Add your Charisma modifier to the damage of Eldritch Blast',                               prereqLevel: 2 },
