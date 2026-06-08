@@ -159,6 +159,7 @@
                 <span v-else-if="s === 'cantrips'">pick {{ deltaCantrips }} cantrip{{ deltaCantrips > 1 ? 's' : '' }}</span>
                 <span v-else-if="s === 'spells'">pick {{ deltaSpells }} spell{{ deltaSpells > 1 ? 's' : '' }}</span>
                 <span v-else-if="s === 'invocations'">pick {{ deltaInvocations }} invocation{{ deltaInvocations > 1 ? 's' : '' }}</span>
+                <span v-else-if="s === 'replace-invocation'">swap an invocation (optional)</span>
               </template>
             </p>
 
@@ -634,6 +635,63 @@
             </div>
           </template>
 
+          <!-- ──────────────────── STEP: Replace invocation ───────────────── -->
+          <template v-else-if="currentStep === 'replace-invocation'">
+            <div class="px-5 py-4 border-b border-shadow shrink-0">
+              <p class="font-heading text-base text-arcane-pale">Swap an Invocation</p>
+              <p class="text-2xs font-body text-mist mt-0.5">
+                Optional — on a Warlock level you may replace one known invocation. Leave unselected to keep them all.
+              </p>
+            </div>
+            <div class="overflow-y-auto flex-1 px-4 py-3 space-y-4">
+              <!-- Pick which to replace -->
+              <div class="space-y-1.5">
+                <p class="text-2xs font-heading tracking-wide uppercase text-mist px-1">Replace</p>
+                <div
+                  v-for="inv in knownInvocations"
+                  :key="inv.id"
+                  class="flex items-center gap-3 px-3 py-2.5 rounded border cursor-pointer transition-all"
+                  :class="replaceFromInvocation?.id === inv.id
+                    ? 'border-blood-base/50 bg-blood-deep/15'
+                    : 'border-shadow hover:border-blood-base/30 hover:bg-blood-deep/10'"
+                  @click="selectReplaceFrom(inv)"
+                >
+                  <div class="w-3 h-3 rounded-full border-2 shrink-0 flex items-center justify-center"
+                    :class="replaceFromInvocation?.id === inv.id ? 'border-blood-mid' : 'border-mist/50'">
+                    <div v-if="replaceFromInvocation?.id === inv.id" class="w-1.5 h-1.5 rounded-full bg-blood-mid" />
+                  </div>
+                  <p class="font-heading text-sm" :class="replaceFromInvocation?.id === inv.id ? 'text-blood-pale' : 'text-ash'">{{ inv.name }}</p>
+                </div>
+              </div>
+
+              <!-- Pick the replacement -->
+              <div v-if="replaceFromInvocation" class="space-y-1.5">
+                <p class="text-2xs font-heading tracking-wide uppercase text-mist px-1">With</p>
+                <p v-if="availableReplacements.length === 0" class="text-sm font-body text-mist text-center py-4">
+                  No other qualifying invocations available.
+                </p>
+                <div
+                  v-for="inv in availableReplacements"
+                  :key="inv.index"
+                  class="flex items-start gap-3 px-3 py-2.5 rounded border cursor-pointer transition-all"
+                  :class="replaceToInvocation?.index === inv.index
+                    ? 'border-arcane-base/60 bg-arcane-deep/20'
+                    : 'border-shadow hover:border-arcane-base/30 hover:bg-arcane-deep/10'"
+                  @click="replaceToInvocation = inv"
+                >
+                  <div class="w-3 h-3 rounded-full border-2 shrink-0 mt-1 flex items-center justify-center"
+                    :class="replaceToInvocation?.index === inv.index ? 'border-arcane-base' : 'border-mist/50'">
+                    <div v-if="replaceToInvocation?.index === inv.index" class="w-1.5 h-1.5 rounded-full bg-arcane-base" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-heading text-sm" :class="replaceToInvocation?.index === inv.index ? 'text-arcane-pale' : 'text-ash'">{{ inv.name }}</p>
+                    <p class="text-2xs font-body text-mist leading-snug mt-0.5">{{ inv.desc }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
           <!-- ──────────────────────────── Footer ──────────────────────────── -->
           <div class="px-5 py-4 border-t border-shadow shrink-0 flex gap-2">
             <button type="button" class="flex-1 btn-secondary text-sm" :disabled="saving" @click="back">
@@ -940,7 +998,7 @@ function setFeatChoice(choice: 'asi' | 'feat') {
 
 // ── Stepper ───────────────────────────────────────────────────────────────────
 
-type Step = 'hp' | 'subclass' | 'asi' | 'replace' | 'cantrips' | 'spells' | 'invocations'
+type Step = 'hp' | 'subclass' | 'asi' | 'replace' | 'cantrips' | 'spells' | 'invocations' | 'replace-invocation'
 
 const steps = computed((): Step[] => {
   if (atMaxLevel.value) return ['hp']
@@ -951,6 +1009,7 @@ const steps = computed((): Step[] => {
   if (deltaCantrips.value > 0) s.push('cantrips')
   if (deltaSpells.value > 0) s.push('spells')
   if (deltaInvocations.value > 0) s.push('invocations')
+  if (canReplaceInvocation.value) s.push('replace-invocation')
   return s
 })
 
@@ -971,6 +1030,8 @@ const canAdvance = computed(() => {
   if (currentStep.value === 'cantrips') return remainingCantrips.value === 0
   if (currentStep.value === 'spells') return remainingSpells.value === 0
   if (currentStep.value === 'invocations') return remainingInvocations.value === 0 || selectedInvocations.value.length >= availableInvocations.value.length
+  // Optional: skip (no source) or a complete swap (source + target both chosen)
+  if (currentStep.value === 'replace-invocation') return !replaceFromInvocation.value || !!replaceToInvocation.value
   return true
 })
 
@@ -1102,6 +1163,29 @@ function toggleInvocation(i: { index: string; name: string; desc: string }) {
   else selectedInvocations.value.push(i)
 }
 
+// ── Invocation replacement (optional, every Warlock level-up) ────────────────────
+// RAW: on each Warlock level you may swap one known invocation for another you qualify for.
+const knownInvocations = computed(() =>
+  props.character.features.filter(f => f.source === 'Eldritch Invocation').map(f => ({ id: f.id, name: f.name })),
+)
+const canReplaceInvocation = computed(() => isWarlock.value && !atMaxLevel.value && knownInvocations.value.length > 0)
+const replaceFromInvocation = ref<{ id: string; name: string } | null>(null)
+const replaceToInvocation = ref<{ index: string; name: string; desc: string } | null>(null)
+
+// Replacement targets: qualifying invocations not already known (the one being swapped out
+// is freed up) and not picked as a freshly-gained invocation this level-up.
+const availableReplacements = computed(() => {
+  const blocked = new Set(knownInvocationNames.value)
+  if (replaceFromInvocation.value) blocked.delete(replaceFromInvocation.value.name)
+  for (const inv of selectedInvocations.value) blocked.add(inv.name)
+  return ELDRITCH_INVOCATIONS.filter(i => i.prereqLevel <= newLevel.value && !blocked.has(i.name))
+})
+
+function selectReplaceFrom(inv: { id: string; name: string } | null) {
+  replaceFromInvocation.value = replaceFromInvocation.value?.id === inv?.id ? null : inv
+  replaceToInvocation.value = null  // reset the target when the source changes
+}
+
 // ── Spells step ───────────────────────────────────────────────────────────────
 
 const spellSearch = ref('')
@@ -1156,6 +1240,8 @@ watch(() => props.show, (v) => {
   selectedCantrips.value = []
   selectedSpells.value = []
   selectedInvocations.value = []
+  replaceFromInvocation.value = null
+  replaceToInvocation.value = null
   cantripSearch.value = ''
   spellSearch.value = ''
   selectedSpellLevel.value = availableSpellLevels.value[0] ?? 1
@@ -1213,9 +1299,16 @@ function confirm() {
   const invocationFeatures = selectedInvocations.value.map(inv => ({
     id: crypto.randomUUID(), name: inv.name, source: 'Eldritch Invocation', description: inv.desc,
   }))
+  // Optional invocation swap: drop the chosen one, learn the replacement.
+  const didSwap = !!(replaceFromInvocation.value && replaceToInvocation.value)
+  const baseFeatures = didSwap
+    ? c.features
+        .filter(f => f.id !== replaceFromInvocation.value!.id)
+        .concat({ id: crypto.randomUUID(), name: replaceToInvocation.value!.name, source: 'Eldritch Invocation', description: replaceToInvocation.value!.desc })
+    : c.features
   const addedFeatures = [...classFeatures, ...featFeature, ...invocationFeatures]
-  if (addedFeatures.length > 0) {
-    updates.features = [...c.features, ...addedFeatures]
+  if (addedFeatures.length > 0 || didSwap) {
+    updates.features = [...baseFeatures, ...addedFeatures]
   }
 
   // Spells
