@@ -8,7 +8,7 @@ import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
 import { uploadPortraitBlob } from '@/shared/lib/uploadPortrait'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount, getSubclassSpellMode, selectGrantedSubclassSpells } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount, getSubclassSpellMode, selectGrantedSubclassSpells, ELDRITCH_INVOCATIONS } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 
 const DRAFT_KEY = 'builder-draft'
@@ -881,6 +881,13 @@ export const useBuilderStore = defineStore('builder', () => {
       resources: getClassResources(d.classIndex, d.level, computeAllModifiers(effectiveScores.value)),
       favoriteSpells: [],
       features: [
+        // Warlock Eldritch Invocations — descriptions resolved from local data.
+        ...d.selectedInvocations.map(inv => ({
+          id: generateId(),
+          name: inv.name,
+          source: 'Eldritch Invocation',
+          description: ELDRITCH_INVOCATIONS.find(e => e.index === inv.index)?.desc ?? '',
+        })),
         // 2024 background Origin Feat (lazy description via apiIndex/apiEdition)
         ...(d.backgroundFeatIndex ? [{
           id: generateId(),
