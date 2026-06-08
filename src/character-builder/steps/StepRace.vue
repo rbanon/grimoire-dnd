@@ -280,18 +280,6 @@ const species2024 = computed(() =>
 )
 
 // Auto-grant languages for 2024 species (API doesn't provide language data)
-const SPECIES_LANGUAGES_2024: Record<string, string[]> = {
-  'tiefling':   ['common', 'infernal'],
-  'elf':        ['common', 'elvish'],
-  'dwarf':      ['common', 'dwarvish'],
-  'gnome':      ['common', 'gnomish'],
-  'halfling':   ['common', 'halfling'],
-  'human':      ['common'],
-  'dragonborn': ['common', 'draconic'],
-  'goliath':    ['common', 'giant'],
-  'orc':        ['common', 'orc'],
-}
-
 const raceEdition = computed(() => builder.draft.raceEdition ?? '2014')
 
 // ── Race detail panel (2014 race) ─────────────────────────────────────────────
@@ -390,12 +378,16 @@ async function selectRace(index: string, name: string, edition: EditionTag) {
       builder.draft.raceSizeCategory = String(detail.size ?? 'Medium')
       // 2024 species don't grant fixed ability bonuses — player distributes freely
       builder.draft.raceAbilityBonuses = {}
-      // Auto-grant languages from hardcoded map (2024 API has no language data)
-      const autoLangs = SPECIES_LANGUAGES_2024[index] ?? ['common']
+      // 2024 RAW: languages come from your origin, not your species — every character
+      // knows Common plus two languages of their choice (3 total, same count for everyone).
+      // The 2024 SRD API exposes neither species nor background languages, so auto-grant
+      // only Common and offer the two origin choices here (this step always runs).
+      const autoLangs = ['common']
       const prevAutoLangs = builder.draft.raceAutoLanguages ?? []
       const userChosen = builder.draft.selectedLanguages.filter(l => !prevAutoLangs.includes(l))
       builder.draft.raceAutoLanguages = autoLangs
       builder.draft.raceLanguageCount = autoLangs.length
+      builder.draft.raceLanguageChoices = 2
       builder.draft.selectedLanguages = [...new Set([...autoLangs, ...userChosen])]
       builder.draft.availableSubraces = detail.subspecies.map(s => ({ index: s.index, name: s.name }))
     } catch (err) { console.warn('[StepRace] selectSpecies (2024) failed:', err) }
