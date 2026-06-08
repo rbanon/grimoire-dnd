@@ -686,16 +686,39 @@ function expandPack(eq: ApiEquipment, outerQty: number): InventoryItem[] | null 
 
 // ── Convert API equipment to InventoryItem ────────────────────────────────────
 
-function toInventoryItem(equip: ApiEquipment, quantity: number): InventoryItem {
-  const isWeapon = equip.equipment_category?.index === 'weapon' || !!equip.weapon_category
-  const isArmor  = equip.equipment_category?.index === 'armor'  || !!equip.armor_category
+// 2014 items carry a singular `equipment_category`; 2024 items carry a plural
+// `equipment_categories` array (and drop weapon_category/armor_category). Read both.
+function equipCategoryIndexes(equip: ApiEquipment): string[] {
+  const out: string[] = []
+  if (equip.equipment_category?.index) out.push(equip.equipment_category.index)
+  for (const c of equip.equipment_categories ?? []) if (c?.index) out.push(c.index)
+  return out
+}
 
+function isWeaponEquip(equip: ApiEquipment): boolean {
+  const cats = equipCategoryIndexes(equip)
+  return cats.includes('weapon') || cats.includes('weapons') || !!equip.weapon_category
+}
+
+function isArmorEquip(equip: ApiEquipment): boolean {
+  return equipCategoryIndexes(equip).includes('armor') || !!equip.armor_category
+}
+
+function isEquippableEquip(equip: ApiEquipment): boolean {
+  return isWeaponEquip(equip) || isArmorEquip(equip)
+}
+
+function isRangedWeapon(equip: ApiEquipment): boolean {
+  return equip.weapon_range === 'Ranged' || equipCategoryIndexes(equip).includes('ranged-weapons')
+}
+
+function toInventoryItem(equip: ApiEquipment, quantity: number): InventoryItem {
   const base = {
     id: generateId(),
     item: {
       index: equip.index,
       name: equip.name,
-      category: equip.equipment_category?.name,
+      category: equip.equipment_category?.name ?? equip.equipment_categories?.[0]?.name,
       weight: equip.weight,
       cost: equip.cost,
     },
@@ -703,30 +726,43 @@ function toInventoryItem(equip: ApiEquipment, quantity: number): InventoryItem {
     equipped: false,
   }
 
-  if (isWeapon) {
+  if (isWeaponEquip(equip)) {
     return {
       ...base,
       itemType: 'weapon' as const,
       damage: equip.damage?.damage_dice,
       damageType: equip.damage?.damage_type?.name,
       attackBonus: '+0',
-      range: equip.weapon_range === 'Ranged' && equip.range
+      range: isRangedWeapon(equip) && equip.range
         ? `${equip.range.normal}ft`
         : undefined,
     }
   }
 
-  if (isArmor) {
+  if (isArmorEquip(equip)) {
     return {
       ...base,
       itemType: 'armor' as const,
       armorClass: equip.armor_class?.base,
-      armorType: normalizeArmorType(equip.armor_category),
+      armorType: deriveArmorType(equip),
       stealthDisadvantage: equip.stealth_disadvantage,
     }
   }
 
   return { ...base, itemType: 'gear' as const }
+}
+
+// Armor sub-type from the 2014 `armor_category` string ("Heavy") or the 2024
+// `equipment_categories` array ("heavy-armor", "shields").
+function deriveArmorType(equip: ApiEquipment): 'light' | 'medium' | 'heavy' | 'shield' | undefined {
+  const fromField = normalizeArmorType(equip.armor_category)
+  if (fromField) return fromField
+  const cats = equipCategoryIndexes(equip)
+  if (cats.includes('shields') || cats.includes('shield')) return 'shield'
+  if (cats.includes('heavy-armor')) return 'heavy'
+  if (cats.includes('medium-armor')) return 'medium'
+  if (cats.includes('light-armor')) return 'light'
+  return undefined
 }
 
 function normalizeArmorType(cat: string | undefined): 'light' | 'medium' | 'heavy' | 'shield' | undefined {
@@ -750,8 +786,7 @@ const resolvedInventory = computed<InventoryItem[]>(() => {
       items.push(...expanded)
       continue
     }
-    const isEquippable = eq.equipment_category?.index === 'weapon' || !!eq.weapon_category
-                      || eq.equipment_category?.index === 'armor'  || !!eq.armor_category
+    const isEquippable = isEquippableEquip(eq)
     if (isEquippable && f.quantity > 1) {
       for (let q = 0; q < f.quantity; q++) items.push(toInventoryItem(eq, 1))
     } else {
@@ -774,8 +809,7 @@ const resolvedInventory = computed<InventoryItem[]>(() => {
           items.push(...expanded)
           continue
         }
-        const isEquippable = eq.equipment_category?.index === 'weapon' || !!eq.weapon_category
-                          || eq.equipment_category?.index === 'armor'  || !!eq.armor_category
+        const isEquippable = isEquippableEquip(eq)
         if (isEquippable && slot.quantity > 1) {
           // Weapons and armor with quantity>1 get separate entries so each
           // can be independently equipped to a different slot (MH/OH/armor).

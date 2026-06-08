@@ -224,6 +224,10 @@ export interface ApiEquipment {
   index: string
   name: string
   equipment_category: ApiReference
+  // 2024 equipment drops the singular category for a plural array (e.g. a longsword is
+  // ['martial-melee-weapons','martial-weapons','melee-weapons','weapons']) and omits
+  // weapon_category/armor_category. Read both shapes when classifying items.
+  equipment_categories?: ApiReference[]
   gear_category?: ApiReference
   weapon_category?: string
   weapon_range?: string
