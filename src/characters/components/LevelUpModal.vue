@@ -158,6 +158,7 @@
                 <span v-else-if="s === 'replace'">replace a spell (optional)</span>
                 <span v-else-if="s === 'cantrips'">pick {{ deltaCantrips }} cantrip{{ deltaCantrips > 1 ? 's' : '' }}</span>
                 <span v-else-if="s === 'spells'">pick {{ deltaSpells }} spell{{ deltaSpells > 1 ? 's' : '' }}</span>
+                <span v-else-if="s === 'invocations'">pick {{ deltaInvocations }} invocation{{ deltaInvocations > 1 ? 's' : '' }}</span>
               </template>
             </p>
 
@@ -587,6 +588,52 @@
             </div>
           </template>
 
+          <!-- ─────────────────────── STEP: Invocations ───────────────────── -->
+          <template v-else-if="currentStep === 'invocations'">
+            <div class="px-5 py-4 border-b border-shadow shrink-0">
+              <p class="font-heading text-base text-arcane-pale">
+                Choose Eldritch Invocation{{ deltaInvocations > 1 ? 's' : '' }}
+              </p>
+              <p class="text-2xs font-body text-mist mt-0.5">
+                Warlock ·
+                <span :class="remainingInvocations === 0 ? 'text-gold-mid' : ''">
+                  {{ selectedInvocations.length }}/{{ deltaInvocations }} selected
+                </span>
+              </p>
+            </div>
+            <div class="overflow-y-auto flex-1 px-4 py-3 space-y-1">
+              <p v-if="availableInvocations.length === 0" class="text-sm font-body text-mist text-center py-8">
+                No further invocations available at this level.
+              </p>
+              <template v-else>
+                <div
+                  v-for="inv in availableInvocations"
+                  :key="inv.index"
+                  class="flex items-start gap-3 px-3 py-2.5 rounded border transition-all"
+                  :class="isInvocationBlocked(inv.index)
+                    ? 'border-shadow opacity-40 cursor-not-allowed'
+                    : isInvocationSelected(inv.index)
+                      ? 'border-arcane-base/60 bg-arcane-deep/20 cursor-pointer'
+                      : 'border-shadow hover:border-arcane-base/30 hover:bg-arcane-deep/10 cursor-pointer'"
+                  @click="!isInvocationBlocked(inv.index) && toggleInvocation(inv)"
+                >
+                  <div
+                    class="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all mt-0.5"
+                    :class="isInvocationSelected(inv.index) ? 'border-arcane-base bg-arcane-deep/40' : 'border-mist/40'"
+                  >
+                    <span v-if="isInvocationSelected(inv.index)" class="text-arcane-pale text-[10px] leading-none">✓</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-heading text-sm" :class="isInvocationSelected(inv.index) ? 'text-arcane-pale' : 'text-ash'">
+                      {{ inv.name }}
+                    </p>
+                    <p class="text-2xs font-body text-mist leading-snug mt-0.5">{{ inv.desc }}</p>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+
           <!-- ──────────────────────────── Footer ──────────────────────────── -->
           <div class="px-5 py-4 border-t border-shadow shrink-0 flex gap-2">
             <button type="button" class="flex-1 btn-secondary text-sm" :disabled="saving" @click="back">
@@ -618,6 +665,7 @@ import type { Character, SpellReference, AbilityScores } from '@/shared/types/ch
 import {
   CLASS_META, CLASS_LEVELS,
   getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel, getSubclassLevel,
+  getInvocationsCount, ELDRITCH_INVOCATIONS,
 } from '@/character-builder/classMeta'
 import type { SpellSlotsMax } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
@@ -892,7 +940,7 @@ function setFeatChoice(choice: 'asi' | 'feat') {
 
 // ── Stepper ───────────────────────────────────────────────────────────────────
 
-type Step = 'hp' | 'subclass' | 'asi' | 'replace' | 'cantrips' | 'spells'
+type Step = 'hp' | 'subclass' | 'asi' | 'replace' | 'cantrips' | 'spells' | 'invocations'
 
 const steps = computed((): Step[] => {
   if (atMaxLevel.value) return ['hp']
@@ -902,6 +950,7 @@ const steps = computed((): Step[] => {
   if (canReplaceSpell.value) s.push('replace')
   if (deltaCantrips.value > 0) s.push('cantrips')
   if (deltaSpells.value > 0) s.push('spells')
+  if (deltaInvocations.value > 0) s.push('invocations')
   return s
 })
 
@@ -921,6 +970,7 @@ const canAdvance = computed(() => {
   if (currentStep.value === 'replace') return true  // optional step
   if (currentStep.value === 'cantrips') return remainingCantrips.value === 0
   if (currentStep.value === 'spells') return remainingSpells.value === 0
+  if (currentStep.value === 'invocations') return remainingInvocations.value === 0 || selectedInvocations.value.length >= availableInvocations.value.length
   return true
 })
 
@@ -1030,6 +1080,28 @@ function toggleCantrip(c: { index: string; name: string }) {
   else selectedCantrips.value.push(c)
 }
 
+// ── Invocations step (Warlock) ──────────────────────────────────────────────────
+// Invocations are stored as features with source 'Eldritch Invocation' (matched by name).
+const isWarlock = computed(() => classIndex.value === 'warlock')
+const knownInvocationNames = computed(() =>
+  new Set(props.character.features.filter(f => f.source === 'Eldritch Invocation').map(f => f.name)),
+)
+const deltaInvocations = computed(() =>
+  isWarlock.value ? Math.max(0, getInvocationsCount(newLevel.value) - getInvocationsCount(props.character.combat.level)) : 0,
+)
+const availableInvocations = computed(() =>
+  ELDRITCH_INVOCATIONS.filter(i => i.prereqLevel <= newLevel.value && !knownInvocationNames.value.has(i.name)),
+)
+const selectedInvocations = ref<{ index: string; name: string; desc: string }[]>([])
+const remainingInvocations = computed(() => deltaInvocations.value - selectedInvocations.value.length)
+
+function isInvocationSelected(index: string) { return selectedInvocations.value.some(i => i.index === index) }
+function isInvocationBlocked(index: string) { return !isInvocationSelected(index) && remainingInvocations.value <= 0 }
+function toggleInvocation(i: { index: string; name: string; desc: string }) {
+  if (isInvocationSelected(i.index)) selectedInvocations.value = selectedInvocations.value.filter(x => x.index !== i.index)
+  else selectedInvocations.value.push(i)
+}
+
 // ── Spells step ───────────────────────────────────────────────────────────────
 
 const spellSearch = ref('')
@@ -1083,6 +1155,7 @@ watch(() => props.show, (v) => {
   featSearch.value = ''
   selectedCantrips.value = []
   selectedSpells.value = []
+  selectedInvocations.value = []
   cantripSearch.value = ''
   spellSearch.value = ''
   selectedSpellLevel.value = availableSpellLevels.value[0] ?? 1
@@ -1137,8 +1210,12 @@ function confirm() {
   const featFeature = featChoice.value === 'feat' && selectedFeat.value
     ? [{ id: crypto.randomUUID(), name: selectedFeat.value.name, source: `Level ${newLevel.value} Feat`, description: '' }]
     : []
-  if (classFeatures.length > 0 || featFeature.length > 0) {
-    updates.features = [...c.features, ...classFeatures, ...featFeature]
+  const invocationFeatures = selectedInvocations.value.map(inv => ({
+    id: crypto.randomUUID(), name: inv.name, source: 'Eldritch Invocation', description: inv.desc,
+  }))
+  const addedFeatures = [...classFeatures, ...featFeature, ...invocationFeatures]
+  if (addedFeatures.length > 0) {
+    updates.features = [...c.features, ...addedFeatures]
   }
 
   // Spells
