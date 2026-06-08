@@ -723,7 +723,7 @@ import type { Character, SpellReference, AbilityScores } from '@/shared/types/ch
 import {
   CLASS_META, CLASS_LEVELS,
   getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel, getSubclassLevel,
-  getInvocationsCount, ELDRITCH_INVOCATIONS,
+  getInvocationsCount, ELDRITCH_INVOCATIONS, INVOCATION_FEATURE_SOURCE,
 } from '@/character-builder/classMeta'
 import type { SpellSlotsMax } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
@@ -1142,10 +1142,10 @@ function toggleCantrip(c: { index: string; name: string }) {
 }
 
 // ── Invocations step (Warlock) ──────────────────────────────────────────────────
-// Invocations are stored as features with source 'Eldritch Invocation' (matched by name).
+// Invocations are stored as features tagged with INVOCATION_FEATURE_SOURCE (matched by name).
 const isWarlock = computed(() => classIndex.value === 'warlock')
 const knownInvocationNames = computed(() =>
-  new Set(props.character.features.filter(f => f.source === 'Eldritch Invocation').map(f => f.name)),
+  new Set(props.character.features.filter(f => f.source === INVOCATION_FEATURE_SOURCE).map(f => f.name)),
 )
 const deltaInvocations = computed(() =>
   isWarlock.value ? Math.max(0, getInvocationsCount(newLevel.value) - getInvocationsCount(props.character.combat.level)) : 0,
@@ -1166,7 +1166,7 @@ function toggleInvocation(i: { index: string; name: string; desc: string }) {
 // ── Invocation replacement (optional, every Warlock level-up) ────────────────────
 // RAW: on each Warlock level you may swap one known invocation for another you qualify for.
 const knownInvocations = computed(() =>
-  props.character.features.filter(f => f.source === 'Eldritch Invocation').map(f => ({ id: f.id, name: f.name })),
+  props.character.features.filter(f => f.source === INVOCATION_FEATURE_SOURCE).map(f => ({ id: f.id, name: f.name })),
 )
 const canReplaceInvocation = computed(() => isWarlock.value && !atMaxLevel.value && knownInvocations.value.length > 0)
 const replaceFromInvocation = ref<{ id: string; name: string } | null>(null)
@@ -1297,14 +1297,14 @@ function confirm() {
     ? [{ id: crypto.randomUUID(), name: selectedFeat.value.name, source: `Level ${newLevel.value} Feat`, description: '' }]
     : []
   const invocationFeatures = selectedInvocations.value.map(inv => ({
-    id: crypto.randomUUID(), name: inv.name, source: 'Eldritch Invocation', description: inv.desc,
+    id: crypto.randomUUID(), name: inv.name, source: INVOCATION_FEATURE_SOURCE, description: inv.desc,
   }))
   // Optional invocation swap: drop the chosen one, learn the replacement.
   const didSwap = !!(replaceFromInvocation.value && replaceToInvocation.value)
   const baseFeatures = didSwap
     ? c.features
         .filter(f => f.id !== replaceFromInvocation.value!.id)
-        .concat({ id: crypto.randomUUID(), name: replaceToInvocation.value!.name, source: 'Eldritch Invocation', description: replaceToInvocation.value!.desc })
+        .concat({ id: crypto.randomUUID(), name: replaceToInvocation.value!.name, source: INVOCATION_FEATURE_SOURCE, description: replaceToInvocation.value!.desc })
     : c.features
   const addedFeatures = [...classFeatures, ...featFeature, ...invocationFeatures]
   if (addedFeatures.length > 0 || didSwap) {
