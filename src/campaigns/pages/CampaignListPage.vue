@@ -85,10 +85,6 @@
           </div>
 
           <div class="flex items-center gap-3 mt-auto pt-2 text-2xs font-body text-mist border-t border-shadow/50">
-            <span class="flex items-center gap-1">
-              <UsersIcon :size="12" /> {{ c.linkedCharacterIds.length }} {{ c.linkedCharacterIds.length === 1 ? 'hero' : 'heroes' }}
-            </span>
-            <span class="text-mist/40">·</span>
             <span>Updated {{ formatDate(c.updatedAt) }}</span>
           </div>
         </div>
@@ -100,7 +96,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { PlusIcon, BookOpenIcon, Trash2Icon, UsersIcon } from 'lucide-vue-next'
+import { PlusIcon, BookOpenIcon, Trash2Icon } from 'lucide-vue-next'
 import { useCampaignsStore, MAX_CAMPAIGNS } from '@/campaigns/store'
 import { useConfirm } from '@/shared/composables/useConfirm'
 
