@@ -544,7 +544,7 @@ async function saveSession() {
   if (sessionModal.saving) return
   sessionModal.saving = true
   try {
-    const input = { sessionNumber: sessionModal.sessionNumber, title: sessionModal.title || undefined, date: sessionModal.date || undefined }
+    const input = { sessionNumber: sessionModal.sessionNumber, title: sessionModal.title || undefined, date: sessionModal.date || undefined, body: '' }
     if (sessionModal.id) await detail.updateSession(sessionModal.id, input)
     else await detail.createSession(input)
     sessionModal.open = false
