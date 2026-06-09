@@ -70,6 +70,13 @@ export const router = createRouter({
           props: true,
           meta: { requiresAuth: true },
         },
+        {
+          path: 'campaigns/:campaignId/sessions/:id',
+          name: 'session-detail',
+          component: () => import('@/campaigns/pages/SessionDetailPage.vue'),
+          props: true,
+          meta: { requiresAuth: true },
+        },
         // Auth
         {
           path: 'login',

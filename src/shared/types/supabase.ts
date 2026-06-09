@@ -14,13 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaign_key_objects: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          session_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          session_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          session_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_key_objects_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_notes: {
         Row: {
           body: string
           campaign_id: string
           created_at: string
           id: string
-          tags: string[] | null
+          session_id: string | null
           title: string
           updated_at: string
         }
@@ -29,7 +67,7 @@ export type Database = {
           campaign_id: string
           created_at?: string
           id?: string
-          tags?: string[] | null
+          session_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -38,7 +76,7 @@ export type Database = {
           campaign_id?: string
           created_at?: string
           id?: string
-          tags?: string[] | null
+          session_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -54,35 +92,32 @@ export type Database = {
       }
       campaign_sessions: {
         Row: {
+          body: string
           campaign_id: string
           created_at: string
           date: string | null
           id: string
           session_number: number
-          summary: string
-          tags: string[] | null
           title: string | null
           updated_at: string
         }
         Insert: {
+          body?: string
           campaign_id: string
           created_at?: string
           date?: string | null
           id?: string
           session_number?: number
-          summary?: string
-          tags?: string[] | null
           title?: string | null
           updated_at?: string
         }
         Update: {
+          body?: string
           campaign_id?: string
           created_at?: string
           date?: string | null
           id?: string
           session_number?: number
-          summary?: string
-          tags?: string[] | null
           title?: string | null
           updated_at?: string
         }
@@ -96,12 +131,54 @@ export type Database = {
           },
         ]
       }
+      campaign_party_members: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          notes: string | null
+          player: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          player?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          player?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_party_members_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           created_at: string
           description: string | null
           id: string
-          linked_character_ids: string[] | null
+          my_character_id: string | null
+          my_character_name: string | null
           name: string
           tags: string[] | null
           updated_at: string
@@ -111,7 +188,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          linked_character_ids?: string[] | null
+          my_character_id?: string | null
+          my_character_name?: string | null
           name: string
           tags?: string[] | null
           updated_at?: string
@@ -121,7 +199,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          linked_character_ids?: string[] | null
+          my_character_id?: string | null
+          my_character_name?: string | null
           name?: string
           tags?: string[] | null
           updated_at?: string
@@ -170,45 +249,30 @@ export type Database = {
       }
       npcs: {
         Row: {
-          alignment: string | null
           campaign_id: string
           created_at: string
           description: string | null
           id: string
-          is_alive: boolean
           name: string
-          notes: string | null
-          occupation: string | null
-          race: string | null
-          tags: string[] | null
+          session_id: string | null
           updated_at: string
         }
         Insert: {
-          alignment?: string | null
           campaign_id: string
           created_at?: string
           description?: string | null
           id?: string
-          is_alive?: boolean
           name: string
-          notes?: string | null
-          occupation?: string | null
-          race?: string | null
-          tags?: string[] | null
+          session_id?: string | null
           updated_at?: string
         }
         Update: {
-          alignment?: string | null
           campaign_id?: string
           created_at?: string
           description?: string | null
           id?: string
-          is_alive?: boolean
           name?: string
-          notes?: string | null
-          occupation?: string | null
-          race?: string | null
-          tags?: string[] | null
+          session_id?: string | null
           updated_at?: string
         }
         Relationships: [

@@ -57,17 +57,32 @@ create index if not exists characters_data_gin on characters using gin(data);
 
 -- ── Campaigns ─────────────────────────────────────────────────────────────────
 create table if not exists campaigns (
+  id                 uuid primary key default uuid_generate_v4(),
+  user_id            uuid references auth.users(id) on delete cascade not null,
+  name               text not null,
+  description        text,
+  tags               text[] default '{}',
+  my_character_id    uuid references characters(id) on delete set null,
+  my_character_name  text,
+  created_at         timestamptz default now() not null,
+  updated_at         timestamptz default now() not null
+);
+
+create index if not exists campaigns_user_id_idx on campaigns(user_id);
+
+-- ── Campaign party members ────────────────────────────────────────────────────
+create table if not exists campaign_party_members (
   id          uuid primary key default uuid_generate_v4(),
-  user_id     uuid references auth.users(id) on delete cascade not null,
+  campaign_id uuid references campaigns(id) on delete cascade not null,
   name        text not null,
+  player      text,
   description text,
-  tags        text[] default '{}',
-  linked_character_ids uuid[] default '{}',
+  notes       text,
   created_at  timestamptz default now() not null,
   updated_at  timestamptz default now() not null
 );
 
-create index if not exists campaigns_user_id_idx on campaigns(user_id);
+create index if not exists campaign_party_members_campaign_id_idx on campaign_party_members(campaign_id);
 
 -- ── Campaign sessions ─────────────────────────────────────────────────────────
 create table if not exists campaign_sessions (
@@ -76,8 +91,6 @@ create table if not exists campaign_sessions (
   session_number smallint not null default 1,
   title          text,
   date           date,
-  summary        text not null default '',
-  tags           text[] default '{}',
   created_at     timestamptz default now() not null,
   updated_at     timestamptz default now() not null
 );
@@ -89,13 +102,7 @@ create table if not exists npcs (
   id          uuid primary key default uuid_generate_v4(),
   campaign_id uuid references campaigns(id) on delete cascade not null,
   name        text not null,
-  race        text,
-  occupation  text,
-  alignment   text,
   description text,
-  notes       text,
-  tags        text[] default '{}',
-  is_alive    boolean not null default true,
   created_at  timestamptz default now() not null,
   updated_at  timestamptz default now() not null
 );
@@ -108,12 +115,23 @@ create table if not exists campaign_notes (
   campaign_id uuid references campaigns(id) on delete cascade not null,
   title       text not null default 'Untitled',
   body        text not null default '',
-  tags        text[] default '{}',
   created_at  timestamptz default now() not null,
   updated_at  timestamptz default now() not null
 );
 
 create index if not exists campaign_notes_campaign_id_idx on campaign_notes(campaign_id);
+
+-- ── Key objects ───────────────────────────────────────────────────────────────
+create table if not exists campaign_key_objects (
+  id          uuid primary key default uuid_generate_v4(),
+  campaign_id uuid references campaigns(id) on delete cascade not null,
+  name        text not null,
+  description text,
+  created_at  timestamptz default now() not null,
+  updated_at  timestamptz default now() not null
+);
+
+create index if not exists campaign_key_objects_campaign_id_idx on campaign_key_objects(campaign_id);
 
 -- ── Row-Level Security ────────────────────────────────────────────────────────
 
@@ -123,6 +141,8 @@ alter table campaigns enable row level security;
 alter table campaign_sessions enable row level security;
 alter table npcs enable row level security;
 alter table campaign_notes enable row level security;
+alter table campaign_party_members enable row level security;
+alter table campaign_key_objects enable row level security;
 
 -- Profiles: users can only read/write their own profile
 create policy "profiles: owner access" on profiles
@@ -136,7 +156,7 @@ create policy "characters: owner access" on characters
 create policy "campaigns: owner access" on campaigns
   for all using (auth.uid() = user_id);
 
--- Campaign sessions: accessible if the parent campaign belongs to the user
+-- Sub-entities: accessible if the parent campaign belongs to the user
 create policy "campaign_sessions: owner access" on campaign_sessions
   for all using (
     exists (
@@ -146,7 +166,6 @@ create policy "campaign_sessions: owner access" on campaign_sessions
     )
   );
 
--- NPCs: same
 create policy "npcs: owner access" on npcs
   for all using (
     exists (
@@ -156,12 +175,29 @@ create policy "npcs: owner access" on npcs
     )
   );
 
--- Campaign notes: same
 create policy "campaign_notes: owner access" on campaign_notes
   for all using (
     exists (
       select 1 from campaigns c
       where c.id = campaign_notes.campaign_id
+        and c.user_id = auth.uid()
+    )
+  );
+
+create policy "campaign_party_members: owner access" on campaign_party_members
+  for all using (
+    exists (
+      select 1 from campaigns c
+      where c.id = campaign_party_members.campaign_id
+        and c.user_id = auth.uid()
+    )
+  );
+
+create policy "campaign_key_objects: owner access" on campaign_key_objects
+  for all using (
+    exists (
+      select 1 from campaigns c
+      where c.id = campaign_key_objects.campaign_id
         and c.user_id = auth.uid()
     )
   );
@@ -221,4 +257,8 @@ create trigger set_updated_at before update on campaign_sessions
 create trigger set_updated_at before update on npcs
   for each row execute procedure set_updated_at();
 create trigger set_updated_at before update on campaign_notes
+  for each row execute procedure set_updated_at();
+create trigger set_updated_at before update on campaign_party_members
+  for each row execute procedure set_updated_at();
+create trigger set_updated_at before update on campaign_key_objects
   for each row execute procedure set_updated_at();

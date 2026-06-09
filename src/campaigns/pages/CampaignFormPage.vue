@@ -51,35 +51,60 @@
         </div>
       </div>
 
-      <!-- Linked characters -->
+      <!-- My character -->
       <div class="space-y-2">
-        <label class="label">Party members</label>
-        <p v-if="characterStore.summaries.length === 0" class="text-sm font-body text-mist/70 italic">
-          No characters yet. Create some first to link them here.
-        </p>
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <label class="label">My character</label>
+        <p class="text-2xs font-body text-mist/60">The character you play in this campaign.</p>
+
+        <!-- Character picker from app -->
+        <div v-if="characterStore.summaries.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button
             v-for="c in characterStore.summaries"
             :key="c.id"
             type="button"
             class="flex items-center gap-3 px-3 py-2.5 rounded border text-left transition-all"
-            :class="linkedIds.has(c.id)
+            :class="myCharacterId === c.id
               ? 'border-gold-mid/60 bg-gold-dim/10'
               : 'border-shadow bg-abyss hover:border-gold-dim/25 hover:bg-depths'"
-            @click="toggleCharacter(c.id)"
+            @click="selectCharacter(c.id)"
           >
             <div
-              class="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all"
-              :class="linkedIds.has(c.id) ? 'border-gold-mid bg-gold-mid/30' : 'border-mist/40'"
-            >
-              <CheckIcon v-if="linkedIds.has(c.id)" :size="11" class="text-gold-mid" />
-            </div>
+              class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all"
+              :class="myCharacterId === c.id ? 'border-gold-mid bg-gold-mid' : 'border-mist/40'"
+            />
             <div class="min-w-0">
               <p class="font-heading text-sm text-ash truncate">{{ c.name }}</p>
               <p class="text-2xs font-body text-mist">Lv {{ c.level }} {{ c.race }} {{ c.className }}</p>
             </div>
           </button>
         </div>
+        <p v-else class="text-sm font-body text-mist/60 italic">
+          No characters in the app yet.
+        </p>
+
+        <!-- Free text fallback (shown when no character selected) -->
+        <div v-if="!myCharacterId" class="pt-1">
+          <label class="text-2xs font-body text-mist/70 mb-1 block">
+            {{ characterStore.summaries.length > 0 ? 'Or enter a name manually:' : 'Enter character name:' }}
+          </label>
+          <input
+            v-model.trim="myCharacterName"
+            type="text"
+            maxlength="120"
+            placeholder="Character name…"
+            class="input-base w-full text-sm"
+          />
+        </div>
+
+        <!-- Clear selection -->
+        <button
+          v-if="myCharacterId"
+          type="button"
+          class="text-2xs font-body text-mist/50 hover:text-mist transition-colors"
+          @click="myCharacterId = null; myCharacterName = ''"
+        >
+          Clear selection
+        </button>
       </div>
 
       <!-- Actions -->
@@ -97,7 +122,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeftIcon, CheckIcon, SaveIcon } from 'lucide-vue-next'
+import { ArrowLeftIcon, SaveIcon } from 'lucide-vue-next'
 import { useCampaignsStore } from '@/campaigns/store'
 import { useCharactersStore } from '@/characters/store'
 import { useToast } from '@/shared/composables/useToast'
@@ -115,7 +140,8 @@ const backTo = computed(() => (isEdit.value ? `/campaigns/${props.id}` : '/campa
 const name = ref('')
 const description = ref('')
 const tagsRaw = ref('')
-const linkedIds = ref<Set<string>>(new Set())
+const myCharacterId = ref<string | null>(null)
+const myCharacterName = ref('')
 const saving = ref(false)
 const nameError = ref('')
 
@@ -123,10 +149,9 @@ const parsedTags = computed(() =>
   [...new Set(tagsRaw.value.split(',').map((t) => t.trim()).filter(Boolean))].slice(0, 20),
 )
 
-function toggleCharacter(id: string) {
-  const next = new Set(linkedIds.value)
-  next.has(id) ? next.delete(id) : next.add(id)
-  linkedIds.value = next
+function selectCharacter(id: string) {
+  myCharacterId.value = myCharacterId.value === id ? null : id
+  if (myCharacterId.value) myCharacterName.value = ''
 }
 
 onMounted(async () => {
@@ -142,7 +167,8 @@ onMounted(async () => {
     name.value = existing.name
     description.value = existing.description ?? ''
     tagsRaw.value = existing.tags.join(', ')
-    linkedIds.value = new Set(existing.linkedCharacterIds)
+    myCharacterId.value = existing.myCharacterId
+    myCharacterName.value = existing.myCharacterName ?? ''
   }
 })
 
@@ -157,7 +183,8 @@ async function onSubmit() {
     name: name.value,
     description: description.value || undefined,
     tags: parsedTags.value,
-    linkedCharacterIds: [...linkedIds.value],
+    myCharacterId: myCharacterId.value,
+    myCharacterName: myCharacterId.value ? undefined : (myCharacterName.value || undefined),
   }
   try {
     if (props.id) {
@@ -170,7 +197,6 @@ async function onSubmit() {
       router.push(`/campaigns/${created.id}`)
     }
   } catch (e) {
-    // store surfaces its own toast on cloud failure; guard against limit error
     if (e instanceof Error && e.message.includes('limit')) toast.error(e.message)
   } finally {
     saving.value = false

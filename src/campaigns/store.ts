@@ -15,7 +15,7 @@ let _persistTimer: ReturnType<typeof setTimeout> | null = null
 export const MAX_CAMPAIGNS = 30
 
 /** Fields a user can edit. createdAt/updatedAt/userId are managed by the store. */
-export type CampaignInput = Pick<Campaign, 'name' | 'description' | 'tags' | 'linkedCharacterIds'>
+export type CampaignInput = Pick<Campaign, 'name' | 'description' | 'tags' | 'myCharacterId' | 'myCharacterName'>
 
 type CampaignRow = {
   id: string
@@ -23,7 +23,8 @@ type CampaignRow = {
   name: string
   description: string | null
   tags: string[] | null
-  linked_character_ids: string[] | null
+  my_character_id: string | null
+  my_character_name: string | null
   created_at: string
   updated_at: string
 }
@@ -35,7 +36,8 @@ function rowToCampaign(row: CampaignRow): Campaign {
     name: row.name,
     description: row.description ?? undefined,
     tags: row.tags ?? [],
-    linkedCharacterIds: row.linked_character_ids ?? [],
+    myCharacterId: row.my_character_id,
+    myCharacterName: row.my_character_name ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -48,7 +50,8 @@ const LocalCampaignSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   tags: z.array(z.string()).default([]),
-  linkedCharacterIds: z.array(z.string()).default([]),
+  myCharacterId: z.string().nullable().default(null),
+  myCharacterName: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -123,7 +126,8 @@ export const useCampaignsStore = defineStore('campaigns', () => {
         name: c.name,
         description: c.description ?? null,
         tags: c.tags,
-        linked_character_ids: c.linkedCharacterIds,
+        my_character_id: c.myCharacterId,
+        my_character_name: c.myCharacterName ?? null,
         created_at: c.createdAt,
         updated_at: c.updatedAt,
       }),
@@ -146,7 +150,8 @@ export const useCampaignsStore = defineStore('campaigns', () => {
       name: input.name,
       description: input.description,
       tags: input.tags,
-      linkedCharacterIds: input.linkedCharacterIds,
+      myCharacterId: input.myCharacterId,
+      myCharacterName: input.myCharacterName,
       createdAt: ts,
       updatedAt: ts,
     }
