@@ -4,6 +4,37 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.1] — 2026-06-14
+
+### Fixed
+- **`auth.init()` colgado**: wrapeado en `try/finally` — `loading = false` se garantiza aunque
+  `loadProfile()` falle por error de red (antes el router guard quedaba bloqueado indefinidamente).
+- **Cinco non-null assertions** en `campaigns/detailStore` (`createSession`, `createPartyMember`,
+  `createNpc`, `createNote`, `createKeyObject`) reemplazadas por guards explícitos con `throw`.
+- **`importFromJson` byte count**: usaba `json.length` (caracteres) en vez de
+  `TextEncoder().encode(json).length` (bytes) — el límite de 5 MB era impreciso con Unicode.
+- **`importFromJson` contador incorrecto**: devolvía `imported: toAdd.length` aunque algunos
+  personajes fueran descartados por el límite de 15 — ahora devuelve `Math.min(toAdd.length, remaining)`.
+- **`makeDefaultCharacter` Zod v4 bug**: `savingThrowProficiencies: {}` fallaba silenciosamente
+  en producción (`z.record(AbilityNameSchema, z.boolean())` requiere las 6 claves en Zod v4);
+  ahora inicializa `{ str: false, dex: false, con: false, int: false, wis: false, cha: false }`.
+- **Error boundary**: `app.config.errorHandler` ahora muestra un toast al usuario en errores
+  fatales de Vue (antes solo hacía `console.error`).
+- **Funciones deprecated eliminadas**: `listFeats` y `getFeat` en `fiveE.client.ts` no tenían
+  callers; eliminadas para evitar confusión con las variantes `2014`/`2024`.
+- **`gen-types` project ID hardcodeado**: el script ahora usa `$SUPABASE_PROJECT_ID` desde env
+  en lugar del ID del proyecto fijo; añadido a `.env.example`.
+
+### Changed
+- **PWA**: `registerType` cambiado de `autoUpdate` a `prompt`; se muestra un banner de
+  "New version available → Reload" para que el usuario controle cuándo recarga.
+- **Cleanup de caché localStorage**: al arrancar, `main.ts` elimina entradas de prefijos viejos
+  de la API 5e (`dnd5e:0:*` y anteriores) para evitar acumulación de versiones antiguas.
+
+### Tests
+- `src/characters/store.test.ts` — 20 tests cubriendo `create`, `update`, `remove`, `duplicate`,
+  `importFromJson` (validación + límite de 15), `loadFromCloud` y `getById`.
+
 ## [0.4.0] — 2026-06-05
 
 ### Added — Multi-edition 2014 + 2024 SRD content
