@@ -151,10 +151,6 @@ export const fiveEApi = {
   getFeat2014:   (index: string) => get<ApiFeat>(`/feats/${sanitizeApiIndex(index)}`),
   listFeats2024: () => get<ApiReferenceList>('/feats', undefined, BASE_URL_2024),
   getFeat2024:   (index: string) => get<Api2024Feat>(`/feats/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
-  /** @deprecated use listFeats2024 or listFeats2014 */
-  listFeats: () => get<ApiReferenceList>('/feats', undefined, BASE_URL_2024),
-  /** @deprecated use getFeat2024 or getFeat2014 */
-  getFeat: (index: string) => get<ApiFeat>(`/feats/${sanitizeApiIndex(index)}`),
 
   // 2024 species (replaces races), subspecies (replaces subraces)
   listSpecies:    () => get<ApiReferenceList>('/species', undefined, BASE_URL_2024),

@@ -32,10 +32,15 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function init() {
-    const { data } = await supabase.auth.getSession()
-    user.value = data.session?.user ?? null
-    if (user.value) await loadProfile(user.value.id)
-    loading.value = false
+    try {
+      const { data } = await supabase.auth.getSession()
+      user.value = data.session?.user ?? null
+      if (user.value) await loadProfile(user.value.id)
+    } catch (e) {
+      console.warn('[auth] init failed — continuing as unauthenticated:', e)
+    } finally {
+      loading.value = false
+    }
 
     supabase.auth.onAuthStateChange(async (event, session) => {
       user.value = session?.user ?? null

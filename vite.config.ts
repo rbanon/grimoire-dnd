@@ -20,7 +20,7 @@ export default defineConfig({
       dts: 'src/components.d.ts',
     }),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       injectRegister: 'auto',
       includeAssets: ['favicon.svg'],
       manifest: {

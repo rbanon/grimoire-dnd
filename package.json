@@ -12,7 +12,7 @@
     "type-check": "vue-tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "gen-types": "supabase gen types typescript --project-id edontleksqpvbcxdplxl --schema public > src/shared/types/supabase.ts"
+    "gen-types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID --schema public > src/shared/types/supabase.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.1",

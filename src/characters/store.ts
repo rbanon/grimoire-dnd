@@ -53,7 +53,7 @@ function makeDefaultCharacter(partial: Partial<Character> = {}): Character {
       useMilestones: false,
     },
     skillProficiencies: {},
-    savingThrowProficiencies: {},
+    savingThrowProficiencies: { str: false, dex: false, con: false, int: false, wis: false, cha: false },
     languages: [],
     otherProficiencies: [],
     resistances: [],
@@ -262,7 +262,7 @@ export const useCharactersStore = defineStore('characters', () => {
   const IMPORT_MAX_BYTES = 5 * 1024 * 1024 // 5 MB
 
   async function importFromJson(json: string): Promise<{ imported: number; errors: string[] }> {
-    if (json.length > IMPORT_MAX_BYTES) {
+    if (new TextEncoder().encode(json).length > IMPORT_MAX_BYTES) {
       return { imported: 0, errors: ['File is too large. Maximum size is 5 MB.'] }
     }
     let parsed: unknown
@@ -317,7 +317,7 @@ export const useCharactersStore = defineStore('characters', () => {
     }
     if (!auth.isAuthenticated) persistLocal()
 
-    return { imported: toAdd.length, errors }
+    return { imported: Math.min(toAdd.length, remaining), errors }
   }
 
   // ── Auth sync ─────────────────────────────────────────────────────────────

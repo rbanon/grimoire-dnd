@@ -129,7 +129,8 @@ export const useCampaignDetailStore = defineStore('campaignDetail', () => {
   // ── Sessions CRUD ──────────────────────────────────────────────────────────
 
   async function createSession(input: SessionInput): Promise<void> {
-    const cId = campaignId.value!
+    const cId = campaignId.value
+    if (!cId) throw new Error('No campaign loaded')
     const ts = now()
     const row = { id: generateId(), campaign_id: cId, session_number: input.sessionNumber, title: input.title ?? null, date: input.date ?? null, body: input.body ?? '', created_at: ts, updated_at: ts }
     const { error } = await withTimeout(supabase.from('campaign_sessions').insert(row), TIMEOUT, 'Create session')
@@ -159,7 +160,8 @@ export const useCampaignDetailStore = defineStore('campaignDetail', () => {
   // ── Party Members CRUD ────────────────────────────────────────────────────
 
   async function createPartyMember(input: PartyMemberInput): Promise<void> {
-    const cId = campaignId.value!
+    const cId = campaignId.value
+    if (!cId) throw new Error('No campaign loaded')
     const ts = now()
     const row = { id: generateId(), campaign_id: cId, name: input.name, player: input.player ?? null, description: input.description ?? null, notes: input.notes ?? null, created_at: ts, updated_at: ts }
     const { error } = await withTimeout(supabase.from('campaign_party_members').insert(row), TIMEOUT, 'Create party member')
@@ -189,7 +191,8 @@ export const useCampaignDetailStore = defineStore('campaignDetail', () => {
   // ── NPCs CRUD ──────────────────────────────────────────────────────────────
 
   async function createNpc(input: NpcInput): Promise<void> {
-    const cId = campaignId.value!
+    const cId = campaignId.value
+    if (!cId) throw new Error('No campaign loaded')
     const ts = now()
     const row = { id: generateId(), campaign_id: cId, session_id: null as string | null, name: input.name, description: input.description ?? null, created_at: ts, updated_at: ts }
     const { error } = await withTimeout(supabase.from('npcs').insert(row), TIMEOUT, 'Create NPC')
@@ -219,7 +222,8 @@ export const useCampaignDetailStore = defineStore('campaignDetail', () => {
   // ── Notes CRUD ─────────────────────────────────────────────────────────────
 
   async function createNote(input: NoteInput): Promise<void> {
-    const cId = campaignId.value!
+    const cId = campaignId.value
+    if (!cId) throw new Error('No campaign loaded')
     const ts = now()
     const row = { id: generateId(), campaign_id: cId, session_id: null as string | null, title: input.title, body: input.body, created_at: ts, updated_at: ts }
     const { error } = await withTimeout(supabase.from('campaign_notes').insert(row), TIMEOUT, 'Create note')
@@ -249,7 +253,8 @@ export const useCampaignDetailStore = defineStore('campaignDetail', () => {
   // ── Key Objects CRUD ───────────────────────────────────────────────────────
 
   async function createKeyObject(input: KeyObjectInput): Promise<void> {
-    const cId = campaignId.value!
+    const cId = campaignId.value
+    if (!cId) throw new Error('No campaign loaded')
     const ts = now()
     const row = { id: generateId(), campaign_id: cId, session_id: null as string | null, name: input.name, description: input.description ?? null, created_at: ts, updated_at: ts }
     const { error } = await withTimeout(supabase.from('campaign_key_objects').insert(row), TIMEOUT, 'Create key object')
