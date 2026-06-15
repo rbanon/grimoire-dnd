@@ -35,28 +35,28 @@
         class="input-base max-w-xs"
         @input="currentPage = 1"
       />
-      <select v-model="crFilter" class="input-base max-w-[170px]" @change="currentPage = 1">
+      <AppSelect v-model="crFilter" class="max-w-[170px]" @change="currentPage = 1">
         <option :value="null">Any challenge</option>
         <option v-for="cr in CR_OPTIONS" :key="cr.value" :value="cr.value">CR {{ cr.label }}</option>
-      </select>
-      <select
+      </AppSelect>
+      <AppSelect
         v-model="typeFilter"
-        class="input-base max-w-[170px]"
+        class="max-w-[170px]"
         :disabled="isLoadingDetails"
         @change="currentPage = 1"
       >
         <option value="">Any type</option>
         <option v-for="t in MONSTER_TYPES" :key="t" :value="t">{{ t }}</option>
-      </select>
-      <select
+      </AppSelect>
+      <AppSelect
         v-model="sizeFilter"
-        class="input-base max-w-[150px]"
+        class="max-w-[150px]"
         :disabled="isLoadingDetails"
         @change="currentPage = 1"
       >
         <option value="">Any size</option>
         <option v-for="s in MONSTER_SIZES" :key="s" :value="s">{{ s }}</option>
-      </select>
+      </AppSelect>
       <div v-if="isLoadingDetails" class="flex items-center gap-1.5 text-xs text-mist">
         <span class="w-3 h-3 border border-mist border-t-transparent rounded-full animate-spin shrink-0" />
         Loading details…

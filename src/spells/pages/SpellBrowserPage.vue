@@ -33,25 +33,25 @@
         class="input-base max-w-xs"
         @input="currentPage = 1"
       />
-      <select v-model="levelFilter" class="input-base max-w-[130px]" @change="currentPage = 1">
+      <AppSelect v-model="levelFilter" class="max-w-[130px]" @change="currentPage = 1">
         <option value="">All levels</option>
         <option :value="0">Cantrip</option>
         <option v-for="l in 9" :key="l" :value="l">Level {{ l }}</option>
-      </select>
-      <select v-model="schoolFilter" class="input-base max-w-[150px]" @change="currentPage = 1">
+      </AppSelect>
+      <AppSelect v-model="schoolFilter" class="max-w-[150px]" @change="currentPage = 1">
         <option value="">All schools</option>
         <option v-for="s in SCHOOLS" :key="s" :value="s">{{ s }}</option>
-      </select>
-      <select v-model="classFilter" class="input-base max-w-[140px]" @change="currentPage = 1">
+      </AppSelect>
+      <AppSelect v-model="classFilter" class="max-w-[140px]" @change="currentPage = 1">
         <option value="">All classes</option>
         <option v-for="c in availableClasses" :key="c" :value="c">{{ c }}</option>
-      </select>
-      <select v-model="castingTimeFilter" class="input-base max-w-[150px]" @change="currentPage = 1">
+      </AppSelect>
+      <AppSelect v-model="castingTimeFilter" class="max-w-[150px]" @change="currentPage = 1">
         <option value="">Any cast time</option>
         <option v-for="ct in availableCastingTimes" :key="ct" :value="ct">
           {{ labelCastingTime(ct) }}
         </option>
-      </select>
+      </AppSelect>
     </div>
 
     <!-- States -->

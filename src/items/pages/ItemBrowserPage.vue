@@ -33,23 +33,23 @@
         class="input-base max-w-xs"
         @input="currentPage = 1"
       />
-      <select v-model="filters.category" class="input-base max-w-[180px]" @change="currentPage = 1">
+      <AppSelect v-model="filters.category" class="max-w-[180px]" @change="currentPage = 1">
         <option :value="null">All categories</option>
         <option value="weapon">Weapons</option>
         <option value="armor">Armor</option>
         <option value="adventuring-gear">Adventuring Gear</option>
         <option value="tools">Tools</option>
         <option value="magic-item">Magic Items</option>
-      </select>
-      <select v-model="filters.rarity" class="input-base max-w-[150px]" @change="currentPage = 1">
+      </AppSelect>
+      <AppSelect v-model="filters.rarity" class="max-w-[150px]" @change="currentPage = 1">
         <option :value="null">Any rarity</option>
         <option v-for="r in RARITIES" :key="r" :value="r">{{ r }}</option>
-      </select>
-      <select v-model="attunementFilter" class="input-base max-w-[180px]" @change="currentPage = 1">
+      </AppSelect>
+      <AppSelect v-model="attunementFilter" class="max-w-[180px]" @change="currentPage = 1">
         <option value="">Any attunement</option>
         <option value="yes">Requires Attunement</option>
         <option value="no">No Attunement</option>
-      </select>
+      </AppSelect>
     </div>
 
     <!-- States -->
