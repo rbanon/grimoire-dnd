@@ -89,14 +89,14 @@
             {{ spell.level === 0 ? 'Cantrip' : spell.level && spell.level > 0 ? `Lv ${spell.level}` : '…' }}
           </span>
         </div>
-        <p class="text-xs text-mist">
-          {{ spell.school.name }} · {{ labelCastingTime(normalizeCastingTime(spell.casting_time)) }}
+        <p class="text-xs text-mist mt-0.5 flex items-center justify-between gap-x-2">
+          <span>{{ spell.school.name }} · {{ labelCastingTime(normalizeCastingTime(spell.casting_time)) }}</span>
+          <span v-if="spell.concentration || spell.ritual" class="flex gap-1 shrink-0">
+            <span v-if="spell.concentration" class="badge badge-gold text-2xs">Conc.</span>
+            <span v-if="spell.ritual" class="badge badge-verdant text-2xs">Ritual</span>
+          </span>
         </p>
-        <div v-if="spell.concentration || spell.ritual" class="flex gap-1 mt-0.5">
-          <span v-if="spell.concentration" class="badge badge-gold text-2xs">Conc.</span>
-          <span v-if="spell.ritual" class="badge badge-verdant text-2xs">Ritual</span>
-        </div>
-        <p v-if="spell.classes.length" class="text-2xs text-mist mt-0.5 truncate">
+        <p v-if="spell.classes.length" class="text-2xs text-mist truncate -mt-1">
           {{ spell.classes.map(c => c.name).join(' · ') }}
         </p>
       </button>

@@ -79,6 +79,7 @@
         :key="item.index"
         type="button"
         class="card-hover p-4 flex flex-col text-left w-full"
+        :style="{ 'border-left': `3px solid ${categoryBorderColor(item.category)}` }"
         @click="panel.open({ kind: 'item', index: item.index })"
       >
         <!-- Name + rarity/category badge -->
@@ -90,11 +91,14 @@
         <!-- Sub-category -->
         <p v-if="item.subCategory" class="text-2xs text-mist mt-0.5">{{ item.subCategory }}</p>
 
-        <!-- Stat block — weapon -->
-        <template v-if="item.category === 'weapon' && equipDetail(item.index)">
+        <!-- Stat block — weapon (skeleton while detail loads) -->
+        <template v-if="item.category === 'weapon'">
           <div class="mt-1.5 flex items-baseline gap-1.5 text-xs">
-            <span class="font-mono text-gold-mid font-semibold">{{ weaponDamageStr(item.index) }}</span>
-            <span class="text-mist">{{ equipDetail(item.index)?.damage?.damage_type.name.toLowerCase() }}</span>
+            <template v-if="equipDetail(item.index)">
+              <span class="font-mono text-gold-mid font-semibold">{{ weaponDamageStr(item.index) }}</span>
+              <span class="text-mist">{{ equipDetail(item.index)?.damage?.damage_type.name.toLowerCase() }}</span>
+            </template>
+            <div v-else class="h-3 w-24 skeleton rounded-sm" />
           </div>
           <div v-if="equipDetail(item.index)?.properties?.length" class="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
             <span
@@ -105,16 +109,19 @@
           </div>
         </template>
 
-        <!-- Stat block — armor -->
-        <template v-else-if="item.category === 'armor' && equipDetail(item.index)">
+        <!-- Stat block — armor (skeleton while detail loads) -->
+        <template v-else-if="item.category === 'armor'">
           <div class="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
-            <span class="font-mono text-gold-mid font-semibold">AC {{ equipDetail(item.index)?.armor_class?.base }}</span>
-            <span v-if="equipDetail(item.index)?.str_minimum" class="text-mist">
-              Str {{ equipDetail(item.index)!.str_minimum }}
-            </span>
-            <span v-if="equipDetail(item.index)?.stealth_disadvantage" class="text-blood-bright text-2xs">
-              stealth disadv.
-            </span>
+            <template v-if="equipDetail(item.index)">
+              <span class="font-mono text-gold-mid font-semibold">AC {{ equipDetail(item.index)?.armor_class?.base }}</span>
+              <span v-if="equipDetail(item.index)?.str_minimum" class="text-mist">
+                Str {{ equipDetail(item.index)!.str_minimum }}
+              </span>
+              <span v-if="equipDetail(item.index)?.stealth_disadvantage" class="text-blood-bright text-2xs">
+                stealth disadv.
+              </span>
+            </template>
+            <div v-else class="h-3 w-16 skeleton rounded-sm" />
           </div>
         </template>
 
@@ -139,27 +146,22 @@
         <table class="w-full border-collapse text-sm table-fixed">
           <thead>
             <tr class="bg-depths border-b-2 border-dusk/60">
-              <th class="sticky top-0 z-10 bg-depths text-left py-3 px-4 cursor-pointer select-none w-auto" @click="toggleSort('name')">
+              <th class="sticky top-0 z-10 bg-depths text-left py-3 px-4 cursor-pointer select-none w-[50%]" @click="toggleSort('name')">
                 <span class="flex items-center gap-1.5 text-2xs font-heading tracking-[0.08em] uppercase text-mist">
                   Item <span class="inline-block w-2.5 text-center text-mist/50 font-mono text-[0.6rem]">{{ sortIndicator('name') }}</span>
                 </span>
               </th>
-              <th class="sticky top-0 z-10 bg-depths text-left py-3 px-4 cursor-pointer select-none hidden sm:table-cell w-44" @click="toggleSort('category')">
+              <th class="sticky top-0 z-10 bg-depths text-left py-3 px-4 cursor-pointer select-none hidden sm:table-cell w-[20%]" @click="toggleSort('category')">
                 <span class="flex items-center gap-1.5 text-2xs font-heading tracking-[0.08em] uppercase text-mist">
                   Type <span class="inline-block w-2.5 text-center text-mist/50 font-mono text-[0.6rem]">{{ sortIndicator('category') }}</span>
                 </span>
               </th>
-              <th class="sticky top-0 z-10 bg-depths text-left py-3 px-4 cursor-pointer select-none hidden sm:table-cell w-36" @click="toggleSort('rarity')">
+              <th class="sticky top-0 z-10 bg-depths text-left py-3 px-4 cursor-pointer select-none hidden sm:table-cell w-[15%]" @click="toggleSort('rarity')">
                 <span class="flex items-center gap-1.5 text-2xs font-heading tracking-[0.08em] uppercase text-mist">
                   Rarity <span class="inline-block w-2.5 text-center text-mist/50 font-mono text-[0.6rem]">{{ sortIndicator('rarity') }}</span>
                 </span>
               </th>
-              <th class="sticky top-0 z-10 bg-depths text-right py-3 px-4 cursor-pointer select-none hidden md:table-cell w-28" @click="toggleSort('cost')">
-                <span class="flex items-center justify-end gap-1.5 text-2xs font-heading tracking-[0.08em] uppercase text-mist">
-                  Cost <span class="inline-block w-2.5 text-center text-mist/50 font-mono text-[0.6rem]">{{ sortIndicator('cost') }}</span>
-                </span>
-              </th>
-              <th class="sticky top-0 z-10 bg-depths text-center py-3 px-4 hidden md:table-cell w-32">
+              <th class="sticky top-0 z-10 bg-depths text-center py-3 px-4 hidden md:table-cell w-[15%]">
                 <span class="text-2xs font-heading tracking-[0.08em] uppercase text-mist">Attunement</span>
               </th>
             </tr>
@@ -178,10 +180,6 @@
               </td>
               <td class="py-3 px-4 whitespace-nowrap hidden sm:table-cell">
                 <span v-if="item.rarity" :class="rarityBadgeClass(item.rarity)" class="text-2xs">{{ item.rarity }}</span>
-                <span v-else class="text-mist text-xs">—</span>
-              </td>
-              <td class="py-3 px-4 text-right whitespace-nowrap hidden md:table-cell">
-                <span v-if="item.cost" class="font-body text-mist text-xs">{{ item.cost.quantity }} {{ item.cost.unit }}</span>
                 <span v-else class="text-mist text-xs">—</span>
               </td>
               <td class="py-3 px-4 text-center hidden md:table-cell">
@@ -453,6 +451,15 @@ function sortIndicator(key: SortKey): string {
 
 function formatCategory(cat: string): string {
   return cat.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
+function categoryBorderColor(category: string): string {
+  if (category === 'weapon')          return 'rgb(var(--c-gold-mid))'
+  if (category === 'armor')           return 'rgb(var(--c-stone))'
+  if (category === 'adventuring-gear') return 'rgb(var(--c-verdant-bright))'
+  if (category === 'tools')           return 'rgb(var(--c-verdant-mid))'
+  if (category === 'magic-item')      return 'rgb(var(--c-arcane-mid))'
+  return 'transparent'
 }
 
 function rarityBadgeClass(rarity: string): string {
