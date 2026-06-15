@@ -244,7 +244,7 @@ async function sendReset() {
   loading.value = true
   try {
     await auth.requestPasswordReset(email.value)
-    success.value = 'Reset link sent to ' + email.value + '. Check your inbox.'
+    success.value = 'If an account exists for ' + email.value + ', you\'ll receive a reset link shortly.'
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'Failed to send reset link.'
   } finally {
