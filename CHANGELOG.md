@@ -4,6 +4,39 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.2] — 2026-06-15
+
+### Added
+- **CI/CD pipeline** — GitHub Actions (`.github/workflows/ci.yml`) ejecuta type-check, lint y tests
+  en cada push/PR a master; primera ejecución pasó en verde automáticamente.
+- **Accesibilidad — focus trap**: directiva `v-focus-trap` (`src/shared/directives/focusTrap.ts`)
+  y composable `useFocusTrap`; trampea el foco dentro de modales con Tab/Shift+Tab y devuelve el
+  foco al elemento que abrió el diálogo al cerrarlo.
+- **Accesibilidad — ARIA en modales**: los 19 paneles/diálogos tienen `role="dialog"`,
+  `aria-modal="true"`, `aria-labelledby` apuntando al título y `aria-label="Close"` en botones de
+  cierre; search inputs en los 3 browsers tienen `aria-label`.
+- **Password reset flow**: `ResetPasswordPage` en `/reset-password` — gestiona el token
+  `PASSWORD_RECOVERY` de Supabase; modo `forgot` en `LoginPage` con formulario de solo email;
+  `auth.requestPasswordReset()` usa `window.location.origin` dinámicamente para el `redirectTo`.
+- **`vercel.json`** — rewrite SPA `/(.*) → /index.html` para evitar 404 en navegación directa.
+
+### Fixed
+- **`virtual:pwa-register/vue` TypeScript error** en `App.vue` — añadido
+  `"types": ["vite-plugin-pwa/client"]` a `tsconfig.json`.
+- **`vue/require-toggle-inside-transition`** en `RollConfirm.vue` — el hijo directo de
+  `<Transition>` debe tener `v-if`/`v-show`; reorganizados backdrop y panel.
+- **`@typescript-eslint/no-unused-vars`** — añadido `varsIgnorePattern: '^_'` (antes solo
+  `argsIgnorePattern`; no cubría variables de destructuring como `const { x: _x, ...rest }`).
+- **Mensaje de reset neutral** — el mensaje de éxito al pedir reset dice
+  "If an account exists for [email]…" en lugar de confirmar que el correo existe.
+
+### Changed
+- **README**: Node.js 18+ → 24+; Monster Browser añadido a Reference Browsers; `npm run lint`
+  y `npm test` documentados en scripts; password reset mencionado en Account & Sync.
+
+### Tests
+- 273 tests passing (6 test files) — sin regresiones.
+
 ## [0.4.1] — 2026-06-14
 
 ### Fixed
