@@ -20,107 +20,166 @@
           <span class="relative text-gold-mid text-lg">⚔</span>
         </div>
         <h1 class="font-display text-3xl text-vellum tracking-wider">
-          {{ mode === 'signin' ? 'Welcome back' : 'Join the Order' }}
+          {{ mode === 'signin' ? 'Welcome back' : mode === 'signup' ? 'Join the Order' : 'Reset password' }}
         </h1>
         <p class="font-body text-ash mt-2">
           {{ mode === 'signin'
             ? 'Sign in to access your cloud characters and campaigns'
-            : 'Create an account to sync your characters across devices' }}
+            : mode === 'signup'
+              ? 'Create an account to sync your characters across devices'
+              : 'We\'ll send a secure link to your inbox' }}
         </p>
       </div>
 
       <!-- Card -->
       <div class="card p-8 corner-ornament">
-        <!-- Mode toggle -->
-        <div class="flex gap-1 mb-7 p-1 rounded bg-depths border border-shadow">
-          <button
-            class="flex-1 py-2 text-sm font-heading tracking-wide rounded transition-all duration-200"
-            :class="mode === 'signin'
-              ? 'bg-gold-dim/30 text-gold-mid border border-gold-dim/30'
-              : 'text-stone hover:text-vellum'"
-            @click="mode = 'signin'"
-          >
-            Sign in
-          </button>
-          <button
-            class="flex-1 py-2 text-sm font-heading tracking-wide rounded transition-all duration-200"
-            :class="mode === 'signup'
-              ? 'bg-gold-dim/30 text-gold-mid border border-gold-dim/30'
-              : 'text-stone hover:text-vellum'"
-            @click="mode = 'signup'"
-          >
-            Create account
-          </button>
-        </div>
-
-        <!-- Form -->
-        <form class="flex flex-col gap-4" @submit.prevent="submit">
-          <div>
-            <label class="label" for="email">Email address</label>
-            <input
-              id="email"
-              v-model="email"
-              type="email"
-              autocomplete="email"
-              placeholder="your@email.com"
-              class="input-base"
-              required
-            />
-          </div>
-          <div>
-            <label class="label" for="password">Password</label>
-            <input
-              id="password"
-              v-model="password"
-              type="password"
-              autocomplete="current-password"
-              placeholder="••••••••"
-              class="input-base"
-              required
-              minlength="8"
-            />
-          </div>
-
-          <!-- Feedback -->
-          <Transition name="fade">
-            <div v-if="error" class="flex items-start gap-2 text-sm text-blood-bright bg-blood-deep/30 border border-blood-base/25 rounded px-3 py-2.5">
-              <XCircleIcon :size="15" class="shrink-0 mt-px" />
-              {{ error }}
+        <!-- Forgot-password flow (separate from the tab UI) -->
+        <template v-if="mode === 'forgot'">
+          <form class="flex flex-col gap-4" @submit.prevent="sendReset">
+            <p class="text-sm font-body text-ash -mt-1 mb-1">
+              Enter your email and we'll send you a link to reset your password.
+            </p>
+            <div>
+              <label class="label" for="reset-email">Email address</label>
+              <input
+                id="reset-email"
+                v-model="email"
+                type="email"
+                autocomplete="email"
+                placeholder="your@email.com"
+                class="input-base"
+                required
+              />
             </div>
-          </Transition>
-          <Transition name="fade">
-            <div v-if="success" class="flex items-start gap-2 text-sm text-verdant-bright bg-verdant-deep/30 border border-verdant-base/25 rounded px-3 py-2.5">
-              <CheckIcon :size="15" class="shrink-0 mt-px" />
-              {{ success }}
-            </div>
-          </Transition>
 
-          <button type="submit" class="btn-primary w-full mt-1 py-2.5" :disabled="loading">
-            <span v-if="loading" class="w-4 h-4 border-2 border-void border-t-transparent rounded-full animate-spin" />
-            {{ mode === 'signin' ? 'Sign in' : 'Create account' }}
+            <Transition name="fade">
+              <div v-if="error" class="flex items-start gap-2 text-sm text-blood-bright bg-blood-deep/30 border border-blood-base/25 rounded px-3 py-2.5">
+                <XCircleIcon :size="15" class="shrink-0 mt-px" />
+                {{ error }}
+              </div>
+            </Transition>
+            <Transition name="fade">
+              <div v-if="success" class="flex items-start gap-2 text-sm text-verdant-bright bg-verdant-deep/30 border border-verdant-base/25 rounded px-3 py-2.5">
+                <CheckIcon :size="15" class="shrink-0 mt-px" />
+                {{ success }}
+              </div>
+            </Transition>
+
+            <button type="submit" class="btn-primary w-full mt-1 py-2.5" :disabled="loading">
+              <span v-if="loading" class="w-4 h-4 border-2 border-void border-t-transparent rounded-full animate-spin" />
+              Send reset link
+            </button>
+          </form>
+
+          <button
+            class="mt-4 text-xs font-body text-mist hover:text-ash transition-colors block mx-auto"
+            @click="mode = 'signin'; error = ''; success = ''"
+          >
+            ← Back to sign in
           </button>
-        </form>
+        </template>
 
-        <!-- Divider -->
-        <div class="rule-gold my-5">or</div>
+        <!-- Sign in / Sign up tabs -->
+        <template v-else>
+          <!-- Mode toggle -->
+          <div class="flex gap-1 mb-7 p-1 rounded bg-depths border border-shadow">
+            <button
+              class="flex-1 py-2 text-sm font-heading tracking-wide rounded transition-all duration-200"
+              :class="mode === 'signin'
+                ? 'bg-gold-dim/30 text-gold-mid border border-gold-dim/30'
+                : 'text-stone hover:text-vellum'"
+              @click="mode = 'signin'"
+            >
+              Sign in
+            </button>
+            <button
+              class="flex-1 py-2 text-sm font-heading tracking-wide rounded transition-all duration-200"
+              :class="mode === 'signup'
+                ? 'bg-gold-dim/30 text-gold-mid border border-gold-dim/30'
+                : 'text-stone hover:text-vellum'"
+              @click="mode = 'signup'"
+            >
+              Create account
+            </button>
+          </div>
 
-        <!-- Magic link -->
-        <button
-          class="btn-secondary w-full gap-2 text-sm"
-          :disabled="loading"
-          @click="sendMagic"
-        >
-          <MailIcon :size="14" />
-          Send a magic link
-        </button>
+          <!-- Form -->
+          <form class="flex flex-col gap-4" @submit.prevent="submit">
+            <div>
+              <label class="label" for="email">Email address</label>
+              <input
+                id="email"
+                v-model="email"
+                type="email"
+                autocomplete="email"
+                placeholder="your@email.com"
+                class="input-base"
+                required
+              />
+            </div>
+            <div>
+              <label class="label" for="password">Password</label>
+              <input
+                id="password"
+                v-model="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="••••••••"
+                class="input-base"
+                required
+                minlength="8"
+              />
+              <button
+                v-if="mode === 'signin'"
+                type="button"
+                class="mt-1.5 text-xs font-body text-mist hover:text-ash transition-colors"
+                @click="mode = 'forgot'; error = ''; success = ''"
+              >
+                Forgot your password?
+              </button>
+            </div>
 
-        <!-- Guest note -->
-        <p class="text-center text-xs font-body text-mist mt-6">
-          You don't need an account to use the character builder.
-          <RouterLink to="/" class="text-ash hover:text-gold-mid transition-colors underline underline-offset-2 ml-0.5">
-            Continue as guest →
-          </RouterLink>
-        </p>
+            <!-- Feedback -->
+            <Transition name="fade">
+              <div v-if="error" class="flex items-start gap-2 text-sm text-blood-bright bg-blood-deep/30 border border-blood-base/25 rounded px-3 py-2.5">
+                <XCircleIcon :size="15" class="shrink-0 mt-px" />
+                {{ error }}
+              </div>
+            </Transition>
+            <Transition name="fade">
+              <div v-if="success" class="flex items-start gap-2 text-sm text-verdant-bright bg-verdant-deep/30 border border-verdant-base/25 rounded px-3 py-2.5">
+                <CheckIcon :size="15" class="shrink-0 mt-px" />
+                {{ success }}
+              </div>
+            </Transition>
+
+            <button type="submit" class="btn-primary w-full mt-1 py-2.5" :disabled="loading">
+              <span v-if="loading" class="w-4 h-4 border-2 border-void border-t-transparent rounded-full animate-spin" />
+              {{ mode === 'signin' ? 'Sign in' : 'Create account' }}
+            </button>
+          </form>
+
+          <!-- Divider -->
+          <div class="rule-gold my-5">or</div>
+
+          <!-- Magic link -->
+          <button
+            class="btn-secondary w-full gap-2 text-sm"
+            :disabled="loading"
+            @click="sendMagic"
+          >
+            <MailIcon :size="14" />
+            Send a magic link
+          </button>
+
+          <!-- Guest note -->
+          <p class="text-center text-xs font-body text-mist mt-6">
+            You don't need an account to use the character builder.
+            <RouterLink to="/" class="text-ash hover:text-gold-mid transition-colors underline underline-offset-2 ml-0.5">
+              Continue as guest →
+            </RouterLink>
+          </p>
+        </template>
       </div>
     </div>
   </div>
@@ -135,7 +194,7 @@ import { useAuthStore } from '@/auth/store'
 const auth = useAuthStore()
 const router = useRouter()
 
-const mode = ref<'signin' | 'signup'>('signin')
+const mode = ref<'signin' | 'signup' | 'forgot'>('signin')
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
@@ -173,6 +232,21 @@ async function sendMagic() {
     success.value = 'Magic link sent to ' + email.value + '. Check your inbox.'
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'Failed to send magic link.'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function sendReset() {
+  if (!email.value) { error.value = 'Enter your email address first.'; return }
+  error.value = ''
+  success.value = ''
+  loading.value = true
+  try {
+    await auth.requestPasswordReset(email.value)
+    success.value = 'Reset link sent to ' + email.value + '. Check your inbox.'
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'Failed to send reset link.'
   } finally {
     loading.value = false
   }

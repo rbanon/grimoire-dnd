@@ -68,6 +68,13 @@ export const useAuthStore = defineStore('auth', () => {
     if (error) throw error
   }
 
+  async function requestPasswordReset(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    if (error) throw error
+  }
+
   async function signOut() {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
@@ -108,5 +115,6 @@ export const useAuthStore = defineStore('auth', () => {
     signOut,
     updateProfile,
     updatePassword,
+    requestPasswordReset,
   }
 })

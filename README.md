@@ -66,10 +66,11 @@ handled transparently:
 
 - **Spell Browser** — searchable, filterable spell list from the SRD with school badges and detail panel
 - **Item Browser** — equipment reference
+- **Monster Browser** — searchable bestiary with CR, type, and stat-block detail panel
 
 ### Account & Sync
 
-- Authentication via Supabase Auth
+- Authentication via Supabase Auth (email/password, magic link, password reset)
 - Characters saved to the cloud and synced on login (local-first with merge strategy)
 - Portrait upload to Supabase Storage (compressed JPEG)
 - Up to 15 characters per account
@@ -107,7 +108,7 @@ handled transparently:
 
 ## Installation
 
-**Requirements:** Node.js 18+
+**Requirements:** Node.js 24+
 
 ```bash
 # 1. Clone
@@ -135,6 +136,8 @@ npm run dev          # Dev server (http://localhost:5173)
 npm run build        # Production build → dist/
 npm run preview      # Preview production build
 npm run type-check   # TypeScript check (vue-tsc --noEmit)
+npm run lint         # ESLint
+npm test             # Unit tests (Vitest)
 npm run gen-types    # Regenerate Supabase types from live schema
 ```
 
