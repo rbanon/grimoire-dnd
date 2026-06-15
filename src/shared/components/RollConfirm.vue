@@ -1,12 +1,16 @@
 <template>
   <Teleport to="body">
-    <template v-if="pending">
-      <div class="fixed inset-0 z-40" @click="cancelRoll()" />
-      <Transition name="confirm-pop">
-        <div
-          class="fixed z-50 card shadow-modal p-2 w-[200px]"
-          :style="popoverStyle"
-        >
+    <div v-if="pending" class="fixed inset-0 z-40" @click="cancelRoll()" />
+    <Transition name="confirm-pop">
+      <div
+        v-if="pending"
+        role="dialog"
+        aria-modal="true"
+          v-focus-trap
+        aria-label="Roll mode"
+        class="fixed z-50 card shadow-modal p-2 w-[200px]"
+        :style="popoverStyle"
+      >
           <p class="text-2xs font-heading tracking-widest uppercase text-mist px-1 mb-2 truncate">
             {{ pending.label }}
           </p>
@@ -27,7 +31,6 @@
           </div>
         </div>
       </Transition>
-    </template>
   </Teleport>
 </template>
 

@@ -11,6 +11,8 @@
         <div
           role="dialog"
           aria-modal="true"
+          v-focus-trap
+          aria-labelledby="level-up-title"
           class="relative w-full max-w-md bg-void border border-shadow rounded-lg shadow-2xl flex flex-col"
           style="max-height: 85vh"
         >
@@ -34,7 +36,7 @@
           <div v-if="currentStep === 'hp'" class="px-5 py-4 space-y-5 overflow-y-auto flex-1">
 
             <div>
-              <p class="font-heading text-base tracking-wide text-gold-mid">
+              <p id="level-up-title" class="font-heading text-base tracking-wide text-gold-mid">
                 Level Up
                 <span class="font-body text-sm text-mist font-normal ml-1.5">
                   {{ character.identity.class.name }} {{ character.combat.level }} → {{ newLevel }}

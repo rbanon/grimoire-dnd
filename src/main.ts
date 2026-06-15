@@ -8,6 +8,7 @@ import App from './App.vue'
 import { router } from './router'
 import { useAuthStore } from './auth/store'
 import { useToast } from './shared/composables/useToast'
+import { vFocusTrap } from './shared/directives/focusTrap'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,6 +27,7 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(router)
 app.use(VueQueryPlugin, { queryClient })
+app.directive('focus-trap', vFocusTrap)
 
 app.config.errorHandler = (err, _instance, info) => {
   console.error('[Vue]', info, err)

@@ -8,15 +8,20 @@
       >
         <div class="absolute inset-0 bg-black/60" @click="emit('close')" />
 
-        <div class="relative w-full max-w-lg bg-void border border-shadow rounded-lg shadow-2xl flex flex-col max-h-[90vh]">
-
+        <div
+          role="dialog"
+          aria-modal="true"
+          v-focus-trap
+          aria-labelledby="arcane-recovery-title"
+          class="relative w-full max-w-lg bg-void border border-shadow rounded-lg shadow-2xl flex flex-col max-h-[90vh]"
+        >
           <!-- Accent bar -->
           <div class="h-0.5 w-full bg-arcane-base shrink-0" />
 
           <!-- Header -->
           <div class="px-5 pt-4 pb-3 shrink-0">
             <div class="flex items-center justify-between">
-              <p class="font-heading text-base text-arcane-pale tracking-wide">Arcane Recovery</p>
+              <p id="arcane-recovery-title" class="font-heading text-base text-arcane-pale tracking-wide">Arcane Recovery</p>
               <span class="badge-arcane">Wizard Lv {{ wizardLevel }}</span>
             </div>
             <p class="font-body text-sm text-ash mt-0.5">

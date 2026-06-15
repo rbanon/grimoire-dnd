@@ -11,6 +11,8 @@
         <div
           role="dialog"
           aria-modal="true"
+          v-focus-trap
+          aria-labelledby="equipment-picker-title"
           class="relative w-full max-w-2xl bg-void border border-shadow rounded-lg shadow-2xl overflow-hidden flex flex-col"
           style="max-height: 85vh"
         >
@@ -19,7 +21,7 @@
           <!-- Header -->
           <div class="px-5 py-4 border-b border-shadow flex items-center justify-between shrink-0">
             <div>
-              <p class="font-heading text-base text-gold-mid">{{ title }}</p>
+              <p id="equipment-picker-title" class="font-heading text-base text-gold-mid">{{ title }}</p>
               <p class="text-2xs font-body text-mist mt-0.5">Select an item to view its statistics</p>
             </div>
             <button type="button" class="text-mist hover:text-ash transition-colors" @click="$emit('close')">

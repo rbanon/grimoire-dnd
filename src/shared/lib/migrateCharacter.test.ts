@@ -50,7 +50,7 @@ describe('migrateCharacter', () => {
   })
 
   it('adds missing schemaVersion via default', () => {
-    const { schemaVersion: _v, ...withoutVersion } = validChar
+    const { schemaVersion: _schemaVersion, ...withoutVersion } = validChar
     const result = migrateCharacter(withoutVersion)
     expect(result.schemaVersion).toBe(CURRENT_SCHEMA_VERSION)
   })

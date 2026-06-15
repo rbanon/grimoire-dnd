@@ -11,6 +11,8 @@
         <div
           role="dialog"
           aria-modal="true"
+          v-focus-trap
+          aria-labelledby="item-picker-title"
           class="relative w-full max-w-2xl bg-void border border-shadow rounded-lg shadow-2xl flex flex-col overflow-hidden"
           style="max-height: 85vh"
         >
@@ -19,8 +21,8 @@
           <!-- Header -->
           <div class="px-5 pt-4 pb-3 shrink-0 space-y-3">
             <div class="flex items-center justify-between">
-              <p class="font-heading text-base tracking-wide text-gold-mid">Add from SRD</p>
-              <button type="button" class="text-mist hover:text-ash transition-colors" @click="$emit('close')">
+              <p id="item-picker-title" class="font-heading text-base tracking-wide text-gold-mid">Add from SRD</p>
+              <button type="button" class="text-mist hover:text-ash transition-colors" aria-label="Close" @click="$emit('close')">
                 <XIcon :size="16" />
               </button>
             </div>

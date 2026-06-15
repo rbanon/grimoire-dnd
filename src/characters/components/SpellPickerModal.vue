@@ -5,17 +5,22 @@
         v-if="show"
         class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
         @click.self="$emit('close')"
+        @keydown.esc="$emit('close')"
       >
         <div class="absolute inset-0 bg-black/70" @click="$emit('close')" />
 
         <div
+          role="dialog"
+          aria-modal="true"
+          v-focus-trap
+          aria-labelledby="spell-picker-title"
           class="relative w-full max-w-lg bg-void border border-shadow rounded-lg shadow-2xl flex flex-col"
           style="max-height: 82vh"
         >
           <!-- Header -->
           <div class="flex items-center justify-between px-5 py-4 border-b border-shadow shrink-0">
             <div>
-              <p class="font-heading text-base text-arcane-pale">Add Spells</p>
+              <p id="spell-picker-title" class="font-heading text-base text-arcane-pale">Add Spells</p>
               <p class="text-2xs font-body text-mist mt-0.5 flex items-center gap-1.5 flex-wrap">
                 <span>{{ className }}</span>
                 <template v-if="isFinite(limit ?? Infinity)">
@@ -33,7 +38,7 @@
                 </template>
               </p>
             </div>
-            <button type="button" class="text-mist hover:text-ash transition-colors" @click="$emit('close')">
+            <button type="button" class="text-mist hover:text-ash transition-colors" aria-label="Close" @click="$emit('close')">
               <XIcon :size="16" />
             </button>
           </div>

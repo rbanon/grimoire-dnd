@@ -10,6 +10,7 @@
       <input
         v-model="query"
         type="search"
+        aria-label="Search monsters"
         placeholder="Search monsters…"
         class="input-base max-w-xs"
         @input="currentPage = 1"

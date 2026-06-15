@@ -11,6 +11,8 @@
         <div
           role="dialog"
           aria-modal="true"
+          v-focus-trap
+          aria-labelledby="cast-spell-title"
           class="relative w-full max-w-lg bg-void border border-shadow rounded-lg shadow-2xl overflow-hidden flex flex-col"
           style="max-height: 88vh"
         >
@@ -19,7 +21,7 @@
           <!-- Header -->
           <div class="px-5 py-4 border-b border-shadow flex items-start justify-between shrink-0 gap-3">
             <div class="min-w-0">
-              <p class="font-heading text-base text-arcane-pale leading-snug">{{ spell.name }}</p>
+              <p id="cast-spell-title" class="font-heading text-base text-arcane-pale leading-snug">{{ spell.name }}</p>
               <p v-if="detail" class="text-2xs font-body text-mist mt-0.5">
                 {{ isCantrip ? 'Cantrip' : `Level ${spell.level} spell` }}
                 <span v-if="detail.school"> · {{ detail.school.name }}</span>

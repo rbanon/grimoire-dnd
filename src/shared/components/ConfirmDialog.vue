@@ -13,6 +13,8 @@
         <div
           role="alertdialog"
           aria-modal="true"
+          aria-labelledby="confirm-dialog-title"
+          v-focus-trap
           class="relative w-full max-w-sm bg-void border border-shadow rounded-lg shadow-2xl overflow-hidden"
         >
           <!-- Accent bar -->
@@ -24,6 +26,7 @@
           <div class="px-5 py-4 space-y-3">
             <!-- Title -->
             <p
+              id="confirm-dialog-title"
               class="font-heading text-base tracking-wide"
               :class="confirm.config.value.variant === 'danger' ? 'text-blood-bright' : 'text-gold-mid'"
             >{{ confirm.config.value.title }}</p>

@@ -8,13 +8,19 @@
       >
         <div class="absolute inset-0 bg-black/60" @click="emit('close')" />
 
-        <div class="relative w-full max-w-lg bg-void border border-shadow rounded-lg shadow-2xl flex flex-col max-h-[90vh]">
+        <div
+          role="dialog"
+          aria-modal="true"
+          v-focus-trap
+          aria-labelledby="font-of-magic-title"
+          class="relative w-full max-w-lg bg-void border border-shadow rounded-lg shadow-2xl flex flex-col max-h-[90vh]"
+        >
           <div class="h-0.5 w-full bg-arcane-base shrink-0" />
 
           <!-- Header -->
           <div class="px-5 pt-4 pb-3 shrink-0">
             <div class="flex items-center justify-between">
-              <p class="font-heading text-base text-arcane-pale tracking-wide">Font of Magic</p>
+              <p id="font-of-magic-title" class="font-heading text-base text-arcane-pale tracking-wide">Font of Magic</p>
               <span class="badge-arcane">{{ points }} / {{ maxPoints }} SP</span>
             </div>
             <p class="font-body text-sm text-ash mt-0.5">

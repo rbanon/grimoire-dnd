@@ -14,6 +14,8 @@
         <div
           role="dialog"
           aria-modal="true"
+          aria-labelledby="app-dialog-title"
+          v-focus-trap
           class="relative w-full max-w-sm bg-void border border-shadow rounded-lg shadow-2xl overflow-hidden"
         >
           <!-- Accent bar -->
@@ -29,6 +31,7 @@
           <div class="px-5 py-4">
             <!-- Title -->
             <p
+              id="app-dialog-title"
               class="font-heading text-base tracking-wide mb-1"
               :class="{
                 'text-gold-mid':    dialog.config.value.variant !== 'success' && dialog.config.value.variant !== 'danger',

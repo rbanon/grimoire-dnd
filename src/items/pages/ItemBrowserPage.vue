@@ -28,6 +28,7 @@
       <input
         v-model="filters.query"
         type="search"
+        aria-label="Search items"
         placeholder="Search items…"
         class="input-base max-w-xs"
         @input="currentPage = 1"

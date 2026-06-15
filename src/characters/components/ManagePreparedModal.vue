@@ -9,6 +9,10 @@
         <div class="absolute inset-0 bg-black/70" @click="emit('close')" />
 
         <div
+          role="dialog"
+          aria-modal="true"
+          v-focus-trap
+          aria-labelledby="manage-prepared-title"
           class="relative w-full max-w-lg bg-void border border-shadow rounded-lg shadow-2xl flex flex-col"
           style="max-height: 84vh"
         >
@@ -19,7 +23,7 @@
           <div class="px-5 py-4 border-b border-shadow shrink-0">
             <div class="flex items-center justify-between">
               <div>
-                <p class="font-heading text-base text-arcane-pale">Prepare Spells</p>
+                <p id="manage-prepared-title" class="font-heading text-base text-arcane-pale">Prepare Spells</p>
                 <p class="text-2xs font-body text-mist mt-0.5">
                   {{ className }} · {{ isSpellbookMode ? 'from your spellbook' : 'full class spell list' }}
                 </p>

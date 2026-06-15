@@ -11,13 +11,15 @@
         <div
           role="dialog"
           aria-modal="true"
+          v-focus-trap
+          aria-labelledby="ability-scores-title"
           class="relative w-full max-w-md bg-void border border-shadow rounded-lg shadow-2xl overflow-hidden"
         >
           <div class="h-0.5 w-full bg-gold-mid" />
 
           <div class="px-5 py-4 space-y-4">
             <div>
-              <p class="font-heading text-base tracking-wide text-gold-mid">Ability Scores</p>
+              <p id="ability-scores-title" class="font-heading text-base tracking-wide text-gold-mid">Ability Scores</p>
               <p class="text-xs font-body text-mist mt-0.5">
                 Adjust this character's six ability scores. Modifiers update as you type.
               </p>

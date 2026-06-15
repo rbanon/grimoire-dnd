@@ -3,17 +3,22 @@
     <div
       class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
       @click.self="$emit('close')"
+      @keydown.esc="$emit('close')"
     >
       <div class="absolute inset-0 bg-black/70" @click="$emit('close')" />
 
       <div
+        role="dialog"
+        aria-modal="true"
+          v-focus-trap
+        aria-labelledby="add-to-combat-title"
         class="relative w-full max-w-lg bg-void border border-shadow rounded-lg shadow-2xl flex flex-col"
         style="max-height: 82vh"
       >
         <!-- Header -->
         <div class="flex items-center justify-between px-5 py-4 border-b border-shadow shrink-0">
-          <p class="font-heading text-base text-vellum">Add to Favorites</p>
-          <button type="button" class="text-mist hover:text-ash transition-colors" @click="$emit('close')">
+          <p id="add-to-combat-title" class="font-heading text-base text-vellum">Add to Favorites</p>
+          <button type="button" class="text-mist hover:text-ash transition-colors" aria-label="Close" @click="$emit('close')">
             <XIcon :size="16" />
           </button>
         </div>

@@ -28,6 +28,7 @@
       <input
         v-model="query"
         type="search"
+        aria-label="Search spells"
         placeholder="Search spells…"
         class="input-base max-w-xs"
         @input="currentPage = 1"

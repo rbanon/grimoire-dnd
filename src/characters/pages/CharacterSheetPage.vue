@@ -628,6 +628,7 @@
               <input
                 v-model="skillSearch"
                 type="search"
+                aria-label="Filter skills"
                 class="input-base text-xs py-1.5 mb-2"
                 placeholder="Filter skills…"
               />
@@ -1133,7 +1134,7 @@ async function commitInit() {
 
 async function resetInit() {
   if (!character.value) return
-  const { initiative: _, ...rest } = character.value.overrides
+  const { initiative: _initiative, ...rest } = character.value.overrides
   await store.update(character.value.id, { overrides: rest })
 }
 
@@ -1161,7 +1162,7 @@ async function commitSpeed() {
 
 async function resetSpeed() {
   if (!character.value) return
-  const { speed: _, ...rest } = character.value.overrides
+  const { speed: _speed, ...rest } = character.value.overrides
   await store.update(character.value.id, { overrides: rest })
 }
 

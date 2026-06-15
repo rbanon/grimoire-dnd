@@ -11,6 +11,8 @@
         <div
           role="dialog"
           aria-modal="true"
+          v-focus-trap
+          aria-labelledby="hp-roll-title"
           class="relative w-full max-w-lg bg-void border border-shadow rounded-lg shadow-2xl overflow-hidden"
         >
           <div class="h-0.5 w-full bg-gold-mid" />
@@ -18,7 +20,7 @@
           <div class="px-5 py-4 space-y-4">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <p class="font-heading text-base tracking-wide text-gold-mid">Roll Hit Points</p>
+                <p id="hp-roll-title" class="font-heading text-base tracking-wide text-gold-mid">Roll Hit Points</p>
                 <p class="text-xs font-body text-mist mt-0.5">
                   Level 1 always gets the maximum ({{ hitDie }}). Roll d{{ hitDie }} for each level after.
                 </p>

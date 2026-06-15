@@ -5,16 +5,22 @@
         v-if="show"
         class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
         @click.self="$emit('close')"
+        @keydown.esc="$emit('close')"
       >
         <div class="absolute inset-0 bg-black/70" @click="$emit('close')" />
 
-        <div class="relative w-full max-w-lg bg-void border border-shadow rounded-lg shadow-2xl flex flex-col"
-          style="max-height: 80vh">
-
+        <div
+          role="dialog"
+          aria-modal="true"
+          v-focus-trap
+          aria-labelledby="cantrip-picker-title"
+          class="relative w-full max-w-lg bg-void border border-shadow rounded-lg shadow-2xl flex flex-col"
+          style="max-height: 80vh"
+        >
           <!-- Header -->
           <div class="flex items-center justify-between px-5 py-4 border-b border-shadow shrink-0">
             <div>
-              <p class="font-heading text-base text-arcane-pale">Add Cantrips</p>
+              <p id="cantrip-picker-title" class="font-heading text-base text-arcane-pale">Add Cantrips</p>
               <p class="text-2xs font-body text-mist mt-0.5">
                 {{ className }} ·
                 <span :class="remaining === 0 ? 'text-blood-bright' : ''">
@@ -22,7 +28,7 @@
                 </span>
               </p>
             </div>
-            <button type="button" class="text-mist hover:text-ash transition-colors" @click="$emit('close')">
+            <button type="button" class="text-mist hover:text-ash transition-colors" aria-label="Close" @click="$emit('close')">
               <XIcon :size="16" />
             </button>
           </div>

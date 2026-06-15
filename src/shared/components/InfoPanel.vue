@@ -13,6 +13,10 @@
     <Transition name="ip-slide">
       <aside
         v-if="panel.target.value"
+        role="dialog"
+        aria-modal="true"
+          v-focus-trap
+        aria-labelledby="info-panel-title"
         class="fixed top-0 right-0 h-full w-full sm:w-[440px] z-[60] flex flex-col bg-void border-l border-shadow overflow-hidden"
       >
         <!-- Header -->
@@ -23,7 +27,7 @@
             </button>
             <div class="flex items-center gap-2 min-w-0 flex-1">
               <span class="text-xl leading-none shrink-0">{{ entityGlyph }}</span>
-              <h2 class="font-heading text-base text-vellum truncate">{{ entityName }}</h2>
+              <h2 id="info-panel-title" class="font-heading text-base text-vellum truncate">{{ entityName }}</h2>
             </div>
             <span v-if="kindBadge" class="badge-arcane text-2xs shrink-0 capitalize">{{ kindBadge }}</span>
           </div>
