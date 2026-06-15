@@ -78,16 +78,55 @@
         v-for="item in pagedItems"
         :key="item.index"
         type="button"
-        class="card-hover p-4 flex flex-col gap-1 text-left w-full"
+        class="card-hover p-4 flex flex-col text-left w-full"
         @click="panel.open({ kind: 'item', index: item.index })"
       >
-        <span class="font-medium text-vellum leading-tight">{{ item.name }}</span>
-        <div class="flex gap-1.5 flex-wrap mt-1">
-          <span v-if="item.rarity" :class="rarityBadgeClass(item.rarity)" class="text-2xs">{{ item.rarity }}</span>
-          <span v-else class="badge badge-gold text-2xs">{{ formatCategory(item.category) }}</span>
-          <span v-if="item.requiresAttunement" class="badge text-2xs bg-arcane-deep/30 text-arcane-pale border border-arcane-base/20">Attunement</span>
+        <!-- Name + rarity/category badge -->
+        <div class="flex items-start justify-between gap-2">
+          <span class="font-medium text-vellum leading-tight">{{ item.name }}</span>
+          <span v-if="item.rarity" :class="rarityBadgeClass(item.rarity)" class="text-2xs shrink-0">{{ item.rarity }}</span>
+          <span v-else class="badge badge-gold text-2xs shrink-0">{{ formatCategory(item.category) }}</span>
         </div>
-        <div v-if="item.cost || item.weight" class="flex gap-3 mt-1 text-xs text-mist">
+        <!-- Sub-category -->
+        <p v-if="item.subCategory" class="text-2xs text-mist mt-0.5">{{ item.subCategory }}</p>
+
+        <!-- Stat block — weapon -->
+        <template v-if="item.category === 'weapon' && equipDetail(item.index)">
+          <div class="mt-1.5 flex items-baseline gap-1.5 text-xs">
+            <span class="font-mono text-gold-mid font-semibold">{{ weaponDamageStr(item.index) }}</span>
+            <span class="text-mist">{{ equipDetail(item.index)?.damage?.damage_type.name.toLowerCase() }}</span>
+          </div>
+          <div v-if="equipDetail(item.index)?.properties?.length" class="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
+            <span
+              v-for="prop in equipDetail(item.index)!.properties"
+              :key="prop.index"
+              class="text-2xs text-mist/60"
+            >{{ prop.name }}</span>
+          </div>
+        </template>
+
+        <!-- Stat block — armor -->
+        <template v-else-if="item.category === 'armor' && equipDetail(item.index)">
+          <div class="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
+            <span class="font-mono text-gold-mid font-semibold">AC {{ equipDetail(item.index)?.armor_class?.base }}</span>
+            <span v-if="equipDetail(item.index)?.str_minimum" class="text-mist">
+              Str {{ equipDetail(item.index)!.str_minimum }}
+            </span>
+            <span v-if="equipDetail(item.index)?.stealth_disadvantage" class="text-blood-bright text-2xs">
+              stealth disadv.
+            </span>
+          </div>
+        </template>
+
+        <!-- Magic item: attunement tag -->
+        <template v-else-if="item.isMagic && item.requiresAttunement">
+          <span class="badge text-2xs bg-arcane-deep/30 text-arcane-pale border border-arcane-base/20 mt-1.5 w-fit">
+            Attunement
+          </span>
+        </template>
+
+        <!-- Footer: cost + weight -->
+        <div v-if="item.cost || item.weight" class="flex gap-3 mt-auto pt-2 text-2xs text-mist/50">
           <span v-if="item.cost">{{ item.cost.quantity }} {{ item.cost.unit }}</span>
           <span v-if="item.weight">{{ item.weight }} lb</span>
         </div>
@@ -434,6 +473,35 @@ const pagedItems = computed(() => {
   const start = (currentPage.value - 1) * PAGE_SIZE
   return filteredItems.value.slice(start, start + PAGE_SIZE)
 })
+
+// ── Page-level equipment detail query (for stat block in grid cards) ──────────
+
+const pagedEquipIndices = computed(() =>
+  pagedItems.value.filter(i => !i.isMagic).map(i => i.index)
+)
+
+const { data: pageEquipDetails } = useQuery({
+  queryKey: computed(() => ['item-page-equip', pagedEquipIndices.value.join(',')]),
+  queryFn: () =>
+    Promise.allSettled(pagedEquipIndices.value.map(idx => fiveEApi.getEquipment(idx))).then(
+      res => res.filter((r): r is PromiseFulfilledResult<ApiEquipment> => r.status === 'fulfilled').map(r => r.value),
+    ),
+  enabled: computed(() => pagedEquipIndices.value.length > 0),
+  staleTime: Infinity,
+})
+
+const pageEquipMap = computed(() => new Map(pageEquipDetails.value?.map(d => [d.index, d]) ?? []))
+
+function equipDetail(index: string): ApiEquipment | undefined {
+  return pageEquipMap.value.get(index)
+}
+
+function weaponDamageStr(index: string): string {
+  const e = pageEquipMap.value.get(index)
+  if (!e?.damage) return '—'
+  const base = e.damage.damage_dice
+  return e.two_handed_damage ? `${base} / ${e.two_handed_damage.damage_dice}` : base
+}
 
 const paginationPages = computed(() => {
   const total = totalPages.value

@@ -87,22 +87,36 @@
         v-for="m in pagedMonsters"
         :key="m.index"
         type="button"
-        class="card-hover p-4 flex flex-col gap-1 text-left w-full"
+        class="card-hover flex flex-col text-left w-full overflow-hidden"
         @click="panel.open({ kind: 'monster', index: m.index })"
       >
-        <div class="flex items-start justify-between gap-2">
-          <span class="font-medium text-vellum leading-tight">{{ m.name }}</span>
-          <span v-if="detail(m.index)" :class="crBadgeClass(detail(m.index)!.challenge_rating)" class="text-2xs shrink-0 font-mono">
-            CR {{ formatCR(detail(m.index)!.challenge_rating) }}
-          </span>
+        <!-- Type band -->
+        <div
+          v-if="detail(m.index)"
+          class="w-full px-4 py-1 flex items-center justify-between shrink-0"
+          :class="typeBandClass(detail(m.index)!.type)"
+        >
+          <span class="text-2xs font-heading tracking-widest uppercase">{{ detail(m.index)!.type }}</span>
+          <span class="text-2xs font-body opacity-70">{{ detail(m.index)!.size }}</span>
         </div>
-        <p v-if="detail(m.index)" class="text-xs text-mist mt-0.5">
-          {{ detail(m.index)!.size }} · {{ capitalize(detail(m.index)!.type) }}
-          <span v-if="detail(m.index)!.subtype">({{ detail(m.index)!.subtype }})</span>
-        </p>
-        <div v-if="detail(m.index)" class="flex items-center gap-2 mt-1 text-2xs text-mist/60">
-          <span>HP {{ detail(m.index)!.hit_points }}</span>
-          <span>· AC {{ primaryAC(detail(m.index)!) }}</span>
+        <div v-else class="w-full h-6 bg-shadow/20 shrink-0 animate-pulse" />
+
+        <!-- Content -->
+        <div class="p-4 flex flex-col gap-1 flex-1">
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-medium text-vellum leading-tight">{{ m.name }}</span>
+            <span v-if="detail(m.index)" :class="crBadgeClass(detail(m.index)!.challenge_rating)" class="text-2xs shrink-0 font-mono">
+              CR {{ formatCR(detail(m.index)!.challenge_rating) }}
+            </span>
+          </div>
+          <div v-if="detail(m.index)" class="flex items-center gap-3 mt-1 text-2xs text-mist/70 font-mono tabular-nums">
+            <span>HP {{ detail(m.index)!.hit_points }}</span>
+            <span class="text-mist/30">·</span>
+            <span>AC {{ primaryAC(detail(m.index)!) }}</span>
+          </div>
+          <div v-if="detail(m.index)?.subtype" class="text-2xs text-mist/50 italic mt-0.5">
+            {{ detail(m.index)!.subtype }}
+          </div>
         </div>
       </button>
     </div>
@@ -322,6 +336,25 @@ function crBadgeClass(cr: number): string {
   if (cr <= 7)  return 'badge badge-gold'
   if (cr <= 12) return 'badge bg-blood-deep/40 text-blood-bright border border-blood-base/30'
   return 'badge bg-blood-deep/60 text-blood-bright border border-blood-base/50'
+}
+
+function typeBandClass(type: string): string {
+  const t = type.toLowerCase()
+  if (t === 'aberration')  return 'bg-arcane-deep/60 text-arcane-pale'
+  if (t === 'beast')       return 'bg-gold-dim/30 text-gold-mid'
+  if (t === 'celestial')   return 'bg-gold-mid/40 text-gold-bright'
+  if (t === 'construct')   return 'bg-shadow/50 text-stone'
+  if (t === 'dragon')      return 'bg-gold-mid/50 text-gold-bright'
+  if (t === 'elemental')   return 'bg-arcane-base/40 text-arcane-pale'
+  if (t === 'fey')         return 'bg-verdant-deep/60 text-verdant-bright'
+  if (t === 'fiend')       return 'bg-blood-deep/70 text-blood-bright'
+  if (t === 'giant')       return 'bg-shadow/40 text-ash'
+  if (t === 'humanoid')    return 'bg-shadow/30 text-stone'
+  if (t === 'monstrosity') return 'bg-blood-base/25 text-blood-bright'
+  if (t === 'ooze')        return 'bg-verdant-deep/40 text-verdant-bright'
+  if (t === 'plant')       return 'bg-verdant-deep/50 text-verdant-bright'
+  if (t === 'undead')      return 'bg-arcane-deep/50 text-arcane-pale'
+  return 'bg-shadow/30 text-stone'
 }
 
 function toggleSort(key: typeof sortBy.value) {
