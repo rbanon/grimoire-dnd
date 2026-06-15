@@ -101,11 +101,6 @@
           {{ detail(m.index)!.size }} · {{ capitalize(detail(m.index)!.type) }}
           <span v-if="detail(m.index)!.subtype">({{ detail(m.index)!.subtype }})</span>
         </p>
-        <div v-if="detail(m.index)" class="flex items-center gap-3 mt-1 text-2xs text-mist/70 font-mono tabular-nums">
-          <span>HP {{ detail(m.index)!.hit_points }}</span>
-          <span class="text-mist/30">·</span>
-          <span>AC {{ primaryAC(detail(m.index)!) }}</span>
-        </div>
       </button>
     </div>
 
@@ -115,29 +110,23 @@
         <table class="w-full border-collapse text-sm table-fixed">
           <thead>
             <tr class="bg-depths border-b-2 border-dusk/60">
-              <th class="sticky top-0 z-10 bg-depths text-left py-3 px-4 w-auto cursor-pointer select-none" @click="toggleSort('name')">
+              <th class="sticky top-0 z-10 bg-depths text-left py-3 px-4 w-[50%] cursor-pointer select-none" @click="toggleSort('name')">
                 <span class="flex items-center gap-1.5 text-2xs font-heading tracking-[0.08em] uppercase text-mist">
                   Name <span class="inline-block w-2.5 text-center text-mist/50 font-mono text-[0.6rem]">{{ sortIndicator('name') }}</span>
                 </span>
               </th>
-              <th class="sticky top-0 z-10 bg-depths text-center py-3 px-4 w-16 cursor-pointer select-none" @click="toggleSort('cr')">
+              <th class="sticky top-0 z-10 bg-depths text-center py-3 px-4 w-[10%] cursor-pointer select-none" @click="toggleSort('cr')">
                 <span class="flex items-center justify-center gap-1.5 text-2xs font-heading tracking-[0.08em] uppercase text-mist">
                   CR <span class="inline-block w-2.5 text-center text-mist/50 font-mono text-[0.6rem]">{{ sortIndicator('cr') }}</span>
                 </span>
               </th>
-              <th class="sticky top-0 z-10 bg-depths text-left py-3 px-4 w-36 hidden sm:table-cell cursor-pointer select-none" @click="toggleSort('type')">
+              <th class="sticky top-0 z-10 bg-depths text-left py-3 px-4 w-[20%] hidden sm:table-cell cursor-pointer select-none" @click="toggleSort('type')">
                 <span class="flex items-center gap-1.5 text-2xs font-heading tracking-[0.08em] uppercase text-mist">
                   Type <span class="inline-block w-2.5 text-center text-mist/50 font-mono text-[0.6rem]">{{ sortIndicator('type') }}</span>
                 </span>
               </th>
-              <th class="sticky top-0 z-10 bg-depths text-left py-3 px-4 w-28 hidden md:table-cell">
+              <th class="sticky top-0 z-10 bg-depths text-left py-3 px-4 w-[20%] hidden md:table-cell">
                 <span class="text-2xs font-heading tracking-[0.08em] uppercase text-mist">Size</span>
-              </th>
-              <th class="sticky top-0 z-10 bg-depths text-center py-3 px-4 w-20 hidden md:table-cell">
-                <span class="text-2xs font-heading tracking-[0.08em] uppercase text-mist">HP</span>
-              </th>
-              <th class="sticky top-0 z-10 bg-depths text-center py-3 px-4 w-20 hidden lg:table-cell">
-                <span class="text-2xs font-heading tracking-[0.08em] uppercase text-mist">AC</span>
               </th>
             </tr>
           </thead>
@@ -157,22 +146,11 @@
                 <span v-else class="text-mist/30 text-xs">…</span>
               </td>
               <td class="py-3 px-4 font-body text-mist hidden sm:table-cell">
-                <span v-if="detail(m.index)" class="flex items-center gap-1.5">
-                  <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ background: typeBorderColor(detail(m.index)!.type) }" />
-                  {{ capitalize(detail(m.index)!.type) }}
-                </span>
+                <span v-if="detail(m.index)">{{ capitalize(detail(m.index)!.type) }}</span>
                 <span v-else class="text-mist/30 text-xs">…</span>
               </td>
               <td class="py-3 px-4 font-body text-mist hidden md:table-cell">
                 <span v-if="detail(m.index)">{{ detail(m.index)!.size }}</span>
-                <span v-else class="text-mist/30 text-xs">…</span>
-              </td>
-              <td class="py-3 px-4 text-center font-body text-mist hidden md:table-cell">
-                <span v-if="detail(m.index)">{{ detail(m.index)!.hit_points }}</span>
-                <span v-else class="text-mist/30 text-xs">…</span>
-              </td>
-              <td class="py-3 px-4 text-center font-body text-mist hidden lg:table-cell">
-                <span v-if="detail(m.index)">{{ primaryAC(detail(m.index)!) }}</span>
                 <span v-else class="text-mist/30 text-xs">…</span>
               </td>
             </tr>
@@ -314,9 +292,6 @@ function formatCR(cr: number): string {
   return String(cr)
 }
 
-function primaryAC(m: ApiMonster): number {
-  return m.armor_class[0]?.value ?? 0
-}
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)

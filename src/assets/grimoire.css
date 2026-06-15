@@ -23,12 +23,12 @@
     --c-gold-pale:   244 224 148;
     --c-gold-glow:   255 244 196;
 
-    /* Blood Red — #D81921 */
-    --c-arcane-deep:   40 0 0;
-    --c-arcane-base:   140 28 19;   /* #8c1c13 */
-    --c-arcane-mid:    176 16 32;
-    --c-arcane-bright: 216 25 33;   /* #D81921 */
-    --c-arcane-pale:   140 28 19;   /* readable on parchment */
+    /* Arcane Purple — #7C3AED */
+    --c-arcane-deep:    32   8  64;
+    --c-arcane-base:    76  28 148;
+    --c-arcane-mid:    100  40 180;
+    --c-arcane-bright: 124  58 213;  /* #7C3AED */
+    --c-arcane-pale:    80  32 140;  /* readable on parchment */
 
     /* Blood — danger, HP */
     --c-blood-deep:   40 0 0;
@@ -54,7 +54,7 @@
     --shadow-panel:       0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(212,175,55,0.18);
     --shadow-modal:       0 8px 32px rgba(0,0,0,0.10), 0 0 0 1px rgba(212,175,55,0.22);
     --shadow-glow-gold:   0 0 16px rgba(212,175,55,0.28);
-    --shadow-glow-arcane: 0 0 16px rgba(216,25,33,0.18);
+    --shadow-glow-arcane: 0 0 16px rgba(124,58,213,0.18);
     --shadow-inner:       inset 0 1px 0 rgba(0,0,0,0.03);
 
     color-scheme: light;
@@ -87,12 +87,12 @@
     --c-gold-pale:   244 228 160;
     --c-gold-glow:   255 248 220;
 
-    /* Arcane — slightly softer for prolonged use */
-    --c-arcane-deep:    64  16  20;
-    --c-arcane-base:   148  44  40;
-    --c-arcane-mid:    188  56  56;
-    --c-arcane-bright: 232 120 120;   /* boosted for WCAG AA on dark backgrounds */
-    --c-arcane-pale:   236 168 168;   /* text on dark */
+    /* Arcane Purple — boosted for dark backgrounds */
+    --c-arcane-deep:    52  20  96;
+    --c-arcane-base:   108  52 192;
+    --c-arcane-mid:    148  88 224;
+    --c-arcane-bright: 180 132 248;   /* WCAG AA on dark */
+    --c-arcane-pale:   208 176 252;   /* text on dark */
 
     /* Blood */
     --c-blood-deep:    72  20  20;
@@ -118,7 +118,7 @@
     --shadow-panel:       0 2px 12px rgba(0,0,0,0.40), 0 0 0 1px rgba(120,100,180,0.15);
     --shadow-modal:       0 12px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(212,175,55,0.22);
     --shadow-glow-gold:   0 0 24px rgba(212,175,55,0.40);
-    --shadow-glow-arcane: 0 0 20px rgba(220,80,80,0.30);
+    --shadow-glow-arcane: 0 0 20px rgba(180,132,248,0.30);
     --shadow-inner:       inset 0 1px 0 rgba(255,255,255,0.06);
   }
 
@@ -223,8 +223,8 @@
 
 /* ── HP critical pulse ───────────────────────────────────────────────────── */
 @keyframes pulse-blood {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(216,25,33,0); }
-  50%       { box-shadow: 0 0 0 4px rgba(216,25,33,0.14); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(150,32,32,0); }
+  50%       { box-shadow: 0 0 0 4px rgba(150,32,32,0.14); }
 }
 .pulse-blood { animation: pulse-blood 2s ease-in-out infinite; }
 
