@@ -87,36 +87,24 @@
         v-for="m in pagedMonsters"
         :key="m.index"
         type="button"
-        class="card-hover flex flex-col text-left w-full overflow-hidden"
+        class="card-hover p-4 flex flex-col gap-1 text-left w-full"
+        :style="detail(m.index) ? { 'border-left': `3px solid ${typeBorderColor(detail(m.index)!.type)}` } : {}"
         @click="panel.open({ kind: 'monster', index: m.index })"
       >
-        <!-- Type band -->
-        <div
-          v-if="detail(m.index)"
-          class="w-full px-4 py-1 flex items-center justify-between shrink-0"
-          :class="typeBandClass(detail(m.index)!.type)"
-        >
-          <span class="text-2xs font-heading tracking-widest uppercase">{{ detail(m.index)!.type }}</span>
-          <span class="text-2xs font-body opacity-70">{{ detail(m.index)!.size }}</span>
+        <div class="flex items-start justify-between gap-2">
+          <span class="font-medium text-vellum leading-tight">{{ m.name }}</span>
+          <span v-if="detail(m.index)" :class="crBadgeClass(detail(m.index)!.challenge_rating)" class="text-2xs shrink-0 font-mono">
+            CR {{ formatCR(detail(m.index)!.challenge_rating) }}
+          </span>
         </div>
-        <div v-else class="w-full h-6 bg-shadow/20 shrink-0 animate-pulse" />
-
-        <!-- Content -->
-        <div class="p-4 flex flex-col gap-1 flex-1">
-          <div class="flex items-start justify-between gap-2">
-            <span class="font-medium text-vellum leading-tight">{{ m.name }}</span>
-            <span v-if="detail(m.index)" :class="crBadgeClass(detail(m.index)!.challenge_rating)" class="text-2xs shrink-0 font-mono">
-              CR {{ formatCR(detail(m.index)!.challenge_rating) }}
-            </span>
-          </div>
-          <div v-if="detail(m.index)" class="flex items-center gap-3 mt-1 text-2xs text-mist/70 font-mono tabular-nums">
-            <span>HP {{ detail(m.index)!.hit_points }}</span>
-            <span class="text-mist/30">·</span>
-            <span>AC {{ primaryAC(detail(m.index)!) }}</span>
-          </div>
-          <div v-if="detail(m.index)?.subtype" class="text-2xs text-mist/50 italic mt-0.5">
-            {{ detail(m.index)!.subtype }}
-          </div>
+        <p v-if="detail(m.index)" class="text-xs text-mist mt-0.5">
+          {{ detail(m.index)!.size }} · {{ capitalize(detail(m.index)!.type) }}
+          <span v-if="detail(m.index)!.subtype">({{ detail(m.index)!.subtype }})</span>
+        </p>
+        <div v-if="detail(m.index)" class="flex items-center gap-3 mt-1 text-2xs text-mist/70 font-mono tabular-nums">
+          <span>HP {{ detail(m.index)!.hit_points }}</span>
+          <span class="text-mist/30">·</span>
+          <span>AC {{ primaryAC(detail(m.index)!) }}</span>
         </div>
       </button>
     </div>
@@ -169,7 +157,10 @@
                 <span v-else class="text-mist/30 text-xs">…</span>
               </td>
               <td class="py-3 px-4 font-body text-mist hidden sm:table-cell">
-                <span v-if="detail(m.index)">{{ capitalize(detail(m.index)!.type) }}</span>
+                <span v-if="detail(m.index)" class="flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ background: typeBorderColor(detail(m.index)!.type) }" />
+                  {{ capitalize(detail(m.index)!.type) }}
+                </span>
                 <span v-else class="text-mist/30 text-xs">…</span>
               </td>
               <td class="py-3 px-4 font-body text-mist hidden md:table-cell">
@@ -338,23 +329,23 @@ function crBadgeClass(cr: number): string {
   return 'badge bg-blood-deep/60 text-blood-bright border border-blood-base/50'
 }
 
-function typeBandClass(type: string): string {
+function typeBorderColor(type: string): string {
   const t = type.toLowerCase()
-  if (t === 'aberration')  return 'bg-arcane-deep/60 text-arcane-pale'
-  if (t === 'beast')       return 'bg-gold-dim/30 text-gold-mid'
-  if (t === 'celestial')   return 'bg-gold-mid/40 text-gold-bright'
-  if (t === 'construct')   return 'bg-shadow/50 text-stone'
-  if (t === 'dragon')      return 'bg-gold-mid/50 text-gold-bright'
-  if (t === 'elemental')   return 'bg-arcane-base/40 text-arcane-pale'
-  if (t === 'fey')         return 'bg-verdant-deep/60 text-verdant-bright'
-  if (t === 'fiend')       return 'bg-blood-deep/70 text-blood-bright'
-  if (t === 'giant')       return 'bg-shadow/40 text-ash'
-  if (t === 'humanoid')    return 'bg-shadow/30 text-stone'
-  if (t === 'monstrosity') return 'bg-blood-base/25 text-blood-bright'
-  if (t === 'ooze')        return 'bg-verdant-deep/40 text-verdant-bright'
-  if (t === 'plant')       return 'bg-verdant-deep/50 text-verdant-bright'
-  if (t === 'undead')      return 'bg-arcane-deep/50 text-arcane-pale'
-  return 'bg-shadow/30 text-stone'
+  if (t === 'aberration')  return 'rgb(var(--c-arcane-pale))'
+  if (t === 'beast')       return 'rgb(var(--c-gold-mid))'
+  if (t === 'celestial')   return 'rgb(var(--c-gold-bright))'
+  if (t === 'construct')   return 'rgb(var(--c-stone))'
+  if (t === 'dragon')      return 'rgb(var(--c-gold-bright))'
+  if (t === 'elemental')   return 'rgb(var(--c-arcane-base))'
+  if (t === 'fey')         return 'rgb(var(--c-verdant-bright))'
+  if (t === 'fiend')       return 'rgb(var(--c-blood-bright))'
+  if (t === 'giant')       return 'rgb(var(--c-stone))'
+  if (t === 'humanoid')    return 'rgb(var(--c-mist))'
+  if (t === 'monstrosity') return 'rgb(var(--c-blood-mid))'
+  if (t === 'ooze')        return 'rgb(var(--c-verdant-mid))'
+  if (t === 'plant')       return 'rgb(var(--c-verdant-bright))'
+  if (t === 'undead')      return 'rgb(var(--c-arcane-pale))'
+  return 'transparent'
 }
 
 function toggleSort(key: typeof sortBy.value) {
