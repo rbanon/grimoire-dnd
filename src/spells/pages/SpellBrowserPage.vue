@@ -33,25 +33,25 @@
         class="input-base max-w-xs"
         @input="currentPage = 1"
       />
-      <select v-model="levelFilter" class="input-base max-w-[130px]" @change="currentPage = 1">
+      <AppSelect v-model="levelFilter" class="max-w-[130px]" @change="currentPage = 1">
         <option value="">All levels</option>
         <option :value="0">Cantrip</option>
         <option v-for="l in 9" :key="l" :value="l">Level {{ l }}</option>
-      </select>
-      <select v-model="schoolFilter" class="input-base max-w-[150px]" @change="currentPage = 1">
+      </AppSelect>
+      <AppSelect v-model="schoolFilter" class="max-w-[150px]" @change="currentPage = 1">
         <option value="">All schools</option>
         <option v-for="s in SCHOOLS" :key="s" :value="s">{{ s }}</option>
-      </select>
-      <select v-model="classFilter" class="input-base max-w-[140px]" @change="currentPage = 1">
+      </AppSelect>
+      <AppSelect v-model="classFilter" class="max-w-[140px]" @change="currentPage = 1">
         <option value="">All classes</option>
         <option v-for="c in availableClasses" :key="c" :value="c">{{ c }}</option>
-      </select>
-      <select v-model="castingTimeFilter" class="input-base max-w-[150px]" @change="currentPage = 1">
+      </AppSelect>
+      <AppSelect v-model="castingTimeFilter" class="max-w-[150px]" @change="currentPage = 1">
         <option value="">Any cast time</option>
         <option v-for="ct in availableCastingTimes" :key="ct" :value="ct">
           {{ labelCastingTime(ct) }}
         </option>
-      </select>
+      </AppSelect>
     </div>
 
     <!-- States -->
@@ -80,6 +80,7 @@
         :key="spell.index"
         type="button"
         class="card-hover p-4 flex flex-col gap-1 text-left w-full"
+        :style="spell.level !== -1 ? { 'border-left': `3px solid ${schoolBorderColor(spell.school.name)}` } : {}"
         @click="panel.open({ kind: 'spell', index: spell.index })"
       >
         <div class="flex items-start justify-between gap-2">
@@ -145,7 +146,12 @@
               <td class="py-3 px-4 text-center">
                 <span class="badge-arcane text-xs">{{ spell.level === 0 ? 'C' : spell.level }}</span>
               </td>
-              <td class="py-3 px-4 font-body text-mist hidden sm:table-cell">{{ spell.school.name }}</td>
+              <td class="py-3 px-4 font-body text-mist hidden sm:table-cell">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ background: schoolBorderColor(spell.school.name) }" />
+                  {{ spell.school.name }}
+                </span>
+              </td>
               <td class="py-3 px-4 font-body text-mist hidden md:table-cell">{{ labelCastingTime(normalizeCastingTime(spell.casting_time)) }}</td>
               <td class="py-3 px-4 font-body text-mist text-xs hidden lg:table-cell truncate">
                 {{ spell.classes.map(c => c.name).join(', ') }}
@@ -225,6 +231,20 @@ const CASTING_TIME_LABELS: Record<string, string> = {
   '8 hours':        '8 Hours',
   '12 hours':       '12 Hours',
   '24 hours':       '24 Hours',
+}
+
+function schoolBorderColor(school: string): string {
+  const map: Record<string, string> = {
+    'Abjuration':    'rgb(var(--c-arcane-pale))',
+    'Conjuration':   'rgb(var(--c-gold-mid))',
+    'Divination':    'rgb(var(--c-mist))',
+    'Enchantment':   'rgb(var(--c-blood-mid))',
+    'Evocation':     'rgb(var(--c-blood-bright))',
+    'Illusion':      'rgb(var(--c-arcane-base))',
+    'Necromancy':    'rgb(var(--c-verdant-bright))',
+    'Transmutation': 'rgb(var(--c-gold-dim))',
+  }
+  return map[school] ?? 'transparent'
 }
 
 function toggleSort(key: typeof sortBy.value) {
