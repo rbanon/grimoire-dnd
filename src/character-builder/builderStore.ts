@@ -73,6 +73,14 @@ export interface BuilderDraft {
   subraceAbilityBonuses: Partial<Record<keyof AbilityScores, number>>
   availableSubraces: { index: string; name: string }[]
 
+  // Custom (homebrew) race — only meaningful when raceIndex === 'custom'. Bonuses live in
+  // raceAbilityBonuses (shared with SRD races → summed by effectiveScores); these extras are
+  // baked into the character at build time (resistances/senses/features/otherProficiencies).
+  raceResistances: string[]                       // lowercase damage-type indices, e.g. 'fire'
+  raceDarkvision: number                          // 0 = none, else range in ft (60/120)
+  raceCustomTraits: { name: string; desc: string }[]
+  raceCustomToolProfs: string[]                   // free-text tool/weapon proficiency names
+
   // Step 1c — Background
   backgroundIndex: string
   backgroundName: string
@@ -181,6 +189,7 @@ const defaultDraft = (): BuilderDraft => ({
   raceEdition: '2014', classEdition: '2014', backgroundEdition: '2014',
   raceAbilityBonuses: {}, raceLanguageCount: 2, raceLanguageChoices: 0, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
+  raceResistances: [], raceDarkvision: 0, raceCustomTraits: [], raceCustomToolProfs: [],
   raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [], raceAutoLanguages: [],
   backgroundIndex: '', backgroundName: '', backgroundDescription: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [], backgroundLanguageChoices: 0,
   backgroundAbilityOptions: [], backgroundAbilityBonuses: {}, backgroundFeatIndex: '', backgroundFeatName: '',
@@ -213,6 +222,7 @@ const DRAFT_ARRAY_FIELDS = [
   'selectedSkills', 'selectedLanguages', 'expertiseSkills', 'startingInventory', 'raceProfOptions',
   'availableSubraces', 'availableSubclasses', 'backgroundSkillProficiencies',
   'backgroundToolProficiencies', 'classSkillOptions', 'selectedRaceProfs', 'raceSkillProficiencies',
+  'raceResistances', 'raceCustomTraits', 'raceCustomToolProfs',
   'tomeCantrips', 'selectedInvocations', 'raceAutoLanguages', 'backgroundAbilityOptions',
   'backgroundProfChoices', 'selectedBackgroundProfs', 'subclassSpells',
 ] as const
@@ -477,6 +487,7 @@ export const useBuilderStore = defineStore('builder', () => {
       })(),
       3:  [
         !draft.value.raceIndex ? 'Select a race' : '',
+        draft.value.raceIndex === 'custom' && !draft.value.raceName.trim() ? 'Name your custom race' : '',
         draft.value.availableSubraces.length > 0 && !draft.value.subraceIndex ? 'Select a subrace' : '',
       ].filter(Boolean),
       4:  [
@@ -867,8 +878,16 @@ export const useBuilderStore = defineStore('builder', () => {
           .filter(o => d.selectedBackgroundProfs.includes(o.index))
           .map(o => o.name.replace(/^Tool:\s*/, '')),
         ...d.raceProfOptions.filter(p => d.selectedRaceProfs.includes(p.index)).map(p => p.name),
+        // Custom race free-text tool/weapon proficiencies (empty for SRD races)
+        ...d.raceCustomToolProfs.map(p => p.trim()).filter(Boolean),
       ],
       ...(() => {
+        // Custom (homebrew) race: derive defenses/senses from the user-authored fields
+        // instead of the hardcoded SRD trait table.
+        if (d.raceIndex === 'custom') {
+          const senses = d.raceDarkvision > 0 ? [`Darkvision ${d.raceDarkvision} ft.`] : []
+          return { resistances: [...new Set(d.raceResistances)], immunities: [], vulnerabilities: [], senses }
+        }
         const t = getRaceTraits(d.raceIndex, d.subraceIndex || undefined)
         return { resistances: t.resistances, immunities: t.immunities, vulnerabilities: [], senses: t.senses }
       })(),
@@ -881,6 +900,17 @@ export const useBuilderStore = defineStore('builder', () => {
       resources: getClassResources(d.classIndex, d.level, computeAllModifiers(effectiveScores.value)),
       favoriteSpells: [],
       features: [
+        // Custom (homebrew) race traits — authored in the builder, shown on the Features tab
+        ...(d.raceIndex === 'custom'
+          ? d.raceCustomTraits
+              .filter(t => t.name.trim())
+              .map(t => ({
+                id: generateId(),
+                name: t.name.trim(),
+                source: `${d.raceName.trim() || 'Custom Race'} (Trait)`,
+                description: t.desc.trim(),
+              }))
+          : []),
         // Warlock Eldritch Invocations — descriptions resolved from local data.
         ...d.selectedInvocations.map(inv => ({
           id: generateId(),
