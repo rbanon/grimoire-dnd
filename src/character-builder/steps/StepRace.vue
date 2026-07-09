@@ -82,6 +82,15 @@
       <section v-if="isCustom" class="space-y-6">
         <div class="rule-gold"><span>Custom Race</span></div>
 
+        <!-- Load a saved race from the user's collection -->
+        <div v-if="auth.isAuthenticated && customContent.races.length" class="flex items-center gap-2">
+          <span class="text-2xs font-heading tracking-wide uppercase text-mist shrink-0">Load a saved race</span>
+          <AppSelect v-model="selectedSavedRaceId" class="flex-1 text-sm" @change="onSelectSavedRace">
+            <option value="">Choose from your collection…</option>
+            <option v-for="r in customContent.races" :key="r.id" :value="r.id">{{ r.name }}</option>
+          </AppSelect>
+        </div>
+
         <!-- Name -->
         <div class="space-y-1.5">
           <label class="text-2xs font-heading tracking-wide uppercase text-mist">Race Name</label>
@@ -324,6 +333,23 @@
             No traits yet. Add special abilities, senses, or flavor perks for your race.
           </p>
         </div>
+
+        <!-- Save to collection (auth only) -->
+        <div v-if="auth.isAuthenticated" class="flex items-center justify-between gap-3 pt-1 border-t border-shadow/40">
+          <p class="text-2xs font-body text-mist/60">Save this race to reuse it in other characters and share it with the community.</p>
+          <button
+            type="button"
+            class="shrink-0 px-3.5 py-2 rounded border text-xs font-heading tracking-wide transition-all"
+            :class="builder.draft.raceName.trim() && !savingRace
+              ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale hover:bg-arcane-deep/25'
+              : 'border-shadow/40 text-mist/40 cursor-not-allowed'"
+            :disabled="!builder.draft.raceName.trim() || savingRace"
+            @click="saveCurrentRace"
+          >{{ savingRace ? 'Saving…' : (savedRace ? 'Update in collection' : 'Save to my collection') }}</button>
+        </div>
+        <p v-else class="text-2xs font-body text-mist/50 italic pt-1 border-t border-shadow/40">
+          Sign in to save this race to your collection and reuse it later.
+        </p>
       </section>
     </Transition>
 
@@ -501,7 +527,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { PencilIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { useBuilderStore } from '@/character-builder/builderStore'
@@ -509,11 +535,16 @@ import { getRaceMeta } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
+import { useAuthStore } from '@/auth/store'
+import { useCustomContentStore } from '@/custom-content/store'
+import { useToast } from '@/shared/composables/useToast'
 import { SKILLS } from '@/shared/lib/skillAbilityMap'
 import type { ApiRace, ApiSubrace, ApiTrait, Api2024Species, ApiReference, EditionTag } from '@/shared/types/api'
 import type { AbilityScores } from '@/shared/types/character'
+import type { CustomRace, CustomRaceInput } from '@/shared/types/customContent'
 import PickerCard from '@/character-builder/components/PickerCard.vue'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
+import AppSelect from '@/shared/ui/AppSelect.vue'
 
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
@@ -814,6 +845,7 @@ function selectCustomRace() {
   builder.draft.raceDarkvision = 0
   builder.draft.raceCustomTraits = []
   builder.draft.raceCustomToolProfs = []
+  builder.draft.savedCustomRaceId = ''
   toolProfInput.value = ''
   // Languages: everyone knows Common; extra languages are chosen in Step VII (Proficiencies)
   const prevAuto = builder.draft.raceAutoLanguages ?? []
@@ -822,6 +854,90 @@ function selectCustomRace() {
   builder.draft.raceLanguageCount = 1
   builder.draft.raceLanguageChoices = 2
   builder.draft.selectedLanguages = [...new Set(['common', ...userChosen])]
+}
+
+// ── Save / load custom races to the user's cloud collection ─────────────────────
+
+const auth = useAuthStore()
+const customContent = useCustomContentStore()
+const savingRace = ref(false)
+const selectedSavedRaceId = ref('')
+
+onMounted(() => {
+  if (auth.isAuthenticated && !customContent.loaded) customContent.loadMine()
+})
+
+function draftToCustomRaceInput(): CustomRaceInput {
+  const d = builder.draft
+  return {
+    name: d.raceName.trim(),
+    edition: '2014',
+    abilityBonuses: { ...d.raceAbilityBonuses },
+    size: d.raceSizeCategory,
+    speed: d.raceSpeed,
+    darkvision: d.raceDarkvision,
+    resistances: [...d.raceResistances],
+    skillProficiencies: [...d.raceSkillProficiencies],
+    toolProficiencies: [...d.raceCustomToolProfs],
+    languageChoices: d.raceLanguageChoices,
+    traits: d.raceCustomTraits.map(t => ({ name: t.name, desc: t.desc })),
+    isPublic: false,
+  }
+}
+
+// The collection entry this custom race maps to: the tracked id, else a same-name race.
+// Drives create-vs-update so re-saving never duplicates.
+const savedRace = computed<CustomRace | null>(() => {
+  const id = builder.draft.savedCustomRaceId
+  if (id) {
+    const byId = customContent.races.find(r => r.id === id)
+    if (byId) return byId
+  }
+  const name = builder.draft.raceName.trim().toLowerCase()
+  if (!name) return null
+  return customContent.races.find(r => r.name.trim().toLowerCase() === name) ?? null
+})
+
+async function saveCurrentRace() {
+  const name = builder.draft.raceName.trim()
+  if (savingRace.value || !name) return
+  savingRace.value = true
+  try {
+    const input = draftToCustomRaceInput()
+    const existing = savedRace.value
+    if (existing) {
+      await customContent.updateRace(existing.id, input)
+      builder.draft.savedCustomRaceId = existing.id
+      useToast().success('Custom race updated in your collection.')
+    } else {
+      const created = await customContent.createRace(input)
+      if (created) builder.draft.savedCustomRaceId = created.id
+    }
+  } finally {
+    savingRace.value = false
+  }
+}
+
+function applyCustomRace(race: CustomRace) {
+  selectCustomRace()
+  const d = builder.draft
+  d.savedCustomRaceId = race.id
+  d.raceName = race.name
+  d.raceAbilityBonuses = { ...race.abilityBonuses }
+  d.raceSizeCategory = race.size
+  d.raceSpeed = race.speed
+  d.raceDarkvision = race.darkvision
+  d.raceResistances = [...race.resistances]
+  d.raceSkillProficiencies = [...race.skillProficiencies]
+  d.raceCustomToolProfs = [...race.toolProficiencies]
+  d.raceLanguageChoices = race.languageChoices
+  d.raceCustomTraits = race.traits.map(t => ({ name: t.name, desc: t.desc }))
+}
+
+function onSelectSavedRace() {
+  const race = customContent.races.find(r => r.id === selectedSavedRaceId.value)
+  if (race) applyCustomRace(race)
+  selectedSavedRaceId.value = ''
 }
 </script>
 

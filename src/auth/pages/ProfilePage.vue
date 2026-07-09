@@ -134,6 +134,75 @@
       <p v-if="profileError" class="text-sm font-body text-blood-bright -mt-1">{{ profileError }}</p>
     </section>
 
+    <!-- ── Custom content card ────────────────────────────────────────────── -->
+    <section class="card p-6 corner-ornament flex flex-col gap-5">
+      <div class="flex items-center justify-between gap-3">
+        <p class="font-mono text-2xs tracking-[0.22em] uppercase text-mist">Custom Races &amp; Classes</p>
+        <RouterLink
+          to="/characters/new"
+          class="text-xs font-heading text-arcane-pale/80 hover:text-arcane-pale transition-colors"
+        >+ New in builder</RouterLink>
+      </div>
+
+      <!-- Races -->
+      <div class="flex flex-col gap-2">
+        <p class="label">Races</p>
+        <div v-if="!customContent.loaded" class="text-sm font-body text-mist">Loading…</div>
+        <p v-else-if="!customContent.races.length" class="text-sm font-body text-mist italic">
+          No custom races yet. Create one in the character builder's Race step.
+        </p>
+        <div
+          v-for="race in customContent.races"
+          :key="race.id"
+          class="flex items-center gap-3 rounded border border-shadow bg-depths/30 px-3.5 py-2.5"
+        >
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-heading text-vellum truncate">{{ race.name }}</p>
+            <p class="text-2xs font-body text-mist">{{ raceSummary(race) }}</p>
+          </div>
+          <button
+            type="button"
+            class="shrink-0 px-2 py-1 rounded border text-2xs font-heading tracking-wide transition-all"
+            :class="race.isPublic
+              ? 'border-verdant-base/50 bg-verdant-deep/15 text-verdant-bright'
+              : 'border-shadow text-mist hover:text-ash'"
+            :title="race.isPublic ? 'Shared to the community — click to make private' : 'Private — click to share'"
+            @click="togglePublic(race)"
+          >{{ race.isPublic ? 'Public' : 'Private' }}</button>
+          <button
+            type="button"
+            class="shrink-0 p-1.5 text-mist/60 hover:text-blood-bright transition-colors"
+            aria-label="Delete custom race"
+            @click="removeRace(race)"
+          >
+            <Trash2Icon :size="14" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Classes -->
+      <div class="flex flex-col gap-2">
+        <p class="label">Classes</p>
+        <p v-if="!customContent.classes.length" class="text-sm font-body text-mist italic">
+          Custom class creation is coming soon.
+        </p>
+        <div
+          v-for="cls in customContent.classes"
+          :key="cls.id"
+          class="flex items-center gap-3 rounded border border-shadow bg-depths/30 px-3.5 py-2.5"
+        >
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-heading text-vellum truncate">{{ cls.name }}</p>
+            <p class="text-2xs font-body text-mist">d{{ cls.hitDie }} · {{ cls.primaryAbility || '—' }}</p>
+          </div>
+          <span
+            class="shrink-0 px-2 py-1 rounded border text-2xs font-heading tracking-wide"
+            :class="cls.isPublic ? 'border-verdant-base/50 bg-verdant-deep/15 text-verdant-bright' : 'border-shadow text-mist'"
+          >{{ cls.isPublic ? 'Public' : 'Private' }}</span>
+        </div>
+      </div>
+    </section>
+
     <!-- ── Security card ──────────────────────────────────────────────────── -->
     <section class="card p-6 corner-ornament flex flex-col gap-5">
       <p class="font-mono text-2xs tracking-[0.22em] uppercase text-mist">Security</p>
@@ -219,15 +288,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import {
   ChevronLeftIcon, SaveIcon, CheckIcon, ShieldIcon,
-  EyeIcon, EyeOffIcon, CameraIcon, UploadIcon,
+  EyeIcon, EyeOffIcon, CameraIcon, UploadIcon, Trash2Icon,
 } from 'lucide-vue-next'
 import { useAuthStore } from '@/auth/store'
+import { useCustomContentStore } from '@/custom-content/store'
 import { validateAvatarFile, uploadAvatar } from '@/shared/lib/uploadAvatar'
+import type { CustomRace } from '@/shared/types/customContent'
 
 const auth = useAuthStore()
+
+// ── Custom content (races & classes) ────────────────────────────────────────
+const customContent = useCustomContentStore()
+onMounted(() => { if (auth.isAuthenticated) customContent.loadMine() })
+
+function raceSummary(race: CustomRace): string {
+  const parts = Object.entries(race.abilityBonuses)
+    .filter(([, v]) => (v ?? 0) !== 0)
+    .map(([k, v]) => `${k.toUpperCase()} +${v}`)
+  parts.push(race.size, `${race.speed} ft.`)
+  if (race.darkvision > 0) parts.push(`Darkvision ${race.darkvision}`)
+  return parts.join(' · ')
+}
+
+async function togglePublic(race: CustomRace) {
+  try { await customContent.setRacePublic(race.id, !race.isPublic) } catch { /* toast shown by store */ }
+}
+
+async function removeRace(race: CustomRace) {
+  if (!confirm(`Delete custom race "${race.name}"? This cannot be undone.`)) return
+  try { await customContent.removeRace(race.id) } catch { /* toast shown by store */ }
+}
 
 // ── Avatar & identity ──────────────────────────────────────────────────────
 

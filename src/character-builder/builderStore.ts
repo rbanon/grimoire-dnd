@@ -80,6 +80,7 @@ export interface BuilderDraft {
   raceDarkvision: number                          // 0 = none, else range in ft (60/120)
   raceCustomTraits: { name: string; desc: string }[]
   raceCustomToolProfs: string[]                   // free-text tool/weapon proficiency names
+  savedCustomRaceId: string                       // collection entry this custom race maps to ('' = unsaved) — prevents duplicates on re-save
 
   // Step 1c — Background
   backgroundIndex: string
@@ -189,7 +190,7 @@ const defaultDraft = (): BuilderDraft => ({
   raceEdition: '2014', classEdition: '2014', backgroundEdition: '2014',
   raceAbilityBonuses: {}, raceLanguageCount: 2, raceLanguageChoices: 0, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
-  raceResistances: [], raceDarkvision: 0, raceCustomTraits: [], raceCustomToolProfs: [],
+  raceResistances: [], raceDarkvision: 0, raceCustomTraits: [], raceCustomToolProfs: [], savedCustomRaceId: '',
   raceProfChoices: 0, raceProfOptions: [], selectedRaceProfs: [], raceSkillProficiencies: [], raceAutoLanguages: [],
   backgroundIndex: '', backgroundName: '', backgroundDescription: '', backgroundSkillProficiencies: [], backgroundToolProficiencies: [], backgroundLanguageChoices: 0,
   backgroundAbilityOptions: [], backgroundAbilityBonuses: {}, backgroundFeatIndex: '', backgroundFeatName: '',
