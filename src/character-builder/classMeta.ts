@@ -142,8 +142,9 @@ export interface SpellProfile {
   cantripsKnown: readonly number[]
   /** Spells known at each level. Only for castingType 'known'. */
   spellsKnown?: readonly number[]
-  /** Ability modifier used for prepared-spell limit. Only for 'prepared' / 'spellbook'. */
-  preparedAbility?: 'int' | 'wis' | 'cha'
+  /** Ability modifier used for prepared-spell limit. Only for 'prepared' / 'spellbook'.
+   *  SRD casters use int/wis/cha; widened to all six so homebrew classes can pick any. */
+  preparedAbility?: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
 }
 
 // Spell profiles — castingType and preparedAbility are editorial (no API equivalent).
@@ -195,12 +196,49 @@ export const SPELL_PROFILES: Partial<Record<string, SpellProfile>> = {
   },
 }
 
+// ─── Custom class spell override ────────────────────────────────────────────────
+// Homebrew classes aren't in SPELL_PROFILES/SRD_SPELL_SLOTS. When a custom class is applied
+// to the builder draft it registers its runtime profile here (keyed by the synthetic
+// classIndex, e.g. 'custom') so every classIndex-based spell helper treats it like an SRD
+// caster. The registry is empty for SRD classes, so their behavior is unchanged.
+export type CasterProgression = 'full' | 'half' | 'third' | 'pact'
+
+interface CustomClassRuntime { profile: SpellProfile; progression: CasterProgression }
+const customClassRegistry = new Map<string, CustomClassRuntime>()
+
+export function registerCustomClass(classIndex: string, runtime: CustomClassRuntime | null): void {
+  if (runtime) customClassRegistry.set(classIndex, runtime)
+  else customClassRegistry.delete(classIndex)
+}
+
+/** Build a 20-level SpellProfile from a custom class's level 1–3 spellcasting definition.
+ *  Levels 4–20 hold the level-3 value (custom classes are only detailed for 1–3). */
+export function buildCustomSpellProfile(sc: {
+  castingType: CastingType
+  ability: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
+  cantripsKnown: number[]
+  spellsKnown?: number[]
+}): SpellProfile {
+  const pad = (arr: number[]): number[] => {
+    const head = [arr[0] ?? 0, arr[1] ?? 0, arr[2] ?? 0]
+    return [...head, ...Array(17).fill(head[2])]
+  }
+  return {
+    castingType: sc.castingType,
+    cantripsKnown: pad(sc.cantripsKnown),
+    spellsKnown: sc.castingType === 'known' ? pad(sc.spellsKnown ?? []) : undefined,
+    preparedAbility: (sc.castingType === 'prepared' || sc.castingType === 'spellbook') ? sc.ability : undefined,
+  }
+}
+
 export function getSpellProfile(classIndex: string): SpellProfile | null {
-  return SPELL_PROFILES[classIndex] ?? null
+  return customClassRegistry.get(classIndex)?.profile ?? SPELL_PROFILES[classIndex] ?? null
 }
 
 /** Level at which the class first gains spell slots (1 for most casters, 2 for paladin/ranger). */
 export function getFirstSpellLevel(classIndex: string): number {
+  const custom = customClassRegistry.get(classIndex)
+  if (custom) return custom.progression === 'third' ? 3 : custom.progression === 'half' ? 2 : 1
   return (classIndex === 'paladin' || classIndex === 'ranger') ? 2 : 1
 }
 
@@ -210,6 +248,31 @@ export function getFirstSpellLevel(classIndex: string): number {
 // Per-class slot rows sourced from srd-class-data.json, index = level-1, each row = [l1..l9]
 const SRD_SPELL_SLOTS = srdData.spellSlots as Record<string, number[][]>
 
+// Third-caster (Eldritch Knight / Arcane Trickster) slot table — not a base SRD class, so
+// it's kept here for custom classes that pick the 'third' progression. Rows = char levels 1–20.
+const THIRD_CASTER_SLOTS: number[][] = [
+  [0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0], [2,0,0,0,0,0,0,0,0], [3,0,0,0,0,0,0,0,0],
+  [3,0,0,0,0,0,0,0,0], [3,0,0,0,0,0,0,0,0], [4,2,0,0,0,0,0,0,0], [4,2,0,0,0,0,0,0,0],
+  [4,2,0,0,0,0,0,0,0], [4,3,0,0,0,0,0,0,0], [4,3,0,0,0,0,0,0,0], [4,3,0,0,0,0,0,0,0],
+  [4,3,2,0,0,0,0,0,0], [4,3,2,0,0,0,0,0,0], [4,3,2,0,0,0,0,0,0], [4,3,3,0,0,0,0,0,0],
+  [4,3,3,0,0,0,0,0,0], [4,3,3,0,0,0,0,0,0], [4,3,3,1,0,0,0,0,0], [4,3,3,1,0,0,0,0,0],
+]
+
+// Slot table by custom-class progression. Full/half/pact reuse SRD tables (all full casters
+// share one table; paladin == ranger for half); third uses the table above.
+const PROGRESSION_SLOTS: Record<CasterProgression, number[][]> = {
+  full:  SRD_SPELL_SLOTS.wizard,
+  half:  SRD_SPELL_SLOTS.paladin,
+  third: THIRD_CASTER_SLOTS,
+  pact:  SRD_SPELL_SLOTS.warlock,
+}
+
+// The slot rows to use for a class: a registered custom class's progression table, else the SRD.
+function slotTableFor(classIndex: string): number[][] | undefined {
+  const custom = customClassRegistry.get(classIndex)
+  return custom ? PROGRESSION_SLOTS[custom.progression] : SRD_SPELL_SLOTS[classIndex]
+}
+
 export interface SpellSlotsMax {
   level1: number; level2: number; level3: number; level4: number; level5: number
   level6: number; level7: number; level8: number; level9: number
@@ -218,7 +281,7 @@ export interface SpellSlotsMax {
 export function getSpellSlots(classIndex: string, level: number): SpellSlotsMax {
   const empty: SpellSlotsMax = { level1:0, level2:0, level3:0, level4:0, level5:0, level6:0, level7:0, level8:0, level9:0 }
   if (!getSpellProfile(classIndex)) return empty
-  const classSlots = SRD_SPELL_SLOTS[classIndex]
+  const classSlots = slotTableFor(classIndex)
   if (!classSlots) return empty
   const row = classSlots[Math.min(Math.max(level, 1), 20) - 1]
   if (!row) return empty
@@ -227,7 +290,7 @@ export function getSpellSlots(classIndex: string, level: number): SpellSlotsMax 
 
 export function getMaxSpellLevel(classIndex: string, level: number): number {
   if (!getSpellProfile(classIndex)) return 0
-  const classSlots = SRD_SPELL_SLOTS[classIndex]
+  const classSlots = slotTableFor(classIndex)
   if (!classSlots) return 0
   const row = classSlots[Math.min(Math.max(level, 1), 20) - 1]
   if (!row) return 0

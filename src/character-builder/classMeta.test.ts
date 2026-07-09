@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel, getFirstSpellLevel,
   getSubclassSpellMode, parseSubclassSpells, selectGrantedSubclassSpells, getExpertiseCount,
-  getClassResources,
+  getClassResources, registerCustomClass, buildCustomSpellProfile,
 } from './classMeta'
 import type { ApiSubclassSpell } from '@/shared/types/api'
 
@@ -141,6 +141,61 @@ describe('getSpellSlots — level clamping', () => {
 
   it('level 21 treated as level 20', () => {
     expect(getSpellSlots('wizard', 21)).toEqual(getSpellSlots('wizard', 20))
+  })
+})
+
+describe('custom class spell override', () => {
+  // Always clean up so a registered 'custom' entry can't leak into other tests.
+  it('registers a full-caster custom class, then unregisters cleanly', () => {
+    expect(getSpellProfile('custom')).toBeNull()
+    registerCustomClass('custom', {
+      profile: buildCustomSpellProfile({ castingType: 'known', ability: 'cha', cantripsKnown: [2, 2, 3], spellsKnown: [2, 3, 4] }),
+      progression: 'full',
+    })
+    expect(getSpellProfile('custom')?.castingType).toBe('known')
+    expect(getSpellProfile('custom')?.cantripsKnown[0]).toBe(2)
+    expect(getSpellProfile('custom')?.spellsKnown?.[2]).toBe(4)
+    // full progression → wizard-like slots
+    expect(getSpellSlots('custom', 1).level1).toBe(2)
+    expect(getSpellSlots('custom', 3).level2).toBe(2)
+    expect(getMaxSpellLevel('custom', 3)).toBe(2)
+    expect(getFirstSpellLevel('custom')).toBe(1)
+    registerCustomClass('custom', null)
+    expect(getSpellProfile('custom')).toBeNull()
+    expect(getSpellSlots('custom', 3).level1).toBe(0)
+  })
+
+  it('half progression starts slots at level 2; prepared caps use the chosen ability', () => {
+    registerCustomClass('custom', {
+      profile: buildCustomSpellProfile({ castingType: 'prepared', ability: 'wis', cantripsKnown: [1, 1, 2] }),
+      progression: 'half',
+    })
+    expect(getSpellSlots('custom', 1).level1).toBe(0)
+    expect(getSpellSlots('custom', 2).level1).toBe(2)
+    expect(getFirstSpellLevel('custom')).toBe(2)
+    expect(getSpellProfile('custom')?.preparedAbility).toBe('wis')
+    expect(getSpellProfile('custom')?.spellsKnown).toBeUndefined()
+    registerCustomClass('custom', null)
+  })
+
+  it('pact progression mirrors the warlock table', () => {
+    registerCustomClass('custom', {
+      profile: buildCustomSpellProfile({ castingType: 'known', ability: 'cha', cantripsKnown: [2, 2, 2], spellsKnown: [1, 2, 2] }),
+      progression: 'pact',
+    })
+    expect(getSpellSlots('custom', 1).level1).toBe(1)
+    expect(getSpellSlots('custom', 3).level2).toBe(2)
+    registerCustomClass('custom', null)
+  })
+
+  it('leaves SRD classes untouched when a custom class is registered', () => {
+    registerCustomClass('custom', {
+      profile: buildCustomSpellProfile({ castingType: 'known', ability: 'int', cantripsKnown: [1, 1, 1] }),
+      progression: 'full',
+    })
+    expect(getSpellSlots('wizard', 3).level2).toBe(2)
+    expect(getSpellProfile('barbarian')).toBeNull()
+    registerCustomClass('custom', null)
   })
 })
 
