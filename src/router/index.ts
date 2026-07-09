@@ -43,6 +43,11 @@ export const router = createRouter({
           name: 'monsters',
           component: () => import('@/monsters/pages/MonsterBrowserPage.vue'),
         },
+        {
+          path: 'community',
+          name: 'community',
+          component: () => import('@/community/pages/CommunityBrowserPage.vue'),
+        },
         // Campaigns (auth required)
         {
           path: 'campaigns',

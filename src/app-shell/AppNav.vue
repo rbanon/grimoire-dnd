@@ -140,7 +140,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { version } from '../../package.json'
-import { UsersIcon, SparklesIcon, ShieldIcon, BookOpenIcon, SkullIcon, MenuIcon, XIcon, LockIcon, UserCircleIcon } from 'lucide-vue-next'
+import { UsersIcon, SparklesIcon, ShieldIcon, BookOpenIcon, SkullIcon, GlobeIcon, MenuIcon, XIcon, LockIcon, UserCircleIcon } from 'lucide-vue-next'
 import { useAuthStore } from '@/auth/store'
 import ColorModeToggle from './ColorModeToggle.vue'
 
@@ -160,6 +160,7 @@ const navLinks = [
   { to: '/spells',    label: 'Spells',     icon: SparklesIcon,  authRequired: false },
   { to: '/items',     label: 'Items',      icon: ShieldIcon,    authRequired: false },
   { to: '/monsters',  label: 'Bestiary',   icon: SkullIcon,     authRequired: false },
+  { to: '/community', label: 'Community',   icon: GlobeIcon,     authRequired: false },
   { to: '/campaigns', label: 'Campaigns',  icon: BookOpenIcon,  authRequired: true  },
 ]
 </script>
