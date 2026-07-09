@@ -46,7 +46,10 @@ export type CustomRaceInput = Pick<CustomRace,
 export const CustomClassSpellcastingSchema = z.object({
   castingType: z.enum(['known', 'prepared', 'spellbook']),
   ability: AbilityNameSchema,
-  // Cantrips / spells gained at levels 1–3 (the supported range for custom classes).
+  // Slot progression drives the spell-slot table: full (Wizard), half (Paladin/Ranger),
+  // third (Eldritch Knight), or pact (Warlock). Custom classes are detailed for levels 1–3.
+  casterProgression: z.enum(['full', 'half', 'third', 'pact']).default('full'),
+  // Cantrips / spells known at levels 1–3 (the supported range for custom classes).
   cantripsKnown: z.array(z.number().int()).default([0, 0, 0]),
   spellsKnown: z.array(z.number().int()).optional(),
   spellList: z.string().optional(), // SRD class index to source the spell list from

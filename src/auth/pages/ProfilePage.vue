@@ -182,26 +182,50 @@
 
       <!-- Classes -->
       <div class="flex flex-col gap-2">
-        <p class="label">Classes</p>
+        <div class="flex items-center justify-between">
+          <p class="label">Classes</p>
+          <button
+            type="button"
+            class="text-xs font-heading text-arcane-pale/80 hover:text-arcane-pale transition-colors"
+            @click="openNewClass"
+          >+ New class</button>
+        </div>
         <p v-if="!customContent.classes.length" class="text-sm font-body text-mist italic">
-          Custom class creation is coming soon.
+          No custom classes yet. Create one to reuse and share it.
         </p>
         <div
           v-for="cls in customContent.classes"
           :key="cls.id"
           class="flex items-center gap-3 rounded border border-shadow bg-depths/30 px-3.5 py-2.5"
         >
-          <div class="flex-1 min-w-0">
+          <button type="button" class="flex-1 min-w-0 text-left" @click="openEditClass(cls)">
             <p class="text-sm font-heading text-vellum truncate">{{ cls.name }}</p>
-            <p class="text-2xs font-body text-mist">d{{ cls.hitDie }} · {{ cls.primaryAbility || '—' }}</p>
-          </div>
-          <span
-            class="shrink-0 px-2 py-1 rounded border text-2xs font-heading tracking-wide"
-            :class="cls.isPublic ? 'border-verdant-base/50 bg-verdant-deep/15 text-verdant-bright' : 'border-shadow text-mist'"
-          >{{ cls.isPublic ? 'Public' : 'Private' }}</span>
+            <p class="text-2xs font-body text-mist">
+              d{{ cls.hitDie }} · {{ cls.primaryAbility || '—' }}<template v-if="cls.spellcasting"> · Spellcaster</template>
+            </p>
+          </button>
+          <button
+            type="button"
+            class="shrink-0 px-2 py-1 rounded border text-2xs font-heading tracking-wide transition-all"
+            :class="cls.isPublic
+              ? 'border-verdant-base/50 bg-verdant-deep/15 text-verdant-bright'
+              : 'border-shadow text-mist hover:text-ash'"
+            :title="cls.isPublic ? 'Shared to the community — click to make private' : 'Private — click to share'"
+            @click="togglePublicClass(cls)"
+          >{{ cls.isPublic ? 'Public' : 'Private' }}</button>
+          <button
+            type="button"
+            class="shrink-0 p-1.5 text-mist/60 hover:text-blood-bright transition-colors"
+            aria-label="Delete custom class"
+            @click="removeClass(cls)"
+          >
+            <Trash2Icon :size="14" />
+          </button>
         </div>
       </div>
     </section>
+
+    <CustomClassModal :show="showClassModal" :edit-id="editClassId" @close="showClassModal = false" />
 
     <!-- ── Security card ──────────────────────────────────────────────────── -->
     <section class="card p-6 corner-ornament flex flex-col gap-5">
@@ -296,13 +320,27 @@ import {
 import { useAuthStore } from '@/auth/store'
 import { useCustomContentStore } from '@/custom-content/store'
 import { validateAvatarFile, uploadAvatar } from '@/shared/lib/uploadAvatar'
-import type { CustomRace } from '@/shared/types/customContent'
+import type { CustomRace, CustomClass } from '@/shared/types/customContent'
+import CustomClassModal from '@/custom-content/components/CustomClassModal.vue'
 
 const auth = useAuthStore()
 
 // ── Custom content (races & classes) ────────────────────────────────────────
 const customContent = useCustomContentStore()
 onMounted(() => { if (auth.isAuthenticated) customContent.loadMine() })
+
+// Custom class editor modal (create / edit)
+const showClassModal = ref(false)
+const editClassId = ref<string | null>(null)
+function openNewClass() { editClassId.value = null; showClassModal.value = true }
+function openEditClass(cls: CustomClass) { editClassId.value = cls.id; showClassModal.value = true }
+async function togglePublicClass(cls: CustomClass) {
+  try { await customContent.setClassPublic(cls.id, !cls.isPublic) } catch { /* toast shown by store */ }
+}
+async function removeClass(cls: CustomClass) {
+  if (!confirm(`Delete custom class "${cls.name}"? This cannot be undone.`)) return
+  try { await customContent.removeClass(cls.id) } catch { /* toast shown by store */ }
+}
 
 function raceSummary(race: CustomRace): string {
   const parts = Object.entries(race.abilityBonuses)

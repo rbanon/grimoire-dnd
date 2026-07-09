@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type {
-  CustomRace, CustomRaceInput, CustomClass, CommunityItem,
+  CustomRace, CustomRaceInput, CustomClass, CustomClassInput, CommunityItem,
 } from '@/shared/types/customContent'
 import { CustomRaceSchema, CustomClassSchema } from '@/shared/types/customContent'
 import { generateId, now } from '@/shared/lib/uuid'
@@ -169,6 +169,89 @@ export const useCustomContentStore = defineStore('custom-content', () => {
     return updateRace(id, { isPublic })
   }
 
+  // ── Class CRUD (mirrors race CRUD) ────────────────────────────────────────────
+  function getClass(id: string): CustomClass | undefined {
+    return classes.value.find((c) => c.id === id)
+  }
+
+  async function upsertClass(cls: CustomClass) {
+    const { error } = await withTimeout(
+      supabase.from('custom_classes').upsert({
+        id: cls.id,
+        user_id: cls.userId,
+        name: cls.name,
+        edition: cls.edition,
+        primary_stat: classPrimaryStat(cls.primaryAbility),
+        is_public: cls.isPublic,
+        author_name: auth.nickname,
+        data: toJsonValue(cls),
+        created_at: cls.createdAt,
+        updated_at: cls.updatedAt,
+      }),
+      20_000, 'Custom class save',
+    )
+    if (error) throw error
+  }
+
+  async function createClass(input: CustomClassInput): Promise<CustomClass | null> {
+    if (!auth.isAuthenticated || !auth.userId) {
+      useToast().error('Sign in to save custom content to your collection.')
+      return null
+    }
+    const ts = now()
+    const cls = CustomClassSchema.parse({ ...input, id: generateId(), userId: auth.userId, createdAt: ts, updatedAt: ts })
+    classes.value.unshift(cls)
+    try {
+      await upsertClass(cls)
+      useToast().success('Custom class saved to your collection.')
+      return cls
+    } catch (err) {
+      classes.value = classes.value.filter((c) => c.id !== cls.id)
+      console.error('[custom-content] createClass failed:', err)
+      useToast().error('Failed to save custom class to the cloud.')
+      return null
+    }
+  }
+
+  async function updateClass(id: string, updates: Partial<CustomClassInput>): Promise<void> {
+    const idx = classes.value.findIndex((c) => c.id === id)
+    if (idx === -1) return
+    const previous = classes.value[idx]
+    const updated: CustomClass = { ...previous, ...updates, updatedAt: now() }
+    classes.value[idx] = updated
+    try {
+      await upsertClass(updated)
+    } catch (err) {
+      classes.value[idx] = previous
+      console.error('[custom-content] updateClass failed:', err)
+      useToast().error('Changes could not be saved to the cloud.')
+      throw err
+    }
+  }
+
+  async function removeClass(id: string): Promise<void> {
+    if (!auth.userId) return
+    const idx = classes.value.findIndex((c) => c.id === id)
+    if (idx === -1) return
+    const removed = classes.value[idx]
+    classes.value = classes.value.filter((c) => c.id !== id)
+    const { error } = await withTimeout(
+      supabase.from('custom_classes').delete().eq('id', id).eq('user_id', auth.userId),
+      20_000, 'Custom class delete',
+    )
+    if (error) {
+      classes.value.splice(idx, 0, removed)
+      console.error('[custom-content] removeClass failed:', error)
+      useToast().error('Failed to delete the custom class.')
+      throw error
+    }
+  }
+
+  /** Toggle whether a class is shared to the community. */
+  function setClassPublic(id: string, isPublic: boolean): Promise<void> {
+    return updateClass(id, { isPublic })
+  }
+
   // ── Community feed (public content, used by the Community page) ───────────────
   async function loadCommunity(): Promise<CommunityItem[]> {
     const [r, c] = await Promise.all([
@@ -200,6 +283,7 @@ export const useCustomContentStore = defineStore('custom-content', () => {
     races, classes, loaded,
     getRace, loadMine,
     createRace, updateRace, removeRace, setRacePublic,
+    getClass, createClass, updateClass, removeClass, setClassPublic,
     loadCommunity,
   }
 })
