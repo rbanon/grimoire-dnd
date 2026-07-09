@@ -665,6 +665,40 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value.currentStep = s
   }
 
+  // Initialize a blank custom (homebrew) race in the draft. Shared by StepRace's tile and
+  // the custom-race modal's "load saved race" flow so the reset lives in exactly one place.
+  function initCustomRace() {
+    const d = draft.value
+    d.raceIndex = 'custom'
+    d.raceName = ''
+    d.raceEdition = '2014'
+    d.raceSpeed = 30
+    d.raceSizeCategory = 'Medium'
+    d.raceAbilityBonuses = {}
+    // Clear any subrace/proficiency state from a previously selected SRD race
+    d.subraceIndex = ''
+    d.subraceName = ''
+    d.availableSubraces = []
+    d.subraceAbilityBonuses = {}
+    d.raceProfChoices = 0
+    d.raceProfOptions = []
+    d.selectedRaceProfs = []
+    d.raceSkillProficiencies = []
+    // Homebrew-specific fields
+    d.raceResistances = []
+    d.raceDarkvision = 0
+    d.raceCustomTraits = []
+    d.raceCustomToolProfs = []
+    d.savedCustomRaceId = ''
+    // Languages: everyone knows Common; extra languages are chosen in Step VII (Proficiencies)
+    const prevAuto = d.raceAutoLanguages ?? []
+    const userChosen = d.selectedLanguages.filter(l => !prevAuto.includes(l))
+    d.raceAutoLanguages = ['common']
+    d.raceLanguageCount = 1
+    d.raceLanguageChoices = 2
+    d.selectedLanguages = [...new Set(['common', ...userChosen])]
+  }
+
   // ── Point buy helpers ─────────────────────────────────────────────────────
 
   function canIncrement(key: keyof AbilityScores): boolean {
@@ -1024,6 +1058,7 @@ export const useBuilderStore = defineStore('builder', () => {
     goTo,
     next,
     back,
+    initCustomRace,
     canIncrement,
     canDecrement,
     incrementScore,

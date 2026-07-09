@@ -63,7 +63,7 @@
             :class="isCustom
               ? 'border-arcane-base/60 bg-arcane-deep/10 text-arcane-pale'
               : 'border-shadow border-dashed bg-abyss text-mist hover:border-arcane-base/30 hover:text-ash hover:bg-depths'"
-            @click="selectCustomRace"
+            @click="openCustomRace"
           >
             <span class="flex-1 px-4 py-3 text-left flex items-center gap-2">
               <PencilIcon :size="12" class="shrink-0 opacity-60" />
@@ -77,278 +77,47 @@
       </p>
     </section>
 
-    <!-- Custom (homebrew) race form -->
+    <!-- Custom (homebrew) race summary — details are edited in a modal -->
     <Transition name="expand">
-      <section v-if="isCustom" class="space-y-6">
+      <section v-if="isCustom" class="space-y-3">
         <div class="rule-gold"><span>Custom Race</span></div>
-
-        <!-- Load a saved race from the user's collection -->
-        <div v-if="auth.isAuthenticated && customContent.races.length" class="flex items-center gap-2">
-          <span class="text-2xs font-heading tracking-wide uppercase text-mist shrink-0">Load a saved race</span>
-          <AppSelect v-model="selectedSavedRaceId" class="flex-1 text-sm" @change="onSelectSavedRace">
-            <option value="">Choose from your collection…</option>
-            <option v-for="r in customContent.races" :key="r.id" :value="r.id">{{ r.name }}</option>
-          </AppSelect>
-        </div>
-
-        <!-- Name -->
-        <div class="space-y-1.5">
-          <label class="text-2xs font-heading tracking-wide uppercase text-mist">Race Name</label>
-          <input
-            v-model.trim="builder.draft.raceName"
-            type="text"
-            maxlength="60"
-            placeholder="e.g. Stormborn Aasimar"
-            class="input-base w-full text-sm"
-          />
-          <p v-if="showValidation && !builder.draft.raceName.trim()" class="text-xs font-body text-blood-bright">
-            Enter a name for your custom race.
-          </p>
-        </div>
-
-        <!-- Ability score bonuses -->
-        <div class="space-y-2">
-          <div class="flex items-baseline justify-between gap-2">
-            <p class="text-2xs font-heading tracking-wide uppercase text-mist">Ability Score Bonuses</p>
-            <span
-              class="text-2xs font-heading tabular-nums"
-              :class="raceAbilityTotal > 4 ? 'text-gold-mid' : 'text-arcane-pale'"
-            >+{{ raceAbilityTotal }} total</span>
-          </div>
-          <p class="text-2xs font-body text-mist/60">
-            These add straight to your character sheet. A typical race grants about +3 (e.g. +2 / +1).
-          </p>
-          <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            <div
-              v-for="ab in ABILITIES"
-              :key="ab.key"
-              class="flex flex-col items-center gap-1.5 px-2 py-2.5 rounded border"
-              :class="(builder.draft.raceAbilityBonuses[ab.key] ?? 0) > 0
-                ? 'border-arcane-base/40 bg-arcane-deep/10'
-                : 'border-shadow bg-depths/30'"
-            >
-              <span class="text-2xs font-heading tracking-[0.12em] uppercase text-mist">{{ ab.label }}</span>
-              <span
-                class="font-heading text-lg leading-none"
-                :class="(builder.draft.raceAbilityBonuses[ab.key] ?? 0) > 0 ? 'text-arcane-pale' : 'text-mist/40'"
-              >+{{ builder.draft.raceAbilityBonuses[ab.key] ?? 0 }}</span>
-              <div class="flex items-center gap-1">
-                <button
-                  type="button"
-                  class="w-6 h-6 flex items-center justify-center rounded border text-sm font-heading transition-all"
-                  :class="(builder.draft.raceAbilityBonuses[ab.key] ?? 0) > 0
-                    ? 'border-shadow text-mist hover:border-blood-base/50 hover:text-blood-mid'
-                    : 'border-shadow/20 text-mist/20 cursor-not-allowed'"
-                  :disabled="(builder.draft.raceAbilityBonuses[ab.key] ?? 0) === 0"
-                  @click="changeRaceAbility(ab.key, -1)"
-                >−</button>
-                <button
-                  type="button"
-                  class="w-6 h-6 flex items-center justify-center rounded border text-sm font-heading transition-all"
-                  :class="canIncreaseRaceAbility(ab.key)
-                    ? 'border-shadow text-mist hover:border-arcane-base/50 hover:text-arcane-pale'
-                    : 'border-shadow/20 text-mist/20 cursor-not-allowed'"
-                  :disabled="!canIncreaseRaceAbility(ab.key)"
-                  @click="changeRaceAbility(ab.key, 1)"
-                >+</button>
-              </div>
+        <div class="rounded border border-arcane-base/30 bg-arcane-deep/10 px-4 py-3.5 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="font-heading text-base text-arcane-pale truncate">
+                {{ builder.draft.raceName.trim() || 'Unnamed custom race' }}
+              </p>
+              <p class="text-2xs font-body text-mist mt-0.5">
+                {{ builder.draft.raceSizeCategory }} · {{ builder.draft.raceSpeed }} ft.<template v-if="builder.draft.raceDarkvision"> · Darkvision {{ builder.draft.raceDarkvision }} ft.</template>
+              </p>
             </div>
-          </div>
-        </div>
-
-        <!-- Size / Speed / Darkvision -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div class="space-y-1.5">
-            <label class="text-2xs font-heading tracking-wide uppercase text-mist">Size</label>
-            <div class="flex gap-1.5">
-              <button
-                v-for="size in SIZES"
-                :key="size"
-                type="button"
-                class="flex-1 px-2 py-2 rounded border text-xs font-heading tracking-wide transition-all"
-                :class="builder.draft.raceSizeCategory === size
-                  ? 'border-gold-mid/60 bg-gold-dim/15 text-gold-deep'
-                  : 'border-shadow text-ash hover:border-gold-dim/40'"
-                @click="builder.draft.raceSizeCategory = size"
-              >{{ size }}</button>
-            </div>
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-2xs font-heading tracking-wide uppercase text-mist">Speed (ft.)</label>
-            <input
-              v-model.number="builder.draft.raceSpeed"
-              type="number"
-              min="0"
-              max="60"
-              step="5"
-              class="input-base w-full text-sm"
-            />
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-2xs font-heading tracking-wide uppercase text-mist">Darkvision</label>
-            <div class="flex gap-1.5">
-              <button
-                v-for="opt in DARKVISION_OPTIONS"
-                :key="opt.value"
-                type="button"
-                class="flex-1 px-2 py-2 rounded border text-xs font-heading tracking-wide transition-all"
-                :class="builder.draft.raceDarkvision === opt.value
-                  ? 'border-arcane-base/60 bg-arcane-deep/10 text-arcane-pale'
-                  : 'border-shadow text-ash hover:border-arcane-base/30'"
-                @click="builder.draft.raceDarkvision = opt.value"
-              >{{ opt.label }}</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Damage resistances -->
-        <div class="space-y-2">
-          <p class="text-2xs font-heading tracking-wide uppercase text-mist">
-            Damage Resistances <span class="normal-case font-body text-mist/50">(optional)</span>
-          </p>
-          <div v-if="damageTypes.length" class="flex flex-wrap gap-1.5">
             <button
-              v-for="dt in damageTypes"
-              :key="dt.index"
               type="button"
-              class="px-2.5 py-1 rounded border text-xs font-heading tracking-wide transition-all"
-              :class="isResistanceSelected(dt.index)
-                ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale'
-                : 'border-shadow text-ash hover:border-arcane-base/25 hover:text-stone'"
-              @click="toggleResistance(dt.index)"
-            >{{ dt.name }}</button>
-          </div>
-          <p v-else class="text-xs font-body text-mist/50 italic">Loading damage types…</p>
-        </div>
-
-        <!-- Skill proficiencies -->
-        <div class="space-y-2">
-          <p class="text-2xs font-heading tracking-wide uppercase text-mist">
-            Skill Proficiencies <span class="normal-case font-body text-mist/50">(optional)</span>
-          </p>
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-            <button
-              v-for="skill in SKILLS"
-              :key="skill.index"
-              type="button"
-              class="text-left px-3 py-2 rounded border text-xs font-heading tracking-wide transition-all duration-100"
-              :class="isRaceSkillSelected(skill.index)
-                ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale'
-                : 'border-shadow text-ash hover:border-arcane-base/25 hover:text-stone'"
-              @click="toggleRaceSkill(skill.index)"
+              class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-arcane-base/50 text-xs font-heading tracking-wide text-arcane-pale hover:bg-arcane-deep/25 transition-all"
+              @click="showCustomModal = true"
             >
-              {{ skill.name }}
-              <span class="text-mist/40 font-body normal-case">{{ skill.ability.toUpperCase() }}</span>
+              <PencilIcon :size="11" class="opacity-70" />
+              Edit details
             </button>
           </div>
-        </div>
 
-        <!-- Tool / weapon proficiencies -->
-        <div class="space-y-2">
-          <p class="text-2xs font-heading tracking-wide uppercase text-mist">
-            Tool / Weapon Proficiencies <span class="normal-case font-body text-mist/50">(optional)</span>
-          </p>
-          <div class="flex gap-2">
-            <input
-              v-model="toolProfInput"
-              type="text"
-              maxlength="60"
-              placeholder="e.g. Smith's tools, Longsword"
-              class="input-base flex-1 text-sm"
-              @keydown.enter.prevent="addToolProf"
-            />
-            <button
-              type="button"
-              class="px-3 py-2 rounded border border-shadow text-xs font-heading text-ash hover:border-arcane-base/40 hover:text-arcane-pale transition-all"
-              @click="addToolProf"
-            >Add</button>
-          </div>
-          <div v-if="builder.draft.raceCustomToolProfs.length" class="flex flex-wrap gap-1.5">
+          <div v-if="customAbilityChips.length" class="flex flex-wrap gap-1.5">
             <span
-              v-for="(prof, i) in builder.draft.raceCustomToolProfs"
-              :key="`${prof}-${i}`"
-              class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-shadow text-xs font-heading text-ash"
-            >
-              {{ prof }}
-              <button type="button" class="text-mist/50 hover:text-blood-mid" aria-label="Remove proficiency" @click="removeToolProf(i)">×</button>
-            </span>
+              v-for="chip in customAbilityChips"
+              :key="chip"
+              class="px-2 py-0.5 rounded border border-arcane-base/25 bg-arcane-deep/15 text-2xs font-heading text-arcane-pale"
+            >{{ chip }}</span>
           </div>
-        </div>
 
-        <!-- Bonus languages -->
-        <div class="space-y-1.5">
-          <label class="text-2xs font-heading tracking-wide uppercase text-mist">Bonus Languages</label>
-          <div class="flex items-center gap-3">
-            <input
-              v-model.number="builder.draft.raceLanguageChoices"
-              type="number"
-              min="0"
-              max="5"
-              class="input-base w-20 text-sm"
-            />
-            <p class="text-xs font-body text-mist/60">
-              Beyond Common. You'll pick the specific languages in Step VII — Proficiencies.
-            </p>
+          <div class="flex flex-wrap gap-x-4 gap-y-1 text-2xs font-body text-mist">
+            <span v-if="builder.draft.raceSkillProficiencies.length">{{ builder.draft.raceSkillProficiencies.length }} skill prof.</span>
+            <span v-if="builder.draft.raceResistances.length">{{ builder.draft.raceResistances.length }} resistance{{ builder.draft.raceResistances.length > 1 ? 's' : '' }}</span>
+            <span v-if="builder.draft.raceCustomToolProfs.length">{{ builder.draft.raceCustomToolProfs.length }} tool/weapon prof.</span>
+            <span v-if="builder.draft.raceCustomTraits.length">{{ builder.draft.raceCustomTraits.length }} trait{{ builder.draft.raceCustomTraits.length > 1 ? 's' : '' }}</span>
           </div>
         </div>
-
-        <!-- Traits -->
-        <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <p class="text-2xs font-heading tracking-wide uppercase text-mist">
-              Racial Traits <span class="normal-case font-body text-mist/50">(optional)</span>
-            </p>
-            <button
-              type="button"
-              class="text-2xs font-heading text-arcane-pale/80 hover:text-arcane-pale transition-all"
-              @click="addTrait"
-            >+ Add trait</button>
-          </div>
-          <div v-if="builder.draft.raceCustomTraits.length" class="space-y-2">
-            <div
-              v-for="(trait, i) in builder.draft.raceCustomTraits"
-              :key="i"
-              class="px-3 py-2.5 rounded border border-shadow/50 bg-depths/20 space-y-2"
-            >
-              <div class="flex gap-2">
-                <input
-                  v-model="trait.name"
-                  type="text"
-                  maxlength="60"
-                  placeholder="Trait name (e.g. Celestial Resistance)"
-                  class="input-base flex-1 text-sm"
-                />
-                <button type="button" class="px-2 text-mist/50 hover:text-blood-mid" aria-label="Remove trait" @click="removeTrait(i)">×</button>
-              </div>
-              <textarea
-                v-model="trait.desc"
-                rows="2"
-                maxlength="600"
-                placeholder="Describe the trait…"
-                class="input-base w-full text-sm resize-none"
-              />
-            </div>
-          </div>
-          <p v-else class="text-xs font-body text-mist/50 italic">
-            No traits yet. Add special abilities, senses, or flavor perks for your race.
-          </p>
-        </div>
-
-        <!-- Save to collection (auth only) -->
-        <div v-if="auth.isAuthenticated" class="flex items-center justify-between gap-3 pt-1 border-t border-shadow/40">
-          <p class="text-2xs font-body text-mist/60">Save this race to reuse it in other characters and share it with the community.</p>
-          <button
-            type="button"
-            class="shrink-0 px-3.5 py-2 rounded border text-xs font-heading tracking-wide transition-all"
-            :class="builder.draft.raceName.trim() && !savingRace
-              ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale hover:bg-arcane-deep/25'
-              : 'border-shadow/40 text-mist/40 cursor-not-allowed'"
-            :disabled="!builder.draft.raceName.trim() || savingRace"
-            @click="saveCurrentRace"
-          >{{ savingRace ? 'Saving…' : (savedRace ? 'Update in collection' : 'Save to my collection') }}</button>
-        </div>
-        <p v-else class="text-2xs font-body text-mist/50 italic pt-1 border-t border-shadow/40">
-          Sign in to save this race to your collection and reuse it later.
+        <p v-if="showValidation && !builder.draft.raceName.trim()" class="text-xs font-body text-blood-bright">
+          Enter a name for your custom race — open “Edit details” to set it.
         </p>
       </section>
     </Transition>
@@ -523,11 +292,13 @@
     </Transition>
 
     <div class="h-4" />
+
+    <CustomRaceModal :show="showCustomModal" @close="showCustomModal = false" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref } from 'vue'
 import { PencilIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { useBuilderStore } from '@/character-builder/builderStore'
@@ -535,16 +306,11 @@ import { getRaceMeta } from '@/character-builder/classMeta'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
-import { useAuthStore } from '@/auth/store'
-import { useCustomContentStore } from '@/custom-content/store'
-import { useToast } from '@/shared/composables/useToast'
-import { SKILLS } from '@/shared/lib/skillAbilityMap'
-import type { ApiRace, ApiSubrace, ApiTrait, Api2024Species, ApiReference, EditionTag } from '@/shared/types/api'
+import type { ApiRace, ApiSubrace, ApiTrait, Api2024Species, EditionTag } from '@/shared/types/api'
 import type { AbilityScores } from '@/shared/types/character'
-import type { CustomRace, CustomRaceInput } from '@/shared/types/customContent'
 import PickerCard from '@/character-builder/components/PickerCard.vue'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
-import AppSelect from '@/shared/ui/AppSelect.vue'
+import CustomRaceModal from '@/character-builder/components/CustomRaceModal.vue'
 
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
@@ -746,199 +512,24 @@ async function selectSubrace(index: string, name: string) {
 }
 
 // ── Custom (homebrew) race ─────────────────────────────────────────────────────
+// The homebrew form lives in CustomRaceModal; this step opens it and shows a summary.
 
-const ABILITIES: { key: keyof AbilityScores; label: string }[] = [
-  { key: 'str', label: 'STR' }, { key: 'dex', label: 'DEX' }, { key: 'con', label: 'CON' },
-  { key: 'int', label: 'INT' }, { key: 'wis', label: 'WIS' }, { key: 'cha', label: 'CHA' },
-]
-const SIZES = ['Small', 'Medium', 'Large']
-const DARKVISION_OPTIONS = [
-  { value: 0, label: 'None' }, { value: 60, label: '60 ft.' }, { value: 120, label: '120 ft.' },
-]
+const showCustomModal = ref(false)
 
-// Damage types for the resistance picker (same source as the sheet's Traits editor)
-const { data: damageTypesData } = useQuery({
-  queryKey: ['damage-types'],
-  queryFn: () => fiveEApi.listDamageTypes(),
-  staleTime: Infinity,
-  enabled: computed(() => isCustom.value),
-})
-const damageTypes = computed(() =>
-  (damageTypesData.value?.results ?? []).map((d: ApiReference) => ({ index: d.index, name: d.name })),
+function openCustomRace() {
+  if (!isCustom.value) builder.initCustomRace()
+  showCustomModal.value = true
+}
+
+const ABILITY_ORDER: (keyof AbilityScores)[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
+const ABILITY_LABELS: Record<string, string> = {
+  str: 'STR', dex: 'DEX', con: 'CON', int: 'INT', wis: 'WIS', cha: 'CHA',
+}
+const customAbilityChips = computed(() =>
+  ABILITY_ORDER
+    .filter(k => (builder.draft.raceAbilityBonuses[k] ?? 0) > 0)
+    .map(k => `${ABILITY_LABELS[k]} +${builder.draft.raceAbilityBonuses[k]}`),
 )
-
-// Ability bonus allocator. Homebrew-friendly: 0..+3 per ability, no hard total cap (a hint
-// appears past the usual ~+3 racial budget). effectiveScores sums these and caps final at 20.
-const raceAbilityTotal = computed(() =>
-  Object.values(builder.draft.raceAbilityBonuses).reduce((s, v) => s + (v ?? 0), 0),
-)
-function canIncreaseRaceAbility(key: keyof AbilityScores): boolean {
-  return (builder.draft.raceAbilityBonuses[key] ?? 0) < 3
-}
-function changeRaceAbility(key: keyof AbilityScores, delta: number) {
-  const current = builder.draft.raceAbilityBonuses[key] ?? 0
-  const val = current + delta
-  if (val < 0 || val > 3) return
-  const next = { ...builder.draft.raceAbilityBonuses }
-  if (val === 0) delete next[key]
-  else next[key] = val
-  builder.draft.raceAbilityBonuses = next
-}
-
-function isRaceSkillSelected(index: string): boolean {
-  return builder.draft.raceSkillProficiencies.includes(index)
-}
-function toggleRaceSkill(index: string) {
-  const cur = builder.draft.raceSkillProficiencies
-  builder.draft.raceSkillProficiencies = cur.includes(index)
-    ? cur.filter(s => s !== index)
-    : [...cur, index]
-}
-
-function isResistanceSelected(index: string): boolean {
-  return builder.draft.raceResistances.includes(index)
-}
-function toggleResistance(index: string) {
-  const cur = builder.draft.raceResistances
-  builder.draft.raceResistances = cur.includes(index)
-    ? cur.filter(r => r !== index)
-    : [...cur, index]
-}
-
-function addTrait() {
-  builder.draft.raceCustomTraits = [...builder.draft.raceCustomTraits, { name: '', desc: '' }]
-}
-function removeTrait(i: number) {
-  builder.draft.raceCustomTraits = builder.draft.raceCustomTraits.filter((_, idx) => idx !== i)
-}
-
-const toolProfInput = ref('')
-function addToolProf() {
-  const v = toolProfInput.value.trim()
-  if (v && !builder.draft.raceCustomToolProfs.includes(v)) {
-    builder.draft.raceCustomToolProfs = [...builder.draft.raceCustomToolProfs, v]
-  }
-  toolProfInput.value = ''
-}
-function removeToolProf(i: number) {
-  builder.draft.raceCustomToolProfs = builder.draft.raceCustomToolProfs.filter((_, idx) => idx !== i)
-}
-
-function selectCustomRace() {
-  builder.draft.raceIndex = 'custom'
-  builder.draft.raceName = ''
-  builder.draft.raceEdition = '2014'
-  builder.draft.raceSpeed = 30
-  builder.draft.raceSizeCategory = 'Medium'
-  builder.draft.raceAbilityBonuses = {}
-  // Clear any subrace/proficiency state from a previously selected SRD race
-  builder.draft.subraceIndex = ''
-  builder.draft.subraceName = ''
-  builder.draft.availableSubraces = []
-  builder.draft.subraceAbilityBonuses = {}
-  builder.draft.raceProfChoices = 0
-  builder.draft.raceProfOptions = []
-  builder.draft.selectedRaceProfs = []
-  builder.draft.raceSkillProficiencies = []
-  // Homebrew-specific fields
-  builder.draft.raceResistances = []
-  builder.draft.raceDarkvision = 0
-  builder.draft.raceCustomTraits = []
-  builder.draft.raceCustomToolProfs = []
-  builder.draft.savedCustomRaceId = ''
-  toolProfInput.value = ''
-  // Languages: everyone knows Common; extra languages are chosen in Step VII (Proficiencies)
-  const prevAuto = builder.draft.raceAutoLanguages ?? []
-  const userChosen = builder.draft.selectedLanguages.filter(l => !prevAuto.includes(l))
-  builder.draft.raceAutoLanguages = ['common']
-  builder.draft.raceLanguageCount = 1
-  builder.draft.raceLanguageChoices = 2
-  builder.draft.selectedLanguages = [...new Set(['common', ...userChosen])]
-}
-
-// ── Save / load custom races to the user's cloud collection ─────────────────────
-
-const auth = useAuthStore()
-const customContent = useCustomContentStore()
-const savingRace = ref(false)
-const selectedSavedRaceId = ref('')
-
-onMounted(() => {
-  if (auth.isAuthenticated && !customContent.loaded) customContent.loadMine()
-})
-
-function draftToCustomRaceInput(): CustomRaceInput {
-  const d = builder.draft
-  return {
-    name: d.raceName.trim(),
-    edition: '2014',
-    abilityBonuses: { ...d.raceAbilityBonuses },
-    size: d.raceSizeCategory,
-    speed: d.raceSpeed,
-    darkvision: d.raceDarkvision,
-    resistances: [...d.raceResistances],
-    skillProficiencies: [...d.raceSkillProficiencies],
-    toolProficiencies: [...d.raceCustomToolProfs],
-    languageChoices: d.raceLanguageChoices,
-    traits: d.raceCustomTraits.map(t => ({ name: t.name, desc: t.desc })),
-    isPublic: false,
-  }
-}
-
-// The collection entry this custom race maps to: the tracked id, else a same-name race.
-// Drives create-vs-update so re-saving never duplicates.
-const savedRace = computed<CustomRace | null>(() => {
-  const id = builder.draft.savedCustomRaceId
-  if (id) {
-    const byId = customContent.races.find(r => r.id === id)
-    if (byId) return byId
-  }
-  const name = builder.draft.raceName.trim().toLowerCase()
-  if (!name) return null
-  return customContent.races.find(r => r.name.trim().toLowerCase() === name) ?? null
-})
-
-async function saveCurrentRace() {
-  const name = builder.draft.raceName.trim()
-  if (savingRace.value || !name) return
-  savingRace.value = true
-  try {
-    const input = draftToCustomRaceInput()
-    const existing = savedRace.value
-    if (existing) {
-      await customContent.updateRace(existing.id, input)
-      builder.draft.savedCustomRaceId = existing.id
-      useToast().success('Custom race updated in your collection.')
-    } else {
-      const created = await customContent.createRace(input)
-      if (created) builder.draft.savedCustomRaceId = created.id
-    }
-  } finally {
-    savingRace.value = false
-  }
-}
-
-function applyCustomRace(race: CustomRace) {
-  selectCustomRace()
-  const d = builder.draft
-  d.savedCustomRaceId = race.id
-  d.raceName = race.name
-  d.raceAbilityBonuses = { ...race.abilityBonuses }
-  d.raceSizeCategory = race.size
-  d.raceSpeed = race.speed
-  d.raceDarkvision = race.darkvision
-  d.raceResistances = [...race.resistances]
-  d.raceSkillProficiencies = [...race.skillProficiencies]
-  d.raceCustomToolProfs = [...race.toolProficiencies]
-  d.raceLanguageChoices = race.languageChoices
-  d.raceCustomTraits = race.traits.map(t => ({ name: t.name, desc: t.desc }))
-}
-
-function onSelectSavedRace() {
-  const race = customContent.races.find(r => r.id === selectedSavedRaceId.value)
-  if (race) applyCustomRace(race)
-  selectedSavedRaceId.value = ''
-}
 </script>
 
 <style scoped>
