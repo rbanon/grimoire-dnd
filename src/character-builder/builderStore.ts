@@ -8,7 +8,8 @@ import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
 import { uploadPortraitBlob } from '@/shared/lib/uploadPortrait'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount, getSubclassSpellMode, selectGrantedSubclassSpells, ELDRITCH_INVOCATIONS, INVOCATION_FEATURE_SOURCE } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount, getSubclassSpellMode, selectGrantedSubclassSpells, ELDRITCH_INVOCATIONS, INVOCATION_FEATURE_SOURCE, registerCustomClass, buildCustomSpellProfile } from '@/character-builder/classMeta'
+import type { CustomClass } from '@/shared/types/customContent'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 
 const DRAFT_KEY = 'builder-draft'
@@ -108,6 +109,9 @@ export interface BuilderDraft {
   classSkillOptions: string[]
   subclassIndex: string
   subclassName: string
+  // Full definition when a homebrew class is applied (classIndex === 'custom'); else null.
+  // Drives saves/spellcasting/features in buildCharacterFromDraft and the spell-profile registry.
+  customClassDef: CustomClass | null
   availableSubclasses: { index: string; name: string }[]
   // Spells granted/expanded by the subclass (2014 only). unlockLevel = class level required;
   // feature = land-type gate for Druid Circle of the Land (e.g. "Circle of the Land: Arctic").
@@ -197,7 +201,7 @@ const defaultDraft = (): BuilderDraft => ({
   backgroundProfChoices: [], selectedBackgroundProfs: [],
   classIndex: '', className: '', classHitDie: 8, classSpellcastingAbility: null,
   classSkillChoices: 2, classSkillOptions: [],
-  subclassIndex: '', subclassName: '', availableSubclasses: [],
+  subclassIndex: '', subclassName: '', customClassDef: null, availableSubclasses: [],
   subclassSpells: [], druidLandType: '',
   level: 1, useMilestones: false, hpMethod: 'average', manualMaxHp: 8, rolledHpPerLevel: [],
   holySymbolDescriptions: {},
@@ -789,7 +793,17 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value.expertiseSkills = []
     draft.value.subclassSpells = []
     draft.value.druidLandType = ''
+    // Leaving the custom class behind clears its definition (applyCustomClass sets both together).
+    if (draft.value.classIndex !== 'custom') draft.value.customClassDef = null
   })
+
+  // Keep the spell-profile registry in sync with the applied custom class. immediate handles
+  // draft restore from localStorage; deep re-registers if a re-applied class differs.
+  watch(() => draft.value.customClassDef, (def) => {
+    registerCustomClass('custom', def?.spellcasting
+      ? { profile: buildCustomSpellProfile(def.spellcasting), progression: def.spellcasting.casterProgression }
+      : null)
+  }, { immediate: true, deep: true })
 
   // Re-validate currentStep whenever skippable conditions change
   watch(isSpellcaster, () => {
@@ -823,9 +837,13 @@ export const useBuilderStore = defineStore('builder', () => {
     const savingThrows: Record<keyof AbilityScores, boolean> = {
       str: false, dex: false, con: false, int: false, wis: false, cha: false,
     }
-    for (const part of (CLASS_META[d.classIndex]?.saves ?? '').split('·')) {
-      const key = abbrev[part.trim()]
-      if (key) savingThrows[key] = true
+    if (d.classIndex === 'custom' && d.customClassDef) {
+      for (const s of d.customClassDef.saves) savingThrows[s] = true
+    } else {
+      for (const part of (CLASS_META[d.classIndex]?.saves ?? '').split('·')) {
+        const key = abbrev[part.trim()]
+        if (key) savingThrows[key] = true
+      }
     }
 
     let spellcasting = null
@@ -945,6 +963,19 @@ export const useBuilderStore = defineStore('builder', () => {
                 source: `${d.raceName.trim() || 'Custom Race'} (Trait)`,
                 description: t.desc.trim(),
               }))
+          : []),
+        // Custom (homebrew) class features — those unlocked at or below the character's level
+        ...(d.classIndex === 'custom' && d.customClassDef
+          ? Object.entries(d.customClassDef.featuresByLevel)
+              .filter(([lvl]) => Number(lvl) <= d.level)
+              .flatMap(([lvl, feats]) => feats
+                .filter(f => f.name.trim())
+                .map(f => ({
+                  id: generateId(),
+                  name: f.name.trim(),
+                  source: `${d.customClassDef!.name || 'Custom Class'} ${lvl}`,
+                  description: f.desc.trim(),
+                })))
           : []),
         // Warlock Eldritch Invocations — descriptions resolved from local data.
         ...d.selectedInvocations.map(inv => ({

@@ -237,7 +237,7 @@ import type { AbilityName } from '@/shared/types/character'
 import AppSelect from '@/shared/ui/AppSelect.vue'
 
 const props = defineProps<{ show: boolean; editId?: string | null }>()
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; saved: [id: string] }>()
 
 const customContent = useCustomContentStore()
 const saving = ref(false)
@@ -388,8 +388,13 @@ async function save() {
       featuresByLevel: form.featuresByLevel,
       isPublic: props.editId ? (customContent.getClass(props.editId)?.isPublic ?? false) : false,
     }
-    if (props.editId) await customContent.updateClass(props.editId, payload)
-    else await customContent.createClass(payload)
+    if (props.editId) {
+      await customContent.updateClass(props.editId, payload)
+      emit('saved', props.editId)
+    } else {
+      const created = await customContent.createClass(payload)
+      if (created) emit('saved', created.id)
+    }
     emit('close')
   } finally {
     saving.value = false

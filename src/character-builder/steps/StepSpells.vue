@@ -289,7 +289,7 @@
       <SpellPickerModal
         v-if="showSpellPickerForLevel !== null"
         :show="showSpellPickerForLevel !== null"
-        :class-index="builder.draft.classIndex"
+        :class-index="spellListClass"
         :class-name="builder.draft.className"
         :known-indices="knownIndicesForLevel(showSpellPickerForLevel!)"
         :chosen-elsewhere-indices="chosenElsewhereForLevel(showSpellPickerForLevel)"
@@ -304,7 +304,7 @@
       <SpellPickerModal
         v-if="showReplacementPickerForLevel !== null"
         :show="showReplacementPickerForLevel !== null"
-        :class-index="builder.draft.classIndex"
+        :class-index="spellListClass"
         :class-name="builder.draft.className"
         :known-indices="replacementKnownIndices(showReplacementPickerForLevel!)"
         :chosen-elsewhere-indices="chosenElsewhereForLevel(showReplacementPickerForLevel)"
@@ -487,7 +487,7 @@
 
       <SpellPickerModal
         :show="showSpellPickerFlat"
-        :class-index="builder.draft.classIndex"
+        :class-index="spellListClass"
         :class-name="builder.draft.className"
         :known-indices="builder.draft.selectedSpells.map(s => s.index)"
         :known-spells="builder.draft.selectedSpells"
@@ -536,6 +536,14 @@ const spellAbilityName = computed(() =>
 
 const profile  = computed(() => getSpellProfile(builder.draft.classIndex))
 const levelIdx = computed(() => builder.draft.level - 1)
+
+// Which SRD class's spell list to browse. For a custom class the profile/slots stay keyed on
+// 'custom' (registry), but the actual spells are drawn from its chosen source list (spellList).
+const spellListClass = computed(() =>
+  builder.draft.classIndex === 'custom'
+    ? (builder.draft.customClassDef?.spellcasting?.spellList || 'wizard')
+    : builder.draft.classIndex,
+)
 
 // ── Subclass expanded spells (Warlock patron list) ────────────────────────────
 // These become additional options the known caster may learn. We resolve each spell's
@@ -881,8 +889,8 @@ const preparedSectionNote = computed(() => {
 // ── Cantrip fetch ─────────────────────────────────────────────────────────────
 
 const { data: cantripData, isPending: cantripsLoading } = useQuery({
-  queryKey: computed(() => ['cantrips', builder.draft.classIndex]),
-  queryFn: () => fiveEApi.listSpells({ level: 0, class: builder.draft.classIndex }),
+  queryKey: computed(() => ['cantrips', spellListClass.value]),
+  queryFn: () => fiveEApi.listSpells({ level: 0, class: spellListClass.value }),
   staleTime: Infinity,
   enabled: computed(() => !!builder.draft.classIndex && !!profile.value),
 })
