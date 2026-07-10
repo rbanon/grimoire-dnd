@@ -451,7 +451,16 @@ export const useCustomContentStore = defineStore('custom-content', () => {
 
   // ── Community feed (public content, used by the Community page) ───────────────
   async function loadCommunity(): Promise<CommunityItem[]> {
-    const [r, c, s] = await Promise.all([
+    // Subclasses are additive: load them best-effort so a missing table (before the
+    // migration is applied) or a transient error can't break the public races/classes feed.
+    const subclassesP = withTimeout(
+      supabase.from('custom_subclasses').select('*').eq('is_public', true).order('name', { ascending: true }),
+      20_000, 'Community subclasses',
+    )
+      .then((res) => (res.error ? [] : ((res.data ?? []) as SubclassRow[])))
+      .catch((e) => { console.warn('[custom-content] community subclasses unavailable:', e); return [] as SubclassRow[] })
+
+    const [r, c, subRows] = await Promise.all([
       withTimeout(
         supabase.from('custom_races').select('*').eq('is_public', true).order('primary_stat', { ascending: true }).order('name', { ascending: true }),
         20_000, 'Community races',
@@ -460,14 +469,10 @@ export const useCustomContentStore = defineStore('custom-content', () => {
         supabase.from('custom_classes').select('*').eq('is_public', true).order('primary_stat', { ascending: true }).order('name', { ascending: true }),
         20_000, 'Community classes',
       ),
-      withTimeout(
-        supabase.from('custom_subclasses').select('*').eq('is_public', true).order('name', { ascending: true }),
-        20_000, 'Community subclasses',
-      ),
+      subclassesP,
     ])
     if (r.error) throw r.error
     if (c.error) throw c.error
-    if (s.error) throw s.error
 
     const items: CommunityItem[] = []
     for (const row of (r.data ?? []) as ContentRow[]) {
@@ -479,7 +484,7 @@ export const useCustomContentStore = defineStore('custom-content', () => {
       if (data) items.push({ id: row.id, userId: row.user_id, kind: 'class', name: row.name, edition: row.edition, primaryStat: row.primary_stat ?? classPrimaryStat(data.primaryAbility), authorName: row.author_name, updatedAt: row.updated_at, data })
     }
     // Subclasses have no primary stat of their own — they sort/filter by their parent class.
-    for (const row of (s.data ?? []) as SubclassRow[]) {
+    for (const row of subRows) {
       const data = rowToSubclass(row)
       if (data) items.push({ id: row.id, userId: row.user_id, kind: 'subclass', name: row.name, edition: row.edition, primaryStat: null, authorName: row.author_name, updatedAt: row.updated_at, data })
     }
