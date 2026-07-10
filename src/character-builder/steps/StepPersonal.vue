@@ -202,7 +202,7 @@ import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import { compressPortrait } from '@/shared/lib/uploadPortrait'
 import AlignmentGrid from '@/character-builder/components/AlignmentGrid.vue'
 
-const MAX_PORTRAIT_BYTES = 10_485_760 // 10 MB — compression handles the rest
+const MAX_PORTRAIT_BYTES = 10_485_760 // 10 MB, compression handles the rest
 
 const builder = useBuilderStore()
 const { showValidation } = useBuilderValidation()

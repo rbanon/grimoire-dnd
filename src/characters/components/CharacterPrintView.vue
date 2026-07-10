@@ -20,7 +20,7 @@
           <h1 class="ps-name">{{ character.identity.name }}</h1>
           <p class="ps-subtitle">
             {{ character.identity.race.name }}<span v-if="character.identity.subrace"> ({{ character.identity.subrace.name }})</span>
-            &nbsp;·&nbsp;{{ character.identity.class.name }}<span v-if="character.identity.subclass"> — {{ character.identity.subclass.name }}</span>
+            &nbsp;·&nbsp;{{ character.identity.class.name }}<span v-if="character.identity.subclass">, {{ character.identity.subclass.name }}</span>
             &nbsp;·&nbsp;Level {{ character.combat.level }}
           </p>
           <p class="ps-meta">{{ character.identity.background.name }} · {{ character.identity.alignment }}<span v-if="character.combat.experiencePoints"> · {{ character.combat.experiencePoints }} XP</span></p>
@@ -99,7 +99,7 @@
           <h3 class="ps-sh">Proficiencies &amp; Languages</h3>
           <p v-if="character.languages?.length" class="ps-text"><strong>Languages:</strong> {{ character.languages.join(', ') }}</p>
           <p v-if="character.otherProficiencies?.length" class="ps-text"><strong>Other:</strong> {{ character.otherProficiencies.join(', ') }}</p>
-          <p v-if="!character.languages?.length && !character.otherProficiencies?.length" class="ps-muted">—</p>
+          <p v-if="!character.languages?.length && !character.otherProficiencies?.length" class="ps-muted">-</p>
 
           <template v-if="character.combat.conditions?.length">
             <h3 class="ps-sh">Conditions</h3>
@@ -144,7 +144,7 @@
               <span v-if="item.armorClass" class="ps-item-meta">AC {{ item.armorClass }}</span>
             </div>
           </div>
-          <p v-else class="ps-muted">—</p>
+          <p v-else class="ps-muted">-</p>
 
           <div v-if="hasCurrency" class="ps-currency">
             <span v-if="character.currency.pp">{{ character.currency.pp }}pp</span>
@@ -199,7 +199,7 @@
 
           <template v-else>
             <h3 class="ps-sh">Notes</h3>
-            <p class="ps-notes">{{ character.notes || '—' }}</p>
+            <p class="ps-notes">{{ character.notes || '-' }}</p>
           </template>
 
         </div>
@@ -635,7 +635,7 @@ const spellsByLevel = computed(() => {
     overflow: hidden;
   }
 
-  /* ─── Zebra striping — even rows get a warm parchment wash ──────────── */
+  /* ─── Zebra striping, even rows get a warm parchment wash ──────────── */
   .ps-absa-row:nth-child(even),
   .ps-skill:nth-child(even),
   .ps-item:nth-child(even),

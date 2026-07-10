@@ -16,7 +16,7 @@
             @blur="savePersonality(field.key, ($event.target as HTMLTextAreaElement).value)"
           />
           <p v-else class="font-body text-sm text-stone leading-relaxed whitespace-pre-wrap">
-            {{ field.value || '—' }}
+            {{ field.value || '-' }}
           </p>
         </div>
       </div>
@@ -35,7 +35,7 @@
           @blur="savePersonality('biography', ($event.target as HTMLTextAreaElement).value)"
         />
         <p v-else class="font-body text-sm text-stone leading-relaxed whitespace-pre-wrap">
-          {{ character.personality.biography || '—' }}
+          {{ character.personality.biography || '-' }}
         </p>
       </div>
     </section>
@@ -55,7 +55,7 @@
               class="input-base w-full font-body text-sm bg-transparent"
               @blur="saveIdentity(field.key, ($event.target as HTMLInputElement).value)"
             />
-            <p v-else class="font-body text-sm text-stone">{{ field.value || '—' }}</p>
+            <p v-else class="font-body text-sm text-stone">{{ field.value || '-' }}</p>
           </div>
         </div>
         <div class="flex flex-col gap-1.5">
@@ -69,7 +69,7 @@
             @blur="saveIdentity('appearanceNotes', ($event.target as HTMLTextAreaElement).value)"
           />
           <p v-else class="font-body text-sm text-stone leading-relaxed whitespace-pre-wrap">
-            {{ character.identity.appearanceNotes || '—' }}
+            {{ character.identity.appearanceNotes || '-' }}
           </p>
         </div>
       </div>

@@ -24,7 +24,7 @@
         </div>
       </div>
     </div>
-    <p class="text-sm text-mist mb-6">Homebrew races, classes &amp; subclasses shared by other players — sorted by primary ability.</p>
+    <p class="text-sm text-mist mb-6">Homebrew races, classes &amp; subclasses shared by other players, sorted by primary ability.</p>
 
     <!-- Filters -->
     <div class="flex flex-wrap gap-3 mb-6 items-center">
@@ -74,7 +74,7 @@
     </div>
     <div v-else-if="isError" class="text-center py-16 text-danger">Failed to load community content.</div>
     <div v-else-if="filtered.length === 0" class="text-center py-16 text-muted">
-      <p v-if="(items ?? []).length === 0">No shared content yet. Be the first — publish a custom race from your profile!</p>
+      <p v-if="(items ?? []).length === 0">No shared content yet. Be the first, publish a custom race from your profile!</p>
       <p v-else>Nothing matches your filters.</p>
     </div>
 
@@ -131,7 +131,7 @@
                 <span class="text-2xs font-mono px-1.5 py-0.5 rounded border border-arcane-base/30 bg-arcane-deep/15 text-arcane-pale">{{ statLabel(it.primaryStat) }}</span>
               </td>
               <td class="py-3 px-4 text-center font-body text-mist hidden sm:table-cell">{{ it.edition }}</td>
-              <td class="py-3 px-4 font-body text-mist hidden md:table-cell truncate">{{ it.authorName ?? '—' }}</td>
+              <td class="py-3 px-4 font-body text-mist hidden md:table-cell truncate">{{ it.authorName ?? '-' }}</td>
             </tr>
           </tbody>
         </table>
@@ -168,7 +168,7 @@ const ABILITY_LABELS: Record<string, string> = {
   str: 'STR', dex: 'DEX', con: 'CON', int: 'INT', wis: 'WIS', cha: 'CHA',
 }
 
-// Public read — works for guests too (RLS: is_public = true).
+// Public read, works for guests too (RLS: is_public = true).
 const { data: items, isPending, isError } = useQuery({
   queryKey: ['community'],
   queryFn: () => customContent.loadCommunity(),
@@ -176,9 +176,9 @@ const { data: items, isPending, isError } = useQuery({
 })
 
 function statLabel(s: string | null): string {
-  return s ? (ABILITY_LABELS[s] ?? s.toUpperCase()) : '—'
+  return s ? (ABILITY_LABELS[s] ?? s.toUpperCase()) : '-'
 }
-// Canonical STR→CHA order so "sort by primary stat" reads like a character sheet, not A–Z.
+// Canonical STR→CHA order so "sort by primary stat" reads like a character sheet, not A-Z.
 function statRank(s: string | null): number {
   const i = s ? ABILITY_ORDER.indexOf(s) : -1
   return i === -1 ? 99 : i

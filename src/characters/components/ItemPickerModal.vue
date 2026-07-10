@@ -140,7 +140,7 @@ watch(() => props.show, (open) => {
 
 const enabled = computed(() => props.show)
 
-// 3 lightweight list requests — no individual item fetches on open
+// 3 lightweight list requests, no individual item fetches on open
 const { data: allList,    isLoading: l1 } = useQuery({ queryKey: ['equipment-list'],               queryFn: () => fiveEApi.listEquipment(),                    staleTime: Infinity, enabled })
 const { data: weaponCat,  isLoading: l2 } = useQuery({ queryKey: ['eq-cat', 'weapon'],             queryFn: () => fiveEApi.getEquipmentCategory('weapon'),     staleTime: Infinity, enabled })
 const { data: armorCat,   isLoading: l3 } = useQuery({ queryKey: ['eq-cat', 'armor'],              queryFn: () => fiveEApi.getEquipmentCategory('armor'),      staleTime: Infinity, enabled })
@@ -188,7 +188,7 @@ async function confirm() {
   try {
     const strMod = computeModifier(props.character.abilityScores.str)
     const dexMod = computeModifier(props.character.abilityScores.dex)
-    // Only fetch full details for the selected items (typically 1–5)
+    // Only fetch full details for the selected items (typically 1-5)
     const details = await Promise.all(
       [...selected.value].map(idx => fiveEApi.getEquipment(idx)),
     )

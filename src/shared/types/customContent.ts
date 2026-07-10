@@ -9,7 +9,7 @@ export const CustomTraitSchema = z.object({
 export type CustomTrait = z.infer<typeof CustomTraitSchema>
 
 // Provenance for content copied from the community. A copy is always an INDEPENDENT snapshot
-// (own id/owner, no live link) — this just records where it came from, for attribution and to
+// (own id/owner, no live link), this just records where it came from, for attribution and to
 // detect when the original has a newer version. Absent on originally-authored content.
 export const ContentSourceSchema = z.object({
   id: z.string(),                                 // the original's id (may be private/deleted later)
@@ -20,7 +20,7 @@ export type ContentSource = z.infer<typeof ContentSourceSchema>
 
 // ─── Custom Race ───────────────────────────────────────────────────────────────
 // The full authored definition of a homebrew race. Richer than the RaceSnapshot
-// baked onto a character — this is what gets saved to `custom_races.data` and reused.
+// baked onto a character, this is what gets saved to `custom_races.data` and reused.
 
 export const CustomRaceSchema = z.object({
   id: z.string(),
@@ -58,9 +58,9 @@ export const CustomClassSpellcastingSchema = z.object({
   castingType: z.enum(['known', 'prepared', 'spellbook']),
   ability: AbilityNameSchema,
   // Slot progression drives the spell-slot table: full (Wizard), half (Paladin/Ranger),
-  // third (Eldritch Knight), or pact (Warlock). Custom classes are detailed for levels 1–3.
+  // third (Eldritch Knight), or pact (Warlock). Custom classes are detailed for levels 1-3.
   casterProgression: z.enum(['full', 'half', 'third', 'pact']).default('full'),
-  // Cantrips / spells known at levels 1–3 (the supported range for custom classes).
+  // Cantrips / spells known at levels 1-3 (the supported range for custom classes).
   cantripsKnown: z.array(z.number().int()).default([0, 0, 0]),
   spellsKnown: z.array(z.number().int()).optional(),
   spellList: z.string().optional(), // SRD class index to source the spell list from

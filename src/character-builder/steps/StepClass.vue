@@ -130,7 +130,7 @@
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2">
               <label class="label mb-0">Subclass</label>
-              <span v-if="builder.draft.level < 3" class="text-2xs font-body text-mist/60">(unlocks at level 3 — set in Step II)</span>
+              <span v-if="builder.draft.level < 3" class="text-2xs font-body text-mist/60">(unlocks at level 3, set in Step II)</span>
             </div>
             <button
               v-if="auth.isAuthenticated"
@@ -151,7 +151,7 @@
               {{ sub.name }}<span v-if="sub.index.startsWith('custom:')" class="text-2xs text-arcane-pale/50 ml-1">homebrew</span>
             </button>
           </div>
-          <p v-else class="text-xs font-body text-mist/50 italic">No subclasses for this class yet — create one above.</p>
+          <p v-else class="text-xs font-body text-mist/50 italic">No subclasses for this class yet, create one above.</p>
           <p v-if="showValidation && builder.draft.availableSubclasses.length > 0 && !builder.draft.subclassIndex" class="text-xs font-body text-blood-bright">
             Select a subclass to continue.
           </p>
@@ -189,7 +189,7 @@
             </div>
           </Transition>
 
-          <!-- Druid Circle of the Land — land-type choice -->
+          <!-- Druid Circle of the Land, land-type choice -->
           <Transition name="expand">
             <div v-if="isDruidLand" class="mt-3 space-y-2">
               <div class="flex items-center gap-2">
@@ -268,8 +268,8 @@ const classDisplay = computed(() => {
     return {
       glyph: '✦',
       flavor: c.description || 'Homebrew class',
-      primary: c.primaryAbility || '—',
-      saves: c.saves.map(s => s.toUpperCase()).join(' · ') || '—',
+      primary: c.primaryAbility || '-',
+      saves: c.saves.map(s => s.toUpperCase()).join(' · ') || '-',
     }
   }
   const m = getClassMeta(builder.draft.classIndex)
@@ -339,7 +339,7 @@ const { data: subclassDetail, isPending: subclassDetailLoading } = useQuery({
     ? fiveEApi.getSubclass2024(subclassIndex.value) as Promise<ApiSubclass>
     : fiveEApi.getSubclass(subclassIndex.value) as Promise<ApiSubclass>,
   staleTime: Infinity,
-  // Custom subclasses aren't in the SRD API — their detail comes from customSubclassDef.
+  // Custom subclasses aren't in the SRD API, their detail comes from customSubclassDef.
   enabled: computed(() => !!subclassIndex.value && !subclassIndex.value.startsWith('custom:')),
 })
 

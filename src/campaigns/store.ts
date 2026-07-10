@@ -43,7 +43,7 @@ function rowToCampaign(row: CampaignRow): Campaign {
   }
 }
 
-// Loosely validate local rows (own data) — drop anything unparseable rather than crash.
+// Loosely validate local rows (own data), drop anything unparseable rather than crash.
 const LocalCampaignSchema = z.object({
   id: z.string(),
   userId: z.string(),

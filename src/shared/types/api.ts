@@ -1,4 +1,4 @@
-// 5e-bits API DTOs — these mirror the external API shape
+// 5e-bits API DTOs, these mirror the external API shape
 // Do NOT use these directly in the UI; normalize into domain models first.
 
 export interface ApiReference {
@@ -161,7 +161,7 @@ export interface ApiBackground {
   index: string
   name: string
   starting_proficiencies: ApiReference[]
-  // 2014-only fields — optional because 2024 backgrounds (normalized) omit them
+  // 2014-only fields, optional because 2024 backgrounds (normalized) omit them
   language_options?: ApiProficiencyChoice
   starting_equipment: ApiStartingEquipment[]
   starting_equipment_options: ApiEquipmentOption[]
@@ -178,7 +178,7 @@ export interface ApiBackground {
   url: string
 }
 
-/** Raw 2024 background — different shape (proficiencies, feat, equipment_options). */
+/** Raw 2024 background, different shape (proficiencies, feat, equipment_options). */
 export interface Api2024Background {
   index: string
   name: string
@@ -375,7 +375,7 @@ export interface ApiFeat {
 
 export type EditionTag = '2014' | '2024'
 
-/** 2024 species — replaces /races. No ability_bonuses, no languages, no starting_proficiencies. */
+/** 2024 species, replaces /races. No ability_bonuses, no languages, no starting_proficiencies. */
 export interface Api2024Species {
   index: string
   name: string
@@ -387,7 +387,7 @@ export interface Api2024Species {
   url: string
 }
 
-/** 2024 subspecies — replaces /subraces. */
+/** 2024 subspecies, replaces /subraces. */
 export interface Api2024Subspecies {
   index: string
   name: string
@@ -396,7 +396,7 @@ export interface Api2024Subspecies {
   url: string
 }
 
-/** 2024 feat — uses `description` string (markdown) instead of `desc` array. */
+/** 2024 feat, uses `description` string (markdown) instead of `desc` array. */
 export interface Api2024Feat {
   index: string
   name: string

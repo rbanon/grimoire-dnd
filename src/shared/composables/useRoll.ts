@@ -25,7 +25,7 @@ export interface PendingRoll {
   modifierParts?: string
 }
 
-// Module-level singletons — all callers share the same state
+// Module-level singletons, all callers share the same state
 let _id = 0
 const _current = ref<RollResult | null>(null)
 const _pending = ref<PendingRoll | null>(null)
@@ -47,7 +47,7 @@ function _show(r: RollResult, ms = 4500) {
   }
 
   // Animation plays first, then result appears.
-  // _animating is always true regardless of reduced-motion — CSS @media handles suppressing the keyframe.
+  // _animating is always true regardless of reduced-motion, CSS @media handles suppressing the keyframe.
   if (_animTimer) clearTimeout(_animTimer)
   _animating.value = true
   const delay = _prefersReducedMotion ? 150 : 500

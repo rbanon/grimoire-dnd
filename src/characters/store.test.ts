@@ -128,7 +128,7 @@ beforeEach(() => {
 
 // ── importFromJson ──────────────────────────────────────────────────────────────
 
-describe('importFromJson — validation', () => {
+describe('importFromJson, validation', () => {
   it('rejects files larger than 5 MB', async () => {
     const big = 'a'.repeat(5 * 1024 * 1024 + 1)
     const store = makeStore()
@@ -155,7 +155,7 @@ describe('importFromJson — validation', () => {
   })
 })
 
-describe('importFromJson — character limit enforcement', () => {
+describe('importFromJson, character limit enforcement', () => {
   it('returns imported: 0 and adds a limit error when already at MAX_CHARACTERS', async () => {
     const store = makeStore()
     fill(store, MAX_CHARACTERS)
@@ -202,9 +202,9 @@ describe('importFromJson — character limit enforcement', () => {
   })
 })
 
-// ── create — local mode ─────────────────────────────────────────────────────────
+// ── create, local mode ─────────────────────────────────────────────────────────
 
-describe('create — local mode', () => {
+describe('create, local mode', () => {
   it('adds a character to the store', async () => {
     const store = makeStore()
     expect(store.characters).toHaveLength(0)
@@ -237,9 +237,9 @@ describe('create — local mode', () => {
   })
 })
 
-// ── create — cloud mode ─────────────────────────────────────────────────────────
+// ── create, cloud mode ─────────────────────────────────────────────────────────
 
-describe('create — cloud mode', () => {
+describe('create, cloud mode', () => {
   beforeEach(() => {
     auth.isAuthenticated = true
     auth.userId = 'user-123'
@@ -269,9 +269,9 @@ describe('create — cloud mode', () => {
   })
 })
 
-// ── update — cloud resilience ────────────────────────────────────────────────────
+// ── update, cloud resilience ────────────────────────────────────────────────────
 
-describe('update — cloud resilience', () => {
+describe('update, cloud resilience', () => {
   beforeEach(() => {
     auth.isAuthenticated = true
     auth.userId = 'user-123'
@@ -294,9 +294,9 @@ describe('update — cloud resilience', () => {
   })
 })
 
-// ── retryPending — offline sync queue ─────────────────────────────────────────────
+// ── retryPending, offline sync queue ─────────────────────────────────────────────
 
-describe('retryPending — offline sync queue', () => {
+describe('retryPending, offline sync queue', () => {
   beforeEach(() => {
     auth.isAuthenticated = true
     auth.userId = 'user-123'
@@ -320,9 +320,9 @@ describe('retryPending — offline sync queue', () => {
   })
 })
 
-// ── remove — cloud rollback ─────────────────────────────────────────────────────
+// ── remove, cloud rollback ─────────────────────────────────────────────────────
 
-describe('remove — cloud rollback', () => {
+describe('remove, cloud rollback', () => {
   beforeEach(() => {
     auth.isAuthenticated = true
     auth.userId = 'user-123'

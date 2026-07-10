@@ -55,9 +55,9 @@
     <!-- Info panel -->
     <div class="px-3.5 pt-2.5 pb-3 flex flex-col gap-1.5 flex-1">
 
-      <!-- Race · Class — Subclass -->
+      <!-- Race · Class, Subclass -->
       <p class="font-body text-sm text-ash leading-snug truncate">
-        {{ summary.race }}<span class="text-dusk mx-1.5">·</span>{{ summary.className }}<span v-if="summary.subclassName" class="text-mist/70"> — {{ summary.subclassName }}</span>
+        {{ summary.race }}<span class="text-dusk mx-1.5">·</span>{{ summary.className }}<span v-if="summary.subclassName" class="text-mist/70">, {{ summary.subclassName }}</span>
       </p>
 
       <!-- Last edited + HP/AC -->

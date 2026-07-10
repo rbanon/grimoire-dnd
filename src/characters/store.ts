@@ -19,7 +19,7 @@ import { withTimeout } from '@/shared/lib/withTimeout'
 
 const LOCAL_KEY = 'characters'
 // Characters whose cloud write failed are queued here so a transient Supabase/network
-// failure never loses the user's work — they are retried on the next load.
+// failure never loses the user's work, they are retried on the next load.
 const PENDING_KEY = 'characters:pending'
 let _persistTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -188,11 +188,11 @@ export const useCharactersStore = defineStore('characters', () => {
 
   // Shared handler for a failed cloud write. Logs the REAL error (so the cause is
   // visible in the console instead of a generic toast), keeps the character in memory,
-  // and queues it for retry. Non-fatal by design — the caller does not throw.
+  // and queues it for retry. Non-fatal by design, the caller does not throw.
   function handleCloudFailure(character: Character, err: unknown, op: string) {
-    console.error(`[characters] cloud ${op} failed — kept on this device, will retry:`, err)
+    console.error(`[characters] cloud ${op} failed, kept on this device, will retry:`, err)
     stashPending(character)
-    useToast().error('Cloud sync failed — saved on this device and will retry when you reconnect.')
+    useToast().error('Cloud sync failed, saved on this device and will retry when you reconnect.')
   }
 
   // Re-upload any characters that previously failed to sync. Called after a cloud load.
@@ -392,7 +392,7 @@ export const useCharactersStore = defineStore('characters', () => {
     })
 
     const cloudLoaded = await loadFromCloud()
-    if (!cloudLoaded) return // cloud unreachable — keep local data as-is
+    if (!cloudLoaded) return // cloud unreachable, keep local data as-is
 
     // Cloud is now source of truth; clear local
     storageSet(LOCAL_KEY, [])
@@ -422,7 +422,7 @@ export const useCharactersStore = defineStore('characters', () => {
             syncedCount++
           } catch { /* non-fatal */ }
         }
-        // else cloud is newer or same — keep cloud version
+        // else cloud is newer or same, keep cloud version
       }
     }
 

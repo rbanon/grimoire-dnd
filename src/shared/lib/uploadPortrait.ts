@@ -3,7 +3,7 @@ import { withTimeout } from '@/shared/lib/withTimeout'
 
 const BUCKET = 'portraits'
 const MAX_PX   = 512   // max width/height in pixels
-const QUALITY  = 0.85  // JPEG quality (0–1)
+const QUALITY  = 0.85  // JPEG quality (0-1)
 
 /**
  * Compresses an image file to a JPEG with max MAX_PX × MAX_PX dimensions.

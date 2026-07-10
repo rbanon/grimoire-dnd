@@ -1,6 +1,6 @@
 import type { AbilityName } from '@/shared/types/character'
 
-// Canonical ability order — used to break ties consistently (STR > DEX > … > CHA).
+// Canonical ability order, used to break ties consistently (STR > DEX > … > CHA).
 export const ABILITY_ORDER: readonly AbilityName[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
 export const ABILITY_LABEL: Record<AbilityName, string> = {
@@ -9,7 +9,7 @@ export const ABILITY_LABEL: Record<AbilityName, string> = {
 }
 
 /**
- * The ability a custom race most boosts — its highest bonus, ties broken by
+ * The ability a custom race most boosts, its highest bonus, ties broken by
  * canonical order. Returns null when no ability has a positive bonus.
  * Used for the denormalized `primary_stat` column that the Community page sorts by.
  */

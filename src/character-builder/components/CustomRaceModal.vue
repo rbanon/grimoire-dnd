@@ -22,7 +22,7 @@
           <div class="px-5 py-4 border-b border-shadow flex items-center justify-between shrink-0">
             <div>
               <p id="custom-race-title" class="font-heading text-base text-arcane-pale">Custom Race</p>
-              <p class="text-2xs font-body text-mist mt-0.5">Homebrew a race — bonuses add straight to your sheet</p>
+              <p class="text-2xs font-body text-mist mt-0.5">Homebrew a race, bonuses add straight to your sheet</p>
             </div>
             <button type="button" class="text-mist hover:text-ash transition-colors" aria-label="Close" @click="$emit('close')">
               <XIcon :size="16" />
@@ -237,7 +237,7 @@
                   class="input-base w-20 text-sm"
                 />
                 <p class="text-xs font-body text-mist/60">
-                  Beyond Common. You'll pick the specific languages in Step VII — Proficiencies.
+                  Beyond Common. You'll pick the specific languages in Step VII, Proficiencies.
                 </p>
               </div>
             </div>

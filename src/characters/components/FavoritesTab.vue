@@ -86,8 +86,8 @@
               <span
                 v-else-if="resolvedWeapon(fav)"
                 class="text-2xs font-body text-mist/30 italic"
-                title="Not in any hand slot — assign in Equipment tab"
-              >—</span>
+                title="Not in any hand slot, assign in Equipment tab"
+              >-</span>
               <button
                 v-if="editMode"
                 type="button"
@@ -105,25 +105,25 @@
             <div class="space-y-0.5">
               <p class="text-2xs font-heading tracking-[0.12em] uppercase text-mist/50">Atk</p>
               <p class="font-heading text-lg text-gold-mid leading-none">
-                {{ resolvedWeapon(fav)!.attackBonus || '—' }}
+                {{ resolvedWeapon(fav)!.attackBonus || '-' }}
               </p>
             </div>
             <div class="space-y-0.5">
               <p class="text-2xs font-heading tracking-[0.12em] uppercase text-mist/50">Dice</p>
               <p class="font-mono text-base text-vellum leading-none">
-                {{ dicePart(resolvedWeapon(fav)!.damage) || '—' }}
+                {{ dicePart(resolvedWeapon(fav)!.damage) || '-' }}
               </p>
             </div>
             <div class="space-y-0.5">
               <p class="text-2xs font-heading tracking-[0.12em] uppercase text-mist/50">Dmg</p>
               <p class="font-mono text-base text-stone leading-none">
-                {{ resolvedWeapon(fav)!.damage || '—' }}
+                {{ resolvedWeapon(fav)!.damage || '-' }}
               </p>
             </div>
             <div class="space-y-0.5">
               <p class="text-2xs font-heading tracking-[0.12em] uppercase text-mist/50">Type</p>
               <p class="font-body text-xs text-ash leading-none mt-0.5">
-                {{ shortDmgType(resolvedWeapon(fav)!.damageType) || '—' }}
+                {{ shortDmgType(resolvedWeapon(fav)!.damageType) || '-' }}
               </p>
             </div>
           </div>
@@ -136,7 +136,7 @@
             <span v-if="resolvedWeapon(fav)?.range" class="text-xs font-body text-mist/50">
               {{ resolvedWeapon(fav)!.range }}
             </span>
-            <span v-else class="text-xs font-body text-mist/30 italic">—</span>
+            <span v-else class="text-xs font-body text-mist/30 italic">-</span>
             <div class="flex gap-1.5 shrink-0">
               <button
                 type="button"

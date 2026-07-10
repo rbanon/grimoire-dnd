@@ -62,17 +62,17 @@
       </div>
 
       <p v-if="showValidation && builder.pointsRemaining > 0" class="text-xs font-body text-blood-bright">
-        {{ builder.pointsRemaining }} point{{ builder.pointsRemaining !== 1 ? 's' : '' }} left to spend — allocate all points to continue.
+        {{ builder.pointsRemaining }} point{{ builder.pointsRemaining !== 1 ? 's' : '' }} left to spend, allocate all points to continue.
       </p>
       <p v-else-if="showValidation && builder.pointsRemaining < 0" class="text-xs font-body text-blood-bright">
-        Too many points spent — reduce a score to continue.
+        Too many points spent, reduce a score to continue.
       </p>
     </section>
 
     <!-- Standard array -->
     <section v-else-if="builder.draft.abilityMethod === 'standard'" class="space-y-5">
       <p class="text-sm font-body text-mist">
-        Assign each value to an ability score — drag a number onto a card, or use the dropdown.
+        Assign each value to an ability score, drag a number onto a card, or use the dropdown.
       </p>
 
       <!-- Available values (draggable) -->
@@ -123,7 +123,7 @@
     <section v-else-if="builder.draft.abilityMethod === 'roll'" class="space-y-5">
       <div class="flex items-start justify-between gap-4 flex-wrap">
         <p class="text-sm font-body text-mist max-w-sm">
-          Roll 4 six-sided dice, drop the lowest result — repeat six times, then assign each value to an ability.
+          Roll 4 six-sided dice, drop the lowest result, repeat six times, then assign each value to an ability.
         </p>
         <button type="button" class="btn-primary shrink-0" @click="rollAllAbilities">
           Roll All
@@ -166,7 +166,7 @@
             <p class="font-heading text-2xl text-vellum">
               {{ builder.draft.rollAssignments[ab.key] !== undefined
                   ? builder.draft.rolledAbilityScores[builder.draft.rollAssignments[ab.key]!]
-                  : '—' }}
+                  : '-' }}
             </p>
             <p v-if="racialBonus(ab.key)" class="text-2xs font-heading text-verdant-bright mt-1">
               +{{ racialBonus(ab.key) }} racial

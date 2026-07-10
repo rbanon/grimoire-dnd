@@ -36,7 +36,7 @@
             :value="slots.mainHand ?? ''"
             @change="onSlotSelect('mainHand', $event)"
           >
-            <option value="">— Empty —</option>
+            <option value="">- Empty -</option>
             <option v-for="item in weapons" :key="item.id" :value="item.id">{{ item.item.name }}</option>
           </select>
           <FightingStyleBadges :bonus="mainHandBonus" />
@@ -53,7 +53,7 @@
             :value="slots.offHand ?? ''"
             @change="onSlotSelect('offHand', $event)"
           >
-            <option value="">— Empty —</option>
+            <option value="">- Empty -</option>
             <optgroup v-if="weapons.length" label="Weapons">
               <option v-for="item in weapons" :key="item.id" :value="item.id">{{ item.item.name }}</option>
             </optgroup>
@@ -76,7 +76,7 @@
             :value="slots.armor ?? ''"
             @change="onSlotSelect('armor', $event)"
           >
-            <option value="">— Empty —</option>
+            <option value="">- Empty -</option>
             <option v-for="item in nonShieldArmor" :key="item.id" :value="item.id">{{ item.item.name }}</option>
           </select>
           <span v-if="acHasDefenseStyle" class="text-2xs font-heading px-1 py-0.5 rounded border border-verdant-base/40 text-verdant-bright bg-verdant-deep/10 self-start">+1 Defense</span>
@@ -96,7 +96,7 @@
         </p>
       </div>
 
-      <!-- Item list — grouped by type -->
+      <!-- Item list, grouped by type -->
       <template v-if="character.inventory.length > 0">
 
         <!-- Weapons -->
@@ -202,7 +202,7 @@
           >
             <button type="button" class="w-3 h-3 rounded-full shrink-0 border-2 transition-colors"
               :class="item.equipped ? 'bg-gold-mid border-gold-mid hover:bg-gold-dim' : 'bg-shadow/30 border-mist/60 hover:border-mist hover:bg-shadow/50'"
-              :title="item.equipped ? 'In use — click to toggle' : 'Click to mark in use'"
+              :title="item.equipped ? 'In use, click to toggle' : 'Click to mark in use'"
               @click="store.update(character.id, { inventory: character.inventory.map(i => i.id === item.id ? { ...i, equipped: !i.equipped } : i) })" />
             <PackageIcon :size="11" class="text-mist/40 shrink-0" />
             <div class="flex-1 min-w-0">
@@ -320,7 +320,7 @@
             <div>
               <label class="label mb-1.5 block">Damage Type</label>
               <select v-model="draft.damageType" class="input-base w-full">
-                <option value="">—</option>
+                <option value="">-</option>
                 <optgroup label="Physical">
                   <option v-for="t in PHYSICAL_TYPES" :key="t" :value="t">{{ t }}</option>
                 </optgroup>
@@ -360,7 +360,7 @@
             <div>
               <label class="label mb-1.5 block">Armor Type</label>
               <select v-model="draft.armorType" class="input-base w-full">
-                <option value="">—</option>
+                <option value="">-</option>
                 <option value="light">Light</option>
                 <option value="medium">Medium</option>
                 <option value="heavy">Heavy</option>

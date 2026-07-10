@@ -109,7 +109,7 @@
                     @click.stop
                     @keydown.stop
                   />
-                  <span v-else class="font-heading text-2xl leading-none text-ash">—</span>
+                  <span v-else class="font-heading text-2xl leading-none text-ash">-</span>
                   <span class="text-2xs font-body text-mist mt-1.5 leading-tight">any value</span>
                 </div>
               </div>
@@ -208,7 +208,7 @@
           <template v-else-if="currentStep === 'asi'">
             <!-- Header -->
             <div class="px-5 py-4 border-b border-shadow shrink-0">
-              <p class="font-heading text-base text-gold-mid">Improvement — Level {{ newLevel }}</p>
+              <p class="font-heading text-base text-gold-mid">Improvement, Level {{ newLevel }}</p>
               <p class="text-2xs font-body text-mist mt-0.5">
                 <template v-if="featChoice === 'asi'">
                   Allocate {{ asiPointsRemaining }} point{{ asiPointsRemaining !== 1 ? 's' : '' }} remaining
@@ -247,7 +247,7 @@
                 <span class="text-2xs font-heading tracking-[0.15em] uppercase text-mist w-8 shrink-0">{{ ASI_LABELS[key] }}</span>
                 <span class="font-heading text-sm text-stone w-5 text-right">{{ asiCurrentScore(key) }}</span>
                 <span class="font-heading text-sm w-5 text-center" :class="(asiAllocations[key] ?? 0) > 0 ? 'text-gold-mid' : 'text-mist/20'">
-                  {{ (asiAllocations[key] ?? 0) > 0 ? `+${asiAllocations[key]}` : '—' }}
+                  {{ (asiAllocations[key] ?? 0) > 0 ? `+${asiAllocations[key]}` : '-' }}
                 </span>
                 <span class="text-2xs font-body text-mist/40">→</span>
                 <span class="font-heading text-sm w-5" :class="(asiAllocations[key] ?? 0) > 0 ? 'text-vellum' : 'text-ash'">
@@ -642,7 +642,7 @@
             <div class="px-5 py-4 border-b border-shadow shrink-0">
               <p class="font-heading text-base text-arcane-pale">Swap an Invocation</p>
               <p class="text-2xs font-body text-mist mt-0.5">
-                Optional — on a Warlock level you may replace one known invocation. Leave unselected to keep them all.
+                Optional, on a Warlock level you may replace one known invocation. Leave unselected to keep them all.
               </p>
             </div>
             <div class="overflow-y-auto flex-1 px-4 py-3 space-y-4">
@@ -869,7 +869,7 @@ const asiCanProceed = computed(() =>
   asiPointsRemaining.value === 0 || !ASI_ABILITIES.some(k => canAsiIncrement(k)),
 )
 
-// ── Feat picker — merged 2014 + 2024 ─────────────────────────────────────────
+// ── Feat picker, merged 2014 + 2024 ─────────────────────────────────────────
 
 const FEAT_PREREQUISITES_2014: Record<string, { ability_score: { index: string; name: string }; minimum_score: number }[]> = {
   athlete:             [{ ability_score: { index: 'str', name: 'Strength' },     minimum_score: 13 }],
@@ -931,7 +931,7 @@ const allFeats = computed(() => [
 ])
 
 // `asiLevel` is the class level the feat is taken at (the level being attained on
-// level-up) — used for minimum-level prereqs (e.g. Epic Boons require level 19).
+// level-up), used for minimum-level prereqs (e.g. Epic Boons require level 19).
 function featMeetsPrerequisites(featIndex: string, edition: '2014' | '2024', asiLevel: number): boolean {
   const scores = props.character.abilityScores
   if (edition === '2014') {
@@ -1277,7 +1277,7 @@ function confirm() {
     }
   }
 
-  // ASI — apply allocations to ability scores (only when not taking a feat)
+  // ASI, apply allocations to ability scores (only when not taking a feat)
   if (featChoice.value === 'asi' && Object.keys(asiAllocations.value).length > 0) {
     const newScores = { ...c.abilityScores }
     for (const [key, delta] of Object.entries(asiAllocations.value) as [AbilityKey, number][]) {
@@ -1286,7 +1286,7 @@ function confirm() {
     updates.abilityScores = newScores
   }
 
-  // Features — class features at this level + feat (if chosen)
+  // Features, class features at this level + feat (if chosen)
   const classFeatures = featuresGained.value
     .filter(f => f.length > 0)
     .map(name => ({

@@ -421,7 +421,7 @@ function traitDescription(trait: ApiTrait): string {
 
 function traitSource(trait: ApiTrait): string {
   if (raceEdition.value === '2024') {
-    // For 2024 subspecies we can't match via trait.subraces — just use species name
+    // For 2024 subspecies we can't match via trait.subraces, just use species name
     return props.character.identity.subrace
       ? props.character.identity.subrace.name
       : props.character.identity.race.name

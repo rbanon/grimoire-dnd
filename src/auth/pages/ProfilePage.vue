@@ -172,7 +172,7 @@
             v-if="customContent.sourceUpdates[race.id]"
             type="button"
             class="shrink-0 px-2 py-1 rounded border border-gold-mid/50 bg-gold-dim/15 text-gold-deep text-2xs font-heading tracking-wide hover:bg-gold-dim/25 transition-all"
-            title="The original has a newer version — replace your copy with it"
+            title="The original has a newer version, replace your copy with it"
             @click="updateFromSource(race)"
           >Update</button>
           <button
@@ -181,7 +181,7 @@
             :class="race.isPublic
               ? 'border-verdant-base/50 bg-verdant-deep/15 text-verdant-bright'
               : 'border-shadow text-mist hover:text-ash'"
-            :title="race.isPublic ? 'Shared to the community — click to make private' : 'Private — click to share'"
+            :title="race.isPublic ? 'Shared to the community, click to make private' : 'Private, click to share'"
             @click="togglePublic(race)"
           >{{ race.isPublic ? 'Public' : 'Private' }}</button>
           <button
@@ -216,7 +216,7 @@
           <button type="button" class="flex-1 min-w-0 text-left" @click="openEditClass(cls)">
             <p class="text-sm font-heading text-vellum truncate">{{ cls.name }}</p>
             <p class="text-2xs font-body text-mist">
-              d{{ cls.hitDie }} · {{ cls.primaryAbility || '—' }}<template v-if="cls.spellcasting"> · Spellcaster</template>
+              d{{ cls.hitDie }} · {{ cls.primaryAbility || '-' }}<template v-if="cls.spellcasting"> · Spellcaster</template>
             </p>
             <p
               v-if="cls.source"
@@ -231,7 +231,7 @@
             v-if="customContent.sourceUpdates[cls.id]"
             type="button"
             class="shrink-0 px-2 py-1 rounded border border-gold-mid/50 bg-gold-dim/15 text-gold-deep text-2xs font-heading tracking-wide hover:bg-gold-dim/25 transition-all"
-            title="The original has a newer version — replace your copy with it"
+            title="The original has a newer version, replace your copy with it"
             @click="updateFromSource(cls)"
           >Update</button>
           <button
@@ -240,7 +240,7 @@
             :class="cls.isPublic
               ? 'border-verdant-base/50 bg-verdant-deep/15 text-verdant-bright'
               : 'border-shadow text-mist hover:text-ash'"
-            :title="cls.isPublic ? 'Shared to the community — click to make private' : 'Private — click to share'"
+            :title="cls.isPublic ? 'Shared to the community, click to make private' : 'Private, click to share'"
             @click="togglePublicClass(cls)"
           >{{ cls.isPublic ? 'Public' : 'Private' }}</button>
           <button
@@ -265,7 +265,7 @@
           >+ New subclass</button>
         </div>
         <p v-if="!customContent.subclasses.length" class="text-sm font-body text-mist italic">
-          No custom subclasses yet. Create one for any class — SRD or your own.
+          No custom subclasses yet. Create one for any class, SRD or your own.
         </p>
         <div
           v-for="sc in customContent.subclasses"
@@ -290,7 +290,7 @@
             v-if="customContent.sourceUpdates[sc.id]"
             type="button"
             class="shrink-0 px-2 py-1 rounded border border-gold-mid/50 bg-gold-dim/15 text-gold-deep text-2xs font-heading tracking-wide hover:bg-gold-dim/25 transition-all"
-            title="The original has a newer version — replace your copy with it"
+            title="The original has a newer version, replace your copy with it"
             @click="updateFromSource(sc)"
           >Update</button>
           <button
@@ -299,7 +299,7 @@
             :class="sc.isPublic
               ? 'border-verdant-base/50 bg-verdant-deep/15 text-verdant-bright'
               : 'border-shadow text-mist hover:text-ash'"
-            :title="sc.isPublic ? 'Shared to the community — click to make private' : 'Private — click to share'"
+            :title="sc.isPublic ? 'Shared to the community, click to make private' : 'Private, click to share'"
             @click="togglePublicSubclass(sc)"
           >{{ sc.isPublic ? 'Public' : 'Private' }}</button>
           <button
@@ -428,7 +428,7 @@ onMounted(async () => {
 // Overwrite a copied race/class/subclass with the original's latest version (destructive to edits).
 async function updateFromSource(item: CustomRace | CustomClass | CustomSubclass) {
   const from = item.source?.authorName || 'the community'
-  if (!confirm(`Update "${item.name}" to the latest version from ${from}? This replaces your copy — any changes you made to it will be lost.`)) return
+  if (!confirm(`Update "${item.name}" to the latest version from ${from}? This replaces your copy, any changes you made to it will be lost.`)) return
   try { await customContent.resyncFromSource(item.id) } catch { /* toast shown by store */ }
 }
 
@@ -540,7 +540,7 @@ async function saveProfile() {
     } else if (pendingFile.value) {
       uploading.value = true
       finalAvatarUrl = await uploadAvatar(pendingFile.value, auth.userId!)
-      // Clean up blob URL — we now have the real Supabase URL
+      // Clean up blob URL, we now have the real Supabase URL
       if (pendingBlobUrl.value) { URL.revokeObjectURL(pendingBlobUrl.value); pendingBlobUrl.value = null }
       pendingFile.value = null
     }

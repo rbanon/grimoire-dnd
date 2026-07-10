@@ -44,7 +44,7 @@
               <span
                 class="font-heading text-xl leading-none"
                 :class="builder.computedMaxHp > 0 ? 'text-gold-mid' : 'text-mist/30'"
-              >{{ builder.computedMaxHp > 0 ? builder.computedMaxHp : '—' }}</span>
+              >{{ builder.computedMaxHp > 0 ? builder.computedMaxHp : '-' }}</span>
               <button
                 v-if="builder.draft.hpMethod === 'roll'"
                 type="button"
@@ -126,7 +126,7 @@
               :class="levelHasError(lvl) ? 'text-blood-bright' : 'text-stone'"
             >
               Level {{ lvl }}
-              <span v-if="levelHasError(lvl)" class="text-2xs font-body ml-1 text-blood-mid"> — choice required</span>
+              <span v-if="levelHasError(lvl)" class="text-2xs font-body ml-1 text-blood-mid">choice required</span>
             </span>
             <span class="text-mist/50 text-xs mr-1">{{ openLevels.has(lvl) ? '▲' : '▼' }}</span>
           </button>
@@ -234,7 +234,7 @@
       </div>
 
       <p v-if="builder.draft.level < 20" class="text-xs font-body text-mist/40 text-center">
-        Levels {{ builder.draft.level + 1 }}–20 unlock when you raise your level above.
+        Levels {{ builder.draft.level + 1 }}-20 unlock when you raise your level above.
       </p>
     </section>
 

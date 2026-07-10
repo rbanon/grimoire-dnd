@@ -1,4 +1,4 @@
--- DnD Creator — Supabase PostgreSQL schema
+-- DnD Creator, Supabase PostgreSQL schema
 -- Run this in the Supabase SQL editor after creating your project.
 
 -- ── Extensions ────────────────────────────────────────────────────────────────
@@ -16,7 +16,7 @@ create table if not exists profiles (
 
 -- Auto-create profile on user signup.
 -- SECURITY DEFINER with fixed search_path prevents search_path injection.
--- EXECUTE is revoked from anon/authenticated — this is a trigger-only function.
+-- EXECUTE is revoked from anon/authenticated, this is a trigger-only function.
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer
 set search_path = ''

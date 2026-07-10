@@ -43,7 +43,7 @@ export interface BuilderDraft {
   holySymbolDescriptions: Record<string, string>
   currentStep: number
 
-  // Step 1 — Identity
+  // Step 1, Identity
   name: string
   portraitUrl: string
   alignment: Alignment
@@ -61,7 +61,7 @@ export interface BuilderDraft {
   flaws: string
   biography: string
 
-  // Step 1b — Race (part of identity step)
+  // Step 1b, Race (part of identity step)
   raceIndex: string
   raceName: string
   raceSpeed: number
@@ -74,16 +74,16 @@ export interface BuilderDraft {
   subraceAbilityBonuses: Partial<Record<keyof AbilityScores, number>>
   availableSubraces: { index: string; name: string }[]
 
-  // Custom (homebrew) race — only meaningful when raceIndex === 'custom'. Bonuses live in
+  // Custom (homebrew) race, only meaningful when raceIndex === 'custom'. Bonuses live in
   // raceAbilityBonuses (shared with SRD races → summed by effectiveScores); these extras are
   // baked into the character at build time (resistances/senses/features/otherProficiencies).
   raceResistances: string[]                       // lowercase damage-type indices, e.g. 'fire'
   raceDarkvision: number                          // 0 = none, else range in ft (60/120)
   raceCustomTraits: { name: string; desc: string }[]
   raceCustomToolProfs: string[]                   // free-text tool/weapon proficiency names
-  savedCustomRaceId: string                       // collection entry this custom race maps to ('' = unsaved) — prevents duplicates on re-save
+  savedCustomRaceId: string                       // collection entry this custom race maps to ('' = unsaved), prevents duplicates on re-save
 
-  // Step 1c — Background
+  // Step 1c, Background
   backgroundIndex: string
   backgroundName: string
   backgroundDescription: string
@@ -100,7 +100,7 @@ export interface BuilderDraft {
   backgroundProfChoices: { desc: string; choose: number; options: { index: string; name: string }[] }[]
   selectedBackgroundProfs: string[]                                    // chosen proficiency indices
 
-  // Step 2 — Class
+  // Step 2, Class
   classIndex: string
   className: string
   classHitDie: number
@@ -125,7 +125,7 @@ export interface BuilderDraft {
   manualMaxHp: number
   rolledHpPerLevel: number[]
 
-  // Step 3 — Abilities
+  // Step 3, Abilities
   abilityMethod: 'pointbuy' | 'standard' | 'manual' | 'roll'
   baseScores: AbilityScores
   standardArrayAssignments: Partial<Record<keyof AbilityScores, number>> // which index in STANDARD_ARRAY
@@ -141,38 +141,38 @@ export interface BuilderDraft {
   // Auto-granted racial languages (tracked separately to avoid overwriting user-chosen languages on race change)
   raceAutoLanguages: string[]
 
-  // Step 4 — Proficiencies
+  // Step 4, Proficiencies
   selectedSkills: string[]
   selectedLanguages: string[]
-  // Skills upgraded to Expertise (double proficiency) — Rogue (L1/L6), Bard (L3/L10).
+  // Skills upgraded to Expertise (double proficiency), Rogue (L1/L6), Bard (L3/L10).
   // Must be a subset of the proficient-skill pool (class + background + race skills).
   expertiseSkills: string[]
 
-  // Step 5 — Equipment (simplified for MVP)
+  // Step 5, Equipment (simplified for MVP)
   useStartingEquipment: boolean
   manualGold: number
   // Coins granted by the chosen starting-equipment options (e.g. background "B) 50 GP")
   equipmentCurrency: { cp: number; sp: number; ep: number; gp: number; pp: number }
   equipmentChoicesDone: boolean
 
-  // Step 2 — Level choices (fighting style, pact boon, etc.)
+  // Step 2, Level choices (fighting style, pact boon, etc.)
   // Key = class level, value = map of choiceKey → selected option index
   levelChoices: Record<number, Record<string, string>>
 
-  // Edition flags — tracks which SRD edition was used for race/class/background selection
+  // Edition flags, tracks which SRD edition was used for race/class/background selection
   raceEdition: '2014' | '2024'
   classEdition: '2014' | '2024'
   backgroundEdition: '2014' | '2024'
 
-  // Step 6 — Feats & ASI decisions, keyed by class level granting the improvement
+  // Step 6, Feats & ASI decisions, keyed by class level granting the improvement
   featsByLevel: Record<number, { type: 'asi' | 'feat'; featIndex?: string; featName?: string; featEdition?: '2014' | '2024' }>
   // Ability allocations for levels where type === 'asi'
   asiAllocations: Record<number, Partial<Record<keyof AbilityScores, number>>>
 
-  // Step 5b — Starting inventory (resolved from equipment step choices)
+  // Step 5b, Starting inventory (resolved from equipment step choices)
   startingInventory: InventoryItem[]
 
-  // Step 6 — Spells
+  // Step 6, Spells
   selectedCantrips: { index: string; name: string }[]
   selectedSpells: { index: string; name: string; level: number }[]
   // Daily prepared subset for prepared casters (Cleric, Druid, Paladin)
@@ -417,7 +417,7 @@ export const useBuilderStore = defineStore('builder', () => {
       }
       if (incompleteLevels.length > 0) {
         const lvlList = incompleteLevels.map(l => `Lv ${l}`).join(', ')
-        errors.push(`Spells incomplete (${lvlList}) — open the highlighted sections below and pick the missing spells`)
+        errors.push(`Spells incomplete (${lvlList}), open the highlighted sections below and pick the missing spells`)
       }
       // Pact of the Tome requires 3 cantrips from any class (Warlock is a known caster)
       if (draft.value.classIndex === 'warlock' && draft.value.level >= 3
@@ -527,7 +527,7 @@ export const useBuilderStore = defineStore('builder', () => {
         })(),
         draft.value.raceProfChoices > 0 && draft.value.selectedRaceProfs.length < draft.value.raceProfChoices
           ? `Choose ${draft.value.raceProfChoices} race proficiency tool${draft.value.raceProfChoices > 1 ? 's' : ''} (${draft.value.selectedRaceProfs.length} selected)` : '',
-        // Expertise (Rogue L1/L6, Bard L3/L10) — pick N from already-proficient skills
+        // Expertise (Rogue L1/L6, Bard L3/L10), pick N from already-proficient skills
         (() => {
           const required = getExpertiseCount(draft.value.classIndex, draft.value.level)
           if (required === 0) return ''
@@ -985,7 +985,7 @@ export const useBuilderStore = defineStore('builder', () => {
       resources: getClassResources(d.classIndex, d.level, computeAllModifiers(effectiveScores.value)),
       favoriteSpells: [],
       features: [
-        // Custom (homebrew) race traits — authored in the builder, shown on the Features tab
+        // Custom (homebrew) race traits, authored in the builder, shown on the Features tab
         ...(d.raceIndex === 'custom'
           ? d.raceCustomTraits
               .filter(t => t.name.trim())
@@ -996,7 +996,7 @@ export const useBuilderStore = defineStore('builder', () => {
                 description: t.desc.trim(),
               }))
           : []),
-        // Custom (homebrew) class features — those unlocked at or below the character's level
+        // Custom (homebrew) class features, those unlocked at or below the character's level
         ...(d.classIndex === 'custom' && d.customClassDef
           ? Object.entries(d.customClassDef.featuresByLevel)
               .filter(([lvl]) => Number(lvl) <= d.level)
@@ -1009,7 +1009,7 @@ export const useBuilderStore = defineStore('builder', () => {
                   description: f.desc.trim(),
                 })))
           : []),
-        // Custom (homebrew) subclass features — unlocked at or below the character's level
+        // Custom (homebrew) subclass features, unlocked at or below the character's level
         ...(d.customSubclassDef
           ? Object.entries(d.customSubclassDef.featuresByLevel)
               .filter(([lvl]) => Number(lvl) <= d.level)
@@ -1022,7 +1022,7 @@ export const useBuilderStore = defineStore('builder', () => {
                   description: f.desc.trim(),
                 })))
           : []),
-        // Warlock Eldritch Invocations — descriptions resolved from local data.
+        // Warlock Eldritch Invocations, descriptions resolved from local data.
         ...d.selectedInvocations.map(inv => ({
           id: generateId(),
           name: inv.name,
@@ -1081,7 +1081,7 @@ export const useBuilderStore = defineStore('builder', () => {
         if (portraitUrl.startsWith('data:') && auth.isAuthenticated && auth.userId) {
           try {
             // portraitUrl is already a compressed JPEG data URL (compressPortrait
-            // ran at ingestion) — upload the blob directly without re-compressing.
+            // ran at ingestion), upload the blob directly without re-compressing.
             const blob = await fetch(portraitUrl).then(r => r.blob())
             portraitUrl = await uploadPortraitBlob(blob, auth.userId, id)
           } catch { /* keep data URL on upload failure */ }
@@ -1101,8 +1101,8 @@ export const useBuilderStore = defineStore('builder', () => {
       if (err instanceof z.ZodError) {
         const messages = err.issues.map((issue: { path: PropertyKey[]; message: string }) => {
           const path = issue.path.join('.')
-          if (path.includes('sizeCategory') || path.includes('identity.race')) return 'Race data incomplete — try re-selecting your race.'
-          if (path.includes('identity.class')) return 'Class data incomplete — try re-selecting your class.'
+          if (path.includes('sizeCategory') || path.includes('identity.race')) return 'Race data incomplete, try re-selecting your race.'
+          if (path.includes('identity.class')) return 'Class data incomplete, try re-selecting your class.'
           if (path.includes('name')) return 'Character name is required.'
           return issue.message
         })

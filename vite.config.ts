@@ -24,7 +24,7 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'Grimoire — D&D 5e Character Creator',
+        name: 'Grimoire, D&D 5e Character Creator',
         short_name: 'Grimoire',
         description: 'Create and manage D&D 5e characters, with a spell, item and monster reference.',
         theme_color: '#8c1c13',
@@ -40,7 +40,7 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [
           {
-            // 5e SRD content never changes — cache aggressively so the reference works offline.
+            // 5e SRD content never changes, cache aggressively so the reference works offline.
             urlPattern: ({ url }) => url.origin === 'https://www.dnd5eapi.co',
             handler: 'StaleWhileRevalidate',
             options: {

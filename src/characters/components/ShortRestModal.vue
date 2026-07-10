@@ -85,7 +85,7 @@
             >
               <span class="text-gold-dim/60 text-xs shrink-0 mt-0.5">ℹ</span>
               <p class="text-xs font-body text-mist">
-                No hit dice remaining. You can still rest — some class features and spells recover on a short rest.
+                No hit dice remaining. You can still rest, some class features and spells recover on a short rest.
               </p>
             </div>
 

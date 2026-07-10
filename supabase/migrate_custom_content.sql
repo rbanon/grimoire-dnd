@@ -1,5 +1,5 @@
 -- Migration: custom content (homebrew races & classes) + community sharing
--- Run once in the Supabase SQL editor. Idempotent — safe to re-run.
+-- Run once in the Supabase SQL editor. Idempotent, safe to re-run.
 -- Depends on the base schema (uuid-ossp extension + public.set_updated_at()).
 
 -- ── custom_races ────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ create index if not exists custom_classes_data_gin       on custom_classes using
 
 -- ── custom_subclasses ───────────────────────────────────────────────────────
 -- A homebrew subclass attaches to a parent class. parent_class is an SRD class
--- index ('fighter') or a custom class id — the builder offers it when that class
+-- index ('fighter') or a custom class id, the builder offers it when that class
 -- is chosen. No primary_stat; the community groups subclasses by parent instead.
 create table if not exists custom_subclasses (
   id            uuid primary key default uuid_generate_v4(),

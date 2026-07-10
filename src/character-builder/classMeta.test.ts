@@ -46,7 +46,7 @@ describe('getFirstSpellLevel', () => {
   })
 })
 
-describe('getSpellSlots — full casters', () => {
+describe('getSpellSlots, full casters', () => {
   it('wizard level 1: 2 first-level slots', () => {
     const s = getSpellSlots('wizard', 1)
     expect(s.level1).toBe(2)
@@ -82,7 +82,7 @@ describe('getSpellSlots — full casters', () => {
   })
 })
 
-describe('getSpellSlots — half casters (paladin, ranger)', () => {
+describe('getSpellSlots, half casters (paladin, ranger)', () => {
   it('paladin level 1: no slots yet', () => {
     const s = getSpellSlots('paladin', 1)
     expect(s.level1).toBe(0)
@@ -108,7 +108,7 @@ describe('getSpellSlots — half casters (paladin, ranger)', () => {
   })
 })
 
-describe('getSpellSlots — warlock (pact slots)', () => {
+describe('getSpellSlots, warlock (pact slots)', () => {
   it('warlock level 1: 1 first-level slot', () => {
     const s = getSpellSlots('warlock', 1)
     expect(s.level1).toBe(1)
@@ -134,7 +134,7 @@ describe('getSpellSlots — warlock (pact slots)', () => {
   })
 })
 
-describe('getSpellSlots — level clamping', () => {
+describe('getSpellSlots, level clamping', () => {
   it('level 0 treated as level 1', () => {
     expect(getSpellSlots('wizard', 0)).toEqual(getSpellSlots('wizard', 1))
   })
@@ -333,7 +333,7 @@ describe('getExpertiseCount', () => {
   })
 })
 
-describe('getClassResources — warlock Mystic Arcanum', () => {
+describe('getClassResources, warlock Mystic Arcanum', () => {
   const noMods = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }
   const arcana = (level: number) =>
     getClassResources('warlock', level, noMods).filter(r => r.id.startsWith('mystic-arcanum-'))

@@ -9,7 +9,7 @@ export default defineConfig({
 
   theme: {
     colors: {
-      // Core neutrals — resolved via CSS custom properties for light/dark switching
+      // Core neutrals, resolved via CSS custom properties for light/dark switching
       void:   'rgb(var(--c-void) / <alpha-value>)',
       abyss:  'rgb(var(--c-abyss) / <alpha-value>)',
       depths: 'rgb(var(--c-depths) / <alpha-value>)',
@@ -20,7 +20,7 @@ export default defineConfig({
       ash:    'rgb(var(--c-ash) / <alpha-value>)',
       vellum: 'rgb(var(--c-vellum) / <alpha-value>)',
 
-      // Antique gold — dividers, legendary items, secondary accents
+      // Antique gold, dividers, legendary items, secondary accents
       gold: {
         dim:    'rgb(var(--c-gold-dim) / <alpha-value>)',
         deep:   'rgb(var(--c-gold-deep) / <alpha-value>)',
@@ -31,7 +31,7 @@ export default defineConfig({
         glow:   'rgb(var(--c-gold-glow) / <alpha-value>)',
       },
 
-      // Crimson — primary interactive accent (DnD Beyond red)
+      // Crimson, primary interactive accent (DnD Beyond red)
       arcane: {
         deep:   'rgb(var(--c-arcane-deep) / <alpha-value>)',
         base:   'rgb(var(--c-arcane-base) / <alpha-value>)',
@@ -40,7 +40,7 @@ export default defineConfig({
         pale:   'rgb(var(--c-arcane-pale) / <alpha-value>)',
       },
 
-      // Blood — danger, HP, critical (darker wine/maroon than arcane)
+      // Blood, danger, HP, critical (darker wine/maroon than arcane)
       blood: {
         deep:   'rgb(var(--c-blood-deep) / <alpha-value>)',
         base:   'rgb(var(--c-blood-base) / <alpha-value>)',
@@ -48,7 +48,7 @@ export default defineConfig({
         bright: 'rgb(var(--c-blood-bright) / <alpha-value>)',
       },
 
-      // Verdant — nature, druid
+      // Verdant, nature, druid
       verdant: {
         deep:   'rgb(var(--c-verdant-deep) / <alpha-value>)',
         base:   'rgb(var(--c-verdant-base) / <alpha-value>)',
@@ -121,19 +121,19 @@ export default defineConfig({
     'btn-base':
       'appearance-none inline-flex items-center justify-center gap-2 font-heading text-sm tracking-wide transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-mid focus-visible:ring-offset-2 focus-visible:ring-offset-void disabled:opacity-40 disabled:pointer-events-none select-none',
 
-    // Warm gold gradient — reads like pressed gold leaf, not a generic UI rectangle
+    // Warm gold gradient, reads like pressed gold leaf, not a generic UI rectangle
     'btn-primary':
       'btn-base px-5 py-2 rounded font-semibold text-void bg-gradient-to-b from-gold-mid to-gold-base hover:from-gold-bright hover:to-gold-mid active:from-gold-dim active:to-gold-base',
 
-    // Thin warm border, transparent interior — gilded frame, not a block
+    // Thin warm border, transparent interior, gilded frame, not a block
     'btn-secondary':
       'btn-base px-5 py-2 rounded border border-gold-dim/50 text-stone hover:border-gold-mid hover:text-vellum',
 
-    // Text-only interaction — no box at all
+    // Text-only interaction, no box at all
     'btn-ghost':
       'btn-base px-3 py-1.5 rounded text-stone hover:text-vellum hover:bg-gold-dim/10',
 
-    // Blood gradient — matches primary treatment
+    // Blood gradient, matches primary treatment
     'btn-danger':
       'btn-base px-5 py-2 rounded font-semibold text-white bg-gradient-to-b from-blood-bright to-blood-mid hover:from-blood-mid hover:to-blood-base active:from-blood-base active:to-blood-deep',
 
@@ -163,7 +163,7 @@ export default defineConfig({
     'divider-gold':
       'border-t border-gold-dim/40',
 
-    // ── Badges / Chips — rectangular per DESIGN spec
+    // ── Badges / Chips, rectangular per DESIGN spec
     'badge':
       'inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-mono tracking-wide',
     'badge-gold':

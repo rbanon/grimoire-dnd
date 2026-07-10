@@ -35,7 +35,7 @@ let draining = false
 function enqueue<T>(fn: () => Promise<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     if (pending.length >= 200) {
-      reject(new Error('5e API queue full — too many concurrent requests'))
+      reject(new Error('5e API queue full, too many concurrent requests'))
       return
     }
     pending.push(() => fn().then(resolve, reject))
@@ -94,7 +94,7 @@ async function get<T>(path: string, params?: Record<string, string>, baseUrl = B
   })
 }
 
-// ── Reference lists (cached forever — SRD data never changes) ────────────────
+// ── Reference lists (cached forever, SRD data never changes) ────────────────
 
 export const fiveEApi = {
   listClasses: () => get<ApiReferenceList>('/classes'),
@@ -128,7 +128,7 @@ export const fiveEApi = {
   },
 
   // Spells: when filtering by class, the API requires the class-scoped endpoint
-  // (/classes/{index}/spells) — the ?class= query param on /spells is silently ignored.
+  // (/classes/{index}/spells), the ?class= query param on /spells is silently ignored.
   listSpells: (params?: SpellQueryParams) => {
     const queryParams: Record<string, string> = {}
     if (params?.name)            queryParams.name   = params.name
@@ -146,7 +146,7 @@ export const fiveEApi = {
   listProficiencies: () => get<ApiReferenceList>('/proficiencies'),
   listLanguages: () => get<ApiReferenceList>('/languages'),
   listAlignments: () => get<ApiReferenceList>('/alignments'),
-  // Feats — both editions exposed separately for combined picker
+  // Feats, both editions exposed separately for combined picker
   listFeats2014: () => get<ApiReferenceList>('/feats'),
   getFeat2014:   (index: string) => get<ApiFeat>(`/feats/${sanitizeApiIndex(index)}`),
   listFeats2024: () => get<ApiReferenceList>('/feats', undefined, BASE_URL_2024),
@@ -179,7 +179,7 @@ export const fiveEApi = {
   listDamageTypes: () => get<ApiReferenceList>('/damage-types'),
   listConditions: () => get<ApiReferenceList>('/conditions'),
 
-  // Equipment — no server-side filtering; fetch all, index client-side.
+  // Equipment, no server-side filtering; fetch all, index client-side.
   // 2024 has its own equipment endpoint with some differing indices (e.g. 2024 `arrows`
   // vs 2014 `arrow`), so fetch from the edition that owns each item's ref.url.
   listEquipment: () => get<ApiReferenceList>('/equipment'),
@@ -189,11 +189,11 @@ export const fiveEApi = {
   getEquipmentCategory: (index: string) => get<ApiEquipmentCategory>(`/equipment-categories/${sanitizeApiIndex(index)}`),
   getEquipmentCategory2024: (index: string) => get<ApiEquipmentCategory>(`/equipment-categories/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
 
-  // Magic items — no server-side filtering
+  // Magic items, no server-side filtering
   listMagicItems: () => get<ApiReferenceList>('/magic-items'),
   getMagicItem: (index: string) => get<ApiMagicItem>(`/magic-items/${sanitizeApiIndex(index)}`),
 
-  // Monsters — the list endpoint supports a server-side challenge_rating filter.
+  // Monsters, the list endpoint supports a server-side challenge_rating filter.
   listMonsters: (challengeRating?: number) =>
     get<ApiReferenceList>('/monsters', challengeRating !== undefined ? { challenge_rating: String(challengeRating) } : undefined),
   getMonster: (index: string) => get<ApiMonster>(`/monsters/${sanitizeApiIndex(index)}`),
@@ -203,7 +203,7 @@ export const fiveEApi = {
     get<ApiClassLevel[]>(`/classes/${sanitizeApiIndex(classIndex)}/levels`),
   getFeature: (index: string) => get<ApiFeature>(`/features/${sanitizeApiIndex(index)}`),
 
-  // Race/subrace traits (2014 and 2024 — trait indices differ between editions)
+  // Race/subrace traits (2014 and 2024, trait indices differ between editions)
   getTrait: (index: string) => get<ApiTrait>(`/traits/${sanitizeApiIndex(index)}`),
   getTrait2024: (index: string) => get<ApiTrait>(`/traits/${sanitizeApiIndex(index)}`, undefined, BASE_URL_2024),
 }

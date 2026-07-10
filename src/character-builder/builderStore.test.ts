@@ -44,7 +44,7 @@ function makeStore(overrides: Partial<{
   return store
 }
 
-describe('computedMaxHp — max method', () => {
+describe('computedMaxHp, max method', () => {
   beforeEach(() => { setActivePinia(createPinia()) })
 
   it('level 1 fighter: hitDie + conMod', () => {
@@ -68,7 +68,7 @@ describe('computedMaxHp — max method', () => {
   })
 })
 
-describe('computedMaxHp — average method', () => {
+describe('computedMaxHp, average method', () => {
   beforeEach(() => { setActivePinia(createPinia()) })
 
   it('level 1: full hitDie + conMod', () => {
@@ -91,7 +91,7 @@ describe('computedMaxHp — average method', () => {
   })
 })
 
-describe('computedMaxHp — roll method', () => {
+describe('computedMaxHp, roll method', () => {
   beforeEach(() => { setActivePinia(createPinia()) })
 
   it('returns 0 when fewer rolls than levels', () => {
@@ -122,7 +122,7 @@ describe('computedMaxHp — roll method', () => {
   })
 })
 
-describe('computedMaxHp — manual method', () => {
+describe('computedMaxHp, manual method', () => {
   beforeEach(() => { setActivePinia(createPinia()) })
 
   it('returns manualMaxHp directly', () => {

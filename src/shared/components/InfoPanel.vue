@@ -49,7 +49,7 @@
               <span class="badge-gold text-xs">Size {{ raceData.size }}</span>
             </div>
             <p v-if="targetEdition === '2024'" class="text-xs font-body text-mist italic leading-relaxed">
-              2024 species don't grant fixed ability bonuses or languages — you choose those during character creation.
+              2024 species don't grant fixed ability bonuses or languages, you choose those during character creation.
             </p>
             <div v-if="raceData.ability_bonuses.length" class="space-y-1.5">
               <p class="label">Ability Score Bonuses</p>
@@ -607,7 +607,7 @@ const ALIGNMENT_INFO: Record<string, { glyph: string; nickname: string; paragrap
     glyph: '✦',
     nickname: 'The Benefactor',
     paragraphs: [
-      'A neutral good character does the best a good person can do. They are devoted to helping others without concern for law or chaos — only for doing what is right.',
+      'A neutral good character does the best a good person can do. They are devoted to helping others without concern for law or chaos, only for doing what is right.',
       'Most clerics and many druids are neutral good. They believe each situation should be judged on its own merits, and will work with law or chaos as needed to achieve the greater good.',
     ],
   },
@@ -624,7 +624,7 @@ const ALIGNMENT_INFO: Record<string, { glyph: string; nickname: string; paragrap
     nickname: 'The Judge',
     paragraphs: [
       'A lawful neutral character acts in accordance with law, tradition, or a personal code, with no moral bias toward good or evil. Order and organization are paramount.',
-      'Monks and soldiers often fall here. They follow orders, uphold contracts, and respect the structure of society — but that structure is the goal, not merely a means to an end.',
+      'Monks and soldiers often fall here. They follow orders, uphold contracts, and respect the structure of society, but that structure is the goal, not merely a means to an end.',
     ],
   },
   'True Neutral': {
@@ -648,7 +648,7 @@ const ALIGNMENT_INFO: Record<string, { glyph: string; nickname: string; paragrap
     nickname: 'The Dominator',
     paragraphs: [
       'A lawful evil character methodically takes what they want within the limits of a code of conduct, without compassion or scruples. They use law, tradition, or hierarchy to oppress and dominate others.',
-      'Devils and tyrants are lawful evil. They may keep their word, but only when it serves their purposes — agreements are tools, not moral obligations.',
+      'Devils and tyrants are lawful evil. They may keep their word, but only when it serves their purposes, agreements are tools, not moral obligations.',
     ],
   },
   'Neutral Evil': {
@@ -656,7 +656,7 @@ const ALIGNMENT_INFO: Record<string, { glyph: string; nickname: string; paragrap
     nickname: 'The Malefactor',
     paragraphs: [
       'A neutral evil character does whatever they can get away with, following neither law nor chaos. They are fundamentally selfish, with no loyalty to anyone but themselves.',
-      'Assassins and many dark spellcasters are neutral evil. They feel the pull of neither order nor chaos — only self-interest — and ally with anyone who serves their goals.',
+      'Assassins and many dark spellcasters are neutral evil. They feel the pull of neither order nor chaos, only self-interest, and ally with anyone who serves their goals.',
     ],
   },
   'Chaotic Evil': {
@@ -756,7 +756,7 @@ function formatCR(cr: number): string {
   return String(cr)
 }
 
-const monsterAc = computed(() => monsterData.value?.armor_class?.[0]?.value ?? '—')
+const monsterAc = computed(() => monsterData.value?.armor_class?.[0]?.value ?? '-')
 
 const monsterSpeed = computed(() => {
   const s = monsterData.value?.speed

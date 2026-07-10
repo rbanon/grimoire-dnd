@@ -372,7 +372,7 @@ export const useCustomContentStore = defineStore('custom-content', () => {
   /**
    * Best-effort check of whether any copied item's community original has a newer version.
    * Compares each copy's stored source.updatedAt against the original's current updated_at
-   * (readable only if still public/owned — RLS hides the rest, which we simply skip).
+   * (readable only if still public/owned, RLS hides the rest, which we simply skip).
    */
   async function refreshSourceUpdates(): Promise<void> {
     const raceCopies = races.value.filter((r) => r.source)
@@ -488,7 +488,7 @@ export const useCustomContentStore = defineStore('custom-content', () => {
       const data = rowToClass(row)
       if (data) items.push({ id: row.id, userId: row.user_id, kind: 'class', name: row.name, edition: row.edition, primaryStat: row.primary_stat ?? classPrimaryStat(data.primaryAbility), authorName: row.author_name, updatedAt: row.updated_at, data })
     }
-    // Subclasses have no primary stat of their own — they sort/filter by their parent class.
+    // Subclasses have no primary stat of their own, they sort/filter by their parent class.
     for (const row of subRows) {
       const data = rowToSubclass(row)
       if (data) items.push({ id: row.id, userId: row.user_id, kind: 'subclass', name: row.name, edition: row.edition, primaryStat: null, authorName: row.author_name, updatedAt: row.updated_at, data })

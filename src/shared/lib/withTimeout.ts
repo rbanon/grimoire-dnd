@@ -13,7 +13,7 @@ export function withTimeout<T>(thenable: PromiseLike<T>, ms: number, label = 'Re
   let handle: ReturnType<typeof setTimeout>
   const timeout = new Promise<never>((_, reject) => {
     handle = setTimeout(
-      () => reject(new Error(`${label} timed out — check your connection and try again`)),
+      () => reject(new Error(`${label} timed out, check your connection and try again`)),
       ms,
     )
   })

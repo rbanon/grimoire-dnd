@@ -153,11 +153,11 @@ const props = defineProps<{
   classIndex: string
   className: string
   knownIndices: string[]
-  /** Spells chosen at other accordion levels — shown as blocked/labelled but don't affect the remaining counter */
+  /** Spells chosen at other accordion levels, shown as blocked/labelled but don't affect the remaining counter */
   chosenElsewhereIndices?: string[]
   /** When provided alongside slotsPerLevel, enables per-level limit enforcement */
   knownSpells?: { index: string; level: number }[]
-  /** Per spell-level slot counts — enforces per-level caps instead of a single total */
+  /** Per spell-level slot counts, enforces per-level caps instead of a single total */
   slotsPerLevel?: Record<number, number>
   limit?: number
   initialLevel?: number

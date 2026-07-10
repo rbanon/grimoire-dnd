@@ -5,7 +5,7 @@
     <section v-if="builder.draft.backgroundName" class="space-y-4">
       <div class="rule-gold"><span>Background Proficiencies</span></div>
       <p class="text-xs font-body text-mist -mt-2">
-        Automatically granted by your background — no selection needed.
+        Automatically granted by your background, no selection needed.
       </p>
       <div class="flex flex-wrap gap-2">
         <span
@@ -171,7 +171,7 @@
         </button>
       </div>
       <p v-if="builder.draft.classIndex === 'rogue'" class="text-2xs font-body text-mist/50 italic">
-        Note: Rogues may instead take Expertise in Thieves' Tools — adjust on the character sheet if preferred.
+        Note: Rogues may instead take Expertise in Thieves' Tools, adjust on the character sheet if preferred.
       </p>
     </section>
 

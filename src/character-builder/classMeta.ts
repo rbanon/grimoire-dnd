@@ -1,7 +1,7 @@
-// Local metadata for classes and races — flavor + glyphs, spell limits
+// Local metadata for classes and races, flavor + glyphs, spell limits
 // Supplements the 5e-bits API (which only returns index + name in list responses)
 // SRD numeric data (hit dice, spell slots, cantrips/spells known) is sourced from
-// srd-class-data.json — regenerate with: node scripts/generate-srd-data.mjs
+// srd-class-data.json, regenerate with: node scripts/generate-srd-data.mjs
 import srdData from '@/shared/data/srd-class-data.json'
 import type { ResourcePool } from '@/shared/types/character'
 import type { ApiSubclassSpell } from '@/shared/types/api'
@@ -147,7 +147,7 @@ export interface SpellProfile {
   preparedAbility?: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
 }
 
-// Spell profiles — castingType and preparedAbility are editorial (no API equivalent).
+// Spell profiles, castingType and preparedAbility are editorial (no API equivalent).
 // cantripsKnown/spellsKnown arrays are sourced from srd-class-data.json where available.
 // Paladin spellsKnown (prepared-spell limit per level) and wizard spellsKnown (spellbook
 // size per level) are not returned by the API and remain manually maintained.
@@ -211,8 +211,8 @@ export function registerCustomClass(classIndex: string, runtime: CustomClassRunt
   else customClassRegistry.delete(classIndex)
 }
 
-/** Build a 20-level SpellProfile from a custom class's level 1–3 spellcasting definition.
- *  Levels 4–20 hold the level-3 value (custom classes are only detailed for 1–3). */
+/** Build a 20-level SpellProfile from a custom class's level 1-3 spellcasting definition.
+ *  Levels 4-20 hold the level-3 value (custom classes are only detailed for 1-3). */
 export function buildCustomSpellProfile(sc: {
   castingType: CastingType
   ability: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
@@ -248,8 +248,8 @@ export function getFirstSpellLevel(classIndex: string): number {
 // Per-class slot rows sourced from srd-class-data.json, index = level-1, each row = [l1..l9]
 const SRD_SPELL_SLOTS = srdData.spellSlots as Record<string, number[][]>
 
-// Third-caster (Eldritch Knight / Arcane Trickster) slot table — not a base SRD class, so
-// it's kept here for custom classes that pick the 'third' progression. Rows = char levels 1–20.
+// Third-caster (Eldritch Knight / Arcane Trickster) slot table, not a base SRD class, so
+// it's kept here for custom classes that pick the 'third' progression. Rows = char levels 1-20.
 const THIRD_CASTER_SLOTS: number[][] = [
   [0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0], [2,0,0,0,0,0,0,0,0], [3,0,0,0,0,0,0,0,0],
   [3,0,0,0,0,0,0,0,0], [3,0,0,0,0,0,0,0,0], [4,2,0,0,0,0,0,0,0], [4,2,0,0,0,0,0,0,0],
@@ -302,7 +302,7 @@ export function getMaxSpellLevel(classIndex: string, level: number): number {
 
 // ─── Ability Score Improvements ───────────────────────────────────────────────
 
-// SRD 5e 2014 — levels at which each class grants an ASI
+// SRD 5e 2014, levels at which each class grants an ASI
 const ASI_LEVELS: Record<string, readonly number[]> = {
   barbarian: [4, 8, 12, 16, 19],
   bard:      [4, 8, 12, 16, 19],
@@ -323,7 +323,7 @@ export function getAsiLevels(classIndex: string): number[] {
   return [...(ASI_LEVELS[classIndex] ?? [])]
 }
 
-// SRD 5e 2014 — class level at which the subclass is chosen
+// SRD 5e 2014, class level at which the subclass is chosen
 const SUBCLASS_LEVEL: Record<string, number> = {
   barbarian: 3, bard: 3, cleric: 1, druid: 2, fighter: 3,
   monk: 3, paladin: 3, ranger: 3, rogue: 3, sorcerer: 1, warlock: 1, wizard: 2,
@@ -336,7 +336,7 @@ export function getSubclassLevel(classIndex: string): number {
 
 export function getClassMeta(index: string): ClassMeta {
   return CLASS_META[index] ?? {
-    glyph: '⚔', hitDie: 8, flavor: '', tags: [], primaryAbility: '—', saves: '—',
+    glyph: '⚔', hitDie: 8, flavor: '', tags: [], primaryAbility: '-', saves: '-',
   }
 }
 
@@ -387,7 +387,7 @@ const WARLOCK_PACT_BOONS = [
 
 /**
  * `source` tag stamped on a character feature that represents an Eldritch Invocation.
- * Single source of truth — used to write, find, and match invocation features.
+ * Single source of truth, used to write, find, and match invocation features.
  */
 export const INVOCATION_FEATURE_SOURCE = 'Eldritch Invocation'
 
@@ -941,7 +941,7 @@ const RESOURCE_DEFINITIONS: Partial<Record<string, ResourceDef[]>> = {
       refreshOn: 'short',
       max: (level) => level >= 17 ? 4 : level >= 11 ? 3 : level >= 2 ? 2 : 1,
     },
-    // Mystic Arcanum: one free casting each of a 6th–9th-level spell, 1/long rest,
+    // Mystic Arcanum: one free casting each of a 6th-9th-level spell, 1/long rest,
     // unlocked at warlock 11/13/15/17. Tracked as separate 1-use pools; getClassResources
     // filters out levels not yet reached (max 0).
     { id: 'mystic-arcanum-6', name: 'Mystic Arcanum (6th)', refreshOn: 'long', max: (level) => level >= 11 ? 1 : 0 },
@@ -1017,7 +1017,7 @@ export function parseSubclassSpells(spells: ApiSubclassSpell[] | undefined): Sub
   return (spells ?? []).map(s => {
     const levelPre   = s.prerequisites.find(p => p.type === 'level')
     const featurePre = s.prerequisites.find(p => p.type === 'feature')
-    // Unlock level from the level prereq — prefer the url segment (".../levels/3"),
+    // Unlock level from the level prereq, prefer the url segment (".../levels/3"),
     // fall back to digits in the name ("Cleric 3"); default 1.
     const fromUrl  = parseInt(levelPre?.url?.split('/').pop() ?? '', 10)
     const fromName = parseInt((levelPre?.name ?? '').replace(/\D+/g, ''), 10)

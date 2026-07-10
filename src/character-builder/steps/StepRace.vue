@@ -77,7 +77,7 @@
       </p>
     </section>
 
-    <!-- Custom (homebrew) race summary — details are edited in a modal -->
+    <!-- Custom (homebrew) race summary, details are edited in a modal -->
     <Transition name="expand">
       <section v-if="isCustom" class="space-y-3">
         <div class="rule-gold"><span>Custom Race</span></div>
@@ -117,7 +117,7 @@
           </div>
         </div>
         <p v-if="showValidation && !builder.draft.raceName.trim()" class="text-xs font-body text-blood-bright">
-          Enter a name for your custom race — open “Edit details” to set it.
+          Enter a name for your custom race, open “Edit details” to set it.
         </p>
       </section>
     </Transition>
@@ -375,7 +375,7 @@ const { data: speciesDetail2024, isPending: raceDetailLoading2024 } = useQuery({
 
 const raceDetail = computed(() => raceEdition.value === '2024' ? null : raceDetail2014.value ?? null)
 const speciesDetail = computed(() => raceEdition.value === '2024' ? speciesDetail2024.value ?? null : null)
-// Only the active edition's query matters — a DISABLED query reports isPending:true in
+// Only the active edition's query matters, a DISABLED query reports isPending:true in
 // TanStack v5, so `loading2014 || loading2024` would keep the spinner stuck forever.
 const raceDetailLoading = computed(() =>
   raceEdition.value === '2024' ? raceDetailLoading2024.value : raceDetailLoading2014.value
@@ -449,9 +449,9 @@ async function selectRace(index: string, name: string, edition: EditionTag) {
       const detail: Api2024Species = await fiveEApi.getSpecies(index)
       builder.draft.raceSpeed = detail.speed
       builder.draft.raceSizeCategory = String(detail.size ?? 'Medium')
-      // 2024 species don't grant fixed ability bonuses — player distributes freely
+      // 2024 species don't grant fixed ability bonuses, player distributes freely
       builder.draft.raceAbilityBonuses = {}
-      // 2024 RAW: languages come from your origin, not your species — every character
+      // 2024 RAW: languages come from your origin, not your species, every character
       // knows Common plus two languages of their choice (3 total, same count for everyone).
       // The 2024 SRD API exposes neither species nor background languages, so auto-grant
       // only Common and offer the two origin choices here (this step always runs).

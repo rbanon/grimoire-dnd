@@ -34,7 +34,7 @@ const ALL_CLASSES = [
 const noMods = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// §0 / §2 — Nivel de subclase por clase
+// §0 / §2, Nivel de subclase por clase
 // ──────────────────────────────────────────────────────────────────────────────
 describe('§0 subclass level per class', () => {
   it.each([
@@ -48,7 +48,7 @@ describe('§0 subclass level per class', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────────
-// §0 — Niveles de ASI por clase (incl. los no estándar Fighter/Rogue)
+// §0, Niveles de ASI por clase (incl. los no estándar Fighter/Rogue)
 // ──────────────────────────────────────────────────────────────────────────────
 describe('§0 ASI levels per class', () => {
   it.each([
@@ -70,7 +70,7 @@ describe('§0 ASI levels per class', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────────
-// §0 — Conjuración: tipo, habilidad y primer nivel con espacios
+// §0, Conjuración: tipo, habilidad y primer nivel con espacios
 // ──────────────────────────────────────────────────────────────────────────────
 describe('§0 spellcasting profile per class', () => {
   it('martial classes have no spell profile', () => {
@@ -124,9 +124,9 @@ describe('§0 spellcasting profile per class', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────────
-// §0 / §1 — Rasgos de raza (getRaceTraits): visión en la oscuridad y resistencias
+// §0 / §1, Rasgos de raza (getRaceTraits): visión en la oscuridad y resistencias
 // ──────────────────────────────────────────────────────────────────────────────
-describe('§1 race traits — darkvision', () => {
+describe('§1 race traits, darkvision', () => {
   it.each(['elf', 'dwarf', 'gnome', 'half-elf', 'half-orc', 'tiefling'])(
     '%s has Darkvision 60 ft', (race) => {
       expect(getRaceTraits(race).senses).toContain('Darkvision 60 ft.')
@@ -142,7 +142,7 @@ describe('§1 race traits — darkvision', () => {
     })
 })
 
-describe('§1 race traits — resistances', () => {
+describe('§1 race traits, resistances', () => {
   it('dwarf resists poison', () => {
     expect(getRaceTraits('dwarf').resistances).toContain('poison')
   })
@@ -180,7 +180,7 @@ describe('§1 race traits — resistances', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────────
-// §2 — Recursos de clase (getClassResources) en niveles clave
+// §2, Recursos de clase (getClassResources) en niveles clave
 // ──────────────────────────────────────────────────────────────────────────────
 describe('§2 class resources', () => {
   const find = (cls: string, lvl: number, id: string, mods = noMods) =>
@@ -270,7 +270,7 @@ describe('§2 class resources', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────────
-// §2 — Escalado de dados de recursos (getResourceNote) y Sneak Attack
+// §2, Escalado de dados de recursos (getResourceNote) y Sneak Attack
 // ──────────────────────────────────────────────────────────────────────────────
 describe('§2 resource note scaling', () => {
   it.each([[1, 'd6'], [4, 'd6'], [5, 'd8'], [10, 'd10'], [15, 'd12'], [20, 'd12']] as const)(
@@ -301,7 +301,7 @@ describe('§2.9 rogue Sneak Attack dice = ceil(level/2)', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────────
-// §2.11 — Invocaciones de Warlock: conteo y filtrado por prerrequisito
+// §2.11, Invocaciones de Warlock: conteo y filtrado por prerrequisito
 // ──────────────────────────────────────────────────────────────────────────────
 describe('§2.11 warlock invocations', () => {
   it.each([
@@ -321,7 +321,7 @@ describe('§2.11 warlock invocations', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────────
-// §2 / §3 — Features por nivel (getLevelEntry) — los hitos citados en el documento
+// §2 / §3, Features por nivel (getLevelEntry), los hitos citados en el documento
 // ──────────────────────────────────────────────────────────────────────────────
 describe('§2 level feature milestones', () => {
   const has = (cls: string, lvl: number, needle: string) =>
@@ -357,7 +357,7 @@ describe('§2 level feature milestones', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────────
-// §2 — Oro inicial por clase (getStartingGoldFormula)
+// §2, Oro inicial por clase (getStartingGoldFormula)
 // ──────────────────────────────────────────────────────────────────────────────
 describe('§2 starting gold formula per class', () => {
   it.each([
@@ -382,7 +382,7 @@ describe('§2 starting gold formula per class', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────────
-// §6 — Estilos de combate disponibles por clase
+// §6, Estilos de combate disponibles por clase
 // ──────────────────────────────────────────────────────────────────────────────
 describe('§6 fighting style options per class', () => {
   it('fighter has all 6 styles', () => {
@@ -405,7 +405,7 @@ describe('§6 fighting style options per class', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────────
-// §0 / §6 — CA sin armadura (RAW) y CA efectiva dinámica
+// §0 / §6, CA sin armadura (RAW) y CA efectiva dinámica
 // ──────────────────────────────────────────────────────────────────────────────
 describe('§0 unarmored AC (RAW reference)', () => {
   it('monk = 10 + DEX + WIS', () => {
@@ -452,7 +452,7 @@ describe('§6 effective AC from equipment slots', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────────
-// §6 — Bonos de estilo de combate por arma equipada
+// §6, Bonos de estilo de combate por arma equipada
 // ──────────────────────────────────────────────────────────────────────────────
 describe('§6 fighting style bonuses', () => {
   const bow: InventoryItem = makeItem({ id: 'bow', itemType: 'weapon', weaponCategory: 'ranged' })

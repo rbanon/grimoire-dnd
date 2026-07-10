@@ -1,10 +1,10 @@
-/* ── Grimoire Design System — DESIGN.local.md ────────────────────────────── */
+/* ── Grimoire Design System, DESIGN.local.md ────────────────────────────── */
 
 @layer base {
 
-  /* Parchment palette — light mode only (dark disabled) */
+  /* Parchment palette, light mode only (dark disabled) */
   html {
-    --c-void:    253 248 240;   /* #fdf8f0 background — crema cálido */
+    --c-void:    253 248 240;   /* #fdf8f0 background, crema cálido */
     --c-abyss:   245 237 224;   /* #f5ede0 surface-container-low (cards, pergamino) */
     --c-depths:  237 224 204;   /* #ede0cc surface-container (inputs, papel antiguo) */
     --c-shadow:  210 185 155;   /* #d2b99b outline-variant (borders, marrón dorado sutil) */
@@ -14,7 +14,7 @@
     --c-stone:    56  40  24;   /* #382818 */
     --c-vellum:   28  20  10;   /* #1c140a on-surface (primary text, tinta oscura) */
 
-    /* Gold Leaf — #D4AF37 */
+    /* Gold Leaf, #D4AF37 */
     --c-gold-dim:    160 120 32;
     --c-gold-deep:   80 56 8;
     --c-gold-base:   188 152 44;
@@ -23,20 +23,20 @@
     --c-gold-pale:   244 224 148;
     --c-gold-glow:   255 244 196;
 
-    /* Arcane Purple — #7C3AED */
+    /* Arcane Purple, #7C3AED */
     --c-arcane-deep:    32   8  64;
     --c-arcane-base:    76  28 148;
     --c-arcane-mid:    100  40 180;
     --c-arcane-bright: 124  58 213;  /* #7C3AED */
     --c-arcane-pale:    80  32 140;  /* readable on parchment */
 
-    /* Blood — danger, HP */
+    /* Blood, danger, HP */
     --c-blood-deep:   40 0 0;
     --c-blood-base:   96 18 18;
     --c-blood-mid:    120 24 24;
     --c-blood-bright: 150 32 32;
 
-    /* Verdant — druid, nature */
+    /* Verdant, druid, nature */
     --c-verdant-deep:   10 44 28;
     --c-verdant-base:   22 88 52;
     --c-verdant-mid:    38 128 72;
@@ -45,10 +45,10 @@
     /* Semantic */
     --c-success: 74 93 78;
     --c-danger:  216 25 33;
-    --c-warning: 166 91 26;    /* #a65b1a — darkened for WCAG AA (was #bf691e) */
-    --c-info:    69 112 184;   /* #4570b8 — darkened for WCAG AA (was #4c78c4) */
+    --c-warning: 166 91 26;    /* #a65b1a, darkened for WCAG AA (was #bf691e) */
+    --c-info:    69 112 184;   /* #4570b8, darkened for WCAG AA (was #4c78c4) */
 
-    /* Flat shadows — minimal */
+    /* Flat shadows, minimal */
     --shadow-card:        0 0 0 1px rgba(212,175,55,0.18);
     --shadow-card-hover:  0 0 0 1px rgba(212,175,55,0.45);
     --shadow-panel:       0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(212,175,55,0.18);
@@ -63,11 +63,11 @@
     transition: background-color 0.25s ease, color 0.15s ease;
   }
 
-  /* Dark mode — deep purple-slate grimoire palette */
+  /* Dark mode, deep purple-slate grimoire palette */
   html.dark {
     color-scheme: dark;
 
-    /* Neutrals — warm purple-charcoal, not cold black */
+    /* Neutrals, warm purple-charcoal, not cold black */
     --c-void:    20  18  28;    /* #14121c deep backdrop */
     --c-abyss:   28  26  38;    /* #1c1a26 card surfaces */
     --c-depths:  36  34  50;    /* #242232 inputs / nested */
@@ -76,18 +76,18 @@
     --c-mist:   148 136 176;    /* #9488b0 secondary text */
     --c-ash:    188 178 212;    /* #bcb2d4 tertiary text */
     --c-stone:  212 204 232;    /* #d4cce8 */
-    --c-vellum: 236 230 248;    /* #ece6f8 primary text — warm white, slight purple */
+    --c-vellum: 236 230 248;    /* #ece6f8 primary text, warm white, slight purple */
 
-    /* Gold Leaf — adjusted brightness for dark backgrounds */
+    /* Gold Leaf, adjusted brightness for dark backgrounds */
     --c-gold-dim:    168 136  52;
-    --c-gold-deep:   232 196 112;   /* light gold — readable on dark (was ink-dark on parchment) */
+    --c-gold-deep:   232 196 112;   /* light gold, readable on dark (was ink-dark on parchment) */
     --c-gold-base:   196 164  64;
     --c-gold-mid:    216 180  72;
     --c-gold-bright: 232 204 100;
     --c-gold-pale:   244 228 160;
     --c-gold-glow:   255 248 220;
 
-    /* Arcane Purple — boosted for dark backgrounds */
+    /* Arcane Purple, boosted for dark backgrounds */
     --c-arcane-deep:    52  20  96;
     --c-arcane-base:   108  52 192;
     --c-arcane-mid:    148  88 224;
@@ -112,7 +112,7 @@
     --c-warning: 208 140  60;
     --c-info:    100 160 228;
 
-    /* Shadows — deeper, with purple rim + gold hover */
+    /* Shadows, deeper, with purple rim + gold hover */
     --shadow-card:        0 0 0 1px rgba(120,100,180,0.20);
     --shadow-card-hover:  0 0 0 1px rgba(212,175,55,0.45);
     --shadow-panel:       0 2px 12px rgba(0,0,0,0.40), 0 0 0 1px rgba(120,100,180,0.15);
@@ -122,7 +122,7 @@
     --shadow-inner:       inset 0 1px 0 rgba(255,255,255,0.06);
   }
 
-  /* Reset browser default appearance — prevents the native grey fill in all modes */
+  /* Reset browser default appearance, prevents the native grey fill in all modes */
   button,
   [type='button'],
   [type='reset'],
@@ -163,7 +163,7 @@
   }
 }
 
-/* ── Skeleton shimmer — thematic loading placeholder ────────────────────── */
+/* ── Skeleton shimmer, thematic loading placeholder ────────────────────── */
 @keyframes skeleton-shimmer {
   0%   { background-position: -200% center; }
   100% { background-position: 200% center; }

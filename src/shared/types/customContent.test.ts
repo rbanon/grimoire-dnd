@@ -27,7 +27,7 @@ describe('content provenance (source)', () => {
   })
 
   it('is absent on originally-authored content (backward compatible)', () => {
-    // Rows saved before provenance existed have no `source` — must still parse.
+    // Rows saved before provenance existed have no `source`, must still parse.
     expect(CustomRaceSchema.parse(baseRace).source).toBeUndefined()
     expect(CustomClassSchema.parse(baseClass).source).toBeUndefined()
   })

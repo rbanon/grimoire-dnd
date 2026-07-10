@@ -22,7 +22,7 @@
           <div class="px-5 py-4 border-b border-shadow flex items-center justify-between shrink-0">
             <div>
               <p id="custom-class-title" class="font-heading text-base text-arcane-pale">{{ editId ? 'Edit Custom Class' : 'Custom Class' }}</p>
-              <p class="text-2xs font-body text-mist mt-0.5">Homebrew a class — detailed for levels 1–3</p>
+              <p class="text-2xs font-body text-mist mt-0.5">Homebrew a class, detailed for levels 1-3</p>
             </div>
             <button type="button" class="text-mist hover:text-ash transition-colors" aria-label="Close" @click="$emit('close')">
               <XIcon :size="16" />
@@ -65,7 +65,7 @@
 
             <!-- Primary ability -->
             <div class="space-y-2">
-              <p class="text-2xs font-heading tracking-wide uppercase text-mist">Primary Ability <span class="normal-case font-body text-mist/50">(1–2)</span></p>
+              <p class="text-2xs font-heading tracking-wide uppercase text-mist">Primary Ability <span class="normal-case font-body text-mist/50">(1-2)</span></p>
               <div class="flex flex-wrap gap-1.5">
                 <button
                   v-for="ab in ABILITY_KEYS"
@@ -159,27 +159,27 @@
                   <div class="space-y-1.5">
                     <label class="text-2xs font-heading tracking-wide uppercase text-mist">Spell List From</label>
                     <AppSelect v-model="spellListModel" class="text-sm">
-                      <option value="">— pick a source —</option>
+                      <option value="">- pick a source -</option>
                       <option v-for="c in CASTER_CLASSES" :key="c" :value="c">{{ capitalize(c) }}</option>
                     </AppSelect>
                   </div>
                 </div>
 
                 <div class="space-y-2">
-                  <p class="text-2xs font-heading tracking-wide uppercase text-mist">Cantrips Known — levels 1 / 2 / 3</p>
+                  <p class="text-2xs font-heading tracking-wide uppercase text-mist">Cantrips Known, levels 1 / 2 / 3</p>
                   <div class="flex gap-2">
                     <input v-for="i in 3" :key="`cn-${i}`" v-model.number="form.spellcasting.cantripsKnown[i - 1]" type="number" min="0" max="10" class="input-base w-full text-sm text-center" />
                   </div>
                 </div>
 
                 <div v-if="form.spellcasting.castingType === 'known'" class="space-y-2">
-                  <p class="text-2xs font-heading tracking-wide uppercase text-mist">Spells Known — levels 1 / 2 / 3</p>
+                  <p class="text-2xs font-heading tracking-wide uppercase text-mist">Spells Known, levels 1 / 2 / 3</p>
                   <div class="flex gap-2">
                     <input v-for="i in 3" :key="`sn-${i}`" v-model.number="spellsKnownProxy[i - 1]" type="number" min="0" max="20" class="input-base w-full text-sm text-center" />
                   </div>
                 </div>
                 <p v-else class="text-2xs font-body text-mist/60">
-                  Prepared casters prepare (ability modifier + class level) spells each day — no fixed "known" count.
+                  Prepared casters prepare (ability modifier + class level) spells each day, no fixed "known" count.
                 </p>
               </div>
             </div>

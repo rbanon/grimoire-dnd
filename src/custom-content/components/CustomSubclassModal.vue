@@ -22,7 +22,7 @@
           <div class="px-5 py-4 border-b border-shadow flex items-center justify-between shrink-0">
             <div>
               <p id="custom-subclass-title" class="font-heading text-base text-arcane-pale">{{ editId ? 'Edit Custom Subclass' : 'Custom Subclass' }}</p>
-              <p class="text-2xs font-body text-mist mt-0.5">A homebrew subclass for any class — features land at the levels you set</p>
+              <p class="text-2xs font-body text-mist mt-0.5">A homebrew subclass for any class, features land at the levels you set</p>
             </div>
             <button type="button" class="text-mist hover:text-ash transition-colors" aria-label="Close" @click="$emit('close')">
               <XIcon :size="16" />
@@ -42,7 +42,7 @@
             <div class="space-y-1.5">
               <label class="text-2xs font-heading tracking-wide uppercase text-mist">Parent Class</label>
               <AppSelect v-model="form.parentClass" class="text-sm">
-                <option value="" disabled>— choose a class —</option>
+                <option value="" disabled>- choose a class -</option>
                 <optgroup label="SRD Classes">
                   <option v-for="c in SRD_CLASSES" :key="c.index" :value="c.index">{{ c.name }}</option>
                 </optgroup>
