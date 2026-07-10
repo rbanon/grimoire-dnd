@@ -320,7 +320,7 @@ const transitionName = computed(() =>
 )
 
 onMounted(() => {
-  // Preset/quiz flows prefill the draft in-memory and arrive with ?from=… —
+  // Preset/quiz flows prefill the draft in-memory and arrive with ?from=… so we
   // open straight into that prepared character instead of prompting to resume.
   if (route.query.from) return
   const hasDraft = builder.loadDraft()

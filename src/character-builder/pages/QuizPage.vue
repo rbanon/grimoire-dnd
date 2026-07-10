@@ -6,7 +6,7 @@
       <ChevronLeftIcon :size="13" class="text-mist group-hover:text-ash transition-colors" />
       <span class="font-mono text-2xs text-mist group-hover:text-ash transition-colors tracking-wide">Creation modes</span>
     </RouterLink>
-    <p class="font-mono text-2xs tracking-[0.22em] uppercase text-mist mb-2">Guided Quiz · Levels 1–3</p>
+    <p class="font-mono text-2xs tracking-[0.22em] uppercase text-mist mb-2">Guided Quiz · Levels 1-3</p>
     <h1 class="font-display text-4xl text-vellum leading-tight mb-6">Find Your Character</h1>
 
     <!-- Progress -->
@@ -70,7 +70,7 @@
             <RotateCcwIcon :size="14" /> Retake
           </button>
         </div>
-        <p class="text-center text-2xs font-body text-mist/60">You'll open in the builder — tweak anything before saving.</p>
+        <p class="text-center text-2xs font-body text-mist/60">You'll open in the builder. Tweak anything before saving.</p>
       </div>
     </Transition>
   </div>

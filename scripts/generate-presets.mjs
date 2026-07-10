@@ -16,7 +16,7 @@ async function fetchJson(path) {
   return res.json()
 }
 
-// Standard-array (15/14/13/12/10/8) distributions, pre-racial — racial bonuses add on top.
+// Standard-array (15/14/13/12/10/8) distributions, pre-racial, racial bonuses add on top.
 const ARR = { p1: 15, p2: 14, p3: 13, p4: 12, p5: 10, p6: 8 }
 const scores = (order) => {
   const keys = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6']
@@ -47,7 +47,7 @@ const SPECS = [
   },
   {
     id: 'tiefling-shadow', title: 'The Shadow', charName: 'Vesper',
-    blurb: 'A silver-tongued tiefling who thrives in the dark — picking locks, pockets, and fights on their own terms.',
+    blurb: 'A silver-tongued tiefling who thrives in the dark, picking locks, pockets, and fights on their own terms.',
     race: 'tiefling', klass: 'rogue', level: 1,
     abilities: scores(['dex', 'con', 'int', 'wis', 'cha', 'str']),
     classSkills: ['stealth', 'perception', 'acrobatics', 'investigation'],
@@ -64,7 +64,7 @@ const SPECS = [
   },
   {
     id: 'human-ascetic', title: 'The Ascetic', charName: 'Mei',
-    blurb: 'A human monk who turned discipline into a weapon. Strikes like water — swift, flowing, and impossible to hold.',
+    blurb: 'A human monk who turned discipline into a weapon. Strikes like water, swift, flowing, and impossible to hold.',
     race: 'human', klass: 'monk', level: 2,
     abilities: scores(['dex', 'wis', 'con', 'str', 'int', 'cha']),
     classSkills: ['acrobatics', 'stealth'],
@@ -83,7 +83,7 @@ const SPECS = [
   },
   {
     id: 'dwarf-lightbearer', title: 'The Lightbearer', charName: 'Thora',
-    blurb: 'A hill dwarf cleric of the Life domain — a beacon of healing and hope who mends wounds and turns back the dark.',
+    blurb: 'A hill dwarf cleric of the Life domain, a beacon of healing and hope who mends wounds and turns back the dark.',
     race: 'dwarf', subrace: 'hill-dwarf', klass: 'cleric', level: 1, subclass: { index: 'life', name: 'Life Domain' },
     abilities: scores(['wis', 'con', 'str', 'cha', 'dex', 'int']),
     classSkills: ['medicine', 'persuasion'],
@@ -93,7 +93,7 @@ const SPECS = [
   },
   {
     id: 'human-warden', title: 'The Warden', charName: 'Rowan',
-    blurb: 'A human druid who speaks for the wild — calling on thorns, flame and the fury of nature to guard the balance.',
+    blurb: 'A human druid who speaks for the wild, calling on thorns, flame and the fury of nature to guard the balance.',
     race: 'human', klass: 'druid', level: 1,
     abilities: scores(['wis', 'con', 'dex', 'int', 'str', 'cha']),
     classSkills: ['perception', 'survival'],
@@ -104,7 +104,7 @@ const SPECS = [
   },
   {
     id: 'halfling-troubadour', title: 'The Troubadour', charName: 'Pip',
-    blurb: 'A lightfoot halfling bard whose wit cuts deeper than a blade — inspiring allies and unmaking foes with a song.',
+    blurb: 'A lightfoot halfling bard whose wit cuts deeper than a blade, inspiring allies and unmaking foes with a song.',
     race: 'halfling', subrace: 'lightfoot-halfling', klass: 'bard', level: 1,
     abilities: scores(['cha', 'dex', 'con', 'wis', 'int', 'str']),
     classSkills: ['performance', 'persuasion', 'deception'],
@@ -114,7 +114,7 @@ const SPECS = [
   },
   {
     id: 'dragonborn-flamecaller', title: 'The Flamecaller', charName: 'Kalix',
-    blurb: 'A dragonborn sorcerer with draconic blood ablaze — raw arcane power flows through their veins, no study required.',
+    blurb: 'A dragonborn sorcerer with draconic blood ablaze, raw arcane power flows through their veins, no study required.',
     race: 'dragonborn', klass: 'sorcerer', level: 1, subclass: { index: 'draconic', name: 'Draconic Bloodline' },
     abilities: scores(['cha', 'con', 'dex', 'wis', 'int', 'str']),
     classSkills: ['arcana', 'intimidation'],
@@ -124,7 +124,7 @@ const SPECS = [
   },
   {
     id: 'tiefling-fiendbound', title: 'The Fiendbound', charName: 'Malice',
-    blurb: 'A tiefling warlock who struck a bargain with a fiend — eldritch fire at their fingertips and a price yet to pay.',
+    blurb: 'A tiefling warlock who struck a bargain with a fiend, eldritch fire at their fingertips and a price yet to pay.',
     race: 'tiefling', klass: 'warlock', level: 1, subclass: { index: 'fiend', name: 'The Fiend' },
     abilities: scores(['cha', 'con', 'dex', 'wis', 'int', 'str']),
     classSkills: ['deception', 'arcana'],
@@ -134,7 +134,7 @@ const SPECS = [
   },
   {
     id: 'human-strider', title: 'The Strider', charName: 'Nyla',
-    blurb: 'A human ranger and peerless tracker — bow in hand, she reads the wilds like a book and never loses a trail.',
+    blurb: 'A human ranger and peerless tracker, bow in hand, she reads the wilds like a book and never loses a trail.',
     race: 'human', klass: 'ranger', level: 1,
     abilities: scores(['dex', 'wis', 'con', 'str', 'int', 'cha']),
     classSkills: ['survival', 'perception', 'stealth'],
@@ -159,7 +159,7 @@ const SUBRACE_NAME = {
   'lightfoot-halfling': 'Lightfoot Halfling', 'rock-gnome': 'Rock Gnome',
 }
 const ABILITY_FULL = { str: 'Strength', dex: 'Dexterity', con: 'Constitution', int: 'Intelligence', wis: 'Wisdom', cha: 'Charisma' }
-// SRD 5e 2014 — class level at which the subclass is chosen (mirrors classMeta SUBCLASS_LEVEL).
+// SRD 5e 2014, class level at which the subclass is chosen (mirrors classMeta SUBCLASS_LEVEL).
 const SUBCLASS_LEVEL = {
   barbarian: 3, bard: 3, cleric: 1, druid: 2, fighter: 3,
   monk: 3, paladin: 3, ranger: 3, rogue: 3, sorcerer: 1, warlock: 1, wizard: 2,
@@ -190,7 +190,7 @@ async function buildPreset(spec) {
   const raceLanguageChoices = race.language_options?.choose ?? 0
   const selectedLanguages = [...new Set([...raceAutoLanguages, ...(spec.languages ?? [])])]
 
-  // Subrace (Hill Dwarf, Lightfoot Halfling, …) — its ability bonuses stack on the base race's.
+  // Subrace (Hill Dwarf, Lightfoot Halfling, …), its ability bonuses stack on the base race's.
   const availableSubraces = race.subraces.map(s => ({ index: s.index, name: s.name }))
   let subraceAbilityBonuses = {}
   if (spec.subrace) {
@@ -273,12 +273,12 @@ async function buildPreset(spec) {
     subraceIndex: spec.subrace ?? '',
     subraceName: spec.subrace ? (SUBRACE_NAME[spec.subrace] ?? spec.subrace) : '',
     subraceAbilityBonuses,
-    // Background (lightweight custom — SRD 2014 only ships Acolyte)
+    // Background (lightweight custom, SRD 2014 only ships Acolyte)
     backgroundIndex: 'custom',
     backgroundName: spec.bg.name,
     backgroundEdition: '2014',
     backgroundSkillProficiencies: spec.bg.skills,
-    // Abilities (manual entry — pre-racial; racial bonuses add via effectiveScores)
+    // Abilities (manual entry, pre-racial; racial bonuses add via effectiveScores)
     abilityMethod: 'manual',
     baseScores: spec.abilities,
     // Proficiencies
@@ -317,9 +317,9 @@ for (const spec of SPECS) {
   presets.push(await buildPreset(spec))
 }
 
-const header = `// AUTO-GENERATED by scripts/generate-presets.mjs — do not edit by hand.
+const header = `// AUTO-GENERATED by scripts/generate-presets.mjs, do not edit by hand.
 // Regenerate: node scripts/generate-presets.mjs
-// Ready-made, level 1–3 character builds for the "Ready-Made" creation mode. Each 'draft' is a
+// Ready-made, level 1-3 character builds for the "Ready-Made" creation mode. Each 'draft' is a
 // complete BuilderDraft partial (merged over defaults by builder.applyDraft).
 import type { BuilderDraft } from '@/character-builder/builderStore'
 

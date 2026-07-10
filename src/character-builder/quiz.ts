@@ -65,7 +65,7 @@ export const QUIZ: QuizQuestion[] = [
     prompt: 'And which of these calls to you most?',
     options: [
       { label: 'A pact with a powerful, otherworldly patron', weights: { warlock: 4 } },
-      { label: 'The living world — beasts, storms and wild places', weights: { druid: 4, ranger: 2 } },
+      { label: 'The living world: beasts, storms and wild places', weights: { druid: 4, ranger: 2 } },
       { label: 'Art, music, stories and clever words', weights: { bard: 4 } },
       { label: 'Discipline of body and mind', weights: { monk: 4 } },
     ],
@@ -85,7 +85,7 @@ export const QUIZ: QuizQuestion[] = [
     prompt: 'Your ideal way through a tough encounter?',
     options: [
       { label: 'Smash straight through the obstacle', weights: { barbarian: 3, fighter: 1 } },
-      { label: 'Talk — or trick — our way past it', weights: { bard: 3, rogue: 1, warlock: 1 } },
+      { label: 'Talk (or trick) our way past it', weights: { bard: 3, rogue: 1, warlock: 1 } },
       { label: 'Heal, protect and outlast them', weights: { cleric: 2, paladin: 2, druid: 1 } },
       { label: 'Blast it off the map', weights: { sorcerer: 2, wizard: 2, warlock: 1 } },
     ],
@@ -96,7 +96,7 @@ export const QUIZ: QuizQuestion[] = [
     options: [
       { label: 'Answer with my fists', weights: { barbarian: 2, monk: 2, fighter: 1 } },
       { label: 'Cut them down with a remark that stings more', weights: { bard: 3, rogue: 1 } },
-      { label: 'Let it go — I answer to a higher calling', weights: { paladin: 2, cleric: 2, druid: 1 } },
+      { label: 'Let it go, I answer to a higher calling', weights: { paladin: 2, cleric: 2, druid: 1 } },
       { label: 'Offer a quiet, ominous show of power', weights: { warlock: 3, sorcerer: 1 } },
     ],
   },

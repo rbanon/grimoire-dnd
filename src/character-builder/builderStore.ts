@@ -575,7 +575,7 @@ export const useBuilderStore = defineStore('builder', () => {
     if (!merged.classIndex) return false
     migrateKnownCasterSpells(merged)
     migrateKnownToPreparedCasterSpells(merged)
-    // A restored draft is complete and authoritative — suppress the class-change watcher so it
+    // A restored draft is complete and authoritative, so suppress the class-change watcher so it
     // can't wipe its spells / level choices / expertise as classIndex flips from blank.
     _loadingWholeDraft = true
     draft.value = merged
@@ -808,7 +808,7 @@ export const useBuilderStore = defineStore('builder', () => {
   }
 
   // Clear ASI allocations and rolled HP that are no longer valid when class changes.
-  // Skipped during a whole-draft load (applyDraft) — there the incoming class-specific data
+  // Skipped during a whole-draft load (applyDraft): there the incoming class-specific data
   // is authoritative and must not be wiped.
   watch(() => draft.value.classIndex, () => {
     if (_loadingWholeDraft) return

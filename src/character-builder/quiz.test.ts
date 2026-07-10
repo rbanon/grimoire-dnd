@@ -21,7 +21,7 @@ describe('quiz shape', () => {
   })
 })
 
-describe('scoreQuiz — signature answer sets route to the intended class', () => {
+describe('scoreQuiz: signature answer sets route to the intended class', () => {
   const cases: [ClassIndex, [string, RegExp][]][] = [
     ['wizard', [['source', /arcane study/], ['role', /destruction/], ['weapon', /spell/], ['instinct', /magical power/]]],
     ['sorcerer', [['source', /born with/], ['instinct', /magical power/], ['role', /destruction/]]],
@@ -41,7 +41,7 @@ describe('scoreQuiz — signature answer sets route to the intended class', () =
   })
 })
 
-describe('scoreQuiz — robustness', () => {
+describe('scoreQuiz: robustness', () => {
   it('is deterministic for empty answers', () => {
     expect(scoreQuiz({})).toBe(scoreQuiz({}))
   })

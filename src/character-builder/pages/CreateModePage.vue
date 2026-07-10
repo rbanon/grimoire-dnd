@@ -74,7 +74,7 @@ import { useBuilderStore } from '@/character-builder/builderStore'
 
 const builder = useBuilderStore()
 
-// Snapshot the saved draft once on mount (read-only — doesn't touch the live draft).
+// Snapshot the saved draft once on mount (read-only, doesn't touch the live draft).
 const draft = ref(builder.peekDraft())
 const draftTitle = computed(() => draft.value?.name || 'Unnamed Character')
 const draftSubtitle = computed(() => {
@@ -89,7 +89,7 @@ const modes = [
     icon: FeatherIcon,
     title: 'Full Builder',
     badge: '',
-    desc: 'Craft every detail — class, race, abilities, spells and gear across the full eleven-step wizard.',
+    desc: 'Craft every detail: class, race, abilities, spells and gear across the full eleven-step wizard.',
     cta: 'Start building',
     accent: {
       hover: 'hover:border-gold-mid/50',
@@ -104,8 +104,8 @@ const modes = [
     to: '/characters/new/presets',
     icon: SwordsIcon,
     title: 'Ready-Made',
-    badge: 'Lvl 1–3',
-    desc: 'Pick a pregenerated hero — a complete, balanced build you can play as-is or tweak in the builder.',
+    badge: 'Lvl 1-3',
+    desc: 'Pick a pregenerated hero: a complete, balanced build you can play as-is or tweak in the builder.',
     cta: 'Browse heroes',
     accent: {
       hover: 'hover:border-arcane-base/50',
@@ -120,7 +120,7 @@ const modes = [
     to: '/characters/new/quiz',
     icon: Wand2Icon,
     title: 'Guided Quiz',
-    badge: 'Lvl 1–3',
+    badge: 'Lvl 1-3',
     desc: 'Answer a handful of questions and we\'ll conjure a fitting class, race and starting spells for you.',
     cta: 'Take the quiz',
     accent: {
