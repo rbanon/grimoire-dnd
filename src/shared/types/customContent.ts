@@ -8,6 +8,16 @@ export const CustomTraitSchema = z.object({
 })
 export type CustomTrait = z.infer<typeof CustomTraitSchema>
 
+// Provenance for content copied from the community. A copy is always an INDEPENDENT snapshot
+// (own id/owner, no live link) — this just records where it came from, for attribution and to
+// detect when the original has a newer version. Absent on originally-authored content.
+export const ContentSourceSchema = z.object({
+  id: z.string(),                                 // the original's id (may be private/deleted later)
+  authorName: z.string().nullable().default(null),
+  updatedAt: z.string(),                          // the original's updatedAt at copy time
+})
+export type ContentSource = z.infer<typeof ContentSourceSchema>
+
 // ─── Custom Race ───────────────────────────────────────────────────────────────
 // The full authored definition of a homebrew race. Richer than the RaceSnapshot
 // baked onto a character — this is what gets saved to `custom_races.data` and reused.
@@ -29,6 +39,7 @@ export const CustomRaceSchema = z.object({
   languageChoices: z.number().int().min(0).max(10).default(0),
   traits: z.array(CustomTraitSchema).default([]),
   isPublic: z.boolean().default(false),
+  source: ContentSourceSchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -38,7 +49,7 @@ export type CustomRace = z.infer<typeof CustomRaceSchema>
 export type CustomRaceInput = Pick<CustomRace,
   'name' | 'edition' | 'abilityBonuses' | 'size' | 'speed' | 'darkvision'
   | 'resistances' | 'skillProficiencies' | 'toolProficiencies' | 'languageChoices'
-  | 'traits' | 'isPublic'>
+  | 'traits' | 'isPublic' | 'source'>
 
 // ─── Custom Class ──────────────────────────────────────────────────────────────
 // Authored in Phase 4 (full editor). Defined here so the store/tables can hold it.
@@ -74,6 +85,7 @@ export const CustomClassSchema = z.object({
   // Per-level feature text, keyed by level string ("1".."3").
   featuresByLevel: z.record(z.string(), z.array(CustomTraitSchema)).default({}),
   isPublic: z.boolean().default(false),
+  source: ContentSourceSchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })

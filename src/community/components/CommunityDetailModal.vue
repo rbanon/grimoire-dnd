@@ -101,7 +101,7 @@
             <div class="flex items-center gap-2 shrink-0">
               <button type="button" class="btn-secondary text-sm" @click="$emit('close')">Close</button>
               <button
-                v-if="auth.isAuthenticated && !isOwn && item.kind === 'race'"
+                v-if="auth.isAuthenticated && !isOwn"
                 type="button"
                 class="btn-primary text-sm"
                 :disabled="copying"
@@ -150,24 +150,53 @@ function humanize(s: string): string {
 }
 
 async function copyToCollection() {
-  const r = race.value
-  if (!auth.isAuthenticated || !r || copying.value) return
+  const it = props.item
+  if (!auth.isAuthenticated || !it || copying.value) return
   copying.value = true
   try {
-    const created = await customContent.createRace({
-      name: r.name,
-      edition: r.edition,
-      abilityBonuses: { ...r.abilityBonuses },
-      size: r.size,
-      speed: r.speed,
-      darkvision: r.darkvision,
-      resistances: [...r.resistances],
-      skillProficiencies: [...r.skillProficiencies],
-      toolProficiencies: [...r.toolProficiencies],
-      languageChoices: r.languageChoices,
-      traits: r.traits.map(t => ({ name: t.name, desc: t.desc })),
-      isPublic: false,
-    })
+    // Provenance: the copy is an independent snapshot, but remembers its origin (id/author +
+    // the original's updatedAt at copy time, for a later "newer version available" hint).
+    const source = { id: it.id, authorName: it.authorName, updatedAt: it.updatedAt }
+    let created = null
+    if (race.value) {
+      const r = race.value
+      created = await customContent.createRace({
+        name: r.name,
+        edition: r.edition,
+        abilityBonuses: { ...r.abilityBonuses },
+        size: r.size,
+        speed: r.speed,
+        darkvision: r.darkvision,
+        resistances: [...r.resistances],
+        skillProficiencies: [...r.skillProficiencies],
+        toolProficiencies: [...r.toolProficiencies],
+        languageChoices: r.languageChoices,
+        traits: r.traits.map(t => ({ name: t.name, desc: t.desc })),
+        isPublic: false,
+        source,
+      })
+    } else if (classDef.value) {
+      const c = classDef.value
+      created = await customContent.createClass({
+        name: c.name,
+        edition: c.edition,
+        description: c.description,
+        hitDie: c.hitDie,
+        primaryAbility: c.primaryAbility,
+        saves: [...c.saves],
+        armorProficiencies: [...c.armorProficiencies],
+        weaponProficiencies: [...c.weaponProficiencies],
+        toolProficiencies: [...c.toolProficiencies],
+        skillChoices: c.skillChoices,
+        skillOptions: [...c.skillOptions],
+        spellcasting: c.spellcasting ? { ...c.spellcasting } : null,
+        featuresByLevel: Object.fromEntries(
+          Object.entries(c.featuresByLevel).map(([lvl, feats]) => [lvl, feats.map(f => ({ name: f.name, desc: f.desc }))]),
+        ),
+        isPublic: false,
+        source,
+      })
+    }
     if (created) emit('close')
   } finally {
     copying.value = false

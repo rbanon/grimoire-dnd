@@ -159,6 +159,9 @@
           <div class="flex-1 min-w-0">
             <p class="text-sm font-heading text-vellum truncate">{{ race.name }}</p>
             <p class="text-2xs font-body text-mist">{{ raceSummary(race) }}</p>
+            <p v-if="race.source" class="text-2xs font-body text-arcane-pale/60 italic truncate">
+              ↓ Copied from {{ race.source.authorName || 'the community' }}
+            </p>
           </div>
           <button
             type="button"
@@ -202,6 +205,9 @@
             <p class="text-sm font-heading text-vellum truncate">{{ cls.name }}</p>
             <p class="text-2xs font-body text-mist">
               d{{ cls.hitDie }} · {{ cls.primaryAbility || '—' }}<template v-if="cls.spellcasting"> · Spellcaster</template>
+            </p>
+            <p v-if="cls.source" class="text-2xs font-body text-arcane-pale/60 italic truncate">
+              ↓ Copied from {{ cls.source.authorName || 'the community' }}
             </p>
           </button>
           <button
