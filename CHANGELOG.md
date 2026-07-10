@@ -4,6 +4,35 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.0], 2026-07-10
+
+### Added
+- **Contenido personalizado (homebrew) en el builder**: razas, clases (con conjuración
+  configurable) y subclases creadas por el jugador. Los bonos de raza se suman a la ficha vía
+  `effectiveScores`; las clases custom inyectan un override en runtime de los perfiles de
+  conjuros/slots (`getSpellProfile`/`getSpellSlots`/`getMaxSpellLevel`/`getFirstSpellLevel`)
+  sin tocar las tablas SRD.
+- **Persistencia en la nube + colección en Perfil**: tablas `custom_races`/`custom_classes`
+  (jsonb + `is_public` + `author_name` + RLS split-verb), store `custom-content` cloud-only,
+  sección "Custom Races & Classes" en ProfilePage (crear/editar/borrar/alternar público) y
+  edición en modal desde el builder.
+- **Página de Comunidad** (`/community`, pública sin login): razas, clases y subclases
+  compartidas, filtros y **orden por estadística principal** (canónico STR a CHA), detalle
+  read-only y "Copy to my collection" con procedencia (`source`) e "Update available" para
+  re-sincronizar una copia con su original.
+- **Modos de creación de personaje** (`/characters/new`): selector Full Builder /
+  **Ready-Made** (12 presets de nivel 1-3, uno por clase) / **Guided Quiz** (8 preguntas que
+  cubren las 12 clases; el scorer asigna clase, raza y hechizos básicos). Incluye tests del
+  scorer y helper `primaryStat.ts`.
+
+### Changed
+- **Estilo, sin em-dashes**: eliminados del repo todos los em-dash (U+2014) y en-dash
+  (U+2013) (código, docs, CSS, SQL y config), sustituidos por puntuación ASCII según
+  contexto; los separadores de caja de sección (U+2500) se conservan intactos.
+
+### Tests
+- 307 tests passing (9 test files), sin regresiones. type-check, lint y build en verde.
+
 ## [0.4.2], 2026-06-15
 
 ### Added
