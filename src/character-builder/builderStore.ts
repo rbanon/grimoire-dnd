@@ -269,6 +269,9 @@ export const useBuilderStore = defineStore('builder', () => {
   const saveError = ref<string | null>(null)
   let _skipCount = 0
   let _saveTimer: ReturnType<typeof setTimeout> | null = null
+  // Set while loading a whole draft at once (preset/quiz prefill) so the class-change watcher
+  // doesn't wipe the fields we just set (spells, level choices, expertise, …).
+  let _loadingWholeDraft = false
 
   // ── Computed ──────────────────────────────────────────────────────────────
 
@@ -572,7 +575,11 @@ export const useBuilderStore = defineStore('builder', () => {
     if (!merged.classIndex) return false
     migrateKnownCasterSpells(merged)
     migrateKnownToPreparedCasterSpells(merged)
+    // A restored draft is complete and authoritative — suppress the class-change watcher so it
+    // can't wipe its spells / level choices / expertise as classIndex flips from blank.
+    _loadingWholeDraft = true
     draft.value = merged
+    nextTick(() => { _loadingWholeDraft = false })
     return true
   }
 
@@ -649,9 +656,13 @@ export const useBuilderStore = defineStore('builder', () => {
 
   // Prefill the draft from a preset/quiz snapshot and persist it immediately, so the builder
   // opens straight into the prepared character (no resume prompt). Merges over a blank draft.
+  // The class-change watcher is suppressed so it can't wipe the class-specific fields we set
+  // (spells, level choices, expertise) as classIndex flips from blank to the preset's class.
   function applyDraft(partial: Partial<BuilderDraft>, startStep = 1) {
+    _loadingWholeDraft = true
     draft.value = { ...defaultDraft(), ...partial, currentStep: resolveStep(startStep) }
     saveDraft()
+    nextTick(() => { _loadingWholeDraft = false })
   }
 
   watch(draft, debouncedSaveDraft, { deep: true })
@@ -796,8 +807,11 @@ export const useBuilderStore = defineStore('builder', () => {
     }
   }
 
-  // Clear ASI allocations and rolled HP that are no longer valid when class changes
+  // Clear ASI allocations and rolled HP that are no longer valid when class changes.
+  // Skipped during a whole-draft load (applyDraft) — there the incoming class-specific data
+  // is authoritative and must not be wiped.
   watch(() => draft.value.classIndex, () => {
+    if (_loadingWholeDraft) return
     draft.value.asiAllocations = {}
     draft.value.rolledHpPerLevel = []
     draft.value.levelChoices = {}
