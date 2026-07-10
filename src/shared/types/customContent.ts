@@ -118,11 +118,11 @@ export type CustomSubclassInput = Omit<CustomSubclass, 'id' | 'userId' | 'create
 export interface CommunityItem {
   id: string
   userId: string
-  kind: 'race' | 'class'
+  kind: 'race' | 'class' | 'subclass'
   name: string
   edition: string
   primaryStat: string | null
   authorName: string | null
   updatedAt: string
-  data: CustomRace | CustomClass
+  data: CustomRace | CustomClass | CustomSubclass
 }

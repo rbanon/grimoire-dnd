@@ -451,7 +451,7 @@ export const useCustomContentStore = defineStore('custom-content', () => {
 
   // ── Community feed (public content, used by the Community page) ───────────────
   async function loadCommunity(): Promise<CommunityItem[]> {
-    const [r, c] = await Promise.all([
+    const [r, c, s] = await Promise.all([
       withTimeout(
         supabase.from('custom_races').select('*').eq('is_public', true).order('primary_stat', { ascending: true }).order('name', { ascending: true }),
         20_000, 'Community races',
@@ -460,9 +460,14 @@ export const useCustomContentStore = defineStore('custom-content', () => {
         supabase.from('custom_classes').select('*').eq('is_public', true).order('primary_stat', { ascending: true }).order('name', { ascending: true }),
         20_000, 'Community classes',
       ),
+      withTimeout(
+        supabase.from('custom_subclasses').select('*').eq('is_public', true).order('name', { ascending: true }),
+        20_000, 'Community subclasses',
+      ),
     ])
     if (r.error) throw r.error
     if (c.error) throw c.error
+    if (s.error) throw s.error
 
     const items: CommunityItem[] = []
     for (const row of (r.data ?? []) as ContentRow[]) {
@@ -472,6 +477,11 @@ export const useCustomContentStore = defineStore('custom-content', () => {
     for (const row of (c.data ?? []) as ContentRow[]) {
       const data = rowToClass(row)
       if (data) items.push({ id: row.id, userId: row.user_id, kind: 'class', name: row.name, edition: row.edition, primaryStat: row.primary_stat ?? classPrimaryStat(data.primaryAbility), authorName: row.author_name, updatedAt: row.updated_at, data })
+    }
+    // Subclasses have no primary stat of their own — they sort/filter by their parent class.
+    for (const row of (s.data ?? []) as SubclassRow[]) {
+      const data = rowToSubclass(row)
+      if (data) items.push({ id: row.id, userId: row.user_id, kind: 'subclass', name: row.name, edition: row.edition, primaryStat: null, authorName: row.author_name, updatedAt: row.updated_at, data })
     }
     return items
   }

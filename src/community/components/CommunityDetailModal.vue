@@ -23,7 +23,7 @@
             <div class="min-w-0">
               <p id="community-detail-title" class="font-heading text-base text-arcane-pale truncate">{{ item.name }}</p>
               <p class="text-2xs font-body text-mist mt-0.5">
-                {{ item.kind === 'race' ? 'Race' : 'Class' }} · {{ item.edition }}
+                {{ kindLabel }} · {{ item.edition }}
                 <template v-if="item.authorName"> · by {{ item.authorName }}</template>
               </p>
             </div>
@@ -90,6 +90,21 @@
                 </div>
               </div>
             </template>
+
+            <!-- Subclass detail -->
+            <template v-else-if="subclassDef">
+              <div v-if="subclassDef.parentClassName" class="flex flex-wrap gap-2">
+                <span class="px-2.5 py-1 rounded border border-arcane-base/30 text-xs font-heading text-arcane-pale">Subclass of {{ subclassDef.parentClassName }}</span>
+              </div>
+              <p v-if="subclassDef.description" class="text-xs font-body text-ash leading-relaxed">{{ subclassDef.description }}</p>
+              <div v-for="(feats, lvl) in subclassDef.featuresByLevel" :key="lvl" class="space-y-2">
+                <p class="text-2xs font-heading tracking-wide uppercase text-mist">Level {{ lvl }} Features</p>
+                <div v-for="(f, i) in feats" :key="i" class="px-3 py-2.5 rounded border border-shadow/50 bg-depths/20 space-y-1">
+                  <p class="text-sm font-heading text-vellum">{{ f.name || 'Unnamed feature' }}</p>
+                  <p v-if="f.desc" class="text-xs font-body text-ash leading-relaxed">{{ f.desc }}</p>
+                </div>
+              </div>
+            </template>
           </div>
 
           <!-- Footer: reuse action -->
@@ -120,7 +135,7 @@ import { computed, ref, defineComponent, h } from 'vue'
 import { XIcon } from 'lucide-vue-next'
 import { useAuthStore } from '@/auth/store'
 import { useCustomContentStore } from '@/custom-content/store'
-import type { CommunityItem, CustomRace, CustomClass } from '@/shared/types/customContent'
+import type { CommunityItem, CustomRace, CustomClass, CustomSubclass } from '@/shared/types/customContent'
 
 const props = defineProps<{ show: boolean; item: CommunityItem | null }>()
 const emit = defineEmits<{ close: [] }>()
@@ -131,6 +146,8 @@ const copying = ref(false)
 
 const race = computed<CustomRace | null>(() => props.item?.kind === 'race' ? (props.item.data as CustomRace) : null)
 const classDef = computed<CustomClass | null>(() => props.item?.kind === 'class' ? (props.item.data as CustomClass) : null)
+const subclassDef = computed<CustomSubclass | null>(() => props.item?.kind === 'subclass' ? (props.item.data as CustomSubclass) : null)
+const kindLabel = computed(() => props.item?.kind === 'race' ? 'Race' : props.item?.kind === 'subclass' ? 'Subclass' : 'Class')
 const isOwn = computed(() => !!props.item && !!auth.userId && props.item.userId === auth.userId)
 
 const ABILITY_ORDER = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const
@@ -192,6 +209,20 @@ async function copyToCollection() {
         spellcasting: c.spellcasting ? { ...c.spellcasting } : null,
         featuresByLevel: Object.fromEntries(
           Object.entries(c.featuresByLevel).map(([lvl, feats]) => [lvl, feats.map(f => ({ name: f.name, desc: f.desc }))]),
+        ),
+        isPublic: false,
+        source,
+      })
+    } else if (subclassDef.value) {
+      const sc = subclassDef.value
+      created = await customContent.createSubclass({
+        name: sc.name,
+        edition: sc.edition,
+        parentClass: sc.parentClass,
+        parentClassName: sc.parentClassName,
+        description: sc.description,
+        featuresByLevel: Object.fromEntries(
+          Object.entries(sc.featuresByLevel).map(([lvl, feats]) => [lvl, feats.map(f => ({ name: f.name, desc: f.desc }))]),
         ),
         isPublic: false,
         source,

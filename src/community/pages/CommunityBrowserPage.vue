@@ -24,7 +24,7 @@
         </div>
       </div>
     </div>
-    <p class="text-sm text-mist mb-6">Homebrew races &amp; classes shared by other players — sorted by primary ability.</p>
+    <p class="text-sm text-mist mb-6">Homebrew races, classes &amp; subclasses shared by other players — sorted by primary ability.</p>
 
     <!-- Filters -->
     <div class="flex flex-wrap gap-3 mb-6 items-center">
@@ -39,6 +39,7 @@
         <option value="">All content</option>
         <option value="race">Races</option>
         <option value="class">Classes</option>
+        <option value="subclass">Subclasses</option>
       </AppSelect>
       <AppSelect v-model="statFilter" class="max-w-[160px]">
         <option value="">Any primary stat</option>
@@ -95,8 +96,8 @@
         </div>
         <p class="text-xs text-mist">{{ subtitle(it) }}</p>
         <div class="flex items-center justify-between gap-2 mt-0.5">
-          <span class="text-2xs font-heading tracking-wide uppercase" :class="it.kind === 'race' ? 'text-arcane-pale/70' : 'text-gold-dim'">
-            {{ it.kind === 'race' ? 'Race' : 'Class' }} · {{ it.edition }}
+          <span class="text-2xs font-heading tracking-wide uppercase" :class="kindAccentClass(it.kind)">
+            {{ kindLabel(it.kind) }} · {{ it.edition }}
           </span>
           <span v-if="it.authorName" class="text-2xs font-body text-mist/70 truncate max-w-[45%]">by {{ it.authorName }}</span>
         </div>
@@ -125,7 +126,7 @@
               @click="openDetail(it)"
             >
               <td class="py-3 px-4 font-body text-stone">{{ it.name }}</td>
-              <td class="py-3 px-4 font-body text-mist">{{ it.kind === 'race' ? 'Race' : 'Class' }}</td>
+              <td class="py-3 px-4 font-body text-mist">{{ kindLabel(it.kind) }}</td>
               <td class="py-3 px-4 text-center">
                 <span class="text-2xs font-mono px-1.5 py-0.5 rounded border border-arcane-base/30 bg-arcane-deep/15 text-arcane-pale">{{ statLabel(it.primaryStat) }}</span>
               </td>
@@ -146,7 +147,7 @@ import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { LayoutGridIcon, ListIcon } from 'lucide-vue-next'
 import { useCustomContentStore } from '@/custom-content/store'
-import type { CommunityItem, CustomRace, CustomClass } from '@/shared/types/customContent'
+import type { CommunityItem, CustomRace, CustomClass, CustomSubclass } from '@/shared/types/customContent'
 import AppSelect from '@/shared/ui/AppSelect.vue'
 import CommunityDetailModal from '@/community/components/CommunityDetailModal.vue'
 
@@ -154,7 +155,7 @@ const customContent = useCustomContentStore()
 
 const viewMode = ref<'grid' | 'list'>('grid')
 const query = ref('')
-const kindFilter = ref<'' | 'race' | 'class'>('')
+const kindFilter = ref<'' | 'race' | 'class' | 'subclass'>('')
 const statFilter = ref('')
 const editionFilter = ref('')
 const sortBy = ref<'stat' | 'name' | 'recent'>('stat')
@@ -201,8 +202,21 @@ function subtitle(it: CommunityItem): string {
     if (r.darkvision) parts.push(`Darkvision ${r.darkvision} ft.`)
     return parts.join(' · ')
   }
+  if (it.kind === 'subclass') {
+    const sc = it.data as CustomSubclass
+    return sc.parentClassName ? `Subclass · ${sc.parentClassName}` : 'Subclass'
+  }
   const c = it.data as CustomClass
   return `d${c.hitDie}${c.primaryAbility ? ` · ${c.primaryAbility}` : ''}`
+}
+
+// Three-way kind badge (race / class / subclass).
+const KIND_LABELS: Record<CommunityItem['kind'], string> = { race: 'Race', class: 'Class', subclass: 'Subclass' }
+function kindLabel(kind: CommunityItem['kind']): string {
+  return KIND_LABELS[kind]
+}
+function kindAccentClass(kind: CommunityItem['kind']): string {
+  return kind === 'class' ? 'text-gold-dim' : 'text-arcane-pale/70'
 }
 
 const filtered = computed<CommunityItem[]>(() => {
