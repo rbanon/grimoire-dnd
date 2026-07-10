@@ -51,7 +51,7 @@ function isLikelyRanged(weapon: InventoryItem): boolean {
   if (weapon.weaponCategory === 'ranged') return true
   if (weapon.weaponCategory === 'melee')  return false
   // Infer from range field for manually-added weapons (e.g. "60/120 ft." → ranged).
-  // Thrown weapons (javelin, handaxe) have a range but are melee — exclude them.
+  // Thrown weapons (javelin, handaxe) have a range but are melee, exclude them.
   if (weapon.range) {
     if (/thrown/i.test(weapon.range)) return false
     const m = weapon.range.match(/^(\d+)/)
@@ -63,12 +63,12 @@ function isLikelyRanged(weapon: InventoryItem): boolean {
 /**
  * Computes all fighting-style bonuses for a weapon given the current equipment slots.
  *
- * Archery           — +2 attack, ranged weapon in any hand slot
- * Dueling           — +2 damage, one-handed melee in main hand, off hand empty or shield
- * Great Weapon Fght — reroll 1s and 2s on damage dice, two-handed weapon in main hand
- * Two-Weapon Fght   — add ability modifier to off-hand damage (pass abilityMods)
- * Defense           — handled separately in computeEffectiveAC
- * Protection        — reaction-based, not applicable to rolls
+ * Archery          , +2 attack, ranged weapon in any hand slot
+ * Dueling          , +2 damage, one-handed melee in main hand, off hand empty or shield
+ * Great Weapon Fght, reroll 1s and 2s on damage dice, two-handed weapon in main hand
+ * Two-Weapon Fght  , add ability modifier to off-hand damage (pass abilityMods)
+ * Defense          , handled separately in computeEffectiveAC
+ * Protection       , reaction-based, not applicable to rolls
  */
 export function computeFightingStyleBonuses(
   fightingStyles: string[],

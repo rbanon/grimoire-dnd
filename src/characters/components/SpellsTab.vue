@@ -94,7 +94,7 @@
         />
       </section>
 
-      <!-- ── Spell levels 1–9 ───────────────────────────────────────────── -->
+      <!-- ── Spell levels 1-9 ───────────────────────────────────────────── -->
       <div v-if="activeLevels.length > 0" class="rule-gold mb-0 flex items-center">
         <span class="flex-1">Spells</span>
         <div class="flex items-center gap-2">
@@ -126,8 +126,8 @@
           <p class="text-sm font-heading text-arcane-pale leading-tight">Arcane Recovery</p>
           <p class="text-2xs font-body text-mist leading-tight mt-0.5">
             <template v-if="arcaneRecoveryAvailable">Recover up to {{ arcaneRecoveryBudget }} slot levels (1/long rest)</template>
-            <template v-else-if="!arcaneRecoveryHasUse">Already used today — recharges on a long rest</template>
-            <template v-else>No expended slots of level 1–5 to recover</template>
+            <template v-else-if="!arcaneRecoveryHasUse">Already used today, recharges on a long rest</template>
+            <template v-else>No expended slots of level 1-5 to recover</template>
           </p>
         </div>
         <button
@@ -176,7 +176,7 @@
               :class="pip <= maxSlots(lvl) - usedSlots(lvl)
                 ? 'bg-gold-mid border-gold-mid'
                 : 'bg-shadow/40 border-gold-dim/50 hover:bg-gold-dim/20 hover:border-gold-mid'"
-              :title="pip <= maxSlots(lvl) - usedSlots(lvl) ? 'Click to spend slot' : 'Slot used — click to recover'"
+              :title="pip <= maxSlots(lvl) - usedSlots(lvl) ? 'Click to spend slot' : 'Slot used, click to recover'"
               @click="toggleSlot(lvl, pip)"
             />
             <span class="text-2xs font-body text-mist ml-1">
@@ -357,7 +357,7 @@ const preparedLimit = computed((): number | undefined => {
   const level = props.character.combat.level
   const mod = spellAbilityMod.value
   if (isSpellbookCaster.value) {
-    // Wizard: Int_mod + level (no totalSlots max — prepares from spellbook)
+    // Wizard: Int_mod + level (no totalSlots max, prepares from spellbook)
     return Math.max(1, level + mod)
   }
   const slots = getSpellSlots(props.character.identity.class.index, level)
@@ -385,7 +385,7 @@ const sheetSpellLimit = computed((): number | undefined => {
   return Math.max(1, level + mod)
 })
 
-// Per-level slot caps for known casters — limits how many spells can be known at each level
+// Per-level slot caps for known casters, limits how many spells can be known at each level
 // (e.g. 1 level-4 slot → at most 1 level-4 spell known)
 const sheetSlotsPerLevel = computed((): Record<number, number> | undefined => {
   if (!sc.value) return undefined
@@ -395,7 +395,7 @@ const sheetSlotsPerLevel = computed((): Record<number, number> | undefined => {
   return { 1: m.level1, 2: m.level2, 3: m.level3, 4: m.level4, 5: m.level5, 6: m.level6, 7: m.level7, 8: m.level8, 9: m.level9 }
 })
 
-// Known spells with their levels — needed for per-level blocking in the picker
+// Known spells with their levels, needed for per-level blocking in the picker
 const allKnownSpellsWithLevel = computed(() => {
   if (!sc.value) return []
   const seen = new Set<string>()
@@ -419,7 +419,7 @@ function slotKey(n: number): SlotKey { return `level${n}` as SlotKey }
 function maxSlots(n: number) { return sc.value?.slotsMax[slotKey(n)] ?? 0 }
 function usedSlots(n: number) { return sc.value?.slotsUsed[slotKey(n)] ?? 0 }
 
-// Warlock Pact Magic: slots only exist at one level — upcast lower-level spells automatically
+// Warlock Pact Magic: slots only exist at one level, upcast lower-level spells automatically
 const isPactCaster = computed(() => props.character.identity.class.index === 'warlock')
 const pactUpcastLevel = computed<number | null>(() => {
   if (!isPactCaster.value || !sc.value) return null

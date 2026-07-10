@@ -44,10 +44,10 @@
 
             <!-- Nothing to recover -->
             <p v-if="!hasRecoverable" class="text-sm font-body text-mist/60 italic text-center py-4">
-              No expended spell slots of level 1–5 to recover.
+              No expended spell slots of level 1-5 to recover.
             </p>
 
-            <!-- Per-level steppers (levels 1–5) -->
+            <!-- Per-level steppers (levels 1-5) -->
             <div v-else class="space-y-2">
               <div
                 v-for="lvl in recoverableLevels"
@@ -113,7 +113,7 @@ import type { Character, SpellSlotsByLevel } from '@/shared/types/character'
 const props = defineProps<{ show: boolean; character: Character }>()
 const emit = defineEmits<{ close: []; confirm: [recovery: Partial<SpellSlotsByLevel>] }>()
 
-// Arcane Recovery can only restore slots of level 1–5.
+// Arcane Recovery can only restore slots of level 1-5.
 const RECOVERABLE_LEVELS = [1, 2, 3, 4, 5] as const
 type RecLevel = (typeof RECOVERABLE_LEVELS)[number]
 

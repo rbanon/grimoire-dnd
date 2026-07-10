@@ -33,7 +33,7 @@ export const AbilityScoresSchema = z.object({
 })
 export type AbilityScores = z.infer<typeof AbilityScoresSchema>
 
-// Derived — computed, not stored
+// Derived, computed, not stored
 export interface AbilityModifiers {
   str: number
   dex: number
@@ -109,7 +109,7 @@ export const PortraitMetadataSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('url'),
     // Accepts http(s) URLs (uploaded portraits) and data:image URLs (local,
-    // unauthenticated portraits persisted to localStorage — kept small by
+    // unauthenticated portraits persisted to localStorage, kept small by
     // compressPortrait). Authenticated saves convert to https via uploadPortrait.
     url: z.string().refine(
       (u) => /^https?:\/\//i.test(u) || /^data:image\//i.test(u),
@@ -370,7 +370,7 @@ export const CharacterSchema = z.object({
   features: z.array(TraitFeatureSchema),
   notes: z.string().max(10000).optional(),
 
-  // Overrides — user-specified values that override computed defaults
+  // Overrides, user-specified values that override computed defaults
   overrides: z
     .object({
       initiative: z.number().int().optional(),
@@ -450,6 +450,6 @@ export type LocalDraftMetadata = z.infer<typeof LocalDraftMetadataSchema>
 // Embedding keeps export/import atomic and avoids join complexity for a MVP.
 //
 // If a favorited spell is removed from the active spell list (e.g. no longer prepared):
-//   MVP: favorites are retained as-is — the star icon is still shown in the favorites
+//   MVP: favorites are retained as-is, the star icon is still shown in the favorites
 //        section even if the spell is not in the known/prepared list.
 //   Future: add a visual "orphaned" indicator and a "clean up favorites" action.

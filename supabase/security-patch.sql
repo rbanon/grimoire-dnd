@@ -1,4 +1,4 @@
--- Security patch — apply once to the existing Supabase project via SQL editor.
+-- Security patch, apply once to the existing Supabase project via SQL editor.
 -- Fixes all WARN-level findings from the Supabase database linter.
 
 -- ── 1. Fix mutable search_path on handle_new_user ────────────────────────────

@@ -53,7 +53,7 @@
     </div>
 
     <!-- States -->
-    <!-- Skeleton — matches grid layout -->
+    <!-- Skeleton, matches grid layout -->
     <div
       v-if="isPending"
       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
@@ -91,7 +91,7 @@
         <!-- Sub-category -->
         <p v-if="item.subCategory" class="text-2xs text-mist mt-0.5">{{ item.subCategory }}</p>
 
-        <!-- Stat block — weapon (skeleton while detail loads) -->
+        <!-- Stat block, weapon (skeleton while detail loads) -->
         <template v-if="item.category === 'weapon'">
           <div class="mt-1.5 flex items-baseline gap-1.5 text-xs">
             <template v-if="equipDetail(item.index)">
@@ -109,7 +109,7 @@
           </div>
         </template>
 
-        <!-- Stat block — armor (skeleton while detail loads) -->
+        <!-- Stat block, armor (skeleton while detail loads) -->
         <template v-else-if="item.category === 'armor'">
           <div class="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
             <template v-if="equipDetail(item.index)">
@@ -180,13 +180,13 @@
               </td>
               <td class="py-3 px-4 whitespace-nowrap hidden sm:table-cell">
                 <span v-if="item.rarity" :class="rarityBadgeClass(item.rarity)" class="text-2xs">{{ item.rarity }}</span>
-                <span v-else class="text-mist text-xs">—</span>
+                <span v-else class="text-mist text-xs">-</span>
               </td>
               <td class="py-3 px-4 text-center hidden md:table-cell">
                 <span v-if="item.isMagic" class="font-body text-xs" :class="item.requiresAttunement ? 'text-arcane-bright' : 'text-mist'">
                   {{ item.requiresAttunement ? 'Yes' : 'No' }}
                 </span>
-                <span v-else class="text-mist text-xs">—</span>
+                <span v-else class="text-mist text-xs">-</span>
               </td>
             </tr>
           </tbody>
@@ -505,7 +505,7 @@ function equipDetail(index: string): ApiEquipment | undefined {
 
 function weaponDamageStr(index: string): string {
   const e = pageEquipMap.value.get(index)
-  if (!e?.damage) return '—'
+  if (!e?.damage) return '-'
   const base = e.damage.damage_dice
   return e.two_handed_damage ? `${base} / ${e.two_handed_damage.damage_dice}` : base
 }

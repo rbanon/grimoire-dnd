@@ -19,6 +19,8 @@ vi.mock('@/shared/api/supabase.client', () => ({
 
 import { useBuilderStore } from './builderStore'
 import type { BuilderDraft } from './builderStore'
+import { useCharactersStore } from '@/characters/store'
+import type { Character } from '@/shared/types/character'
 
 function makeStore(overrides: Partial<{
   hpMethod: BuilderDraft['hpMethod']
@@ -42,7 +44,7 @@ function makeStore(overrides: Partial<{
   return store
 }
 
-describe('computedMaxHp — max method', () => {
+describe('computedMaxHp, max method', () => {
   beforeEach(() => { setActivePinia(createPinia()) })
 
   it('level 1 fighter: hitDie + conMod', () => {
@@ -66,7 +68,7 @@ describe('computedMaxHp — max method', () => {
   })
 })
 
-describe('computedMaxHp — average method', () => {
+describe('computedMaxHp, average method', () => {
   beforeEach(() => { setActivePinia(createPinia()) })
 
   it('level 1: full hitDie + conMod', () => {
@@ -89,7 +91,7 @@ describe('computedMaxHp — average method', () => {
   })
 })
 
-describe('computedMaxHp — roll method', () => {
+describe('computedMaxHp, roll method', () => {
   beforeEach(() => { setActivePinia(createPinia()) })
 
   it('returns 0 when fewer rolls than levels', () => {
@@ -120,7 +122,7 @@ describe('computedMaxHp — roll method', () => {
   })
 })
 
-describe('computedMaxHp — manual method', () => {
+describe('computedMaxHp, manual method', () => {
   beforeEach(() => { setActivePinia(createPinia()) })
 
   it('returns manualMaxHp directly', () => {
@@ -131,5 +133,69 @@ describe('computedMaxHp — manual method', () => {
   it('ignores all other fields', () => {
     const store = makeStore({ hpMethod: 'manual', classHitDie: 12, level: 10, manualMaxHp: 1 })
     expect(store.computedMaxHp).toBe(1)
+  })
+})
+
+describe('custom (homebrew) race', () => {
+  beforeEach(() => { setActivePinia(createPinia()) })
+
+  it('effectiveScores sum custom race ability bonuses onto the base scores', () => {
+    const store = useBuilderStore()
+    store.draft.raceIndex = 'custom'
+    store.draft.baseScores = { str: 15, dex: 10, con: 13, int: 8, wis: 12, cha: 10 }
+    store.draft.raceAbilityBonuses = { str: 2, con: 1 }
+    expect(store.effectiveScores.str).toBe(17)
+    expect(store.effectiveScores.con).toBe(14)
+    expect(store.effectiveScores.dex).toBe(10) // unaffected
+  })
+
+  it('step-3 validation requires a name for a custom race', () => {
+    const store = useBuilderStore()
+    store.draft.raceIndex = 'custom'
+    store.draft.raceName = ''
+    expect(store.stepErrors[3]).toContain('Name your custom race')
+    store.draft.raceName = 'Stormborn'
+    expect(store.stepErrors[3]).not.toContain('Name your custom race')
+  })
+
+  it('build bakes homebrew bonuses, defenses, senses, skills, tools and traits into the character', async () => {
+    const store = useBuilderStore()
+    // Capture the character passed to the characters store (bypasses persistence).
+    const chars = useCharactersStore()
+    const createSpy = vi.spyOn(chars, 'create').mockImplementation(async (c) => c as Character)
+
+    store.draft.name = 'Test Hero'
+    store.draft.raceIndex = 'custom'
+    store.draft.raceName = 'Stormborn'
+    store.draft.raceSpeed = 35
+    store.draft.raceSizeCategory = 'Small'
+    store.draft.baseScores = { str: 8, dex: 14, con: 12, int: 10, wis: 10, cha: 15 }
+    store.draft.raceAbilityBonuses = { cha: 2, dex: 1 }
+    store.draft.raceResistances = ['lightning', 'thunder']
+    store.draft.raceDarkvision = 60
+    store.draft.raceSkillProficiencies = ['perception']
+    store.draft.raceCustomToolProfs = ["Smith's tools"]
+    store.draft.raceCustomTraits = [{ name: 'Stormborn', desc: 'Resistance to lightning and thunder.' }]
+
+    await store.save()
+
+    expect(createSpy).toHaveBeenCalledOnce()
+    const built = createSpy.mock.calls[0][0] as Character
+
+    // Bonuses summed onto the sheet
+    expect(built.abilityScores.cha).toBe(17) // 15 + 2
+    expect(built.abilityScores.dex).toBe(15) // 14 + 1
+    // Race snapshot
+    expect(built.identity.race.index).toBe('custom')
+    expect(built.identity.race.name).toBe('Stormborn')
+    expect(built.identity.race.speed).toBe(35)
+    expect(built.identity.race.sizeCategory).toBe('Small')
+    // Homebrew defenses / senses / proficiencies baked in
+    expect(built.resistances).toEqual(expect.arrayContaining(['lightning', 'thunder']))
+    expect(built.senses).toContain('Darkvision 60 ft.')
+    expect(built.skillProficiencies).toHaveProperty('perception')
+    expect(built.otherProficiencies).toContain("Smith's tools")
+    // Trait surfaced as a feature on the sheet
+    expect(built.features.some(f => f.name === 'Stormborn')).toBe(true)
   })
 })

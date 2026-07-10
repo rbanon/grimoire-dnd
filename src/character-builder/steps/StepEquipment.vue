@@ -176,7 +176,7 @@
                       <!-- Holy symbol: description note + optional flavor text input -->
                       <div v-else-if="isHolySymbol(slot.ref.index)" class="space-y-2">
                         <p class="text-xs font-body text-mist leading-relaxed px-3 py-2 rounded border border-shadow/40 bg-depths/20">
-                          A holy symbol is a representation of your deity — worn as an amulet, emblazoned on a shield, or held as a reliquary. Clerics and paladins use it as a divine spellcasting focus.
+                          A holy symbol is a representation of your deity, worn as an amulet, emblazoned on a shield, or held as a reliquary. Clerics and paladins use it as a divine spellcasting focus.
                         </p>
                         <label class="text-2xs font-heading tracking-wide text-mist uppercase">Describe your symbol (optional)</label>
                         <textarea
@@ -342,7 +342,7 @@ function rollGold() {
   builder.draft.manualGold = rollStartingGold(builder.draft.classIndex)
 }
 
-// Each ApiReference carries a `url` like `/api/2024/equipment/arrows` — the edition that
+// Each ApiReference carries a `url` like `/api/2024/equipment/arrows`, the edition that
 // owns the resource. Items from a 2024 background/class must be fetched from 2024
 // (e.g. 2024 `arrows` doesn't exist as `arrows` in 2014, only `arrow`).
 type EquipEdition = '2014' | '2024'
@@ -560,7 +560,7 @@ const allItems = computed<{ index: string; edition: EquipEdition }[]>(() => {
     }
   }
 
-  // Category-picked items — edition tracked at selection time
+  // Category-picked items, edition tracked at selection time
   for (const [key, idx] of Object.entries(categorySelections.value)) {
     if (idx) add(idx, categorySelectionEditions.value[key] ?? '2014')
   }

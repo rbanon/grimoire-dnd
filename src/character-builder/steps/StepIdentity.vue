@@ -265,7 +265,7 @@ import PickerCard from '@/character-builder/components/PickerCard.vue'
 import AlignmentGrid from '@/character-builder/components/AlignmentGrid.vue'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
-const MAX_PORTRAIT_BYTES = 10_485_760 // 10 MB — compression handles the rest
+const MAX_PORTRAIT_BYTES = 10_485_760 // 10 MB, compression handles the rest
 
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
@@ -303,7 +303,7 @@ async function onFileChange(event: Event) {
   }
 }
 
-// Track which required fields have been interacted with — errors only show after touch
+// Track which required fields have been interacted with, errors only show after touch
 const touched = reactive({ name: false, race: false, background: false })
 
 const fieldErrors = computed(() => ({

@@ -37,19 +37,28 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = data.session?.user ?? null
       if (user.value) await loadProfile(user.value.id)
     } catch (e) {
-      console.warn('[auth] init failed — continuing as unauthenticated:', e)
+      console.warn('[auth] init failed, continuing as unauthenticated:', e)
     } finally {
       loading.value = false
     }
 
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      user.value = session?.user ?? null
-      lastAuthEvent.value = event
-      if (session?.user) {
-        await loadProfile(session.user.id)
-      } else {
-        profile.value = null
-      }
+    // onAuthStateChange fires while GoTrue holds its internal auth lock (Web Locks API).
+    // Doing Supabase work in reaction to the event, directly via loadProfile() here, or in
+    // the characters/campaigns stores that watch `lastAuthEvent` and call syncOnLogin() -
+    // while that lock is held DEADLOCKS it: the follow-up request waits on the very lock the
+    // callback is holding, hanging every authenticated request until it times out (~20s).
+    // Defer the whole reaction (state writes included, so the watchers fire late too) to a
+    // macrotask, which runs after GoTrue has released the lock.
+    supabase.auth.onAuthStateChange((event, session) => {
+      setTimeout(() => {
+        user.value = session?.user ?? null
+        lastAuthEvent.value = event
+        if (session?.user) {
+          void loadProfile(session.user.id)
+        } else {
+          profile.value = null
+        }
+      }, 0)
     })
   }
 

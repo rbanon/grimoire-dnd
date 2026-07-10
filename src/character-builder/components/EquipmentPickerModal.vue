@@ -76,8 +76,8 @@
                   <div class="space-y-2">
                     <StatRow label="Damage" :value="`${selectedItem.damage.damage_dice} ${selectedItem.damage.damage_type?.name ?? ''}`" highlight />
                     <StatRow v-if="selectedItem.two_handed_damage" label="Versatile" :value="selectedItem.two_handed_damage.damage_dice" />
-                    <StatRow label="Type" :value="selectedItem.weapon_category ?? '—'" />
-                    <StatRow label="Range" :value="selectedItem.weapon_range ?? '—'" />
+                    <StatRow label="Type" :value="selectedItem.weapon_category ?? '-'" />
+                    <StatRow label="Range" :value="selectedItem.weapon_range ?? '-'" />
                     <StatRow
                       v-if="selectedItem.range"
                       label="Range"
@@ -105,7 +105,7 @@
                       label="+ DEX"
                       :value="selectedItem.armor_class.max_bonus ? `max ${selectedItem.armor_class.max_bonus}` : 'Yes'"
                     />
-                    <StatRow label="Type" :value="selectedItem.armor_category ?? '—'" />
+                    <StatRow label="Type" :value="selectedItem.armor_category ?? '-'" />
                     <StatRow v-if="selectedItem.str_minimum" label="STR min." :value="String(selectedItem.str_minimum)" />
                     <div v-if="selectedItem.stealth_disadvantage" class="text-2xs font-body text-blood-mid">
                       Stealth Disadvantage

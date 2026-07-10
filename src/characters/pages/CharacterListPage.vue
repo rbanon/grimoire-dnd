@@ -81,7 +81,7 @@
         </div>
       </Transition>
 
-      <!-- Skeleton loading — mirrors CharacterCard grid -->
+      <!-- Skeleton loading, mirrors CharacterCard grid -->
       <div v-if="!store.loaded" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <div
           v-for="i in 8"
@@ -199,7 +199,7 @@ async function confirmDuplicate(id: string) {
     ? `${c.identity.subrace.name} (${c.identity.race.name})`
     : c.identity.race.name
   const cls = c.identity.subclass
-    ? `${c.identity.class.name} — ${c.identity.subclass.name}`
+    ? `${c.identity.class.name}, ${c.identity.subclass.name}`
     : c.identity.class.name
   const ok = await confirm({
     title: 'Duplicate Character',

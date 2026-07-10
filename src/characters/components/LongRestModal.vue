@@ -157,7 +157,7 @@ const isPreparedCaster = computed(() =>
 
 const abilityKey = computed(() => profile.value?.preparedAbility ?? 'wis')
 const abilityMod = computed(() => mods.value[abilityKey.value] ?? 0)
-const abilityName = computed(() => ({ wis: 'WIS', int: 'INT', cha: 'CHA' }[abilityKey.value] ?? 'WIS'))
+const abilityName = computed(() => abilityKey.value.toUpperCase())
 
 const totalSlotCount = computed(() => {
   const s = getSpellSlots(classIndex.value, props.character.combat.level)

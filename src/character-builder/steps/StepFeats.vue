@@ -22,7 +22,7 @@
         <div class="flex items-center justify-between flex-wrap gap-2">
           <div>
             <p class="font-heading text-sm text-vellum">
-              Level {{ asiLevel }} — Improvement
+              Level {{ asiLevel }}, Improvement
             </p>
             <p class="text-2xs font-body text-mist mt-0.5">Choose an Ability Score Improvement or select a feat.</p>
           </div>
@@ -243,7 +243,7 @@ const abilityDefs = [
 const allAsiLevels = computed(() => getAsiLevels(builder.draft.classIndex))
 const activeAsiLevels = computed(() => allAsiLevels.value.filter(l => l <= builder.draft.level))
 
-// ── Feat picker — merged 2014 + 2024 ─────────────────────────────────────────
+// ── Feat picker, merged 2014 + 2024 ─────────────────────────────────────────
 
 const featSearch = ref('')
 
@@ -304,7 +304,7 @@ const FEAT_PREREQUISITES_2024: Record<string, Prereq2024> = {
   'boon-of-truesight':          { minLevel: 19 },
 }
 
-// `asiLevel` is the class level at which the feat is taken — used for minimum-level prereqs
+// `asiLevel` is the class level at which the feat is taken, used for minimum-level prereqs
 // (e.g. Epic Boons require level 19, so they only appear in a level-19+ ASI slot).
 function featMeetsPrerequisites(featIndex: string, edition: EditionTag, asiLevel: number): boolean {
   const scores = builder.effectiveScores
@@ -327,7 +327,7 @@ function availableFeats(asiLevel: number) {
   return list.filter(f => featMeetsPrerequisites(f.index, f.edition, asiLevel))
 }
 
-// ── Feat preview — handles both 2014 (desc[]) and 2024 (description string) ──
+// ── Feat preview, handles both 2014 (desc[]) and 2024 (description string) ──
 
 type PreviewKey = { index: string; edition: EditionTag } | null
 const previewFeat = ref<PreviewKey>(null)
@@ -345,7 +345,7 @@ const { data: previewFeat2024Data, isPending: previewLoading2024 } = useQuery({
   enabled: computed(() => !!previewFeat.value && previewFeat.value.edition === '2024'),
 })
 
-// Only check the relevant query's loading state — disabled queries in TanStack Query v5
+// Only check the relevant query's loading state, disabled queries in TanStack Query v5
 // report isPending:true even though they never fetch, which would hide the data forever.
 const previewFeatLoading = computed(() => {
   if (!previewFeat.value) return false

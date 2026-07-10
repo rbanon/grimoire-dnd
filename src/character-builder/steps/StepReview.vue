@@ -34,7 +34,7 @@
           <p class="font-body text-ash mt-1">
             {{ d.raceName }}<span v-if="d.subraceName"> · {{ d.subraceName }}</span>
             <span class="text-mist mx-1.5">·</span>
-            {{ d.className }}<span v-if="d.subclassName"> — {{ d.subclassName }}</span>
+            {{ d.className }}<span v-if="d.subclassName">, {{ d.subclassName }}</span>
             <span class="text-mist mx-1.5">·</span>
             Level {{ d.level }}
           </p>

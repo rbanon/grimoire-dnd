@@ -1,4 +1,4 @@
--- Migration: campaigns v2 — personal tracking model
+-- Migration: campaigns v2, personal tracking model
 -- Run once in the Supabase SQL editor.
 
 -- ── 1. campaigns: replace linked_character_ids with my_character_id / my_character_name ──

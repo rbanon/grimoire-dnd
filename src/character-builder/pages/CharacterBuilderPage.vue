@@ -30,7 +30,7 @@
             />
           </div>
           <p class="font-mono text-2xs text-mist tracking-wide">
-            Step {{ visibleCurrentStep }} of {{ builder.totalSteps }} — {{ currentDraftStepName }}
+            Step {{ visibleCurrentStep }} of {{ builder.totalSteps }}, {{ currentDraftStepName }}
           </p>
         </div>
 
@@ -236,7 +236,7 @@
     </div>
   </div>
 
-  <!-- Full-screen saving overlay — fixed so it covers sidebar, header and step content -->
+  <!-- Full-screen saving overlay, fixed so it covers sidebar, header and step content -->
   <Teleport to="body">
     <Transition name="fade-overlay">
       <div
@@ -251,7 +251,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import {
   ChevronLeftIcon, ChevronRightIcon, CheckIcon,
   AlertCircleIcon, BookmarkIcon, BookOpenIcon, PlusIcon, XIcon,
@@ -274,6 +274,7 @@ import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
 const builder = useBuilderStore()
 const router = useRouter()
+const route = useRoute()
 const { confirm } = useConfirm()
 const { trigger: triggerValidation, reset: resetValidation } = useBuilderValidation()
 const showErrors = ref(false)
@@ -308,7 +309,7 @@ const currentStepDef = computed(() =>
 )
 const currentStepComponent = computed(() => currentStepDef.value?.component ?? StepReview)
 
-// Visible index (1-based) of the current step — used for "Step X of Y" display
+// Visible index (1-based) of the current step, used for "Step X of Y" display
 const visibleCurrentStep = computed(() =>
   visibleSteps.value.findIndex(s => s.number === builder.draft.currentStep) + 1
 )
@@ -319,6 +320,9 @@ const transitionName = computed(() =>
 )
 
 onMounted(() => {
+  // Preset/quiz flows prefill the draft in-memory and arrive with ?from=… so we
+  // open straight into that prepared character instead of prompting to resume.
+  if (route.query.from) return
   const hasDraft = builder.loadDraft()
   if (hasDraft) resumeScreen.value = true
 })
@@ -390,7 +394,7 @@ async function handleSave() {
   try {
     const id = await builder.save()
     const failure = await router.replace(`/characters/${id}`)
-    // NavigationFailure resolves (doesn't reject) — component stays mounted
+    // NavigationFailure resolves (doesn't reject), component stays mounted
     if (failure) {
       navigating.value = false
     } else {
@@ -398,7 +402,7 @@ async function handleSave() {
       builder.clearDraft()
     }
   } catch {
-    // save() threw or router.replace() rejected — reset spinner
+    // save() threw or router.replace() rejected, reset spinner
     navigating.value = false
   }
 }

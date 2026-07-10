@@ -66,7 +66,7 @@
 
             <!-- Identity -->
             <div class="flex-1 min-w-0">
-              <!-- Name — inline edit in edit mode -->
+              <!-- Name, inline edit in edit mode -->
               <input
                 v-if="nameEditing && editMode"
                 ref="nameInputEl"
@@ -90,14 +90,14 @@
               <p class="font-body text-sm text-ash mt-0.5 truncate">
                 {{ character.identity.race.name }}<span v-if="character.identity.subrace">&nbsp;({{ character.identity.subrace.name }})</span>
                 <span class="text-dusk mx-1.5">·</span>
-                {{ character.identity.class.name }}<span v-if="character.identity.subclass">&nbsp;— {{ character.identity.subclass.name }}</span>
+                {{ character.identity.class.name }}<span v-if="character.identity.subclass">&nbsp;- {{ character.identity.subclass.name }}</span>
                 <span class="text-dusk mx-1.5">·</span>
                 Level {{ character.combat.level }}
               </p>
               <p class="font-body text-xs text-mist mt-0.5 flex items-center gap-1 flex-wrap">
                 {{ character.identity.background.name }}
                 <span class="mx-1 text-dusk">·</span>
-                <!-- Alignment — select in edit mode, plain text otherwise -->
+                <!-- Alignment, select in edit mode, plain text otherwise -->
                 <select
                   v-if="editMode"
                   :value="character.identity.alignment"
@@ -169,7 +169,7 @@
                 </button>
               </div>
 
-              <!-- Level Up — own line, full button -->
+              <!-- Level Up, own line, full button -->
               <button
                 v-if="character.combat.level < 20"
                 type="button"
@@ -219,7 +219,7 @@
                 <span class="font-heading text-base text-mist/60">/{{ character.combat.maxHp }}</span>
               </div>
 
-              <!-- THP — always visible inline, click to set -->
+              <!-- THP, always visible inline, click to set -->
               <template v-if="tempHpEditing">
                 <input
                   ref="tempHpInputEl"
@@ -242,7 +242,7 @@
                 @click="startTempHpEdit()"
               >(+{{ character.combat.tempHp }} THP)</button>
 
-              <!-- Death Saves — inline at 0 HP -->
+              <!-- Death Saves, inline at 0 HP -->
               <div v-if="character.combat.currentHp === 0" class="flex items-center gap-2 shrink-0">
                 <span class="text-2xs font-heading uppercase text-blood-bright/70">Death</span>
                 <div class="flex items-center gap-0.5">
@@ -342,7 +342,7 @@
               </div><!-- /right side -->
             </div>
 
-            <!-- HP progress bar — clickable/draggable range input overlay -->
+            <!-- HP progress bar, clickable/draggable range input overlay -->
             <div class="relative w-full h-4 flex items-center">
               <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-shadow/40 overflow-hidden">
                 <div
@@ -387,7 +387,7 @@
                   v-else
                   class="font-heading text-xl leading-none transition-colors"
                   :class="editMode && !acIsDerived ? 'text-vellum hover:text-gold-mid cursor-pointer' : 'text-vellum cursor-default'"
-                  :title="acIsDerived ? 'Derived from equipped armor — manage in the Equipment tab' : ''"
+                  :title="acIsDerived ? 'Derived from equipped armor, manage in the Equipment tab' : ''"
                   @click="editMode && !acIsDerived && startAcEdit()"
                 >{{ effectiveAC }}</div>
                 <span
@@ -688,7 +688,7 @@
           <!-- ── RIGHT PANEL: Tabs ─────────────────────────────────────────── -->
           <main class="min-w-0 pb-16">
 
-            <!-- Tab bar — grimoire chapter navigation -->
+            <!-- Tab bar, grimoire chapter navigation -->
             <div class="mb-5">
               <div class="border-b border-gold-dim/25 flex overflow-x-auto scroll-hidden">
                 <button

@@ -12,7 +12,7 @@
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <!-- Outer polygon — die silhouette -->
+        <!-- Outer polygon, die silhouette -->
         <polygon
           :points="outerPoints"
           :stroke="dieColor"
@@ -21,7 +21,7 @@
           :fill="dieColor"
           fill-opacity="0.18"
         />
-        <!-- Inner polygon — engraved face detail -->
+        <!-- Inner polygon, engraved face detail -->
         <polygon
           :points="innerPoints"
           :stroke="dieColor"
@@ -65,14 +65,14 @@ const SHAPE: Record<number, [number, number]> = {
   20: [6,   0],   // d20 → hexagon, flat sides
 }
 
-// Hardcoded colors — no UnoCSS dependency; always visible regardless of scanner
+// Hardcoded colors, no UnoCSS dependency; always visible regardless of scanner
 const DIE_COLOR: Record<number, string> = {
-  4:  '#ec6868',   // arcane-pale (light mode) — pinkish crimson
-  6:  '#d4af37',   // gold-mid — warm gold
+  4:  '#ec6868',   // arcane-pale (light mode), pinkish crimson
+  6:  '#d4af37',   // gold-mid, warm gold
   8:  '#d4af37',   // gold-mid
-  10: '#b84040',   // blood-mid — deeper red
-  12: '#e87878',   // blood-bright — bright red
-  20: '#ec6868',   // arcane-pale — signature D20 crimson
+  10: '#b84040',   // blood-mid, deeper red
+  12: '#e87878',   // blood-bright, bright red
+  20: '#ec6868',   // arcane-pale, signature D20 crimson
 }
 
 const shapeConfig = computed(() => SHAPE[animDieSides.value] ?? [6, 0])

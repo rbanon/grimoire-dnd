@@ -4,30 +4,30 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.4.2] — 2026-06-15
+## [0.4.2], 2026-06-15
 
 ### Added
-- **CI/CD pipeline** — GitHub Actions (`.github/workflows/ci.yml`) ejecuta type-check, lint y tests
+- **CI/CD pipeline**, GitHub Actions (`.github/workflows/ci.yml`) ejecuta type-check, lint y tests
   en cada push/PR a master; primera ejecución pasó en verde automáticamente.
-- **Accesibilidad — focus trap**: directiva `v-focus-trap` (`src/shared/directives/focusTrap.ts`)
+- **Accesibilidad, focus trap**: directiva `v-focus-trap` (`src/shared/directives/focusTrap.ts`)
   y composable `useFocusTrap`; trampea el foco dentro de modales con Tab/Shift+Tab y devuelve el
   foco al elemento que abrió el diálogo al cerrarlo.
-- **Accesibilidad — ARIA en modales**: los 19 paneles/diálogos tienen `role="dialog"`,
+- **Accesibilidad, ARIA en modales**: los 19 paneles/diálogos tienen `role="dialog"`,
   `aria-modal="true"`, `aria-labelledby` apuntando al título y `aria-label="Close"` en botones de
   cierre; search inputs en los 3 browsers tienen `aria-label`.
-- **Password reset flow**: `ResetPasswordPage` en `/reset-password` — gestiona el token
+- **Password reset flow**: `ResetPasswordPage` en `/reset-password`, gestiona el token
   `PASSWORD_RECOVERY` de Supabase; modo `forgot` en `LoginPage` con formulario de solo email;
   `auth.requestPasswordReset()` usa `window.location.origin` dinámicamente para el `redirectTo`.
-- **`vercel.json`** — rewrite SPA `/(.*) → /index.html` para evitar 404 en navegación directa.
+- **`vercel.json`**, rewrite SPA `/(.*) → /index.html` para evitar 404 en navegación directa.
 
 ### Fixed
-- **`virtual:pwa-register/vue` TypeScript error** en `App.vue` — añadido
+- **`virtual:pwa-register/vue` TypeScript error** en `App.vue`, añadido
   `"types": ["vite-plugin-pwa/client"]` a `tsconfig.json`.
-- **`vue/require-toggle-inside-transition`** en `RollConfirm.vue` — el hijo directo de
+- **`vue/require-toggle-inside-transition`** en `RollConfirm.vue`, el hijo directo de
   `<Transition>` debe tener `v-if`/`v-show`; reorganizados backdrop y panel.
-- **`@typescript-eslint/no-unused-vars`** — añadido `varsIgnorePattern: '^_'` (antes solo
+- **`@typescript-eslint/no-unused-vars`**, añadido `varsIgnorePattern: '^_'` (antes solo
   `argsIgnorePattern`; no cubría variables de destructuring como `const { x: _x, ...rest }`).
-- **Mensaje de reset neutral** — el mensaje de éxito al pedir reset dice
+- **Mensaje de reset neutral**, el mensaje de éxito al pedir reset dice
   "If an account exists for [email]…" en lugar de confirmar que el correo existe.
 
 ### Changed
@@ -35,19 +35,19 @@ adheres to [Semantic Versioning](https://semver.org/).
   y `npm test` documentados en scripts; password reset mencionado en Account & Sync.
 
 ### Tests
-- 273 tests passing (6 test files) — sin regresiones.
+- 273 tests passing (6 test files), sin regresiones.
 
-## [0.4.1] — 2026-06-14
+## [0.4.1], 2026-06-14
 
 ### Fixed
-- **`auth.init()` colgado**: wrapeado en `try/finally` — `loading = false` se garantiza aunque
+- **`auth.init()` colgado**: wrapeado en `try/finally`, `loading = false` se garantiza aunque
   `loadProfile()` falle por error de red (antes el router guard quedaba bloqueado indefinidamente).
 - **Cinco non-null assertions** en `campaigns/detailStore` (`createSession`, `createPartyMember`,
   `createNpc`, `createNote`, `createKeyObject`) reemplazadas por guards explícitos con `throw`.
 - **`importFromJson` byte count**: usaba `json.length` (caracteres) en vez de
-  `TextEncoder().encode(json).length` (bytes) — el límite de 5 MB era impreciso con Unicode.
+  `TextEncoder().encode(json).length` (bytes), el límite de 5 MB era impreciso con Unicode.
 - **`importFromJson` contador incorrecto**: devolvía `imported: toAdd.length` aunque algunos
-  personajes fueran descartados por el límite de 15 — ahora devuelve `Math.min(toAdd.length, remaining)`.
+  personajes fueran descartados por el límite de 15, ahora devuelve `Math.min(toAdd.length, remaining)`.
 - **`makeDefaultCharacter` Zod v4 bug**: `savingThrowProficiencies: {}` fallaba silenciosamente
   en producción (`z.record(AbilityNameSchema, z.boolean())` requiere las 6 claves en Zod v4);
   ahora inicializa `{ str: false, dex: false, con: false, int: false, wis: false, cha: false }`.
@@ -65,12 +65,12 @@ adheres to [Semantic Versioning](https://semver.org/).
   de la API 5e (`dnd5e:0:*` y anteriores) para evitar acumulación de versiones antiguas.
 
 ### Tests
-- `src/characters/store.test.ts` — 20 tests cubriendo `create`, `update`, `remove`, `duplicate`,
+- `src/characters/store.test.ts`, 20 tests cubriendo `create`, `update`, `remove`, `duplicate`,
   `importFromJson` (validación + límite de 15), `loadFromCloud` y `getById`.
 
-## [0.4.0] — 2026-06-05
+## [0.4.0], 2026-06-05
 
-### Added — Multi-edition 2014 + 2024 SRD content
+### Added, Multi-edition 2014 + 2024 SRD content
 - Races/Species, classes, feats, and backgrounds can be selected from **either the 2014 or
   2024 SRD**, shown side by side with edition badges and a separator between groups.
 - **2024 Species**: Goliath & Orc added; subspecies support (Elven Lineage, Fiendish Legacy,
@@ -83,7 +83,7 @@ adheres to [Semantic Versioning](https://semver.org/).
     Gaming Set).
 - **2024 Feats**: 17 feats incl. fighting styles and Epic Boons, with edition-aware
   description and prerequisite rendering.
-- `API_REFERENCE.local.md` — full reference of the 2014 vs 2024 API shapes.
+- `API_REFERENCE.local.md`, full reference of the 2014 vs 2024 API shapes.
 
 ### Changed
 - Race/class/background pickers use a 3-column grid with a labelled separator between the
@@ -94,7 +94,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Save errors are now shown as clear human-readable messages instead of a raw Zod JSON array.
 
 ### Fixed
-- **2024 trait descriptions** were blank — 2024 traits use `description` (string) vs 2014
+- **2024 trait descriptions** were blank, 2024 traits use `description` (string) vs 2014
   `desc` (string[]); both render now, resiliently (a single trait 404 no longer blanks the list).
 - **Species Details** panel was stuck on a spinner for 2024 species (a disabled per-edition
   query reported `isPending`); the loading flag now reflects only the active edition.

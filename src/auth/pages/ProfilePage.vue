@@ -134,6 +134,189 @@
       <p v-if="profileError" class="text-sm font-body text-blood-bright -mt-1">{{ profileError }}</p>
     </section>
 
+    <!-- ── Custom content card ────────────────────────────────────────────── -->
+    <section class="card p-6 corner-ornament flex flex-col gap-5">
+      <div class="flex items-center justify-between gap-3">
+        <p class="font-mono text-2xs tracking-[0.22em] uppercase text-mist">Custom Races &amp; Classes</p>
+        <RouterLink
+          to="/characters/new"
+          class="text-xs font-heading text-arcane-pale/80 hover:text-arcane-pale transition-colors"
+        >+ New in builder</RouterLink>
+      </div>
+
+      <!-- Races -->
+      <div class="flex flex-col gap-2">
+        <p class="label">Races</p>
+        <div v-if="!customContent.loaded" class="text-sm font-body text-mist">Loading…</div>
+        <p v-else-if="!customContent.races.length" class="text-sm font-body text-mist italic">
+          No custom races yet. Create one in the character builder's Race step.
+        </p>
+        <div
+          v-for="race in customContent.races"
+          :key="race.id"
+          class="flex items-center gap-3 rounded border border-shadow bg-depths/30 px-3.5 py-2.5"
+        >
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-heading text-vellum truncate">{{ race.name }}</p>
+            <p class="text-2xs font-body text-mist">{{ raceSummary(race) }}</p>
+            <p
+              v-if="race.source"
+              class="text-2xs font-body italic truncate"
+              :class="customContent.sourceUpdates[race.id] ? 'text-gold-mid' : 'text-arcane-pale/60'"
+            >
+              {{ customContent.sourceUpdates[race.id] ? '↑ Update available from' : '↓ Copied from' }}
+              {{ race.source.authorName || 'the community' }}
+            </p>
+          </div>
+          <button
+            v-if="customContent.sourceUpdates[race.id]"
+            type="button"
+            class="shrink-0 px-2 py-1 rounded border border-gold-mid/50 bg-gold-dim/15 text-gold-deep text-2xs font-heading tracking-wide hover:bg-gold-dim/25 transition-all"
+            title="The original has a newer version, replace your copy with it"
+            @click="updateFromSource(race)"
+          >Update</button>
+          <button
+            type="button"
+            class="shrink-0 px-2 py-1 rounded border text-2xs font-heading tracking-wide transition-all"
+            :class="race.isPublic
+              ? 'border-verdant-base/50 bg-verdant-deep/15 text-verdant-bright'
+              : 'border-shadow text-mist hover:text-ash'"
+            :title="race.isPublic ? 'Shared to the community, click to make private' : 'Private, click to share'"
+            @click="togglePublic(race)"
+          >{{ race.isPublic ? 'Public' : 'Private' }}</button>
+          <button
+            type="button"
+            class="shrink-0 p-1.5 text-mist/60 hover:text-blood-bright transition-colors"
+            aria-label="Delete custom race"
+            @click="removeRace(race)"
+          >
+            <Trash2Icon :size="14" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Classes -->
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <p class="label">Classes</p>
+          <button
+            type="button"
+            class="text-xs font-heading text-arcane-pale/80 hover:text-arcane-pale transition-colors"
+            @click="openNewClass"
+          >+ New class</button>
+        </div>
+        <p v-if="!customContent.classes.length" class="text-sm font-body text-mist italic">
+          No custom classes yet. Create one to reuse and share it.
+        </p>
+        <div
+          v-for="cls in customContent.classes"
+          :key="cls.id"
+          class="flex items-center gap-3 rounded border border-shadow bg-depths/30 px-3.5 py-2.5"
+        >
+          <button type="button" class="flex-1 min-w-0 text-left" @click="openEditClass(cls)">
+            <p class="text-sm font-heading text-vellum truncate">{{ cls.name }}</p>
+            <p class="text-2xs font-body text-mist">
+              d{{ cls.hitDie }} · {{ cls.primaryAbility || '-' }}<template v-if="cls.spellcasting"> · Spellcaster</template>
+            </p>
+            <p
+              v-if="cls.source"
+              class="text-2xs font-body italic truncate"
+              :class="customContent.sourceUpdates[cls.id] ? 'text-gold-mid' : 'text-arcane-pale/60'"
+            >
+              {{ customContent.sourceUpdates[cls.id] ? '↑ Update available from' : '↓ Copied from' }}
+              {{ cls.source.authorName || 'the community' }}
+            </p>
+          </button>
+          <button
+            v-if="customContent.sourceUpdates[cls.id]"
+            type="button"
+            class="shrink-0 px-2 py-1 rounded border border-gold-mid/50 bg-gold-dim/15 text-gold-deep text-2xs font-heading tracking-wide hover:bg-gold-dim/25 transition-all"
+            title="The original has a newer version, replace your copy with it"
+            @click="updateFromSource(cls)"
+          >Update</button>
+          <button
+            type="button"
+            class="shrink-0 px-2 py-1 rounded border text-2xs font-heading tracking-wide transition-all"
+            :class="cls.isPublic
+              ? 'border-verdant-base/50 bg-verdant-deep/15 text-verdant-bright'
+              : 'border-shadow text-mist hover:text-ash'"
+            :title="cls.isPublic ? 'Shared to the community, click to make private' : 'Private, click to share'"
+            @click="togglePublicClass(cls)"
+          >{{ cls.isPublic ? 'Public' : 'Private' }}</button>
+          <button
+            type="button"
+            class="shrink-0 p-1.5 text-mist/60 hover:text-blood-bright transition-colors"
+            aria-label="Delete custom class"
+            @click="removeClass(cls)"
+          >
+            <Trash2Icon :size="14" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Subclasses -->
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <p class="label">Subclasses</p>
+          <button
+            type="button"
+            class="text-xs font-heading text-arcane-pale/80 hover:text-arcane-pale transition-colors"
+            @click="openNewSubclass"
+          >+ New subclass</button>
+        </div>
+        <p v-if="!customContent.subclasses.length" class="text-sm font-body text-mist italic">
+          No custom subclasses yet. Create one for any class, SRD or your own.
+        </p>
+        <div
+          v-for="sc in customContent.subclasses"
+          :key="sc.id"
+          class="flex items-center gap-3 rounded border border-shadow bg-depths/30 px-3.5 py-2.5"
+        >
+          <button type="button" class="flex-1 min-w-0 text-left" @click="openEditSubclass(sc)">
+            <p class="text-sm font-heading text-vellum truncate">{{ sc.name }}</p>
+            <p class="text-2xs font-body text-mist">
+              {{ sc.parentClassName || sc.parentClass }} · {{ Object.keys(sc.featuresByLevel).length }} feature level{{ Object.keys(sc.featuresByLevel).length === 1 ? '' : 's' }}
+            </p>
+            <p
+              v-if="sc.source"
+              class="text-2xs font-body italic truncate"
+              :class="customContent.sourceUpdates[sc.id] ? 'text-gold-mid' : 'text-arcane-pale/60'"
+            >
+              {{ customContent.sourceUpdates[sc.id] ? '↑ Update available from' : '↓ Copied from' }}
+              {{ sc.source.authorName || 'the community' }}
+            </p>
+          </button>
+          <button
+            v-if="customContent.sourceUpdates[sc.id]"
+            type="button"
+            class="shrink-0 px-2 py-1 rounded border border-gold-mid/50 bg-gold-dim/15 text-gold-deep text-2xs font-heading tracking-wide hover:bg-gold-dim/25 transition-all"
+            title="The original has a newer version, replace your copy with it"
+            @click="updateFromSource(sc)"
+          >Update</button>
+          <button
+            type="button"
+            class="shrink-0 px-2 py-1 rounded border text-2xs font-heading tracking-wide transition-all"
+            :class="sc.isPublic
+              ? 'border-verdant-base/50 bg-verdant-deep/15 text-verdant-bright'
+              : 'border-shadow text-mist hover:text-ash'"
+            :title="sc.isPublic ? 'Shared to the community, click to make private' : 'Private, click to share'"
+            @click="togglePublicSubclass(sc)"
+          >{{ sc.isPublic ? 'Public' : 'Private' }}</button>
+          <button
+            type="button"
+            class="shrink-0 p-1.5 text-mist/60 hover:text-blood-bright transition-colors"
+            aria-label="Delete custom subclass"
+            @click="removeSubclass(sc)"
+          >
+            <Trash2Icon :size="14" />
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <CustomClassModal :show="showClassModal" :edit-id="editClassId" @close="showClassModal = false" />
+    <CustomSubclassModal :show="showSubclassModal" :edit-id="editSubclassId" @close="showSubclassModal = false" />
+
     <!-- ── Security card ──────────────────────────────────────────────────── -->
     <section class="card p-6 corner-ornament flex flex-col gap-5">
       <p class="font-mono text-2xs tracking-[0.22em] uppercase text-mist">Security</p>
@@ -219,15 +402,79 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import {
   ChevronLeftIcon, SaveIcon, CheckIcon, ShieldIcon,
-  EyeIcon, EyeOffIcon, CameraIcon, UploadIcon,
+  EyeIcon, EyeOffIcon, CameraIcon, UploadIcon, Trash2Icon,
 } from 'lucide-vue-next'
 import { useAuthStore } from '@/auth/store'
+import { useCustomContentStore } from '@/custom-content/store'
 import { validateAvatarFile, uploadAvatar } from '@/shared/lib/uploadAvatar'
+import type { CustomRace, CustomClass, CustomSubclass } from '@/shared/types/customContent'
+import CustomClassModal from '@/custom-content/components/CustomClassModal.vue'
+import CustomSubclassModal from '@/custom-content/components/CustomSubclassModal.vue'
 
 const auth = useAuthStore()
+
+// ── Custom content (races & classes) ────────────────────────────────────────
+const customContent = useCustomContentStore()
+onMounted(async () => {
+  if (!auth.isAuthenticated) return
+  await customContent.loadMine()
+  // After loading the user's copies, check which originals have a newer version.
+  customContent.refreshSourceUpdates()
+})
+
+// Overwrite a copied race/class/subclass with the original's latest version (destructive to edits).
+async function updateFromSource(item: CustomRace | CustomClass | CustomSubclass) {
+  const from = item.source?.authorName || 'the community'
+  if (!confirm(`Update "${item.name}" to the latest version from ${from}? This replaces your copy, any changes you made to it will be lost.`)) return
+  try { await customContent.resyncFromSource(item.id) } catch { /* toast shown by store */ }
+}
+
+// Custom subclass editor modal (create / edit)
+const showSubclassModal = ref(false)
+const editSubclassId = ref<string | null>(null)
+function openNewSubclass() { editSubclassId.value = null; showSubclassModal.value = true }
+function openEditSubclass(sc: CustomSubclass) { editSubclassId.value = sc.id; showSubclassModal.value = true }
+async function togglePublicSubclass(sc: CustomSubclass) {
+  try { await customContent.setSubclassPublic(sc.id, !sc.isPublic) } catch { /* toast shown by store */ }
+}
+async function removeSubclass(sc: CustomSubclass) {
+  if (!confirm(`Delete custom subclass "${sc.name}"? This cannot be undone.`)) return
+  try { await customContent.removeSubclass(sc.id) } catch { /* toast shown by store */ }
+}
+
+// Custom class editor modal (create / edit)
+const showClassModal = ref(false)
+const editClassId = ref<string | null>(null)
+function openNewClass() { editClassId.value = null; showClassModal.value = true }
+function openEditClass(cls: CustomClass) { editClassId.value = cls.id; showClassModal.value = true }
+async function togglePublicClass(cls: CustomClass) {
+  try { await customContent.setClassPublic(cls.id, !cls.isPublic) } catch { /* toast shown by store */ }
+}
+async function removeClass(cls: CustomClass) {
+  if (!confirm(`Delete custom class "${cls.name}"? This cannot be undone.`)) return
+  try { await customContent.removeClass(cls.id) } catch { /* toast shown by store */ }
+}
+
+function raceSummary(race: CustomRace): string {
+  const parts = Object.entries(race.abilityBonuses)
+    .filter(([, v]) => (v ?? 0) !== 0)
+    .map(([k, v]) => `${k.toUpperCase()} +${v}`)
+  parts.push(race.size, `${race.speed} ft.`)
+  if (race.darkvision > 0) parts.push(`Darkvision ${race.darkvision}`)
+  return parts.join(' · ')
+}
+
+async function togglePublic(race: CustomRace) {
+  try { await customContent.setRacePublic(race.id, !race.isPublic) } catch { /* toast shown by store */ }
+}
+
+async function removeRace(race: CustomRace) {
+  if (!confirm(`Delete custom race "${race.name}"? This cannot be undone.`)) return
+  try { await customContent.removeRace(race.id) } catch { /* toast shown by store */ }
+}
 
 // ── Avatar & identity ──────────────────────────────────────────────────────
 
@@ -293,7 +540,7 @@ async function saveProfile() {
     } else if (pendingFile.value) {
       uploading.value = true
       finalAvatarUrl = await uploadAvatar(pendingFile.value, auth.userId!)
-      // Clean up blob URL — we now have the real Supabase URL
+      // Clean up blob URL, we now have the real Supabase URL
       if (pendingBlobUrl.value) { URL.revokeObjectURL(pendingBlobUrl.value); pendingBlobUrl.value = null }
       pendingFile.value = null
     }

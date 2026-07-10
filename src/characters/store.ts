@@ -18,6 +18,9 @@ import { useToast } from '@/shared/composables/useToast'
 import { withTimeout } from '@/shared/lib/withTimeout'
 
 const LOCAL_KEY = 'characters'
+// Characters whose cloud write failed are queued here so a transient Supabase/network
+// failure never loses the user's work, they are retried on the next load.
+const PENDING_KEY = 'characters:pending'
 let _persistTimer: ReturnType<typeof setTimeout> | null = null
 
 export const MAX_CHARACTERS = 15
@@ -90,6 +93,7 @@ export const useCharactersStore = defineStore('characters', () => {
   async function load() {
     if (auth.isAuthenticated) {
       await loadFromCloud()
+      await retryPending()
     } else {
       loadFromLocal()
     }
@@ -159,6 +163,63 @@ export const useCharactersStore = defineStore('characters', () => {
     if (error) throw error
   }
 
+  // ── Offline "pending sync" queue ────────────────────────────────────────────
+  // A failed cloud write keeps the character in memory AND stashes it here, so a
+  // transient Supabase/network hiccup never loses the user's work. Pending characters
+  // are re-uploaded on the next load; one is only re-added to in-memory state after a
+  // successful cloud write, so characters deleted on another device are never resurrected.
+
+  function readPending(): Character[] {
+    const stored = storageGet(PENDING_KEY, z.array(z.unknown()))
+    return (stored ?? []).flatMap((raw) => {
+      try { return [migrateCharacter(raw)] } catch { return [] }
+    })
+  }
+
+  function stashPending(character: Character) {
+    const list = readPending().filter((c) => c.id !== character.id)
+    list.push(character)
+    storageSet(PENDING_KEY, list)
+  }
+
+  function unstashPending(id: string) {
+    storageSet(PENDING_KEY, readPending().filter((c) => c.id !== id))
+  }
+
+  // Shared handler for a failed cloud write. Logs the REAL error (so the cause is
+  // visible in the console instead of a generic toast), keeps the character in memory,
+  // and queues it for retry. Non-fatal by design, the caller does not throw.
+  function handleCloudFailure(character: Character, err: unknown, op: string) {
+    console.error(`[characters] cloud ${op} failed, kept on this device, will retry:`, err)
+    stashPending(character)
+    useToast().error('Cloud sync failed, saved on this device and will retry when you reconnect.')
+  }
+
+  // Re-upload any characters that previously failed to sync. Called after a cloud load.
+  async function retryPending() {
+    if (!auth.isAuthenticated || !auth.userId) return
+    const pending = readPending()
+    if (pending.length === 0) return
+    let synced = 0
+    for (const c of pending) {
+      try {
+        await persistCloud(c)
+        unstashPending(c.id)
+        const idx = characters.value.findIndex((x) => x.id === c.id)
+        if (idx === -1) characters.value.push(c)
+        else characters.value[idx] = c
+        synced++
+      } catch { /* leave in the queue for the next attempt */ }
+    }
+    if (synced > 0) {
+      useToast().success(
+        synced === 1
+          ? '1 offline character synced to the cloud.'
+          : `${synced} offline characters synced to the cloud.`,
+      )
+    }
+  }
+
   // ── CRUD ──────────────────────────────────────────────────────────────────
 
   async function create(partial?: Partial<Character>): Promise<Character> {
@@ -170,10 +231,10 @@ export const useCharactersStore = defineStore('characters', () => {
     if (auth.isAuthenticated) {
       try {
         await persistCloud(character)
-      } catch {
-        characters.value = characters.value.filter(c => c.id !== character.id)
-        useToast().error('Failed to save character to cloud. Check your connection and try again.')
-        throw new Error('Cloud sync failed')
+      } catch (err) {
+        // Non-fatal: keep the character in memory + queue it for retry so a cloud
+        // hiccup never loses the user's work (they still reach the sheet).
+        handleCloudFailure(character, err, 'create')
       }
     } else {
       persistLocal()
@@ -190,10 +251,9 @@ export const useCharactersStore = defineStore('characters', () => {
     if (auth.isAuthenticated) {
       try {
         await persistCloud(updated)
-      } catch {
-        characters.value[idx] = previous
-        useToast().error('Changes could not be saved to cloud. Your data has been restored.')
-        throw new Error('Cloud sync failed')
+      } catch (err) {
+        // Non-fatal: keep the edit in memory + queue it for retry.
+        handleCloudFailure(updated, err, 'update')
       }
     } else {
       persistLocal()
@@ -332,10 +392,13 @@ export const useCharactersStore = defineStore('characters', () => {
     })
 
     const cloudLoaded = await loadFromCloud()
-    if (!cloudLoaded) return // cloud unreachable — keep local data as-is
+    if (!cloudLoaded) return // cloud unreachable, keep local data as-is
 
     // Cloud is now source of truth; clear local
     storageSet(LOCAL_KEY, [])
+
+    // Re-upload anything that failed to sync in a previous session
+    await retryPending()
 
     if (localChars.length === 0) return
 
@@ -359,7 +422,7 @@ export const useCharactersStore = defineStore('characters', () => {
             syncedCount++
           } catch { /* non-fatal */ }
         }
-        // else cloud is newer or same — keep cloud version
+        // else cloud is newer or same, keep cloud version
       }
     }
 

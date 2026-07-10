@@ -41,7 +41,7 @@
           :value="score"
           @change="onSelectChange($event)"
         >
-          <option value="" class="bg-abyss text-mist">—</option>
+          <option value="" class="bg-abyss text-mist">-</option>
           <option
             v-for="val in STANDARD_ARRAY"
             :key="val"

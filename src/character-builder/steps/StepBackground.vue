@@ -144,7 +144,7 @@
           <p class="text-xs font-body text-mist">
             Custom backgrounds grant
             <span class="text-stone font-heading">2</span>
-            languages of your choice. You will select them in Step VII — Proficiencies.
+            languages of your choice. You will select them in Step VII, Proficiencies.
           </p>
         </div>
       </section>
@@ -287,7 +287,7 @@
               This background grants
               <span class="text-stone font-heading">{{ bgDetail.language_options.choose }}</span>
               language{{ bgDetail.language_options.choose !== 1 ? 's' : '' }} of your choice.
-              You will select them in Step VII — Proficiencies.
+              You will select them in Step VII, Proficiencies.
             </p>
           </div>
 
@@ -384,7 +384,7 @@ const abilityAllocTotal = computed(() =>
   Object.values(builder.draft.backgroundAbilityBonuses).reduce((s, v) => s + (v ?? 0), 0),
 )
 // With a cap of +2 per ability across exactly 3 options, total === 3 is reachable only as
-// [2,1] (two abilities) or [1,1,1] (all three) — both valid 2024 patterns.
+// [2,1] (two abilities) or [1,1,1] (all three), both valid 2024 patterns.
 const abilityAllocValid = computed(() => abilityAllocTotal.value === 3)
 
 function canIncreaseBgAbility(index: string): boolean {

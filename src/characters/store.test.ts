@@ -69,7 +69,7 @@ vi.mock('@/shared/lib/uuid', () => ({
 // ── Import store AFTER mocks ────────────────────────────────────────────────────
 
 import { useCharactersStore, MAX_CHARACTERS } from './store'
-import { storageSet } from '@/shared/lib/storage'
+import { storageGet, storageSet } from '@/shared/lib/storage'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
@@ -128,7 +128,7 @@ beforeEach(() => {
 
 // ── importFromJson ──────────────────────────────────────────────────────────────
 
-describe('importFromJson — validation', () => {
+describe('importFromJson, validation', () => {
   it('rejects files larger than 5 MB', async () => {
     const big = 'a'.repeat(5 * 1024 * 1024 + 1)
     const store = makeStore()
@@ -155,7 +155,7 @@ describe('importFromJson — validation', () => {
   })
 })
 
-describe('importFromJson — character limit enforcement', () => {
+describe('importFromJson, character limit enforcement', () => {
   it('returns imported: 0 and adds a limit error when already at MAX_CHARACTERS', async () => {
     const store = makeStore()
     fill(store, MAX_CHARACTERS)
@@ -202,9 +202,9 @@ describe('importFromJson — character limit enforcement', () => {
   })
 })
 
-// ── create — local mode ─────────────────────────────────────────────────────────
+// ── create, local mode ─────────────────────────────────────────────────────────
 
-describe('create — local mode', () => {
+describe('create, local mode', () => {
   it('adds a character to the store', async () => {
     const store = makeStore()
     expect(store.characters).toHaveLength(0)
@@ -237,9 +237,9 @@ describe('create — local mode', () => {
   })
 })
 
-// ── create — cloud mode ─────────────────────────────────────────────────────────
+// ── create, cloud mode ─────────────────────────────────────────────────────────
 
-describe('create — cloud mode', () => {
+describe('create, cloud mode', () => {
   beforeEach(() => {
     auth.isAuthenticated = true
     auth.userId = 'user-123'
@@ -253,44 +253,76 @@ describe('create — cloud mode', () => {
     expect(vi.mocked(supabase.from)).toHaveBeenCalledWith('characters')
   })
 
-  it('rolls back the optimistic add and shows an error toast on cloud failure', async () => {
+  it('keeps the character and queues it for retry on cloud failure (no data loss)', async () => {
     sbMock.fail('Network error')
     const store = makeStore()
-    await expect(store.create()).rejects.toThrow()
-    // Rolled back — character not in store
-    expect(store.characters).toHaveLength(0)
+    // Non-fatal: create resolves and the character is retained in memory
+    const char = await store.create()
+    expect(store.characters).toHaveLength(1)
+    expect(store.getById(char.id)).toBeTruthy()
     expect(toast.error).toHaveBeenCalledOnce()
+    // Queued into the pending-sync stash for a later retry
+    expect(vi.mocked(storageSet)).toHaveBeenCalledWith(
+      'characters:pending',
+      expect.arrayContaining([expect.objectContaining({ id: char.id })]),
+    )
   })
 })
 
-// ── update — cloud rollback ─────────────────────────────────────────────────────
+// ── update, cloud resilience ────────────────────────────────────────────────────
 
-describe('update — cloud rollback', () => {
+describe('update, cloud resilience', () => {
   beforeEach(() => {
     auth.isAuthenticated = true
     auth.userId = 'user-123'
   })
 
-  it('restores original character when cloud save fails', async () => {
+  it('keeps the edit in memory (no rollback) and shows an error toast on cloud failure', async () => {
     sbMock.ok()
     const store = makeStore()
     const char = await store.create()
-    const originalName = char.identity.name
 
     sbMock.fail('Save failed')
-    await expect(store.update(char.id, {
+    // Non-fatal: update resolves without throwing
+    await store.update(char.id, {
       identity: { ...char.identity, name: 'Updated Name' },
-    })).rejects.toThrow()
+    })
 
-    // Name should be rolled back to the original
-    expect(store.getById(char.id)?.identity.name).toBe(originalName)
+    // Edit is preserved, not rolled back
+    expect(store.getById(char.id)?.identity.name).toBe('Updated Name')
     expect(toast.error).toHaveBeenCalledOnce()
   })
 })
 
-// ── remove — cloud rollback ─────────────────────────────────────────────────────
+// ── retryPending, offline sync queue ─────────────────────────────────────────────
 
-describe('remove — cloud rollback', () => {
+describe('retryPending, offline sync queue', () => {
+  beforeEach(() => {
+    auth.isAuthenticated = true
+    auth.userId = 'user-123'
+  })
+
+  it('re-uploads a queued character on load and clears it from the queue', async () => {
+    // Build a full, valid character in memory via a successful create…
+    sbMock.ok()
+    const store = makeStore()
+    const char = await store.create()
+
+    // …then simulate it having been left in the pending queue from a previous session.
+    vi.mocked(storageGet).mockReturnValueOnce([char]) // read by retryPending
+    sbMock.ok()                                        // cloud load empty + retry upload OK
+    await store.load()
+
+    // The queued character is present and the queue was cleared
+    expect(store.getById(char.id)).toBeTruthy()
+    expect(vi.mocked(storageSet)).toHaveBeenCalledWith('characters:pending', [])
+    expect(toast.success).toHaveBeenCalledOnce()
+  })
+})
+
+// ── remove, cloud rollback ─────────────────────────────────────────────────────
+
+describe('remove, cloud rollback', () => {
   beforeEach(() => {
     auth.isAuthenticated = true
     auth.userId = 'user-123'

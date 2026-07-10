@@ -247,6 +247,123 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_classes: {
+        Row: {
+          author_name: string | null
+          created_at: string
+          data: Json
+          edition: string
+          id: string
+          is_public: boolean
+          name: string
+          primary_stat: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          author_name?: string | null
+          created_at?: string
+          data: Json
+          edition?: string
+          id?: string
+          is_public?: boolean
+          name: string
+          primary_stat?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          author_name?: string | null
+          created_at?: string
+          data?: Json
+          edition?: string
+          id?: string
+          is_public?: boolean
+          name?: string
+          primary_stat?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      custom_races: {
+        Row: {
+          author_name: string | null
+          created_at: string
+          data: Json
+          edition: string
+          id: string
+          is_public: boolean
+          name: string
+          primary_stat: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          author_name?: string | null
+          created_at?: string
+          data: Json
+          edition?: string
+          id?: string
+          is_public?: boolean
+          name: string
+          primary_stat?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          author_name?: string | null
+          created_at?: string
+          data?: Json
+          edition?: string
+          id?: string
+          is_public?: boolean
+          name?: string
+          primary_stat?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      custom_subclasses: {
+        Row: {
+          author_name: string | null
+          created_at: string
+          data: Json
+          edition: string
+          id: string
+          is_public: boolean
+          name: string
+          parent_class: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          author_name?: string | null
+          created_at?: string
+          data: Json
+          edition?: string
+          id?: string
+          is_public?: boolean
+          name: string
+          parent_class: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          author_name?: string | null
+          created_at?: string
+          data?: Json
+          edition?: string
+          id?: string
+          is_public?: boolean
+          name?: string
+          parent_class?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       npcs: {
         Row: {
           campaign_id: string

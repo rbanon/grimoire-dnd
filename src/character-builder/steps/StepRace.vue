@@ -50,15 +50,81 @@
             @info="infoPanel.open({ kind: 'race', index: race.index, edition: race.edition })"
           />
         </div>
+
+        <!-- Homebrew separator + Custom race tile -->
+        <div class="flex items-center gap-3 py-1">
+          <div class="flex-1 h-px bg-shadow/50" />
+          <span class="text-2xs font-heading tracking-widest uppercase text-arcane-pale/50">Homebrew</span>
+          <div class="flex-1 h-px bg-shadow/50" />
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div
+            class="flex items-center rounded border text-sm font-heading tracking-wide transition-all duration-150 cursor-pointer"
+            :class="isCustom
+              ? 'border-arcane-base/60 bg-arcane-deep/10 text-arcane-pale'
+              : 'border-shadow border-dashed bg-abyss text-mist hover:border-arcane-base/30 hover:text-ash hover:bg-depths'"
+            @click="openCustomRace"
+          >
+            <span class="flex-1 px-4 py-3 text-left flex items-center gap-2">
+              <PencilIcon :size="12" class="shrink-0 opacity-60" />
+              Custom Race
+            </span>
+          </div>
+        </div>
       </template>
       <p v-if="fieldErrors.race" class="mt-2 text-xs font-body text-blood-bright">
         Select a race to continue.
       </p>
     </section>
 
-    <!-- Race detail panel -->
+    <!-- Custom (homebrew) race summary, details are edited in a modal -->
     <Transition name="expand">
-      <section v-if="builder.draft.raceIndex" class="space-y-4">
+      <section v-if="isCustom" class="space-y-3">
+        <div class="rule-gold"><span>Custom Race</span></div>
+        <div class="rounded border border-arcane-base/30 bg-arcane-deep/10 px-4 py-3.5 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="font-heading text-base text-arcane-pale truncate">
+                {{ builder.draft.raceName.trim() || 'Unnamed custom race' }}
+              </p>
+              <p class="text-2xs font-body text-mist mt-0.5">
+                {{ builder.draft.raceSizeCategory }} · {{ builder.draft.raceSpeed }} ft.<template v-if="builder.draft.raceDarkvision"> · Darkvision {{ builder.draft.raceDarkvision }} ft.</template>
+              </p>
+            </div>
+            <button
+              type="button"
+              class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-arcane-base/50 text-xs font-heading tracking-wide text-arcane-pale hover:bg-arcane-deep/25 transition-all"
+              @click="showCustomModal = true"
+            >
+              <PencilIcon :size="11" class="opacity-70" />
+              Edit details
+            </button>
+          </div>
+
+          <div v-if="customAbilityChips.length" class="flex flex-wrap gap-1.5">
+            <span
+              v-for="chip in customAbilityChips"
+              :key="chip"
+              class="px-2 py-0.5 rounded border border-arcane-base/25 bg-arcane-deep/15 text-2xs font-heading text-arcane-pale"
+            >{{ chip }}</span>
+          </div>
+
+          <div class="flex flex-wrap gap-x-4 gap-y-1 text-2xs font-body text-mist">
+            <span v-if="builder.draft.raceSkillProficiencies.length">{{ builder.draft.raceSkillProficiencies.length }} skill prof.</span>
+            <span v-if="builder.draft.raceResistances.length">{{ builder.draft.raceResistances.length }} resistance{{ builder.draft.raceResistances.length > 1 ? 's' : '' }}</span>
+            <span v-if="builder.draft.raceCustomToolProfs.length">{{ builder.draft.raceCustomToolProfs.length }} tool/weapon prof.</span>
+            <span v-if="builder.draft.raceCustomTraits.length">{{ builder.draft.raceCustomTraits.length }} trait{{ builder.draft.raceCustomTraits.length > 1 ? 's' : '' }}</span>
+          </div>
+        </div>
+        <p v-if="showValidation && !builder.draft.raceName.trim()" class="text-xs font-body text-blood-bright">
+          Enter a name for your custom race, open “Edit details” to set it.
+        </p>
+      </section>
+    </Transition>
+
+    <!-- Race detail panel (SRD races only) -->
+    <Transition name="expand">
+      <section v-if="builder.draft.raceIndex && !isCustom" class="space-y-4">
         <div class="rule-gold"><span>{{ raceEdition === '2024' ? 'Species' : 'Race' }} Details</span></div>
 
         <div v-if="raceDetailLoading" class="flex justify-center py-4">
@@ -226,11 +292,14 @@
     </Transition>
 
     <div class="h-4" />
+
+    <CustomRaceModal :show="showCustomModal" @close="showCustomModal = false" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { PencilIcon } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { useBuilderStore } from '@/character-builder/builderStore'
 import { getRaceMeta } from '@/character-builder/classMeta'
@@ -238,12 +307,16 @@ import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useBuilderValidation } from '@/shared/composables/useBuilderValidation'
 import type { ApiRace, ApiSubrace, ApiTrait, Api2024Species, EditionTag } from '@/shared/types/api'
+import type { AbilityScores } from '@/shared/types/character'
 import PickerCard from '@/character-builder/components/PickerCard.vue'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
+import CustomRaceModal from '@/character-builder/components/CustomRaceModal.vue'
 
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
 const { showValidation } = useBuilderValidation()
+
+const isCustom = computed(() => builder.draft.raceIndex === 'custom')
 
 // Trait descriptions differ by edition: 2014 uses `desc` (string[]), 2024 uses
 // `description` (single markdown string). Normalize to an array of lines for rendering.
@@ -290,7 +363,7 @@ const { data: raceDetail2014, isPending: raceDetailLoading2014 } = useQuery({
   queryKey: computed(() => ['race-detail', raceIndex.value]),
   queryFn: () => fiveEApi.getRace(raceIndex.value) as Promise<ApiRace>,
   staleTime: Infinity,
-  enabled: computed(() => !!raceIndex.value && raceEdition.value === '2014'),
+  enabled: computed(() => !!raceIndex.value && !isCustom.value && raceEdition.value === '2014'),
 })
 
 const { data: speciesDetail2024, isPending: raceDetailLoading2024 } = useQuery({
@@ -302,7 +375,7 @@ const { data: speciesDetail2024, isPending: raceDetailLoading2024 } = useQuery({
 
 const raceDetail = computed(() => raceEdition.value === '2024' ? null : raceDetail2014.value ?? null)
 const speciesDetail = computed(() => raceEdition.value === '2024' ? speciesDetail2024.value ?? null : null)
-// Only the active edition's query matters — a DISABLED query reports isPending:true in
+// Only the active edition's query matters, a DISABLED query reports isPending:true in
 // TanStack v5, so `loading2014 || loading2024` would keep the spinner stuck forever.
 const raceDetailLoading = computed(() =>
   raceEdition.value === '2024' ? raceDetailLoading2024.value : raceDetailLoading2014.value
@@ -376,9 +449,9 @@ async function selectRace(index: string, name: string, edition: EditionTag) {
       const detail: Api2024Species = await fiveEApi.getSpecies(index)
       builder.draft.raceSpeed = detail.speed
       builder.draft.raceSizeCategory = String(detail.size ?? 'Medium')
-      // 2024 species don't grant fixed ability bonuses — player distributes freely
+      // 2024 species don't grant fixed ability bonuses, player distributes freely
       builder.draft.raceAbilityBonuses = {}
-      // 2024 RAW: languages come from your origin, not your species — every character
+      // 2024 RAW: languages come from your origin, not your species, every character
       // knows Common plus two languages of their choice (3 total, same count for everyone).
       // The 2024 SRD API exposes neither species nor background languages, so auto-grant
       // only Common and offer the two origin choices here (this step always runs).
@@ -437,6 +510,26 @@ async function selectSubrace(index: string, name: string) {
     }, {} as Record<string, number>)
   } catch (err) { console.warn('[StepRace] selectSubrace failed:', err) }
 }
+
+// ── Custom (homebrew) race ─────────────────────────────────────────────────────
+// The homebrew form lives in CustomRaceModal; this step opens it and shows a summary.
+
+const showCustomModal = ref(false)
+
+function openCustomRace() {
+  if (!isCustom.value) builder.initCustomRace()
+  showCustomModal.value = true
+}
+
+const ABILITY_ORDER: (keyof AbilityScores)[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
+const ABILITY_LABELS: Record<string, string> = {
+  str: 'STR', dex: 'DEX', con: 'CON', int: 'INT', wis: 'WIS', cha: 'CHA',
+}
+const customAbilityChips = computed(() =>
+  ABILITY_ORDER
+    .filter(k => (builder.draft.raceAbilityBonuses[k] ?? 0) > 0)
+    .map(k => `${ABILITY_LABELS[k]} +${builder.draft.raceAbilityBonuses[k]}`),
+)
 </script>
 
 <style scoped>

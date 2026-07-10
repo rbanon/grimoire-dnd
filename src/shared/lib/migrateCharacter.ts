@@ -13,7 +13,7 @@ const VersionedSchema = z
  * At the end, the data is always stamped with CURRENT_SCHEMA_VERSION and parsed strictly.
  *
  * Add new migration blocks here when CURRENT_SCHEMA_VERSION changes. Never edit or
- * remove existing blocks — they are the history of all schema changes.
+ * remove existing blocks, they are the history of all schema changes.
  */
 export function migrateCharacter(raw: unknown): Character {
   const result = VersionedSchema.safeParse(raw)
@@ -23,7 +23,7 @@ export function migrateCharacter(raw: unknown): Character {
 
   // ── 1.0 → 1.1 ────────────────────────────────────────────────────────────
   // Removed the legacy `attacks` field (always []; superseded by combatFavorites).
-  // No transform needed — CharacterSchema.parse strips the now-unknown key — but we
+  // No transform needed, CharacterSchema.parse strips the now-unknown key, but we
   // bump the version so the change is explicit and auditable.
   if (data.schemaVersion === '1.0') {
     data = { ...data, schemaVersion: '1.1' }

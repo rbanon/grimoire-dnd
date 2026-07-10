@@ -44,7 +44,7 @@
     <!-- ── Known casters: per-level accordion ── -->
     <template v-else-if="profile?.castingType === 'known'">
       <p class="text-xs font-body text-mist -mt-4">
-        Choose your spells level by level — each level grants new cantrips or spells.
+        Choose your spells level by level, each level grants new cantrips or spells.
         <span v-if="builder.draft.level > 1" class="text-mist/60">
           Starting from level 2, you may also replace one previously learned spell.
         </span>
@@ -59,7 +59,7 @@
             <span class="text-stone font-heading">{{ e.count }}× Lv {{ e.lvl }}</span>
             <span v-if="i < slotInfoEntries.length - 1" class="mx-1 text-mist/40">·</span>
           </template>
-          — you may pick any spell up to level {{ maxSpellLevel }}.
+         , you may pick any spell up to level {{ maxSpellLevel }}.
         </span>
       </div>
 
@@ -289,7 +289,7 @@
       <SpellPickerModal
         v-if="showSpellPickerForLevel !== null"
         :show="showSpellPickerForLevel !== null"
-        :class-index="builder.draft.classIndex"
+        :class-index="spellListClass"
         :class-name="builder.draft.className"
         :known-indices="knownIndicesForLevel(showSpellPickerForLevel!)"
         :chosen-elsewhere-indices="chosenElsewhereForLevel(showSpellPickerForLevel)"
@@ -304,7 +304,7 @@
       <SpellPickerModal
         v-if="showReplacementPickerForLevel !== null"
         :show="showReplacementPickerForLevel !== null"
-        :class-index="builder.draft.classIndex"
+        :class-index="spellListClass"
         :class-name="builder.draft.className"
         :known-indices="replacementKnownIndices(showReplacementPickerForLevel!)"
         :chosen-elsewhere-indices="chosenElsewhereForLevel(showReplacementPickerForLevel)"
@@ -375,7 +375,7 @@
           <div class="card p-3 border-shadow/30 bg-depths/20 flex items-start gap-2">
             <span class="text-gold-dim/60 text-xs shrink-0 mt-0.5">ℹ</span>
             <p class="text-xs font-body text-mist">
-              These are the spells you have access to. Your class spell list is your full library — add any spells you want available. Each day you prepare a subset of these.
+              These are the spells you have access to. Your class spell list is your full library, add any spells you want available. Each day you prepare a subset of these.
             </p>
           </div>
 
@@ -487,7 +487,7 @@
 
       <SpellPickerModal
         :show="showSpellPickerFlat"
-        :class-index="builder.draft.classIndex"
+        :class-index="spellListClass"
         :class-name="builder.draft.className"
         :known-indices="builder.draft.selectedSpells.map(s => s.index)"
         :known-spells="builder.draft.selectedSpells"
@@ -531,11 +531,19 @@ const abilityFullName: Record<string, string> = {
   cha: 'Charisma', int: 'Intelligence', wis: 'Wisdom',
 }
 const spellAbilityName = computed(() =>
-  abilityFullName[builder.draft.classSpellcastingAbility ?? ''] ?? '—'
+  abilityFullName[builder.draft.classSpellcastingAbility ?? ''] ?? '-'
 )
 
 const profile  = computed(() => getSpellProfile(builder.draft.classIndex))
 const levelIdx = computed(() => builder.draft.level - 1)
+
+// Which SRD class's spell list to browse. For a custom class the profile/slots stay keyed on
+// 'custom' (registry), but the actual spells are drawn from its chosen source list (spellList).
+const spellListClass = computed(() =>
+  builder.draft.classIndex === 'custom'
+    ? (builder.draft.customClassDef?.spellcasting?.spellList || 'wizard')
+    : builder.draft.classIndex,
+)
 
 // ── Subclass expanded spells (Warlock patron list) ────────────────────────────
 // These become additional options the known caster may learn. We resolve each spell's
@@ -703,7 +711,7 @@ function knownIndicesForLevel(lvl: number | null): string[] {
   return activeSpellsBeforeLevel(lvl).map(s => s.index)
 }
 
-/** Spells chosen at other character levels (not before this level) — blocks them in the picker without consuming the limit. */
+/** Spells chosen at other character levels (not before this level), blocks them in the picker without consuming the limit. */
 function chosenElsewhereForLevel(lvl: number | null): string[] {
   if (lvl === null) return []
   const before = new Set(activeSpellsBeforeLevel(lvl).map(s => s.index))
@@ -867,7 +875,7 @@ const preparedSectionNote = computed(() => {
   if (!p) return ''
   const abilityName = abilityFullName[p.preparedAbility ?? ''] ?? ''
   if (p.castingType === 'spellbook') {
-    return `Wizards prepare ${abilityName} modifier + level spells from their spellbook each day. These are your starting prepared spells — you can add more to your spellbook from the character sheet.`
+    return `Wizards prepare ${abilityName} modifier + level spells from their spellbook each day. These are your starting prepared spells, you can add more to your spellbook from the character sheet.`
   }
   const mod = computeModifier(builder.effectiveScores[p.preparedAbility!])
   const sign = mod >= 0 ? `+${mod}` : `${mod}`
@@ -875,14 +883,14 @@ const preparedSectionNote = computed(() => {
   const formulaText = builder.draft.classIndex === 'paladin'
     ? `${abilityName} mod (${sign}) + ½ level (${Math.floor(level / 2)}) = ${dailyPreparedLimit.value}`
     : `${abilityName} mod (${sign}) + level (${level}) = ${dailyPreparedLimit.value}`
-  return `Pre-select your starting spells — you can pick up to ${preparedSpellLimit.value}. Daily preparation limit: ${formulaText}. You may swap prepared spells after each long rest.`
+  return `Pre-select your starting spells, you can pick up to ${preparedSpellLimit.value}. Daily preparation limit: ${formulaText}. You may swap prepared spells after each long rest.`
 })
 
 // ── Cantrip fetch ─────────────────────────────────────────────────────────────
 
 const { data: cantripData, isPending: cantripsLoading } = useQuery({
-  queryKey: computed(() => ['cantrips', builder.draft.classIndex]),
-  queryFn: () => fiveEApi.listSpells({ level: 0, class: builder.draft.classIndex }),
+  queryKey: computed(() => ['cantrips', spellListClass.value]),
+  queryFn: () => fiveEApi.listSpells({ level: 0, class: spellListClass.value }),
   staleTime: Infinity,
   enabled: computed(() => !!builder.draft.classIndex && !!profile.value),
 })
