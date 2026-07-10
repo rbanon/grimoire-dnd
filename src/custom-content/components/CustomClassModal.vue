@@ -72,7 +72,7 @@
                   :key="`p-${ab}`"
                   type="button"
                   class="px-2.5 py-1 rounded border text-xs font-heading tracking-wide transition-all"
-                  :class="primaryAbs.includes(ab) ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale' : 'border-shadow text-ash hover:border-arcane-base/25'"
+                  :class="primaryAbs.includes(ab) ? 'border-arcane-base bg-arcane-base/25 text-arcane-pale font-semibold' : 'border-shadow text-ash hover:border-arcane-base/40'"
                   @click="togglePrimary(ab)"
                 >{{ ab.toUpperCase() }}</button>
               </div>
@@ -102,7 +102,7 @@
                   :key="skill.index"
                   type="button"
                   class="text-left px-3 py-2 rounded border text-xs font-heading tracking-wide transition-all duration-100"
-                  :class="form.skillOptions.includes(skill.index) ? 'border-arcane-base/50 bg-arcane-deep/15 text-arcane-pale' : 'border-shadow text-ash hover:border-arcane-base/25'"
+                  :class="form.skillOptions.includes(skill.index) ? 'border-arcane-base bg-arcane-base/25 text-arcane-pale font-semibold' : 'border-shadow text-ash hover:border-arcane-base/40'"
                   @click="toggleSkill(skill.index)"
                 >{{ skill.name }}</button>
               </div>
