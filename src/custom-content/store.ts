@@ -84,7 +84,16 @@ export const useCustomContentStore = defineStore('custom-content', () => {
       races.value = []; classes.value = []; subclasses.value = []; loaded.value = true; return
     }
     try {
-      const [r, c, s] = await Promise.all([
+      // Subclasses are additive: load them best-effort so a missing table (before the
+      // migration is applied) doesn't hide the user's existing races and classes.
+      const subclassesP = withTimeout(
+        supabase.from('custom_subclasses').select('*').eq('user_id', auth.userId).order('updated_at', { ascending: false }),
+        20_000, 'Custom subclasses load',
+      )
+        .then((res) => (res.error ? [] : ((res.data ?? []) as SubclassRow[])))
+        .catch((err) => { console.warn('[custom-content] loadMine subclasses unavailable:', err); return [] as SubclassRow[] })
+
+      const [r, c, subRows] = await Promise.all([
         withTimeout(
           supabase.from('custom_races').select('*').eq('user_id', auth.userId).order('updated_at', { ascending: false }),
           20_000, 'Custom races load',
@@ -93,17 +102,13 @@ export const useCustomContentStore = defineStore('custom-content', () => {
           supabase.from('custom_classes').select('*').eq('user_id', auth.userId).order('updated_at', { ascending: false }),
           20_000, 'Custom classes load',
         ),
-        withTimeout(
-          supabase.from('custom_subclasses').select('*').eq('user_id', auth.userId).order('updated_at', { ascending: false }),
-          20_000, 'Custom subclasses load',
-        ),
+        subclassesP,
       ])
       if (r.error) throw r.error
       if (c.error) throw c.error
-      if (s.error) throw s.error
       races.value = ((r.data ?? []) as ContentRow[]).flatMap((row) => { const x = rowToRace(row); return x ? [x] : [] })
       classes.value = ((c.data ?? []) as ContentRow[]).flatMap((row) => { const x = rowToClass(row); return x ? [x] : [] })
-      subclasses.value = ((s.data ?? []) as SubclassRow[]).flatMap((row) => { const x = rowToSubclass(row); return x ? [x] : [] })
+      subclasses.value = subRows.flatMap((row) => { const x = rowToSubclass(row); return x ? [x] : [] })
     } catch (err) {
       console.error('[custom-content] loadMine failed:', err)
       useToast().error('Could not load your custom content. Check your connection.')
