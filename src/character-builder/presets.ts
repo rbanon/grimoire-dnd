@@ -68,6 +68,10 @@ export const PRESETS: CharacterPreset[] = [
         "orc"
       ],
       "raceLanguageChoices": 0,
+      "availableSubraces": [],
+      "subraceIndex": "",
+      "subraceName": "",
+      "subraceAbilityBonuses": {},
       "backgroundIndex": "custom",
       "backgroundName": "Outlander",
       "backgroundEdition": "2014",
@@ -96,6 +100,8 @@ export const PRESETS: CharacterPreset[] = [
       "levelChoices": {},
       "selectedCantrips": [],
       "selectedSpells": [],
+      "selectedPreparedSpells": [],
+      "spellsByLevel": {},
       "currentStep": 1
     }
   },
@@ -149,6 +155,10 @@ export const PRESETS: CharacterPreset[] = [
         "common"
       ],
       "raceLanguageChoices": 1,
+      "availableSubraces": [],
+      "subraceIndex": "",
+      "subraceName": "",
+      "subraceAbilityBonuses": {},
       "backgroundIndex": "custom",
       "backgroundName": "Soldier",
       "backgroundEdition": "2014",
@@ -181,6 +191,8 @@ export const PRESETS: CharacterPreset[] = [
       },
       "selectedCantrips": [],
       "selectedSpells": [],
+      "selectedPreparedSpells": [],
+      "spellsByLevel": {},
       "currentStep": 1
     }
   },
@@ -234,6 +246,10 @@ export const PRESETS: CharacterPreset[] = [
         "infernal"
       ],
       "raceLanguageChoices": 0,
+      "availableSubraces": [],
+      "subraceIndex": "",
+      "subraceName": "",
+      "subraceAbilityBonuses": {},
       "backgroundIndex": "custom",
       "backgroundName": "Charlatan",
       "backgroundEdition": "2014",
@@ -267,6 +283,8 @@ export const PRESETS: CharacterPreset[] = [
       "levelChoices": {},
       "selectedCantrips": [],
       "selectedSpells": [],
+      "selectedPreparedSpells": [],
+      "spellsByLevel": {},
       "currentStep": 1
     }
   },
@@ -315,6 +333,10 @@ export const PRESETS: CharacterPreset[] = [
         "draconic"
       ],
       "raceLanguageChoices": 0,
+      "availableSubraces": [],
+      "subraceIndex": "",
+      "subraceName": "",
+      "subraceAbilityBonuses": {},
       "backgroundIndex": "custom",
       "backgroundName": "Acolyte",
       "backgroundEdition": "2014",
@@ -343,6 +365,8 @@ export const PRESETS: CharacterPreset[] = [
       "levelChoices": {},
       "selectedCantrips": [],
       "selectedSpells": [],
+      "selectedPreparedSpells": [],
+      "spellsByLevel": {},
       "currentStep": 1
     }
   },
@@ -394,6 +418,10 @@ export const PRESETS: CharacterPreset[] = [
         "common"
       ],
       "raceLanguageChoices": 1,
+      "availableSubraces": [],
+      "subraceIndex": "",
+      "subraceName": "",
+      "subraceAbilityBonuses": {},
       "backgroundIndex": "custom",
       "backgroundName": "Hermit",
       "backgroundEdition": "2014",
@@ -422,6 +450,8 @@ export const PRESETS: CharacterPreset[] = [
       "levelChoices": {},
       "selectedCantrips": [],
       "selectedSpells": [],
+      "selectedPreparedSpells": [],
+      "spellsByLevel": {},
       "currentStep": 1
     }
   },
@@ -470,6 +500,10 @@ export const PRESETS: CharacterPreset[] = [
         "infernal"
       ],
       "raceLanguageChoices": 0,
+      "availableSubraces": [],
+      "subraceIndex": "",
+      "subraceName": "",
+      "subraceAbilityBonuses": {},
       "backgroundIndex": "custom",
       "backgroundName": "Sage",
       "backgroundEdition": "2014",
@@ -542,6 +576,711 @@ export const PRESETS: CharacterPreset[] = [
           "level": 1
         }
       ],
+      "selectedPreparedSpells": [],
+      "spellsByLevel": {},
+      "currentStep": 1
+    }
+  },
+  {
+    "id": "dwarf-lightbearer",
+    "title": "The Lightbearer",
+    "charName": "Thora",
+    "subtitle": "Hill Dwarf Cleric · Level 1",
+    "blurb": "A hill dwarf cleric of the Life domain — a beacon of healing and hope who mends wounds and turns back the dark.",
+    "level": 1,
+    "primaryAbility": "Wisdom",
+    "primaryStat": "wis",
+    "isSpellcaster": true,
+    "draft": {
+      "name": "Thora",
+      "level": 1,
+      "classIndex": "cleric",
+      "className": "Cleric",
+      "classEdition": "2014",
+      "classHitDie": 8,
+      "classSpellcastingAbility": "wis",
+      "classSkillChoices": 2,
+      "classSkillOptions": [
+        "history",
+        "insight",
+        "medicine",
+        "persuasion",
+        "religion"
+      ],
+      "availableSubclasses": [
+        {
+          "index": "life",
+          "name": "Life"
+        }
+      ],
+      "subclassIndex": "life",
+      "subclassName": "Life Domain",
+      "raceIndex": "dwarf",
+      "raceName": "Dwarf",
+      "raceEdition": "2014",
+      "raceSpeed": 25,
+      "raceSizeCategory": "Medium",
+      "raceAbilityBonuses": {
+        "con": 2
+      },
+      "raceLanguageCount": 2,
+      "raceAutoLanguages": [
+        "common",
+        "dwarvish"
+      ],
+      "raceLanguageChoices": 0,
+      "availableSubraces": [
+        {
+          "index": "hill-dwarf",
+          "name": "Hill Dwarf"
+        }
+      ],
+      "subraceIndex": "hill-dwarf",
+      "subraceName": "Hill Dwarf",
+      "subraceAbilityBonuses": {
+        "wis": 1
+      },
+      "backgroundIndex": "custom",
+      "backgroundName": "Acolyte",
+      "backgroundEdition": "2014",
+      "backgroundSkillProficiencies": [
+        "insight",
+        "religion"
+      ],
+      "abilityMethod": "manual",
+      "baseScores": {
+        "wis": 15,
+        "con": 14,
+        "str": 13,
+        "cha": 12,
+        "dex": 10,
+        "int": 8
+      },
+      "selectedSkills": [
+        "medicine",
+        "persuasion"
+      ],
+      "expertiseSkills": [],
+      "selectedLanguages": [
+        "common",
+        "dwarvish"
+      ],
+      "levelChoices": {},
+      "selectedCantrips": [
+        {
+          "index": "sacred-flame",
+          "name": "Sacred Flame"
+        },
+        {
+          "index": "guidance",
+          "name": "Guidance"
+        },
+        {
+          "index": "light",
+          "name": "Light"
+        }
+      ],
+      "selectedSpells": [],
+      "selectedPreparedSpells": [
+        {
+          "index": "cure-wounds",
+          "name": "Cure Wounds",
+          "level": 1
+        },
+        {
+          "index": "bless",
+          "name": "Bless",
+          "level": 1
+        },
+        {
+          "index": "guiding-bolt",
+          "name": "Guiding Bolt",
+          "level": 1
+        },
+        {
+          "index": "shield-of-faith",
+          "name": "Shield of Faith",
+          "level": 1
+        }
+      ],
+      "spellsByLevel": {},
+      "currentStep": 1
+    }
+  },
+  {
+    "id": "human-warden",
+    "title": "The Warden",
+    "charName": "Rowan",
+    "subtitle": "Human Druid · Level 1",
+    "blurb": "A human druid who speaks for the wild — calling on thorns, flame and the fury of nature to guard the balance.",
+    "level": 1,
+    "primaryAbility": "Wisdom",
+    "primaryStat": "wis",
+    "isSpellcaster": true,
+    "draft": {
+      "name": "Rowan",
+      "level": 1,
+      "classIndex": "druid",
+      "className": "Druid",
+      "classEdition": "2014",
+      "classHitDie": 8,
+      "classSpellcastingAbility": "wis",
+      "classSkillChoices": 2,
+      "classSkillOptions": [
+        "arcana",
+        "animal-handling",
+        "insight",
+        "medicine",
+        "nature",
+        "perception",
+        "religion",
+        "survival"
+      ],
+      "availableSubclasses": [],
+      "subclassIndex": "",
+      "subclassName": "",
+      "raceIndex": "human",
+      "raceName": "Human",
+      "raceEdition": "2014",
+      "raceSpeed": 30,
+      "raceSizeCategory": "Medium",
+      "raceAbilityBonuses": {
+        "str": 1,
+        "dex": 1,
+        "con": 1,
+        "int": 1,
+        "wis": 1,
+        "cha": 1
+      },
+      "raceLanguageCount": 1,
+      "raceAutoLanguages": [
+        "common"
+      ],
+      "raceLanguageChoices": 1,
+      "availableSubraces": [],
+      "subraceIndex": "",
+      "subraceName": "",
+      "subraceAbilityBonuses": {},
+      "backgroundIndex": "custom",
+      "backgroundName": "Hermit",
+      "backgroundEdition": "2014",
+      "backgroundSkillProficiencies": [
+        "medicine",
+        "nature"
+      ],
+      "abilityMethod": "manual",
+      "baseScores": {
+        "wis": 15,
+        "con": 14,
+        "dex": 13,
+        "int": 12,
+        "str": 10,
+        "cha": 8
+      },
+      "selectedSkills": [
+        "perception",
+        "survival"
+      ],
+      "expertiseSkills": [],
+      "selectedLanguages": [
+        "common",
+        "elvish"
+      ],
+      "levelChoices": {},
+      "selectedCantrips": [
+        {
+          "index": "produce-flame",
+          "name": "Produce Flame"
+        },
+        {
+          "index": "shillelagh",
+          "name": "Shillelagh"
+        }
+      ],
+      "selectedSpells": [],
+      "selectedPreparedSpells": [
+        {
+          "index": "cure-wounds",
+          "name": "Cure Wounds",
+          "level": 1
+        },
+        {
+          "index": "entangle",
+          "name": "Entangle",
+          "level": 1
+        },
+        {
+          "index": "thunderwave",
+          "name": "Thunderwave",
+          "level": 1
+        },
+        {
+          "index": "faerie-fire",
+          "name": "Faerie Fire",
+          "level": 1
+        }
+      ],
+      "spellsByLevel": {},
+      "currentStep": 1
+    }
+  },
+  {
+    "id": "halfling-troubadour",
+    "title": "The Troubadour",
+    "charName": "Pip",
+    "subtitle": "Lightfoot Halfling Bard · Level 1",
+    "blurb": "A lightfoot halfling bard whose wit cuts deeper than a blade — inspiring allies and unmaking foes with a song.",
+    "level": 1,
+    "primaryAbility": "Charisma",
+    "primaryStat": "cha",
+    "isSpellcaster": true,
+    "draft": {
+      "name": "Pip",
+      "level": 1,
+      "classIndex": "bard",
+      "className": "Bard",
+      "classEdition": "2014",
+      "classHitDie": 8,
+      "classSpellcastingAbility": "cha",
+      "classSkillChoices": 3,
+      "classSkillOptions": [
+        "acrobatics",
+        "animal-handling",
+        "arcana",
+        "athletics",
+        "deception",
+        "history",
+        "insight",
+        "intimidation",
+        "investigation",
+        "medicine",
+        "nature",
+        "perception",
+        "performance",
+        "persuasion",
+        "religion",
+        "sleight-of-hand",
+        "stealth",
+        "survival"
+      ],
+      "availableSubclasses": [],
+      "subclassIndex": "",
+      "subclassName": "",
+      "raceIndex": "halfling",
+      "raceName": "Halfling",
+      "raceEdition": "2014",
+      "raceSpeed": 25,
+      "raceSizeCategory": "Small",
+      "raceAbilityBonuses": {
+        "dex": 2
+      },
+      "raceLanguageCount": 2,
+      "raceAutoLanguages": [
+        "common",
+        "halfling"
+      ],
+      "raceLanguageChoices": 0,
+      "availableSubraces": [
+        {
+          "index": "lightfoot-halfling",
+          "name": "Lightfoot Halfling"
+        }
+      ],
+      "subraceIndex": "lightfoot-halfling",
+      "subraceName": "Lightfoot Halfling",
+      "subraceAbilityBonuses": {
+        "cha": 1
+      },
+      "backgroundIndex": "custom",
+      "backgroundName": "Entertainer",
+      "backgroundEdition": "2014",
+      "backgroundSkillProficiencies": [
+        "acrobatics",
+        "sleight-of-hand"
+      ],
+      "abilityMethod": "manual",
+      "baseScores": {
+        "cha": 15,
+        "dex": 14,
+        "con": 13,
+        "wis": 12,
+        "int": 10,
+        "str": 8
+      },
+      "selectedSkills": [
+        "performance",
+        "persuasion",
+        "deception"
+      ],
+      "expertiseSkills": [],
+      "selectedLanguages": [
+        "common",
+        "halfling"
+      ],
+      "levelChoices": {},
+      "selectedCantrips": [],
+      "selectedSpells": [],
+      "selectedPreparedSpells": [],
+      "spellsByLevel": {
+        "1": {
+          "cantripsGained": [
+            {
+              "index": "vicious-mockery",
+              "name": "Vicious Mockery"
+            },
+            {
+              "index": "minor-illusion",
+              "name": "Minor Illusion"
+            }
+          ],
+          "spellsGained": [
+            {
+              "index": "healing-word",
+              "name": "Healing Word",
+              "level": 1
+            },
+            {
+              "index": "thunderwave",
+              "name": "Thunderwave",
+              "level": 1
+            },
+            {
+              "index": "charm-person",
+              "name": "Charm Person",
+              "level": 1
+            },
+            {
+              "index": "faerie-fire",
+              "name": "Faerie Fire",
+              "level": 1
+            }
+          ],
+          "spellReplaced": null
+        }
+      },
+      "currentStep": 1
+    }
+  },
+  {
+    "id": "dragonborn-flamecaller",
+    "title": "The Flamecaller",
+    "charName": "Kalix",
+    "subtitle": "Dragonborn Sorcerer · Level 1",
+    "blurb": "A dragonborn sorcerer with draconic blood ablaze — raw arcane power flows through their veins, no study required.",
+    "level": 1,
+    "primaryAbility": "Charisma",
+    "primaryStat": "cha",
+    "isSpellcaster": true,
+    "draft": {
+      "name": "Kalix",
+      "level": 1,
+      "classIndex": "sorcerer",
+      "className": "Sorcerer",
+      "classEdition": "2014",
+      "classHitDie": 6,
+      "classSpellcastingAbility": "cha",
+      "classSkillChoices": 2,
+      "classSkillOptions": [
+        "arcana",
+        "deception",
+        "insight",
+        "intimidation",
+        "persuasion",
+        "religion"
+      ],
+      "availableSubclasses": [
+        {
+          "index": "draconic",
+          "name": "Draconic"
+        }
+      ],
+      "subclassIndex": "draconic",
+      "subclassName": "Draconic Bloodline",
+      "raceIndex": "dragonborn",
+      "raceName": "Dragonborn",
+      "raceEdition": "2014",
+      "raceSpeed": 30,
+      "raceSizeCategory": "Medium",
+      "raceAbilityBonuses": {
+        "str": 2,
+        "cha": 1
+      },
+      "raceLanguageCount": 2,
+      "raceAutoLanguages": [
+        "common",
+        "draconic"
+      ],
+      "raceLanguageChoices": 0,
+      "availableSubraces": [],
+      "subraceIndex": "",
+      "subraceName": "",
+      "subraceAbilityBonuses": {},
+      "backgroundIndex": "custom",
+      "backgroundName": "Noble",
+      "backgroundEdition": "2014",
+      "backgroundSkillProficiencies": [
+        "history",
+        "persuasion"
+      ],
+      "abilityMethod": "manual",
+      "baseScores": {
+        "cha": 15,
+        "con": 14,
+        "dex": 13,
+        "wis": 12,
+        "int": 10,
+        "str": 8
+      },
+      "selectedSkills": [
+        "arcana",
+        "intimidation"
+      ],
+      "expertiseSkills": [],
+      "selectedLanguages": [
+        "common",
+        "draconic"
+      ],
+      "levelChoices": {},
+      "selectedCantrips": [],
+      "selectedSpells": [],
+      "selectedPreparedSpells": [],
+      "spellsByLevel": {
+        "1": {
+          "cantripsGained": [
+            {
+              "index": "fire-bolt",
+              "name": "Fire Bolt"
+            },
+            {
+              "index": "prestidigitation",
+              "name": "Prestidigitation"
+            },
+            {
+              "index": "mage-hand",
+              "name": "Mage Hand"
+            },
+            {
+              "index": "light",
+              "name": "Light"
+            }
+          ],
+          "spellsGained": [
+            {
+              "index": "magic-missile",
+              "name": "Magic Missile",
+              "level": 1
+            },
+            {
+              "index": "shield",
+              "name": "Shield",
+              "level": 1
+            }
+          ],
+          "spellReplaced": null
+        }
+      },
+      "currentStep": 1
+    }
+  },
+  {
+    "id": "tiefling-fiendbound",
+    "title": "The Fiendbound",
+    "charName": "Malice",
+    "subtitle": "Tiefling Warlock · Level 1",
+    "blurb": "A tiefling warlock who struck a bargain with a fiend — eldritch fire at their fingertips and a price yet to pay.",
+    "level": 1,
+    "primaryAbility": "Charisma",
+    "primaryStat": "cha",
+    "isSpellcaster": true,
+    "draft": {
+      "name": "Malice",
+      "level": 1,
+      "classIndex": "warlock",
+      "className": "Warlock",
+      "classEdition": "2014",
+      "classHitDie": 8,
+      "classSpellcastingAbility": "cha",
+      "classSkillChoices": 2,
+      "classSkillOptions": [
+        "arcana",
+        "deception",
+        "history",
+        "intimidation",
+        "investigation",
+        "nature",
+        "religion"
+      ],
+      "availableSubclasses": [
+        {
+          "index": "fiend",
+          "name": "Fiend"
+        }
+      ],
+      "subclassIndex": "fiend",
+      "subclassName": "The Fiend",
+      "raceIndex": "tiefling",
+      "raceName": "Tiefling",
+      "raceEdition": "2014",
+      "raceSpeed": 30,
+      "raceSizeCategory": "Medium",
+      "raceAbilityBonuses": {
+        "int": 1,
+        "cha": 2
+      },
+      "raceLanguageCount": 2,
+      "raceAutoLanguages": [
+        "common",
+        "infernal"
+      ],
+      "raceLanguageChoices": 0,
+      "availableSubraces": [],
+      "subraceIndex": "",
+      "subraceName": "",
+      "subraceAbilityBonuses": {},
+      "backgroundIndex": "custom",
+      "backgroundName": "Charlatan",
+      "backgroundEdition": "2014",
+      "backgroundSkillProficiencies": [
+        "intimidation",
+        "sleight-of-hand"
+      ],
+      "abilityMethod": "manual",
+      "baseScores": {
+        "cha": 15,
+        "con": 14,
+        "dex": 13,
+        "wis": 12,
+        "int": 10,
+        "str": 8
+      },
+      "selectedSkills": [
+        "deception",
+        "arcana"
+      ],
+      "expertiseSkills": [],
+      "selectedLanguages": [
+        "common",
+        "infernal"
+      ],
+      "levelChoices": {},
+      "selectedCantrips": [],
+      "selectedSpells": [],
+      "selectedPreparedSpells": [],
+      "spellsByLevel": {
+        "1": {
+          "cantripsGained": [
+            {
+              "index": "eldritch-blast",
+              "name": "Eldritch Blast"
+            },
+            {
+              "index": "chill-touch",
+              "name": "Chill Touch"
+            }
+          ],
+          "spellsGained": [
+            {
+              "index": "hellish-rebuke",
+              "name": "Hellish Rebuke",
+              "level": 1
+            },
+            {
+              "index": "charm-person",
+              "name": "Charm Person",
+              "level": 1
+            }
+          ],
+          "spellReplaced": null
+        }
+      },
+      "currentStep": 1
+    }
+  },
+  {
+    "id": "human-strider",
+    "title": "The Strider",
+    "charName": "Nyla",
+    "subtitle": "Human Ranger · Level 1",
+    "blurb": "A human ranger and peerless tracker — bow in hand, she reads the wilds like a book and never loses a trail.",
+    "level": 1,
+    "primaryAbility": "Dexterity",
+    "primaryStat": "dex",
+    "isSpellcaster": true,
+    "draft": {
+      "name": "Nyla",
+      "level": 1,
+      "classIndex": "ranger",
+      "className": "Ranger",
+      "classEdition": "2014",
+      "classHitDie": 10,
+      "classSpellcastingAbility": "wis",
+      "classSkillChoices": 3,
+      "classSkillOptions": [
+        "animal-handling",
+        "athletics",
+        "insight",
+        "investigation",
+        "nature",
+        "perception",
+        "stealth",
+        "survival"
+      ],
+      "availableSubclasses": [],
+      "subclassIndex": "",
+      "subclassName": "",
+      "raceIndex": "human",
+      "raceName": "Human",
+      "raceEdition": "2014",
+      "raceSpeed": 30,
+      "raceSizeCategory": "Medium",
+      "raceAbilityBonuses": {
+        "str": 1,
+        "dex": 1,
+        "con": 1,
+        "int": 1,
+        "wis": 1,
+        "cha": 1
+      },
+      "raceLanguageCount": 1,
+      "raceAutoLanguages": [
+        "common"
+      ],
+      "raceLanguageChoices": 1,
+      "availableSubraces": [],
+      "subraceIndex": "",
+      "subraceName": "",
+      "subraceAbilityBonuses": {},
+      "backgroundIndex": "custom",
+      "backgroundName": "Outlander",
+      "backgroundEdition": "2014",
+      "backgroundSkillProficiencies": [
+        "athletics",
+        "nature"
+      ],
+      "abilityMethod": "manual",
+      "baseScores": {
+        "dex": 15,
+        "wis": 14,
+        "con": 13,
+        "str": 12,
+        "int": 10,
+        "cha": 8
+      },
+      "selectedSkills": [
+        "survival",
+        "perception",
+        "stealth"
+      ],
+      "expertiseSkills": [],
+      "selectedLanguages": [
+        "common",
+        "elvish"
+      ],
+      "levelChoices": {},
+      "selectedCantrips": [],
+      "selectedSpells": [],
+      "selectedPreparedSpells": [],
+      "spellsByLevel": {},
       "currentStep": 1
     }
   }
