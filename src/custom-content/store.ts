@@ -57,6 +57,9 @@ export const useCustomContentStore = defineStore('custom-content', () => {
   const races = ref<CustomRace[]>([])
   const classes = ref<CustomClass[]>([])
   const loaded = ref(false)
+  // Copy id → true when the community original it was copied from now has a newer version.
+  // Populated best-effort by refreshSourceUpdates(); consumed by the Profile "Update" action.
+  const sourceUpdates = ref<Record<string, boolean>>({})
 
   function getRace(id: string): CustomRace | undefined {
     return races.value.find((r) => r.id === id)
@@ -252,6 +255,93 @@ export const useCustomContentStore = defineStore('custom-content', () => {
     return updateClass(id, { isPublic })
   }
 
+  // ── Community-copy provenance: detect + re-sync from the original ─────────────
+
+  /**
+   * Best-effort check of whether any copied item's community original has a newer version.
+   * Compares each copy's stored source.updatedAt against the original's current updated_at
+   * (readable only if still public/owned — RLS hides the rest, which we simply skip).
+   */
+  async function refreshSourceUpdates(): Promise<void> {
+    const raceCopies = races.value.filter((r) => r.source)
+    const classCopies = classes.value.filter((c) => c.source)
+    const raceIds = [...new Set(raceCopies.map((r) => r.source!.id))]
+    const classIds = [...new Set(classCopies.map((c) => c.source!.id))]
+    const next: Record<string, boolean> = {}
+    try {
+      const [r, c] = await Promise.all([
+        raceIds.length
+          ? withTimeout(supabase.from('custom_races').select('id, updated_at').in('id', raceIds), 20_000, 'Race source check')
+          : Promise.resolve({ data: [], error: null }),
+        classIds.length
+          ? withTimeout(supabase.from('custom_classes').select('id, updated_at').in('id', classIds), 20_000, 'Class source check')
+          : Promise.resolve({ data: [], error: null }),
+      ])
+      const raceLatest = new Map((((r.data ?? []) as { id: string; updated_at: string }[])).map((row) => [row.id, row.updated_at]))
+      const classLatest = new Map((((c.data ?? []) as { id: string; updated_at: string }[])).map((row) => [row.id, row.updated_at]))
+      // ISO timestamps compare correctly as strings.
+      for (const r2 of raceCopies) {
+        const cur = raceLatest.get(r2.source!.id)
+        if (cur && cur > r2.source!.updatedAt) next[r2.id] = true
+      }
+      for (const c2 of classCopies) {
+        const cur = classLatest.get(c2.source!.id)
+        if (cur && cur > c2.source!.updatedAt) next[c2.id] = true
+      }
+      sourceUpdates.value = next
+    } catch (err) {
+      // Non-fatal: the update hint is an enhancement, not core.
+      console.error('[custom-content] refreshSourceUpdates failed:', err)
+    }
+  }
+
+  /**
+   * Overwrite a copied race/class in place with its original's current version (user-confirmed,
+   * destructive to local edits). Refreshes source.updatedAt so the "update available" flag clears.
+   */
+  async function resyncFromSource(copyId: string): Promise<void> {
+    const race = races.value.find((r) => r.id === copyId && r.source)
+    if (race) {
+      const { data, error } = await withTimeout(
+        supabase.from('custom_races').select('*').eq('id', race.source!.id).maybeSingle(), 20_000, 'Race re-sync',
+      )
+      const orig = !error && data ? rowToRace(data as ContentRow) : null
+      if (!orig) { useToast().error('The original is no longer available.'); return }
+      await updateRace(copyId, {
+        name: orig.name, edition: orig.edition, abilityBonuses: { ...orig.abilityBonuses },
+        size: orig.size, speed: orig.speed, darkvision: orig.darkvision,
+        resistances: [...orig.resistances], skillProficiencies: [...orig.skillProficiencies],
+        toolProficiencies: [...orig.toolProficiencies], languageChoices: orig.languageChoices,
+        traits: orig.traits.map((t) => ({ name: t.name, desc: t.desc })),
+        source: { id: orig.id, authorName: race.source!.authorName, updatedAt: orig.updatedAt },
+      })
+      delete sourceUpdates.value[copyId]
+      useToast().success('Updated to the latest version from the original.')
+      return
+    }
+    const cls = classes.value.find((c) => c.id === copyId && c.source)
+    if (cls) {
+      const { data, error } = await withTimeout(
+        supabase.from('custom_classes').select('*').eq('id', cls.source!.id).maybeSingle(), 20_000, 'Class re-sync',
+      )
+      const orig = !error && data ? rowToClass(data as ContentRow) : null
+      if (!orig) { useToast().error('The original is no longer available.'); return }
+      await updateClass(copyId, {
+        name: orig.name, edition: orig.edition, description: orig.description,
+        hitDie: orig.hitDie, primaryAbility: orig.primaryAbility, saves: [...orig.saves],
+        armorProficiencies: [...orig.armorProficiencies], weaponProficiencies: [...orig.weaponProficiencies],
+        toolProficiencies: [...orig.toolProficiencies], skillChoices: orig.skillChoices,
+        skillOptions: [...orig.skillOptions], spellcasting: orig.spellcasting ? { ...orig.spellcasting } : null,
+        featuresByLevel: Object.fromEntries(
+          Object.entries(orig.featuresByLevel).map(([lvl, feats]) => [lvl, feats.map((f) => ({ name: f.name, desc: f.desc }))]),
+        ),
+        source: { id: orig.id, authorName: cls.source!.authorName, updatedAt: orig.updatedAt },
+      })
+      delete sourceUpdates.value[copyId]
+      useToast().success('Updated to the latest version from the original.')
+    }
+  }
+
   // ── Community feed (public content, used by the Community page) ───────────────
   async function loadCommunity(): Promise<CommunityItem[]> {
     const [r, c] = await Promise.all([
@@ -280,10 +370,11 @@ export const useCustomContentStore = defineStore('custom-content', () => {
   }
 
   return {
-    races, classes, loaded,
+    races, classes, loaded, sourceUpdates,
     getRace, loadMine,
     createRace, updateRace, removeRace, setRacePublic,
     getClass, createClass, updateClass, removeClass, setClassPublic,
+    refreshSourceUpdates, resyncFromSource,
     loadCommunity,
   }
 })

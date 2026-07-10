@@ -159,10 +159,22 @@
           <div class="flex-1 min-w-0">
             <p class="text-sm font-heading text-vellum truncate">{{ race.name }}</p>
             <p class="text-2xs font-body text-mist">{{ raceSummary(race) }}</p>
-            <p v-if="race.source" class="text-2xs font-body text-arcane-pale/60 italic truncate">
-              ↓ Copied from {{ race.source.authorName || 'the community' }}
+            <p
+              v-if="race.source"
+              class="text-2xs font-body italic truncate"
+              :class="customContent.sourceUpdates[race.id] ? 'text-gold-mid' : 'text-arcane-pale/60'"
+            >
+              {{ customContent.sourceUpdates[race.id] ? '↑ Update available from' : '↓ Copied from' }}
+              {{ race.source.authorName || 'the community' }}
             </p>
           </div>
+          <button
+            v-if="customContent.sourceUpdates[race.id]"
+            type="button"
+            class="shrink-0 px-2 py-1 rounded border border-gold-mid/50 bg-gold-dim/15 text-gold-deep text-2xs font-heading tracking-wide hover:bg-gold-dim/25 transition-all"
+            title="The original has a newer version — replace your copy with it"
+            @click="updateFromSource(race)"
+          >Update</button>
           <button
             type="button"
             class="shrink-0 px-2 py-1 rounded border text-2xs font-heading tracking-wide transition-all"
@@ -206,10 +218,22 @@
             <p class="text-2xs font-body text-mist">
               d{{ cls.hitDie }} · {{ cls.primaryAbility || '—' }}<template v-if="cls.spellcasting"> · Spellcaster</template>
             </p>
-            <p v-if="cls.source" class="text-2xs font-body text-arcane-pale/60 italic truncate">
-              ↓ Copied from {{ cls.source.authorName || 'the community' }}
+            <p
+              v-if="cls.source"
+              class="text-2xs font-body italic truncate"
+              :class="customContent.sourceUpdates[cls.id] ? 'text-gold-mid' : 'text-arcane-pale/60'"
+            >
+              {{ customContent.sourceUpdates[cls.id] ? '↑ Update available from' : '↓ Copied from' }}
+              {{ cls.source.authorName || 'the community' }}
             </p>
           </button>
+          <button
+            v-if="customContent.sourceUpdates[cls.id]"
+            type="button"
+            class="shrink-0 px-2 py-1 rounded border border-gold-mid/50 bg-gold-dim/15 text-gold-deep text-2xs font-heading tracking-wide hover:bg-gold-dim/25 transition-all"
+            title="The original has a newer version — replace your copy with it"
+            @click="updateFromSource(cls)"
+          >Update</button>
           <button
             type="button"
             class="shrink-0 px-2 py-1 rounded border text-2xs font-heading tracking-wide transition-all"
@@ -333,7 +357,19 @@ const auth = useAuthStore()
 
 // ── Custom content (races & classes) ────────────────────────────────────────
 const customContent = useCustomContentStore()
-onMounted(() => { if (auth.isAuthenticated) customContent.loadMine() })
+onMounted(async () => {
+  if (!auth.isAuthenticated) return
+  await customContent.loadMine()
+  // After loading the user's copies, check which originals have a newer version.
+  customContent.refreshSourceUpdates()
+})
+
+// Overwrite a copied race/class with the original's latest version (destructive to edits).
+async function updateFromSource(item: CustomRace | CustomClass) {
+  const from = item.source?.authorName || 'the community'
+  if (!confirm(`Update "${item.name}" to the latest version from ${from}? This replaces your copy — any changes you made to it will be lost.`)) return
+  try { await customContent.resyncFromSource(item.id) } catch { /* toast shown by store */ }
+}
 
 // Custom class editor modal (create / edit)
 const showClassModal = ref(false)
