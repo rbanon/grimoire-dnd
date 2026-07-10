@@ -93,6 +93,27 @@ export type CustomClass = z.infer<typeof CustomClassSchema>
 
 export type CustomClassInput = Omit<CustomClass, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
 
+// ─── Custom Subclass ─────────────────────────────────────────────────────────
+// A homebrew subclass attaches to a parent class (SRD index like 'fighter', or a custom
+// class id). Feature-based: its featuresByLevel land on the character at the given levels.
+export const CustomSubclassSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  name: z.string().min(1).max(60),
+  edition: z.enum(['2014', '2024']).default('2014'),
+  parentClass: z.string(),                 // SRD class index or custom class id
+  parentClassName: z.string().default(''), // denormalized display name for the UI
+  description: z.string().max(1000).optional(),
+  featuresByLevel: z.record(z.string(), z.array(CustomTraitSchema)).default({}),
+  isPublic: z.boolean().default(false),
+  source: ContentSourceSchema.optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+export type CustomSubclass = z.infer<typeof CustomSubclassSchema>
+
+export type CustomSubclassInput = Omit<CustomSubclass, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+
 // A community listing row (denormalized columns + author name), for the Community page.
 export interface CommunityItem {
   id: string

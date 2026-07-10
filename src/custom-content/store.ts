@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type {
-  CustomRace, CustomRaceInput, CustomClass, CustomClassInput, CommunityItem,
+  CustomRace, CustomRaceInput, CustomClass, CustomClassInput,
+  CustomSubclass, CustomSubclassInput, CommunityItem,
 } from '@/shared/types/customContent'
-import { CustomRaceSchema, CustomClassSchema } from '@/shared/types/customContent'
+import { CustomRaceSchema, CustomClassSchema, CustomSubclassSchema } from '@/shared/types/customContent'
 import { generateId, now } from '@/shared/lib/uuid'
 import { supabase } from '@/shared/api/supabase.client'
 import { useAuthStore } from '@/auth/store'
@@ -46,6 +47,17 @@ function rowToClass(row: ContentRow): CustomClass | null {
   return parsed.success ? parsed.data : null
 }
 
+// Subclass rows carry parent_class (not primary_stat); parentClass/parentClassName live in the blob.
+type SubclassRow = Omit<ContentRow, 'primary_stat'> & { parent_class: string }
+function rowToSubclass(row: SubclassRow): CustomSubclass | null {
+  const parsed = CustomSubclassSchema.safeParse({
+    ...(row.data as Record<string, unknown>),
+    id: row.id, userId: row.user_id, isPublic: row.is_public,
+    createdAt: row.created_at, updatedAt: row.updated_at,
+  })
+  return parsed.success ? parsed.data : null
+}
+
 /**
  * Cloud-only store for player-authored races/classes. Unlike characters/campaigns there is
  * no local-first mode: custom content requires login (guests build inline in the wizard),
@@ -56,6 +68,7 @@ export const useCustomContentStore = defineStore('custom-content', () => {
   const auth = useAuthStore()
   const races = ref<CustomRace[]>([])
   const classes = ref<CustomClass[]>([])
+  const subclasses = ref<CustomSubclass[]>([])
   const loaded = ref(false)
   // Copy id → true when the community original it was copied from now has a newer version.
   // Populated best-effort by refreshSourceUpdates(); consumed by the Profile "Update" action.
@@ -68,10 +81,10 @@ export const useCustomContentStore = defineStore('custom-content', () => {
   // ── Load the signed-in user's own content ───────────────────────────────────
   async function loadMine(): Promise<void> {
     if (!auth.isAuthenticated || !auth.userId) {
-      races.value = []; classes.value = []; loaded.value = true; return
+      races.value = []; classes.value = []; subclasses.value = []; loaded.value = true; return
     }
     try {
-      const [r, c] = await Promise.all([
+      const [r, c, s] = await Promise.all([
         withTimeout(
           supabase.from('custom_races').select('*').eq('user_id', auth.userId).order('updated_at', { ascending: false }),
           20_000, 'Custom races load',
@@ -80,11 +93,17 @@ export const useCustomContentStore = defineStore('custom-content', () => {
           supabase.from('custom_classes').select('*').eq('user_id', auth.userId).order('updated_at', { ascending: false }),
           20_000, 'Custom classes load',
         ),
+        withTimeout(
+          supabase.from('custom_subclasses').select('*').eq('user_id', auth.userId).order('updated_at', { ascending: false }),
+          20_000, 'Custom subclasses load',
+        ),
       ])
       if (r.error) throw r.error
       if (c.error) throw c.error
+      if (s.error) throw s.error
       races.value = ((r.data ?? []) as ContentRow[]).flatMap((row) => { const x = rowToRace(row); return x ? [x] : [] })
       classes.value = ((c.data ?? []) as ContentRow[]).flatMap((row) => { const x = rowToClass(row); return x ? [x] : [] })
+      subclasses.value = ((s.data ?? []) as SubclassRow[]).flatMap((row) => { const x = rowToSubclass(row); return x ? [x] : [] })
     } catch (err) {
       console.error('[custom-content] loadMine failed:', err)
       useToast().error('Could not load your custom content. Check your connection.')
@@ -255,6 +274,94 @@ export const useCustomContentStore = defineStore('custom-content', () => {
     return updateClass(id, { isPublic })
   }
 
+  // ── Subclass CRUD (mirrors class CRUD; keyed by parent_class instead of primary_stat) ──
+  function getSubclass(id: string): CustomSubclass | undefined {
+    return subclasses.value.find((s) => s.id === id)
+  }
+
+  /** The user's custom subclasses for a given parent class (SRD index or custom class id). */
+  function subclassesForParent(parentClass: string): CustomSubclass[] {
+    return subclasses.value.filter((s) => s.parentClass === parentClass)
+  }
+
+  async function upsertSubclass(sc: CustomSubclass) {
+    const { error } = await withTimeout(
+      supabase.from('custom_subclasses').upsert({
+        id: sc.id,
+        user_id: sc.userId,
+        name: sc.name,
+        edition: sc.edition,
+        parent_class: sc.parentClass,
+        is_public: sc.isPublic,
+        author_name: auth.nickname,
+        data: toJsonValue(sc),
+        created_at: sc.createdAt,
+        updated_at: sc.updatedAt,
+      }),
+      20_000, 'Custom subclass save',
+    )
+    if (error) throw error
+  }
+
+  async function createSubclass(input: CustomSubclassInput): Promise<CustomSubclass | null> {
+    if (!auth.isAuthenticated || !auth.userId) {
+      useToast().error('Sign in to save custom content to your collection.')
+      return null
+    }
+    const ts = now()
+    const sc = CustomSubclassSchema.parse({ ...input, id: generateId(), userId: auth.userId, createdAt: ts, updatedAt: ts })
+    subclasses.value.unshift(sc)
+    try {
+      await upsertSubclass(sc)
+      useToast().success('Custom subclass saved to your collection.')
+      return sc
+    } catch (err) {
+      subclasses.value = subclasses.value.filter((s) => s.id !== sc.id)
+      console.error('[custom-content] createSubclass failed:', err)
+      useToast().error('Failed to save custom subclass to the cloud.')
+      return null
+    }
+  }
+
+  async function updateSubclass(id: string, updates: Partial<CustomSubclassInput>): Promise<void> {
+    const idx = subclasses.value.findIndex((s) => s.id === id)
+    if (idx === -1) return
+    const previous = subclasses.value[idx]
+    const updated: CustomSubclass = { ...previous, ...updates, updatedAt: now() }
+    subclasses.value[idx] = updated
+    try {
+      await upsertSubclass(updated)
+    } catch (err) {
+      subclasses.value[idx] = previous
+      console.error('[custom-content] updateSubclass failed:', err)
+      useToast().error('Changes could not be saved to the cloud.')
+      throw err
+    }
+  }
+
+  async function removeSubclass(id: string): Promise<void> {
+    if (!auth.userId) return
+    const idx = subclasses.value.findIndex((s) => s.id === id)
+    if (idx === -1) return
+    const removed = subclasses.value[idx]
+    subclasses.value = subclasses.value.filter((s) => s.id !== id)
+    const { error } = await withTimeout(
+      supabase.from('custom_subclasses').delete().eq('id', id).eq('user_id', auth.userId),
+      20_000, 'Custom subclass delete',
+    )
+    if (error) {
+      subclasses.value.splice(idx, 0, removed)
+      console.error('[custom-content] removeSubclass failed:', error)
+      useToast().error('Failed to delete the custom subclass.')
+      throw error
+    }
+  }
+
+  /** Toggle whether a subclass is shared to the community. */
+  function setSubclassPublic(id: string, isPublic: boolean): Promise<void> {
+    return updateSubclass(id, { isPublic })
+  }
+
   // ── Community-copy provenance: detect + re-sync from the original ─────────────
 
   /**
@@ -370,10 +477,11 @@ export const useCustomContentStore = defineStore('custom-content', () => {
   }
 
   return {
-    races, classes, loaded, sourceUpdates,
+    races, classes, subclasses, loaded, sourceUpdates,
     getRace, loadMine,
     createRace, updateRace, removeRace, setRacePublic,
     getClass, createClass, updateClass, removeClass, setClassPublic,
+    getSubclass, subclassesForParent, createSubclass, updateSubclass, removeSubclass, setSubclassPublic,
     refreshSourceUpdates, resyncFromSource,
     loadCommunity,
   }

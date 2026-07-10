@@ -253,9 +253,69 @@
           </button>
         </div>
       </div>
+
+      <!-- Subclasses -->
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <p class="label">Subclasses</p>
+          <button
+            type="button"
+            class="text-xs font-heading text-arcane-pale/80 hover:text-arcane-pale transition-colors"
+            @click="openNewSubclass"
+          >+ New subclass</button>
+        </div>
+        <p v-if="!customContent.subclasses.length" class="text-sm font-body text-mist italic">
+          No custom subclasses yet. Create one for any class — SRD or your own.
+        </p>
+        <div
+          v-for="sc in customContent.subclasses"
+          :key="sc.id"
+          class="flex items-center gap-3 rounded border border-shadow bg-depths/30 px-3.5 py-2.5"
+        >
+          <button type="button" class="flex-1 min-w-0 text-left" @click="openEditSubclass(sc)">
+            <p class="text-sm font-heading text-vellum truncate">{{ sc.name }}</p>
+            <p class="text-2xs font-body text-mist">
+              {{ sc.parentClassName || sc.parentClass }} · {{ Object.keys(sc.featuresByLevel).length }} feature level{{ Object.keys(sc.featuresByLevel).length === 1 ? '' : 's' }}
+            </p>
+            <p
+              v-if="sc.source"
+              class="text-2xs font-body italic truncate"
+              :class="customContent.sourceUpdates[sc.id] ? 'text-gold-mid' : 'text-arcane-pale/60'"
+            >
+              {{ customContent.sourceUpdates[sc.id] ? '↑ Update available from' : '↓ Copied from' }}
+              {{ sc.source.authorName || 'the community' }}
+            </p>
+          </button>
+          <button
+            v-if="customContent.sourceUpdates[sc.id]"
+            type="button"
+            class="shrink-0 px-2 py-1 rounded border border-gold-mid/50 bg-gold-dim/15 text-gold-deep text-2xs font-heading tracking-wide hover:bg-gold-dim/25 transition-all"
+            title="The original has a newer version — replace your copy with it"
+            @click="updateFromSource(sc)"
+          >Update</button>
+          <button
+            type="button"
+            class="shrink-0 px-2 py-1 rounded border text-2xs font-heading tracking-wide transition-all"
+            :class="sc.isPublic
+              ? 'border-verdant-base/50 bg-verdant-deep/15 text-verdant-bright'
+              : 'border-shadow text-mist hover:text-ash'"
+            :title="sc.isPublic ? 'Shared to the community — click to make private' : 'Private — click to share'"
+            @click="togglePublicSubclass(sc)"
+          >{{ sc.isPublic ? 'Public' : 'Private' }}</button>
+          <button
+            type="button"
+            class="shrink-0 p-1.5 text-mist/60 hover:text-blood-bright transition-colors"
+            aria-label="Delete custom subclass"
+            @click="removeSubclass(sc)"
+          >
+            <Trash2Icon :size="14" />
+          </button>
+        </div>
+      </div>
     </section>
 
     <CustomClassModal :show="showClassModal" :edit-id="editClassId" @close="showClassModal = false" />
+    <CustomSubclassModal :show="showSubclassModal" :edit-id="editSubclassId" @close="showSubclassModal = false" />
 
     <!-- ── Security card ──────────────────────────────────────────────────── -->
     <section class="card p-6 corner-ornament flex flex-col gap-5">
@@ -350,8 +410,9 @@ import {
 import { useAuthStore } from '@/auth/store'
 import { useCustomContentStore } from '@/custom-content/store'
 import { validateAvatarFile, uploadAvatar } from '@/shared/lib/uploadAvatar'
-import type { CustomRace, CustomClass } from '@/shared/types/customContent'
+import type { CustomRace, CustomClass, CustomSubclass } from '@/shared/types/customContent'
 import CustomClassModal from '@/custom-content/components/CustomClassModal.vue'
+import CustomSubclassModal from '@/custom-content/components/CustomSubclassModal.vue'
 
 const auth = useAuthStore()
 
@@ -364,11 +425,24 @@ onMounted(async () => {
   customContent.refreshSourceUpdates()
 })
 
-// Overwrite a copied race/class with the original's latest version (destructive to edits).
-async function updateFromSource(item: CustomRace | CustomClass) {
+// Overwrite a copied race/class/subclass with the original's latest version (destructive to edits).
+async function updateFromSource(item: CustomRace | CustomClass | CustomSubclass) {
   const from = item.source?.authorName || 'the community'
   if (!confirm(`Update "${item.name}" to the latest version from ${from}? This replaces your copy — any changes you made to it will be lost.`)) return
   try { await customContent.resyncFromSource(item.id) } catch { /* toast shown by store */ }
+}
+
+// Custom subclass editor modal (create / edit)
+const showSubclassModal = ref(false)
+const editSubclassId = ref<string | null>(null)
+function openNewSubclass() { editSubclassId.value = null; showSubclassModal.value = true }
+function openEditSubclass(sc: CustomSubclass) { editSubclassId.value = sc.id; showSubclassModal.value = true }
+async function togglePublicSubclass(sc: CustomSubclass) {
+  try { await customContent.setSubclassPublic(sc.id, !sc.isPublic) } catch { /* toast shown by store */ }
+}
+async function removeSubclass(sc: CustomSubclass) {
+  if (!confirm(`Delete custom subclass "${sc.name}"? This cannot be undone.`)) return
+  try { await customContent.removeSubclass(sc.id) } catch { /* toast shown by store */ }
 }
 
 // Custom class editor modal (create / edit)

@@ -301,8 +301,27 @@ create index if not exists custom_classes_public_idx     on custom_classes(is_pu
 create index if not exists custom_classes_updated_at_idx on custom_classes(updated_at desc);
 create index if not exists custom_classes_data_gin       on custom_classes using gin(data);
 
-alter table custom_races   enable row level security;
-alter table custom_classes enable row level security;
+create table if not exists custom_subclasses (
+  id            uuid primary key default uuid_generate_v4(),
+  user_id       uuid references auth.users(id) on delete cascade not null,
+  name          text not null,
+  edition       text not null default '2014',
+  parent_class  text not null,      -- SRD class index or custom class id
+  is_public     boolean not null default false,
+  author_name   text,
+  data          jsonb not null,
+  created_at    timestamptz default now() not null,
+  updated_at    timestamptz default now() not null
+);
+create index if not exists custom_subclasses_user_id_idx    on custom_subclasses(user_id);
+create index if not exists custom_subclasses_public_idx      on custom_subclasses(is_public) where is_public;
+create index if not exists custom_subclasses_parent_idx      on custom_subclasses(parent_class);
+create index if not exists custom_subclasses_updated_at_idx  on custom_subclasses(updated_at desc);
+create index if not exists custom_subclasses_data_gin        on custom_subclasses using gin(data);
+
+alter table custom_races      enable row level security;
+alter table custom_classes    enable row level security;
+alter table custom_subclasses enable row level security;
 
 create policy "custom_races: public read" on custom_races
   for select using (is_public or auth.uid() = user_id);
@@ -322,7 +341,18 @@ create policy "custom_classes: owner update" on custom_classes
 create policy "custom_classes: owner delete" on custom_classes
   for delete using (auth.uid() = user_id);
 
+create policy "custom_subclasses: public read" on custom_subclasses
+  for select using (is_public or auth.uid() = user_id);
+create policy "custom_subclasses: owner insert" on custom_subclasses
+  for insert with check (auth.uid() = user_id);
+create policy "custom_subclasses: owner update" on custom_subclasses
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "custom_subclasses: owner delete" on custom_subclasses
+  for delete using (auth.uid() = user_id);
+
 create trigger set_updated_at before update on custom_races
   for each row execute procedure set_updated_at();
 create trigger set_updated_at before update on custom_classes
+  for each row execute procedure set_updated_at();
+create trigger set_updated_at before update on custom_subclasses
   for each row execute procedure set_updated_at();
