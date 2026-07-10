@@ -639,6 +639,21 @@ export const useBuilderStore = defineStore('builder', () => {
     _skipCount--
   }
 
+  // Read-only glance at a saved draft (for the create-mode selector) without touching
+  // the live draft. Returns null when there's no resumable draft.
+  function peekDraft(): { name: string; raceName: string; className: string } | null {
+    const saved = storageGet(DRAFT_KEY, DraftSchema) as Partial<BuilderDraft> | null
+    if (!saved || !saved.classIndex) return null
+    return { name: saved.name ?? '', raceName: saved.raceName ?? '', className: saved.className ?? '' }
+  }
+
+  // Prefill the draft from a preset/quiz snapshot and persist it immediately, so the builder
+  // opens straight into the prepared character (no resume prompt). Merges over a blank draft.
+  function applyDraft(partial: Partial<BuilderDraft>, startStep = 1) {
+    draft.value = { ...defaultDraft(), ...partial, currentStep: resolveStep(startStep) }
+    saveDraft()
+  }
+
   watch(draft, debouncedSaveDraft, { deep: true })
 
   // ── Navigation ────────────────────────────────────────────────────────────
@@ -1102,6 +1117,8 @@ export const useBuilderStore = defineStore('builder', () => {
     loadDraft,
     saveDraft,
     clearDraft,
+    peekDraft,
+    applyDraft,
     goTo,
     next,
     back,

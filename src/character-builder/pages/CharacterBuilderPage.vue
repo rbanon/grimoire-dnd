@@ -251,7 +251,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import {
   ChevronLeftIcon, ChevronRightIcon, CheckIcon,
   AlertCircleIcon, BookmarkIcon, BookOpenIcon, PlusIcon, XIcon,
@@ -274,6 +274,7 @@ import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 
 const builder = useBuilderStore()
 const router = useRouter()
+const route = useRoute()
 const { confirm } = useConfirm()
 const { trigger: triggerValidation, reset: resetValidation } = useBuilderValidation()
 const showErrors = ref(false)
@@ -319,6 +320,9 @@ const transitionName = computed(() =>
 )
 
 onMounted(() => {
+  // Preset/quiz flows prefill the draft in-memory and arrive with ?from=… —
+  // open straight into that prepared character instead of prompting to resume.
+  if (route.query.from) return
   const hasDraft = builder.loadDraft()
   if (hasDraft) resumeScreen.value = true
 })

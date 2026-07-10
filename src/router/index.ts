@@ -19,7 +19,22 @@ export const router = createRouter({
         {
           path: 'characters/new',
           name: 'character-new',
+          component: () => import('@/character-builder/pages/CreateModePage.vue'),
+        },
+        {
+          path: 'characters/new/builder',
+          name: 'character-builder',
           component: () => import('@/character-builder/pages/CharacterBuilderPage.vue'),
+        },
+        {
+          path: 'characters/new/presets',
+          name: 'character-presets',
+          component: () => import('@/character-builder/pages/PresetsPage.vue'),
+        },
+        {
+          path: 'characters/new/quiz',
+          name: 'character-quiz',
+          component: () => import('@/character-builder/pages/QuizPage.vue'),
         },
         {
           path: 'characters/:id',
