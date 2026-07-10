@@ -9,7 +9,7 @@ import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
 import { uploadPortraitBlob } from '@/shared/lib/uploadPortrait'
 import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount, getSubclassSpellMode, selectGrantedSubclassSpells, ELDRITCH_INVOCATIONS, INVOCATION_FEATURE_SOURCE, registerCustomClass, buildCustomSpellProfile } from '@/character-builder/classMeta'
-import type { CustomClass } from '@/shared/types/customContent'
+import type { CustomClass, CustomSubclass } from '@/shared/types/customContent'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 
 const DRAFT_KEY = 'builder-draft'
@@ -112,6 +112,8 @@ export interface BuilderDraft {
   // Full definition when a homebrew class is applied (classIndex === 'custom'); else null.
   // Drives saves/spellcasting/features in buildCharacterFromDraft and the spell-profile registry.
   customClassDef: CustomClass | null
+  // Full definition when a homebrew subclass is chosen (subclassIndex starts 'custom:'); else null.
+  customSubclassDef: CustomSubclass | null
   availableSubclasses: { index: string; name: string }[]
   // Spells granted/expanded by the subclass (2014 only). unlockLevel = class level required;
   // feature = land-type gate for Druid Circle of the Land (e.g. "Circle of the Land: Arctic").
@@ -201,7 +203,7 @@ const defaultDraft = (): BuilderDraft => ({
   backgroundProfChoices: [], selectedBackgroundProfs: [],
   classIndex: '', className: '', classHitDie: 8, classSpellcastingAbility: null,
   classSkillChoices: 2, classSkillOptions: [],
-  subclassIndex: '', subclassName: '', customClassDef: null, availableSubclasses: [],
+  subclassIndex: '', subclassName: '', customClassDef: null, customSubclassDef: null, availableSubclasses: [],
   subclassSpells: [], druidLandType: '',
   level: 1, useMilestones: false, hpMethod: 'average', manualMaxHp: 8, rolledHpPerLevel: [],
   holySymbolDescriptions: {},
@@ -793,6 +795,7 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value.expertiseSkills = []
     draft.value.subclassSpells = []
     draft.value.druidLandType = ''
+    draft.value.customSubclassDef = null
     // Leaving the custom class behind clears its definition (applyCustomClass sets both together).
     if (draft.value.classIndex !== 'custom') draft.value.customClassDef = null
   })
@@ -974,6 +977,19 @@ export const useBuilderStore = defineStore('builder', () => {
                   id: generateId(),
                   name: f.name.trim(),
                   source: `${d.customClassDef!.name || 'Custom Class'} ${lvl}`,
+                  description: f.desc.trim(),
+                })))
+          : []),
+        // Custom (homebrew) subclass features — unlocked at or below the character's level
+        ...(d.customSubclassDef
+          ? Object.entries(d.customSubclassDef.featuresByLevel)
+              .filter(([lvl]) => Number(lvl) <= d.level)
+              .flatMap(([lvl, feats]) => feats
+                .filter(f => f.name.trim())
+                .map(f => ({
+                  id: generateId(),
+                  name: f.name.trim(),
+                  source: `${d.customSubclassDef!.name || 'Custom Subclass'} ${lvl}`,
                   description: f.desc.trim(),
                 })))
           : []),

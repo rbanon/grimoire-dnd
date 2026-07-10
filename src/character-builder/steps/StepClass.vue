@@ -126,42 +126,65 @@
 
       <!-- Subclass picker -->
       <Transition name="expand">
-        <div v-if="builder.draft.availableSubclasses.length > 0" class="space-y-2">
-          <div class="flex items-center gap-2">
-            <label class="label mb-0">Subclass</label>
-            <span v-if="builder.draft.level < 3" class="text-2xs font-body text-mist/60">(unlocks at level 3 — set in Step II)</span>
-          </div>
-          <div class="flex flex-wrap gap-2">
+        <div v-if="builder.draft.classIndex && (subclassOptions.length > 0 || auth.isAuthenticated)" class="space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <label class="label mb-0">Subclass</label>
+              <span v-if="builder.draft.level < 3" class="text-2xs font-body text-mist/60">(unlocks at level 3 — set in Step II)</span>
+            </div>
             <button
-              v-for="sub in builder.draft.availableSubclasses"
+              v-if="auth.isAuthenticated"
+              type="button"
+              class="shrink-0 text-2xs font-heading text-arcane-pale/80 hover:text-arcane-pale transition-colors"
+              @click="openNewSubclass"
+            >+ Custom subclass</button>
+          </div>
+          <div v-if="subclassOptions.length" class="flex flex-wrap gap-2">
+            <button
+              v-for="sub in subclassOptions"
               :key="sub.index"
               type="button"
               class="px-3 py-1.5 rounded text-sm font-heading tracking-wide border transition-all duration-150"
-              :class="builder.draft.subclassIndex === sub.index
-                ? 'border-gold-mid/60 bg-gold-dim/15 text-gold-deep'
-                : 'border-gold-dim/25 bg-depths text-stone hover:border-gold-dim/50 hover:text-vellum hover:bg-gold-dim/5'"
+              :class="subclassButtonClass(sub.index)"
               @click="toggleSubclass(sub.index, sub.name)"
             >
-              {{ sub.name }}
+              {{ sub.name }}<span v-if="sub.index.startsWith('custom:')" class="text-2xs text-arcane-pale/50 ml-1">homebrew</span>
             </button>
           </div>
-          <p v-if="showValidation && !builder.draft.subclassIndex" class="text-xs font-body text-blood-bright">
+          <p v-else class="text-xs font-body text-mist/50 italic">No subclasses for this class yet — create one above.</p>
+          <p v-if="showValidation && builder.draft.availableSubclasses.length > 0 && !builder.draft.subclassIndex" class="text-xs font-body text-blood-bright">
             Select a subclass to continue.
           </p>
 
           <!-- Subclass detail -->
           <Transition name="fade">
             <div v-if="builder.draft.subclassIndex" class="mt-2 space-y-2">
-              <div v-if="subclassDetailLoading" class="flex justify-center py-3">
-                <GrimoireSpinner />
-              </div>
-              <template v-else-if="subclassDetail">
-                <p class="text-2xs font-heading text-mist/60 uppercase tracking-wide">{{ subclassDetail.subclass_flavor }}</p>
-                <p
-                  v-for="(para, i) in subclassDetail.desc"
-                  :key="i"
-                  class="text-xs font-body text-ash leading-relaxed"
-                >{{ para }}</p>
+              <!-- Custom (homebrew) subclass: its authored features -->
+              <template v-if="builder.draft.customSubclassDef">
+                <p v-if="builder.draft.customSubclassDef.description" class="text-xs font-body text-ash leading-relaxed">
+                  {{ builder.draft.customSubclassDef.description }}
+                </p>
+                <div v-for="(feats, lvl) in builder.draft.customSubclassDef.featuresByLevel" :key="lvl" class="space-y-1">
+                  <p class="text-2xs font-heading text-mist/60 uppercase tracking-wide">Level {{ lvl }}</p>
+                  <div v-for="(f, i) in feats" :key="i" class="px-3 py-2 rounded border border-shadow/50 bg-depths/20">
+                    <p class="text-sm font-heading text-vellum">{{ f.name }}</p>
+                    <p v-if="f.desc" class="text-xs font-body text-ash leading-relaxed">{{ f.desc }}</p>
+                  </div>
+                </div>
+              </template>
+              <!-- SRD subclass detail (from the API) -->
+              <template v-else>
+                <div v-if="subclassDetailLoading" class="flex justify-center py-3">
+                  <GrimoireSpinner />
+                </div>
+                <template v-else-if="subclassDetail">
+                  <p class="text-2xs font-heading text-mist/60 uppercase tracking-wide">{{ subclassDetail.subclass_flavor }}</p>
+                  <p
+                    v-for="(para, i) in subclassDetail.desc"
+                    :key="i"
+                    class="text-xs font-body text-ash leading-relaxed"
+                  >{{ para }}</p>
+                </template>
               </template>
             </div>
           </Transition>
@@ -197,6 +220,13 @@
     <div class="h-4" />
 
     <CustomClassModal :show="showClassEditor" :edit-id="editClassId" @close="showClassEditor = false" @saved="onClassSaved" />
+    <CustomSubclassModal
+      :show="showSubclassEditor"
+      :edit-id="null"
+      :preset-parent="parentClassKey"
+      @close="showSubclassEditor = false"
+      @saved="onSubclassSaved"
+    />
   </div>
 </template>
 
@@ -217,6 +247,7 @@ import type { CustomClass } from '@/shared/types/customContent'
 import PickerCard from '@/character-builder/components/PickerCard.vue'
 import GrimoireSpinner from '@/character-builder/components/GrimoireSpinner.vue'
 import CustomClassModal from '@/custom-content/components/CustomClassModal.vue'
+import CustomSubclassModal from '@/custom-content/components/CustomSubclassModal.vue'
 
 const builder = useBuilderStore()
 const infoPanel = useInfoPanel()
@@ -308,8 +339,43 @@ const { data: subclassDetail, isPending: subclassDetailLoading } = useQuery({
     ? fiveEApi.getSubclass2024(subclassIndex.value) as Promise<ApiSubclass>
     : fiveEApi.getSubclass(subclassIndex.value) as Promise<ApiSubclass>,
   staleTime: Infinity,
-  enabled: computed(() => !!subclassIndex.value),
+  // Custom subclasses aren't in the SRD API — their detail comes from customSubclassDef.
+  enabled: computed(() => !!subclassIndex.value && !subclassIndex.value.startsWith('custom:')),
 })
+
+// ── Custom (homebrew) subclasses ─────────────────────────────────────────────────
+// A subclass's parent is an SRD class index, or a custom class's id.
+const parentClassKey = computed(() =>
+  isCustomClass.value ? (builder.draft.customClassDef?.id ?? '') : builder.draft.classIndex,
+)
+const customSubclasses = computed(() =>
+  parentClassKey.value ? customContent.subclassesForParent(parentClassKey.value) : [],
+)
+// SRD subclasses (from the API, in the draft) + the user's custom ones for this parent.
+const subclassOptions = computed(() => [
+  ...builder.draft.availableSubclasses,
+  ...customSubclasses.value.map(sc => ({ index: `custom:${sc.id}`, name: sc.name })),
+])
+
+function subclassButtonClass(index: string): string {
+  const selected = builder.draft.subclassIndex === index
+  const custom = index.startsWith('custom:')
+  if (selected) {
+    return custom
+      ? 'border-arcane-base bg-arcane-base/25 text-arcane-pale'
+      : 'border-gold-mid/60 bg-gold-dim/15 text-gold-deep'
+  }
+  return custom
+    ? 'border-arcane-base/30 bg-depths text-stone hover:border-arcane-base/50 hover:text-arcane-pale'
+    : 'border-gold-dim/25 bg-depths text-stone hover:border-gold-dim/50 hover:text-vellum hover:bg-gold-dim/5'
+}
+
+const showSubclassEditor = ref(false)
+function openNewSubclass() { showSubclassEditor.value = true }
+function onSubclassSaved(id: string) {
+  const sc = customContent.getSubclass(id)
+  if (sc) selectSubclass(`custom:${sc.id}`, sc.name)
+}
 
 async function selectClass(index: string, name: string, edition: EditionTag) {
   builder.draft.classIndex = index
@@ -353,16 +419,30 @@ const landTypeOptions = computed(() => {
     .sort((a, b) => a.label.localeCompare(b.label))
 })
 
-function toggleSubclass(index: string, name: string) {
-  if (builder.draft.subclassIndex === index) {
-    builder.draft.subclassIndex = ''
-    builder.draft.subclassName = ''
+function clearSubclass() {
+  builder.draft.subclassIndex = ''
+  builder.draft.subclassName = ''
+  builder.draft.subclassSpells = []
+  builder.draft.druidLandType = ''
+  builder.draft.customSubclassDef = null
+}
+
+function selectSubclass(index: string, name: string) {
+  builder.draft.subclassIndex = index
+  builder.draft.subclassName = name
+  if (index.startsWith('custom:')) {
+    // Homebrew subclass: features come from the stored definition; no SRD spell grants.
+    builder.draft.customSubclassDef = customContent.getSubclass(index.slice('custom:'.length)) ?? null
     builder.draft.subclassSpells = []
     builder.draft.druidLandType = ''
   } else {
-    builder.draft.subclassIndex = index
-    builder.draft.subclassName = name
+    builder.draft.customSubclassDef = null
   }
+}
+
+function toggleSubclass(index: string, name: string) {
+  if (builder.draft.subclassIndex === index) clearSubclass()
+  else selectSubclass(index, name)
 }
 
 // Capture subclass-granted spells (2014 spellcasting subclasses) into the draft.
