@@ -80,13 +80,13 @@
         :key="spell.index"
         type="button"
         class="card-hover p-4 flex flex-col gap-1 text-left w-full"
-        :style="spell.level !== -1 ? { 'border-left': `3px solid ${schoolBorderColor(spell.school.name)}` } : {}"
+        :style="{ 'border-left': `3px solid ${schoolBorderColor(spell.school.name)}` }"
         @click="panel.open({ kind: 'spell', index: spell.index })"
       >
         <div class="flex items-start justify-between gap-2">
           <span class="font-medium text-vellum leading-tight">{{ spell.name }}</span>
           <span class="badge-arcane text-xs shrink-0">
-            {{ spell.level === 0 ? 'Cantrip' : spell.level && spell.level > 0 ? `Lv ${spell.level}` : '…' }}
+            {{ spell.level === 0 ? 'Cantrip' : `Lv ${spell.level}` }}
           </span>
         </div>
         <p class="text-xs text-mist mt-0.5 flex items-center justify-between gap-x-2">
@@ -200,10 +200,9 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useQuery, keepPreviousData } from '@tanstack/vue-query'
+import { useQuery } from '@tanstack/vue-query'
 import { LayoutGridIcon, ListIcon } from 'lucide-vue-next'
-import { fiveEApi } from '@/shared/api/fiveE.client'
-import type { ApiSpell } from '@/shared/types/api'
+import { loadSpellIndex } from '@/shared/data/srdIndex'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 
 const panel = useInfoPanel()
@@ -271,109 +270,53 @@ function labelCastingTime(normalized: string): string {
     ?? (normalized.charAt(0).toUpperCase() + normalized.slice(1))
 }
 
-const { data: classList } = useQuery({
-  queryKey: ['classes-all'],
-  queryFn: () => fiveEApi.listClasses(),
+// Slim, prebaked spell index (level, school, casting time, classes, tags for every
+// spell) loaded as a single lazy chunk. Replaces the old server-filtered list plus the
+// per-page and full-set detail fetches, so all filtering and sorting run client-side
+// and instantly, offline included. Full spell text loads on click via the API.
+const { data: spells, isPending, isError } = useQuery({
+  queryKey: ['spell-index'],
+  queryFn: loadSpellIndex,
   staleTime: Infinity,
 })
 
-const { data: spellList, isPending: isListPending, isError: isListError } = useQuery({
-  queryKey: computed(() => ['spells-list', query.value, levelFilter.value, schoolFilter.value, classFilter.value]),
-  queryFn: async () => {
-    const list = await fiveEApi.listSpells({
-      name: query.value || undefined,
-      level: levelFilter.value === '' ? undefined : Number(levelFilter.value),
-      school: schoolFilter.value || undefined,
-      class: classFilter.value || undefined,
-    })
-    return list
-  },
-  staleTime: Infinity,
-})
+const allSpells = computed(() => spells.value ?? [])
 
-const spellRefs = computed(() => spellList.value?.results ?? [])
-
-const requiresDetailsAll = computed(() => sortBy.value !== 'name' || Boolean(castingTimeFilter.value))
-const { data: allSpellDetails, isPending: isAllDetailsPending, isError: isAllDetailsError } = useQuery({
-  queryKey: computed(() => ['spells-details', spellRefs.value.map(spell => spell.index).join(',')]),
-  queryFn: async () => Promise.all(spellRefs.value.map(spell => fiveEApi.getSpell(spell.index))),
-  enabled: computed(() => requiresDetailsAll.value && spellRefs.value.length > 0),
-  staleTime: Infinity,
-})
-
-const allSpellDetailMap = computed(() => new Map(allSpellDetails.value?.map(spell => [spell.index, spell]) ?? []))
-
+// Derive the class filter options from the data itself (every class that has spells).
 const availableClasses = computed(() => {
-  return [...(classList.value?.results ?? [])]
-    .map(c => c.name)
-    .sort((a, b) => a.localeCompare(b))
+  const names = new Set<string>()
+  for (const spell of allSpells.value) {
+    for (const cls of spell.classes) names.add(cls.name)
+  }
+  return [...names].sort((a, b) => a.localeCompare(b))
 })
 
 const availableCastingTimes = computed(() => [...CASTING_TIMES])
 
 const filteredSpells = computed(() => {
-  let spells = [...spellRefs.value]
-  if (castingTimeFilter.value) {
-    if (!allSpellDetails?.value) return []
-    spells = spells.filter(spell => {
-      const detail = allSpellDetailMap.value.get(spell.index)
-      return detail && normalizeCastingTime(detail.casting_time) === castingTimeFilter.value
-    })
-  }
+  const q = query.value.trim().toLowerCase()
+  const list = allSpells.value.filter((spell) => {
+    if (q && !spell.name.toLowerCase().includes(q)) return false
+    if (levelFilter.value !== '' && spell.level !== Number(levelFilter.value)) return false
+    if (schoolFilter.value && spell.school.name !== schoolFilter.value) return false
+    if (classFilter.value && !spell.classes.some(cls => cls.name === classFilter.value)) return false
+    if (castingTimeFilter.value && normalizeCastingTime(spell.casting_time) !== castingTimeFilter.value) return false
+    return true
+  })
 
   const dir = sortDir.value === 'asc' ? 1 : -1
-  return [...spells].sort((a, b) => {
-    if (sortBy.value === 'name') return dir * a.name.localeCompare(b.name)
-    const aDetail = allSpellDetailMap.value.get(a.index)
-    const bDetail = allSpellDetailMap.value.get(b.index)
-    if (sortBy.value === 'level') {
-      return dir * ((aDetail?.level ?? 0) - (bDetail?.level ?? 0))
-    }
-    if (sortBy.value === 'school') {
-      return dir * ((aDetail?.school.name ?? '').localeCompare(bDetail?.school.name ?? ''))
-    }
-    return 0
+  return [...list].sort((a, b) => {
+    if (sortBy.value === 'level') return dir * (a.level - b.level)
+    if (sortBy.value === 'school') return dir * a.school.name.localeCompare(b.school.name)
+    return dir * a.name.localeCompare(b.name)
   })
 })
 
 const totalPages = computed(() => Math.ceil(filteredSpells.value.length / PAGE_SIZE))
 
-const pagedSpellRefs = computed(() => {
+const pagedSpells = computed(() => {
   const start = (currentPage.value - 1) * PAGE_SIZE
   return filteredSpells.value.slice(start, start + PAGE_SIZE)
-})
-
-const { data: pageSpellDetails } = useQuery({
-  queryKey: computed(() => ['spell-page-details', pagedSpellRefs.value.map(spell => spell.index).join(',')]),
-  queryFn: async () => Promise.all(pagedSpellRefs.value.map(spell => fiveEApi.getSpell(spell.index))),
-  enabled: computed(() => pagedSpellRefs.value.length > 0),
-  staleTime: Infinity,
-  placeholderData: keepPreviousData,
-})
-
-const pageSpellDetailMap = computed(() => new Map(pageSpellDetails.value?.map(spell => [spell.index, spell]) ?? []))
-
-const pagedSpells = computed(() => {
-  return pagedSpellRefs.value.map(spell => pageSpellDetailMap.value.get(spell.index) ?? {
-    index: spell.index,
-    name: spell.name,
-    desc: [],
-    higher_level: [],
-    range: '',
-    components: [],
-    material: '',
-    ritual: false,
-    duration: '',
-    concentration: false,
-    casting_time: '',
-    level: -1,
-    attack_type: undefined,
-    damage: undefined,
-    school: { index: '', name: 'Unknown', url: '' },
-    classes: [],
-    subclasses: [],
-    url: '',
-  } as ApiSpell)
 })
 
 const paginationPages = computed(() => {
@@ -392,7 +335,4 @@ const paginationPages = computed(() => {
   pages.push(total)
   return pages
 })
-
-const isPending = computed(() => isListPending.value || (requiresDetailsAll.value && isAllDetailsPending.value))
-const isError = computed(() => isListError.value || !!isAllDetailsError.value)
 </script>

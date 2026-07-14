@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "type-check": "vue-tsc --noEmit",
+    "gen-srd-index": "node scripts/generate-srd-index.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "gen-types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID --schema public > src/shared/types/supabase.ts"

@@ -91,37 +91,31 @@
         <!-- Sub-category -->
         <p v-if="item.subCategory" class="text-2xs text-mist mt-0.5">{{ item.subCategory }}</p>
 
-        <!-- Stat block, weapon (skeleton while detail loads) -->
-        <template v-if="item.category === 'weapon'">
+        <!-- Stat block, weapon -->
+        <template v-if="item.category === 'weapon' && item.stats">
           <div class="mt-1.5 flex items-baseline gap-1.5 text-xs">
-            <template v-if="equipDetail(item.index)">
-              <span class="font-mono text-gold-mid font-semibold">{{ weaponDamageStr(item.index) }}</span>
-              <span class="text-mist">{{ equipDetail(item.index)?.damage?.damage_type.name.toLowerCase() }}</span>
-            </template>
-            <div v-else class="h-3 w-24 skeleton rounded-sm" />
+            <span class="font-mono text-gold-mid font-semibold">{{ weaponDamageStr(item.stats) }}</span>
+            <span class="text-mist">{{ item.stats.damageType?.toLowerCase() }}</span>
           </div>
-          <div v-if="equipDetail(item.index)?.properties?.length" class="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
+          <div v-if="item.stats.properties?.length" class="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
             <span
-              v-for="prop in equipDetail(item.index)!.properties"
-              :key="prop.index"
+              v-for="prop in item.stats.properties"
+              :key="prop"
               class="text-2xs text-mist/60"
-            >{{ prop.name }}</span>
+            >{{ prop }}</span>
           </div>
         </template>
 
-        <!-- Stat block, armor (skeleton while detail loads) -->
-        <template v-else-if="item.category === 'armor'">
+        <!-- Stat block, armor -->
+        <template v-else-if="item.category === 'armor' && item.stats">
           <div class="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
-            <template v-if="equipDetail(item.index)">
-              <span class="font-mono text-gold-mid font-semibold">AC {{ equipDetail(item.index)?.armor_class?.base }}</span>
-              <span v-if="equipDetail(item.index)?.str_minimum" class="text-mist">
-                Str {{ equipDetail(item.index)!.str_minimum }}
-              </span>
-              <span v-if="equipDetail(item.index)?.stealth_disadvantage" class="text-blood-bright text-2xs">
-                stealth disadv.
-              </span>
-            </template>
-            <div v-else class="h-3 w-16 skeleton rounded-sm" />
+            <span class="font-mono text-gold-mid font-semibold">AC {{ item.stats.acBase }}</span>
+            <span v-if="item.stats.strMinimum" class="text-mist">
+              Str {{ item.stats.strMinimum }}
+            </span>
+            <span v-if="item.stats.stealthDisadvantage" class="text-blood-bright text-2xs">
+              stealth disadv.
+            </span>
           </div>
         </template>
 
@@ -228,10 +222,9 @@
 import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { LayoutGridIcon, ListIcon } from 'lucide-vue-next'
-import { fiveEApi } from '@/shared/api/fiveE.client'
-import type { NormalizedItem, ItemSearchFilterState, ItemRarity, ItemCategory } from '@/shared/types/items'
-import { DEFAULT_ITEM_FILTERS, ItemCategorySchema } from '@/shared/types/items'
-import type { ApiEquipment, ApiMagicItem } from '@/shared/types/api'
+import type { ItemSearchFilterState, ItemRarity } from '@/shared/types/items'
+import { DEFAULT_ITEM_FILTERS } from '@/shared/types/items'
+import { loadItemIndex, type SlimItem } from '@/shared/data/srdIndex'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 
 const panel = useInfoPanel()
@@ -246,149 +239,17 @@ const RARITY_ORDER: Record<string, number> = {
   Common: 0, Uncommon: 1, Rare: 2, 'Very Rare': 3, Legendary: 4, Artifact: 5, Varies: 6, Unknown: 7,
 }
 
-interface ReferenceItem {
-  index: string
-  name: string
-}
-
-
-const { data: allListData, isPending: isListPending, isError: isListError } = useQuery({
-  queryKey: ['items-list'],
-  queryFn: async () => {
-    const [equipList, magicList, weaponCat, armorCat, gearCat, toolsCat] = await Promise.all([
-      fiveEApi.listEquipment(),
-      fiveEApi.listMagicItems(),
-      fiveEApi.getEquipmentCategory('weapon'),
-      fiveEApi.getEquipmentCategory('armor'),
-      fiveEApi.getEquipmentCategory('adventuring-gear'),
-      fiveEApi.getEquipmentCategory('tools'),
-    ])
-    return {
-      equipment: equipList.results,
-      magicItems: magicList.results,
-      weaponItemIndexes: new Set(weaponCat.equipment.map(e => e.index)),
-      armorItemIndexes: new Set(armorCat.equipment.map(e => e.index)),
-      gearItemIndexes: new Set(gearCat.equipment.map(e => e.index)),
-      toolItemIndexes: new Set(toolsCat.equipment.map(e => e.index)),
-    }
-  },
+// Slim, prebaked item index: every equipment + magic item already normalized, with a
+// compact weapon/armor stat block for grid cards. Loaded as a single lazy chunk,
+// replacing ~600 rate-limited per-item detail fetches so filtering, sorting and card
+// stats are instant and work offline. Full detail loads on click via the API.
+const { data: itemIndex, isPending, isError } = useQuery({
+  queryKey: ['item-index'],
+  queryFn: loadItemIndex,
   staleTime: Infinity,
 })
 
-const requiresDetails = computed(() => {
-  return Boolean(
-    filters.value.rarity ||
-    attunementFilter.value ||
-    filters.value.sortBy === 'cost' ||
-    filters.value.sortBy === 'weight' ||
-    filters.value.sortBy === 'rarity',
-  )
-})
-
-const { data: detailData, isPending: isDetailsPending, isError: isDetailsError } = useQuery({
-  queryKey: ['items-details'],
-  queryFn: async () => {
-    if (!allListData.value) return { equipment: [], magicItems: [] }
-    const [equipDetails, magicDetails] = await Promise.all([
-      Promise.allSettled(allListData.value.equipment.map(r => fiveEApi.getEquipment(r.index))),
-      Promise.allSettled(allListData.value.magicItems.map(r => fiveEApi.getMagicItem(r.index))),
-    ])
-    return {
-      equipment: equipDetails
-        .filter((r): r is PromiseFulfilledResult<ApiEquipment> => r.status === 'fulfilled')
-        .map(r => r.value),
-      magicItems: magicDetails
-        .filter((r): r is PromiseFulfilledResult<ApiMagicItem> => r.status === 'fulfilled')
-        .map(r => r.value),
-    }
-  },
-  staleTime: Infinity,
-  enabled: computed(() => !!allListData.value && requiresDetails.value),
-})
-
-const isPending = computed(() => isListPending.value || (requiresDetails.value && isDetailsPending.value))
-const isError = computed(() => isListError.value || isDetailsError.value)
-
-function normalizeEquipment(e: ApiEquipment | undefined, fallbackCategory: ItemCategory): NormalizedItem {
-  const cat = e?.equipment_category?.index ?? fallbackCategory
-  const parsed = ItemCategorySchema.safeParse(cat)
-  return {
-    index: e?.index ?? 'unknown',
-    name: e?.name ?? 'Unknown Item',
-    category: parsed.success ? parsed.data : 'other',
-    subCategory: e?.weapon_category ?? e?.armor_category ?? e?.gear_category?.name,
-    cost: e?.cost,
-    weight: e?.weight,
-    weaponRange: e?.weapon_range as 'Melee' | 'Ranged' | undefined,
-    armorCategory: e?.armor_category,
-    requiresAttunement: false,
-    isMagic: false,
-  }
-}
-
-function normalizeEquipmentReference(item: ReferenceItem, fallbackCategory: ItemCategory): NormalizedItem {
-  return {
-    index: item.index,
-    name: item.name,
-    category: fallbackCategory,
-    isMagic: false,
-  }
-}
-
-function normalizeMagicItem(m: ApiMagicItem | undefined): NormalizedItem {
-  const requiresAttunement = m?.desc?.[0]?.toLowerCase().includes('requires attunement') ?? false
-  const rawRarity = m?.rarity?.name as ItemRarity | undefined
-  return {
-    index: m?.index ?? 'unknown',
-    name: m?.name ?? 'Unknown Item',
-    category: 'magic-item',
-    subCategory: m?.equipment_category?.name,
-    rarity: rawRarity,
-    requiresAttunement,
-    description: m?.desc,
-    isMagic: true,
-  }
-}
-
-function normalizeMagicItemReference(item: ReferenceItem): NormalizedItem {
-  return {
-    index: item.index,
-    name: item.name,
-    category: 'magic-item',
-    isMagic: true,
-  }
-}
-
-function getEquipmentCategory(index: string) {
-  if (!allListData.value) return 'other' as ItemCategory
-  if (allListData.value.weaponItemIndexes.has(index)) return 'weapon'
-  if (allListData.value.armorItemIndexes.has(index)) return 'armor'
-  if (allListData.value.toolItemIndexes.has(index)) return 'tools'
-  if (allListData.value.gearItemIndexes.has(index)) return 'adventuring-gear'
-  return 'other'
-}
-
-const allItems = computed<NormalizedItem[]>(() => {
-  if (!allListData.value) return []
-
-  const equipmentByIndex = new Map(detailData.value?.equipment.map(item => [item.index, item]))
-  const magicByIndex = new Map(detailData.value?.magicItems.map(item => [item.index, item]))
-
-  return [
-    ...allListData.value.equipment.map((item) => {
-      const detail = equipmentByIndex.get(item.index)
-      return detail
-        ? normalizeEquipment(detail, getEquipmentCategory(item.index))
-        : normalizeEquipmentReference(item, getEquipmentCategory(item.index))
-    }),
-    ...allListData.value.magicItems.map((item) => {
-      const detail = magicByIndex.get(item.index)
-      return detail
-        ? normalizeMagicItem(detail)
-        : normalizeMagicItemReference(item)
-    }),
-  ]
-})
+const allItems = computed<SlimItem[]>(() => itemIndex.value ?? [])
 
 const filteredItems = computed(() => {
   let items = allItems.value
@@ -481,33 +342,9 @@ const pagedItems = computed(() => {
   return filteredItems.value.slice(start, start + PAGE_SIZE)
 })
 
-// ── Page-level equipment detail query (for stat block in grid cards) ──────────
-
-const pagedEquipIndices = computed(() =>
-  pagedItems.value.filter(i => !i.isMagic).map(i => i.index)
-)
-
-const { data: pageEquipDetails } = useQuery({
-  queryKey: computed(() => ['item-page-equip', pagedEquipIndices.value.join(',')]),
-  queryFn: () =>
-    Promise.allSettled(pagedEquipIndices.value.map(idx => fiveEApi.getEquipment(idx))).then(
-      res => res.filter((r): r is PromiseFulfilledResult<ApiEquipment> => r.status === 'fulfilled').map(r => r.value),
-    ),
-  enabled: computed(() => pagedEquipIndices.value.length > 0),
-  staleTime: Infinity,
-})
-
-const pageEquipMap = computed(() => new Map(pageEquipDetails.value?.map(d => [d.index, d]) ?? []))
-
-function equipDetail(index: string): ApiEquipment | undefined {
-  return pageEquipMap.value.get(index)
-}
-
-function weaponDamageStr(index: string): string {
-  const e = pageEquipMap.value.get(index)
-  if (!e?.damage) return '-'
-  const base = e.damage.damage_dice
-  return e.two_handed_damage ? `${base} / ${e.two_handed_damage.damage_dice}` : base
+function weaponDamageStr(stats: SlimItem['stats']): string {
+  if (!stats?.damageDice) return '-'
+  return stats.twoHandedDamageDice ? `${stats.damageDice} / ${stats.twoHandedDamageDice}` : stats.damageDice
 }
 
 const paginationPages = computed(() => {

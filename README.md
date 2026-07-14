@@ -139,11 +139,19 @@ npm run type-check   # TypeScript check (vue-tsc --noEmit)
 npm run lint         # ESLint
 npm test             # Unit tests (Vitest)
 npm run gen-types    # Regenerate Supabase types from live schema
+npm run gen-srd-index # Regenerate the Bestiary/Spells/Items browser indexes
 ```
 
 **Regenerate SRD class data** (spell slots, hit dice, cantrips/spells known):
 ```bash
 node scripts/generate-srd-data.mjs
+```
+
+**Regenerate the reference browser indexes** (Bestiary, Spells, Items). These slim,
+prebaked JSON indexes let those pages filter/sort instantly and offline instead of
+fetching every entry's detail one-by-one on first visit:
+```bash
+npm run gen-srd-index   # → src/shared/data/{monsters,spells,items}-index.json
 ```
 
 ---
@@ -167,7 +175,7 @@ src/
 ├── items/               ItemBrowserPage
 └── shared/
     ├── api/             fiveE.client.ts, supabase.client.ts
-    ├── data/            srd-class-data.json (generated)
+    ├── data/            srd-class-data.json + monsters/spells/items-index.json (generated)
     ├── lib/             derivedStats, migrateCharacter, toJsonValue, skillAbilityMap
     └── types/           Zod schemas: character, items, api, supabase
 ```

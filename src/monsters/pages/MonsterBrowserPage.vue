@@ -42,7 +42,6 @@
       <AppSelect
         v-model="typeFilter"
         class="max-w-[170px]"
-        :disabled="isLoadingDetails"
         @change="currentPage = 1"
       >
         <option value="">Any type</option>
@@ -51,16 +50,11 @@
       <AppSelect
         v-model="sizeFilter"
         class="max-w-[150px]"
-        :disabled="isLoadingDetails"
         @change="currentPage = 1"
       >
         <option value="">Any size</option>
         <option v-for="s in MONSTER_SIZES" :key="s" :value="s">{{ s }}</option>
       </AppSelect>
-      <div v-if="isLoadingDetails" class="flex items-center gap-1.5 text-xs text-mist">
-        <span class="w-3 h-3 border border-mist border-t-transparent rounded-full animate-spin shrink-0" />
-        Loading details…
-      </div>
     </div>
 
     <!-- Loading skeleton -->
@@ -182,8 +176,7 @@
 import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { LayoutGridIcon, ListIcon } from 'lucide-vue-next'
-import { fiveEApi } from '@/shared/api/fiveE.client'
-import type { ApiMonster } from '@/shared/types/api'
+import { loadMonsterIndex, type SlimMonster } from '@/shared/data/srdIndex'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 
 const panel = useInfoPanel()
@@ -216,27 +209,20 @@ const CR_OPTIONS = [
 
 // ── Data fetching ────────────────────────────────────────────────────────────
 
-const { data: listData, isPending: isListPending, isError: isListError } = useQuery({
-  queryKey: ['monsters-list'],
-  queryFn: () => fiveEApi.listMonsters(),
+// Slim, prebaked index (CR, type, size, subtype for every monster) loaded as a single
+// lazy chunk. Replaces the old 334 rate-limited per-monster detail fetches, so filtering
+// and card stats are instant and work offline. Full stat block loads on click via the API.
+const { data: monsters, isPending: isListPending, isError: isListError } = useQuery({
+  queryKey: ['monster-index'],
+  queryFn: loadMonsterIndex,
   staleTime: Infinity,
 })
 
-const monsterRefs = computed(() => listData.value?.results ?? [])
+const monsterRefs = computed(() => monsters.value ?? [])
 
-// Fetch all monster details in the background. These are cached by TanStack Query
-// (staleTime: Infinity) and by the PWA service worker (30 days), so this only
-// runs once per session/install. Enables CR, type, size filtering and card details.
-const { data: allDetails, isPending: isLoadingDetails } = useQuery({
-  queryKey: ['monsters-all-details'],
-  queryFn: () => Promise.all(monsterRefs.value.map(m => fiveEApi.getMonster(m.index))),
-  enabled: computed(() => monsterRefs.value.length > 0),
-  staleTime: Infinity,
-})
+const detailMap = computed(() => new Map(monsterRefs.value.map(m => [m.index, m])))
 
-const detailMap = computed(() => new Map(allDetails.value?.map(m => [m.index, m]) ?? []))
-
-function detail(index: string): ApiMonster | undefined {
+function detail(index: string): SlimMonster | undefined {
   return detailMap.value.get(index)
 }
 
