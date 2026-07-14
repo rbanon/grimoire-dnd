@@ -60,8 +60,22 @@ export const router = createRouter({
         },
         {
           path: 'community',
-          name: 'community',
-          component: () => import('@/community/pages/CommunityBrowserPage.vue'),
+          redirect: { name: 'community-classes' },
+        },
+        {
+          path: 'community/classes',
+          name: 'community-classes',
+          component: () => import('@/community/pages/CommunityClassesPage.vue'),
+        },
+        {
+          path: 'community/subclasses',
+          name: 'community-subclasses',
+          component: () => import('@/community/pages/CommunitySubclassesPage.vue'),
+        },
+        {
+          path: 'community/races',
+          name: 'community-races',
+          component: () => import('@/community/pages/CommunityRacesPage.vue'),
         },
         // Campaigns (auth required)
         {

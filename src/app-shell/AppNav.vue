@@ -27,11 +27,11 @@
           :key="link.to"
           :to="link.to"
           custom
-          v-slot="{ isExactActive, href, navigate }"
+          v-slot="{ href, navigate }"
         >
           <a
             :href="href"
-            :class="isExactActive ? 'nav-link-active' : 'nav-link'"
+            :class="isLinkActive(link.to) ? 'nav-link-active' : 'nav-link'"
             @click="navigate"
           >
             <component :is="link.icon" :size="14" class="shrink-0" />
@@ -139,13 +139,20 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { version } from '../../package.json'
 import { UsersIcon, SparklesIcon, ShieldIcon, BookOpenIcon, SkullIcon, GlobeIcon, MenuIcon, XIcon, LockIcon, UserCircleIcon } from 'lucide-vue-next'
 import { useAuthStore } from '@/auth/store'
 import ColorModeToggle from './ColorModeToggle.vue'
 
 const auth = useAuthStore()
+const route = useRoute()
 const mobileOpen = ref(false)
+
+// Home matches exactly; every other tab stays lit across its sub-routes (e.g. /community/*).
+function isLinkActive(to: string): boolean {
+  return to === '/' ? route.path === '/' : route.path.startsWith(to)
+}
 
 const displayName = computed(() => {
   if (auth.nickname) return auth.nickname
