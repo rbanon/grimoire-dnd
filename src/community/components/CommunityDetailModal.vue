@@ -206,6 +206,7 @@ async function copyToCollection() {
         toolProficiencies: [...c.toolProficiencies],
         skillChoices: c.skillChoices,
         skillOptions: [...c.skillOptions],
+        asiLevels: [...c.asiLevels],
         spellcasting: c.spellcasting ? { ...c.spellcasting } : null,
         featuresByLevel: Object.fromEntries(
           Object.entries(c.featuresByLevel).map(([lvl, feats]) => [lvl, feats.map(f => ({ name: f.name, desc: f.desc }))]),

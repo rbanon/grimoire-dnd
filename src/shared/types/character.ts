@@ -66,6 +66,9 @@ export const ClassSnapshotSchema = z.object({
   hitDie: z.number().int(),
   spellcastingAbility: z.string().nullable(),
   edition: z.enum(['2014', '2024']).default('2014'),
+  // Homebrew classes only: the levels the class grants an ASI at. SRD classes are looked up
+  // by index instead, and characters saved before this field existed simply omit it.
+  asiLevels: z.array(z.number().int().min(1).max(20)).optional(),
 })
 export type ClassSnapshot = z.infer<typeof ClassSnapshotSchema>
 

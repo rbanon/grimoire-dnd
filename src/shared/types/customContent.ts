@@ -82,6 +82,11 @@ export const CustomClassSchema = z.object({
   skillChoices: z.number().int().min(0).default(2),
   skillOptions: z.array(z.string()).default([]),
   spellcasting: CustomClassSpellcastingSchema.nullable().default(null),
+  // Levels granting an Ability Score Improvement (or a feat instead). Defaults to the
+  // standard progression, so classes authored before this field existed keep working;
+  // a class can declare its own the way Fighter (4/6/8/12/14/16/19) does.
+  // Keep this default in sync with DEFAULT_ASI_LEVELS in character-builder/classMeta.ts.
+  asiLevels: z.array(z.number().int().min(1).max(20)).default([4, 8, 12, 16, 19]),
   // Per-level feature text, keyed by level string ("1".."3").
   featuresByLevel: z.record(z.string(), z.array(CustomTraitSchema)).default({}),
   isPublic: z.boolean().default(false),
