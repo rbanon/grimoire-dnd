@@ -45,16 +45,18 @@
     /* Spell schools. Their own scale rather than reused semantic tokens: eight categories
        need eight hues, and borrowing gold/blood/arcane made pairs collide (conjuration vs
        transmutation, enchantment vs evocation, abjuration vs divination). Hues are spaced
-       at least 37 degrees apart, darkened here for contrast on parchment. Never the only
-       cue: every surface pairs the color with the school's letter. */
-    --c-school-evocation:     184  43  30;   /*   5deg */
-    --c-school-conjuration:   139 102  14;   /*  42deg */
-    --c-school-transmutation:  80 124  29;   /*  88deg */
-    --c-school-necromancy:     29 114  60;   /* 142deg */
-    --c-school-divination:     13 120 130;   /* 185deg */
-    --c-school-abjuration:     36  82 188;   /* 222deg */
+       at least 37 degrees apart. Every value clears WCAG AA 4.5:1 against the DARKEST
+       surface it can land on (--c-depths, alternating table rows) with the chip's own
+       14% tint applied on top, not just against the page background. Never the only
+       cue: the browser pairs the color with the school's letter. */
+    --c-school-evocation:     158  37  26;   /*   5deg */
+    --c-school-conjuration:   111  81  11;   /*  42deg */
+    --c-school-transmutation:  61  95  22;   /*  88deg */
+    --c-school-necromancy:     24  98  51;   /* 142deg */
+    --c-school-divination:     10  94 102;   /* 185deg */
+    --c-school-abjuration:     34  78 180;   /* 222deg */
     --c-school-illusion:      106  49 185;   /* 265deg */
-    --c-school-enchantment:   177  37 142;   /* 315deg */
+    --c-school-enchantment:   151  32 122;   /* 315deg */
 
     /* Semantic */
     --c-success: 74 93 78;
@@ -121,14 +123,14 @@
     --c-verdant-bright: 96 208 140;
 
     /* Spell schools, same hues lightened for dark backgrounds */
-    --c-school-evocation:     239 105  93;
-    --c-school-conjuration:   238 190  79;
+    --c-school-evocation:     241 122 111;
+    --c-school-conjuration:   236 183  60;
     --c-school-transmutation: 152 210  86;
     --c-school-necromancy:     89 207 132;
-    --c-school-divination:     86 218 230;
-    --c-school-abjuration:    126 161 241;
-    --c-school-illusion:      171 128 231;
-    --c-school-enchantment:   237 120 208;
+    --c-school-divination:     69 214 227;
+    --c-school-abjuration:    122 157 240;
+    --c-school-illusion:      181 141 236;
+    --c-school-enchantment:   236 116 206;
 
     /* Semantic */
     --c-success:  80 168 108;
