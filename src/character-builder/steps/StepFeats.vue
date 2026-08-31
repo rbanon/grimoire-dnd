@@ -412,10 +412,14 @@ function scoreBeforeAsi(asiLevel: number, key: keyof AbilityScores): number {
   const base = builder.draft.baseScores[key]
   const rb = builder.draft.raceAbilityBonuses[key] ?? 0
   const sb = builder.draft.subraceAbilityBonuses[key] ?? 0
+  // A 2024 background also grants an increase, and effectiveScores counts it. Leaving it out
+  // here showed a lower "before" score than the sheet and let the player spend points that
+  // the level-20 cap then swallowed.
+  const bg = builder.draft.backgroundAbilityBonuses[key] ?? 0
   const prevAsiTotal = activeAsiLevels.value
     .filter(l => l < asiLevel)
     .reduce((sum, l) => sum + asiAlloc(l, key), 0)
-  return base + rb + sb + prevAsiTotal
+  return base + rb + sb + bg + prevAsiTotal
 }
 
 function scoreAfterAsi(asiLevel: number, key: keyof AbilityScores): number {
