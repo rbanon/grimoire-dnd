@@ -834,7 +834,10 @@ const { data: subclassDetail } = useQuery({
 
 // ── ASI ───────────────────────────────────────────────────────────────────────
 
-const isAsiLevel = computed(() => getAsiLevels(classIndex.value).includes(newLevel.value))
+// A homebrew class carries its authored ASI levels on the class snapshot (its definition
+// isn't saved with the character); SRD classes resolve by index.
+const asiLevels = computed(() => props.character.identity.class.asiLevels ?? getAsiLevels(classIndex.value))
+const isAsiLevel = computed(() => asiLevels.value.includes(newLevel.value))
 const ASI_ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const
 type AbilityKey = typeof ASI_ABILITIES[number]
 const ASI_LABELS: Record<AbilityKey, string> = { str: 'STR', dex: 'DEX', con: 'CON', int: 'INT', wis: 'WIS', cha: 'CHA' }

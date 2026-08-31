@@ -318,9 +318,29 @@ const ASI_LEVELS: Record<string, readonly number[]> = {
   wizard:    [4, 8, 12, 16, 19],
 }
 
+/** The progression most classes follow, and the default for a homebrew class. */
+export const DEFAULT_ASI_LEVELS: readonly number[] = [4, 8, 12, 16, 19]
+
+// Every homebrew class shares the synthetic index 'custom' (see builderStore), so authored
+// ASI levels can't live in ASI_LEVELS. The builder registers them here when a custom class is
+// applied, mirroring what registerCustomClass does for the spell profile.
+const customAsiRegistry = new Map<string, readonly number[]>()
+
+export function registerCustomAsiLevels(classIndex: string, levels: readonly number[] | null): void {
+  if (levels && levels.length) customAsiRegistry.set(classIndex, [...levels].sort((a, b) => a - b))
+  else customAsiRegistry.delete(classIndex)
+}
+
 /** Levels at which the class grants an Ability Score Improvement, in order. */
 export function getAsiLevels(classIndex: string): number[] {
-  return [...(ASI_LEVELS[classIndex] ?? [])]
+  const custom = customAsiRegistry.get(classIndex)
+  if (custom) return [...custom]
+  const srd = ASI_LEVELS[classIndex]
+  if (srd) return [...srd]
+  // A homebrew class with nothing registered (the sheet's level-up only has the class
+  // snapshot, not the definition) still gets the standard progression. Unrecognized SRD
+  // indices stay empty on purpose, so a typo doesn't silently grant improvements.
+  return classIndex === 'custom' ? [...DEFAULT_ASI_LEVELS] : []
 }
 
 // SRD 5e 2014, class level at which the subclass is chosen

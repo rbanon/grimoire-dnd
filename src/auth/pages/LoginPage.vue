@@ -214,7 +214,7 @@ async function submit() {
       router.push(redirect)
     } else {
       await auth.signUpWithEmail(email.value, password.value)
-      success.value = 'Account created! Check your email to confirm, then sign in.'
+      success.value = 'Account created! Check your email and open the confirmation link to finish signing in.'
     }
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'Authentication failed. Please try again.'

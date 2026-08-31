@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel, getFirstSpellLevel,
   getSubclassSpellMode, parseSubclassSpells, selectGrantedSubclassSpells, getExpertiseCount,
-  getClassResources, registerCustomClass, buildCustomSpellProfile,
+  getClassResources, registerCustomClass, registerCustomAsiLevels, buildCustomSpellProfile,
 } from './classMeta'
 import type { ApiSubclassSpell } from '@/shared/types/api'
 
@@ -233,6 +233,38 @@ describe('getAsiLevels', () => {
   it('unknown class returns empty array', () => {
     expect(getAsiLevels('artificer')).toEqual([])
     expect(getAsiLevels('')).toEqual([])
+  })
+
+  // Homebrew classes all share the synthetic 'custom' index, so they can never be in
+  // ASI_LEVELS. Before this fallback they got no improvements at any level.
+  it('a homebrew class with nothing registered gets the standard progression', () => {
+    expect(getAsiLevels('custom')).toEqual([4, 8, 12, 16, 19])
+  })
+
+  it('registered custom levels win, and clearing restores the fallback', () => {
+    registerCustomAsiLevels('custom', [4, 6, 8, 12, 14, 16, 19])
+    expect(getAsiLevels('custom')).toEqual([4, 6, 8, 12, 14, 16, 19])
+    registerCustomAsiLevels('custom', null)
+    expect(getAsiLevels('custom')).toEqual([4, 8, 12, 16, 19])
+  })
+
+  it('registered custom levels are sorted', () => {
+    registerCustomAsiLevels('custom', [12, 4, 19, 8])
+    expect(getAsiLevels('custom')).toEqual([4, 8, 12, 19])
+    registerCustomAsiLevels('custom', null)
+  })
+
+  it('an empty custom list falls back rather than granting nothing', () => {
+    registerCustomAsiLevels('custom', [])
+    expect(getAsiLevels('custom')).toEqual([4, 8, 12, 16, 19])
+    registerCustomAsiLevels('custom', null)
+  })
+
+  it('registering custom levels does not affect SRD classes', () => {
+    registerCustomAsiLevels('custom', [2, 3])
+    expect(getAsiLevels('fighter')).toEqual([4, 6, 8, 12, 14, 16, 19])
+    expect(getAsiLevels('artificer')).toEqual([])
+    registerCustomAsiLevels('custom', null)
   })
 })
 

@@ -124,6 +124,37 @@
               />
             </div>
 
+            <!-- Ability Score Improvements -->
+            <div class="space-y-2 pt-1 border-t border-shadow/40">
+              <div class="flex items-baseline justify-between gap-2 flex-wrap">
+                <p class="text-2xs font-heading tracking-wide uppercase text-mist">
+                  Improvements
+                  <span class="normal-case font-body text-mist/50">(levels granting an ASI or a feat)</span>
+                </p>
+                <button
+                  v-if="!isStandardAsi"
+                  type="button"
+                  class="text-2xs font-body text-mist hover:text-ash transition-colors underline underline-offset-2"
+                  @click="resetAsiLevels"
+                >Reset to standard</button>
+              </div>
+              <div class="grid grid-cols-10 gap-1">
+                <button
+                  v-for="lvl in 20"
+                  :key="`asi-${lvl}`"
+                  type="button"
+                  class="py-1.5 rounded border text-2xs font-heading tabular-nums transition-all duration-100"
+                  :class="form.asiLevels.includes(lvl)
+                    ? 'border-gold-mid/60 bg-gold-dim/15 text-gold-deep'
+                    : 'border-shadow text-mist hover:border-gold-dim/40 hover:text-ash'"
+                  @click="toggleAsiLevel(lvl)"
+                >{{ lvl }}</button>
+              </div>
+              <p class="text-2xs font-body text-mist/50">
+                Standard is 4, 8, 12, 16 and 19. Fighter-style classes add 6 and 14.
+              </p>
+            </div>
+
             <!-- Spellcasting -->
             <div class="space-y-3 pt-1 border-t border-shadow/40">
               <label class="flex items-center gap-2.5 cursor-pointer">
@@ -231,6 +262,7 @@
 import { reactive, ref, watch, computed, defineComponent, h } from 'vue'
 import { XIcon } from 'lucide-vue-next'
 import { useCustomContentStore } from '@/custom-content/store'
+import { DEFAULT_ASI_LEVELS } from '@/character-builder/classMeta'
 import { SKILLS } from '@/shared/lib/skillAbilityMap'
 import type { CustomClass, CustomClassInput, CustomClassSpellcasting } from '@/shared/types/customContent'
 import type { AbilityName } from '@/shared/types/character'
@@ -254,6 +286,7 @@ function emptyClass(): CustomClassInput {
     name: '', edition: '2014', description: '', hitDie: 8, primaryAbility: '',
     saves: [], armorProficiencies: [], weaponProficiencies: [], toolProficiencies: [],
     skillChoices: 2, skillOptions: [], spellcasting: null,
+    asiLevels: [...DEFAULT_ASI_LEVELS],
     featuresByLevel: { '1': [], '2': [], '3': [] }, isPublic: false,
   }
 }
@@ -292,6 +325,21 @@ function toggleSkill(index: string) {
   else form.skillOptions.push(index)
 }
 
+// Kept sorted so the builder walks improvements in level order.
+function toggleAsiLevel(lvl: number) {
+  const i = form.asiLevels.indexOf(lvl)
+  if (i >= 0) form.asiLevels.splice(i, 1)
+  else form.asiLevels.push(lvl)
+  form.asiLevels.sort((a, b) => a - b)
+}
+function resetAsiLevels() {
+  form.asiLevels = [...DEFAULT_ASI_LEVELS]
+}
+const isStandardAsi = computed(() =>
+  form.asiLevels.length === DEFAULT_ASI_LEVELS.length
+  && form.asiLevels.every((l, i) => l === DEFAULT_ASI_LEVELS[i]),
+)
+
 function onToggleSpellcasting() {
   form.spellcasting = spellcastingEnabled.value ? defaultSpellcasting() : null
 }
@@ -321,6 +369,9 @@ function loadFrom(c: CustomClass) {
     toolProficiencies: [...c.toolProficiencies],
     skillChoices: c.skillChoices,
     skillOptions: [...c.skillOptions],
+    // Classes authored before asiLevels existed parse with the schema default, so this is
+    // always populated; the fallback only guards a hand-edited payload.
+    asiLevels: c.asiLevels?.length ? [...c.asiLevels] : [...DEFAULT_ASI_LEVELS],
     spellcasting: c.spellcasting
       ? {
           ...c.spellcasting,
@@ -375,6 +426,7 @@ async function save() {
       toolProficiencies: [...form.toolProficiencies],
       skillChoices: form.skillChoices,
       skillOptions: [...form.skillOptions],
+      asiLevels: [...form.asiLevels],
       spellcasting: spellcastingEnabled.value && form.spellcasting
         ? {
             castingType: form.spellcasting.castingType,

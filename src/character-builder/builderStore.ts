@@ -8,7 +8,7 @@ import { generateId, now } from '@/shared/lib/uuid'
 import { useCharactersStore } from '@/characters/store'
 import { useAuthStore } from '@/auth/store'
 import { uploadPortraitBlob } from '@/shared/lib/uploadPortrait'
-import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount, getSubclassSpellMode, selectGrantedSubclassSpells, ELDRITCH_INVOCATIONS, INVOCATION_FEATURE_SOURCE, registerCustomClass, buildCustomSpellProfile } from '@/character-builder/classMeta'
+import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount, getSubclassSpellMode, selectGrantedSubclassSpells, ELDRITCH_INVOCATIONS, INVOCATION_FEATURE_SOURCE, registerCustomClass, registerCustomAsiLevels, buildCustomSpellProfile } from '@/character-builder/classMeta'
 import type { CustomClass, CustomSubclass } from '@/shared/types/customContent'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 
@@ -829,12 +829,13 @@ export const useBuilderStore = defineStore('builder', () => {
     if (draft.value.classIndex !== 'custom') draft.value.customClassDef = null
   })
 
-  // Keep the spell-profile registry in sync with the applied custom class. immediate handles
-  // draft restore from localStorage; deep re-registers if a re-applied class differs.
+  // Keep the spell-profile and ASI registries in sync with the applied custom class. immediate
+  // handles draft restore from localStorage; deep re-registers if a re-applied class differs.
   watch(() => draft.value.customClassDef, (def) => {
     registerCustomClass('custom', def?.spellcasting
       ? { profile: buildCustomSpellProfile(def.spellcasting), progression: def.spellcasting.casterProgression }
       : null)
+    registerCustomAsiLevels('custom', def?.asiLevels ?? null)
   }, { immediate: true, deep: true })
 
   // Re-validate currentStep whenever skippable conditions change
@@ -919,7 +920,10 @@ export const useBuilderStore = defineStore('builder', () => {
         name: d.name.trim(),
         race: { index: d.raceIndex, name: d.raceName, speed: d.raceSpeed, sizeCategory: d.raceSizeCategory || 'Medium', edition: d.raceEdition ?? '2014' },
         subrace: d.subraceIndex ? { index: d.subraceIndex, name: d.subraceName } : null,
-        class: { index: d.classIndex, name: d.className, hitDie: d.classHitDie, spellcastingAbility: d.classSpellcastingAbility, edition: d.classEdition ?? '2014' },
+        // asiLevels is carried only for homebrew: SRD classes are looked up by index, but a
+        // custom class's definition isn't saved with the character, so without this the sheet's
+        // level-up would fall back to the standard progression and ignore what was authored.
+        class: { index: d.classIndex, name: d.className, hitDie: d.classHitDie, spellcastingAbility: d.classSpellcastingAbility, edition: d.classEdition ?? '2014', ...(d.customClassDef ? { asiLevels: d.customClassDef.asiLevels } : {}) },
         subclass: d.subclassIndex ? { index: d.subclassIndex, name: d.subclassName } : null,
         background: { index: d.backgroundIndex, name: d.backgroundName, skillProficiencies: d.backgroundSkillProficiencies, description: d.backgroundDescription || undefined, edition: d.backgroundEdition ?? '2014' },
         alignment: d.alignment,
