@@ -18,16 +18,16 @@
         <option value="">Any size</option>
         <option v-for="s in sizes" :key="s" :value="s">{{ s }}</option>
       </AppSelect>
-      <AppSelect v-model="ability" class="max-w-[170px]">
+      <AppSelect v-model="ability" class="max-w-[195px]">
         <option value="">Any ability boost</option>
         <option v-for="ab in ABILITY_ORDER" :key="ab" :value="ab">{{ ABILITY_LABELS[ab] }}</option>
       </AppSelect>
-      <AppSelect v-model="editionFilter" class="max-w-[130px]">
+      <AppSelect v-model="editionFilter" class="max-w-[155px]">
         <option value="">Any edition</option>
         <option value="2014">2014</option>
         <option value="2024">2024</option>
       </AppSelect>
-      <AppSelect v-model="sortBy" class="max-w-[180px]">
+      <AppSelect v-model="sortBy" class="max-w-[225px]">
         <option value="ability">Sort: ability boost</option>
         <option value="name">Sort: name</option>
         <option value="recent">Sort: recently updated</option>
