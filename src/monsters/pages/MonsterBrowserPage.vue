@@ -59,7 +59,7 @@
         v-model:sort-by="sortBy"
         v-model:sort-dir="sortDir"
         :options="SORT_OPTIONS"
-        select-class="max-w-[150px]"
+        select-class="max-w-[175px]"
         @change="currentPage = 1"
       />
     </div>
