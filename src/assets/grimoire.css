@@ -42,6 +42,20 @@
     --c-verdant-mid:    38 128 72;
     --c-verdant-bright: 62 168 96;
 
+    /* Spell schools. Their own scale rather than reused semantic tokens: eight categories
+       need eight hues, and borrowing gold/blood/arcane made pairs collide (conjuration vs
+       transmutation, enchantment vs evocation, abjuration vs divination). Hues are spaced
+       at least 37 degrees apart, darkened here for contrast on parchment. Never the only
+       cue: every surface pairs the color with the school's letter. */
+    --c-school-evocation:     184  43  30;   /*   5deg */
+    --c-school-conjuration:   139 102  14;   /*  42deg */
+    --c-school-transmutation:  80 124  29;   /*  88deg */
+    --c-school-necromancy:     29 114  60;   /* 142deg */
+    --c-school-divination:     13 120 130;   /* 185deg */
+    --c-school-abjuration:     36  82 188;   /* 222deg */
+    --c-school-illusion:      106  49 185;   /* 265deg */
+    --c-school-enchantment:   177  37 142;   /* 315deg */
+
     /* Semantic */
     --c-success: 74 93 78;
     --c-danger:  216 25 33;
@@ -105,6 +119,16 @@
     --c-verdant-base:   40 128  80;
     --c-verdant-mid:    64 172 108;
     --c-verdant-bright: 96 208 140;
+
+    /* Spell schools, same hues lightened for dark backgrounds */
+    --c-school-evocation:     239 105  93;
+    --c-school-conjuration:   238 190  79;
+    --c-school-transmutation: 152 210  86;
+    --c-school-necromancy:     89 207 132;
+    --c-school-divination:     86 218 230;
+    --c-school-abjuration:    126 161 241;
+    --c-school-illusion:      171 128 231;
+    --c-school-enchantment:   237 120 208;
 
     /* Semantic */
     --c-success:  80 168 108;

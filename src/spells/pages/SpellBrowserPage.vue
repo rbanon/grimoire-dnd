@@ -40,7 +40,7 @@
       </AppSelect>
       <AppSelect v-model="schoolFilter" class="max-w-[150px]" @change="currentPage = 1">
         <option value="">All schools</option>
-        <option v-for="s in SCHOOLS" :key="s" :value="s">{{ s }}</option>
+        <option v-for="s in SCHOOL_NAMES" :key="s" :value="s">{{ s }}</option>
       </AppSelect>
       <AppSelect v-model="classFilter" class="max-w-[140px]" @change="currentPage = 1">
         <option value="">All classes</option>
@@ -80,7 +80,7 @@
         :key="spell.index"
         type="button"
         class="card-hover p-4 flex flex-col gap-1 text-left w-full"
-        :style="{ 'border-left': `3px solid ${schoolBorderColor(spell.school.name)}` }"
+        :style="{ 'border-left': `3px solid ${schoolColor(spell.school.name)}` }"
         @click="panel.open({ kind: 'spell', index: spell.index })"
       >
         <div class="flex items-start justify-between gap-2">
@@ -90,7 +90,14 @@
           </span>
         </div>
         <p class="text-xs text-mist mt-0.5 flex items-center justify-between gap-x-2">
-          <span>{{ spell.school.name }} · {{ labelCastingTime(normalizeCastingTime(spell.casting_time)) }}</span>
+          <span class="inline-flex items-center gap-1.5">
+            <span
+              class="inline-flex items-center justify-center w-4 h-4 rounded-sm border text-[0.6rem] font-heading leading-none shrink-0"
+              :style="schoolChipStyle(spell.school.name)"
+              aria-hidden="true"
+            >{{ schoolLetter(spell.school.name) }}</span>
+            {{ spell.school.name }} · {{ labelCastingTime(normalizeCastingTime(spell.casting_time)) }}
+          </span>
           <span v-if="spell.concentration || spell.ritual" class="flex gap-1 shrink-0">
             <span v-if="spell.concentration" class="badge badge-gold text-2xs">Conc.</span>
             <span v-if="spell.ritual" class="badge badge-verdant text-2xs">Ritual</span>
@@ -148,7 +155,11 @@
               </td>
               <td class="py-3 px-4 font-body text-mist hidden sm:table-cell">
                 <span class="flex items-center gap-1.5">
-                  <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ background: schoolBorderColor(spell.school.name) }" />
+                  <span
+                    class="inline-flex items-center justify-center w-4 h-4 rounded-sm border text-[0.6rem] font-heading leading-none shrink-0"
+                    :style="schoolChipStyle(spell.school.name)"
+                    aria-hidden="true"
+                  >{{ schoolLetter(spell.school.name) }}</span>
                   {{ spell.school.name }}
                 </span>
               </td>
@@ -204,6 +215,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { LayoutGridIcon, ListIcon } from 'lucide-vue-next'
 import { loadSpellIndex } from '@/shared/data/srdIndex'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
+import { SCHOOL_NAMES, schoolColor, schoolLetter, schoolChipStyle } from '@/shared/lib/spellSchools'
 
 const panel = useInfoPanel()
 const viewMode = ref<'grid' | 'list'>('grid')
@@ -218,7 +230,6 @@ const PAGE_SIZE = 15
 const sortBy = ref<'name' | 'level' | 'school'>('name')
 const sortDir = ref<'asc' | 'desc'>('asc')
 
-const SCHOOLS = ['Abjuration', 'Conjuration', 'Divination', 'Enchantment', 'Evocation', 'Illusion', 'Necromancy', 'Transmutation']
 const CASTING_TIMES = ['1 action', '1 bonus action', '1 reaction', '1 minute', '10 minutes', '1 hour', '8 hours', '12 hours', '24 hours'] as const
 const CASTING_TIME_LABELS: Record<string, string> = {
   '1 action':       'Action',
@@ -230,20 +241,6 @@ const CASTING_TIME_LABELS: Record<string, string> = {
   '8 hours':        '8 Hours',
   '12 hours':       '12 Hours',
   '24 hours':       '24 Hours',
-}
-
-function schoolBorderColor(school: string): string {
-  const map: Record<string, string> = {
-    'Abjuration':    'rgb(var(--c-arcane-pale))',
-    'Conjuration':   'rgb(var(--c-gold-mid))',
-    'Divination':    'rgb(var(--c-mist))',
-    'Enchantment':   'rgb(var(--c-blood-mid))',
-    'Evocation':     'rgb(var(--c-blood-bright))',
-    'Illusion':      'rgb(var(--c-arcane-base))',
-    'Necromancy':    'rgb(var(--c-verdant-bright))',
-    'Transmutation': 'rgb(var(--c-gold-dim))',
-  }
-  return map[school] ?? 'transparent'
 }
 
 function toggleSort(key: typeof sortBy.value) {
