@@ -50,6 +50,13 @@
         <option value="yes">Requires Attunement</option>
         <option value="no">No Attunement</option>
       </AppSelect>
+      <SortControl
+        v-model:sort-by="filters.sortBy"
+        v-model:sort-dir="filters.sortDir"
+        :options="SORT_OPTIONS"
+        select-class="max-w-[160px]"
+        @change="currentPage = 1"
+      />
     </div>
 
     <!-- States -->
@@ -294,6 +301,16 @@ const filteredItems = computed(() => {
 })
 
 type SortKey = typeof filters.value.sortBy
+
+// Cost and weight were sortable in filteredItems but had no column and no handler, so
+// nothing could reach them. The control exposes every key the sort actually implements.
+const SORT_OPTIONS: { value: SortKey, label: string }[] = [
+  { value: 'name',     label: 'Name' },
+  { value: 'category', label: 'Type' },
+  { value: 'rarity',   label: 'Rarity' },
+  { value: 'cost',     label: 'Cost' },
+  { value: 'weight',   label: 'Weight' },
+]
 
 function toggleSort(key: SortKey) {
   if (filters.value.sortBy === key) {

@@ -55,6 +55,13 @@
         <option value="">Any size</option>
         <option v-for="s in MONSTER_SIZES" :key="s" :value="s">{{ s }}</option>
       </AppSelect>
+      <SortControl
+        v-model:sort-by="sortBy"
+        v-model:sort-dir="sortDir"
+        :options="SORT_OPTIONS"
+        select-class="max-w-[150px]"
+        @change="currentPage = 1"
+      />
     </div>
 
     <!-- Loading skeleton -->
@@ -188,8 +195,15 @@ const sizeFilter = ref('')
 const currentPage = ref(1)
 const PAGE_SIZE = 18
 
-const sortBy = ref<'name' | 'cr' | 'type'>('name')
+type MonsterSortKey = 'name' | 'cr' | 'type'
+const sortBy = ref<MonsterSortKey>('name')
 const sortDir = ref<'asc' | 'desc'>('asc')
+
+const SORT_OPTIONS: { value: MonsterSortKey, label: string }[] = [
+  { value: 'name', label: 'Name' },
+  { value: 'cr',   label: 'Challenge' },
+  { value: 'type', label: 'Type' },
+]
 
 const MONSTER_TYPES = [
   'Aberration', 'Beast', 'Celestial', 'Construct', 'Dragon',

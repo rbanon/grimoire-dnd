@@ -52,6 +52,13 @@
           {{ labelCastingTime(ct) }}
         </option>
       </AppSelect>
+      <SortControl
+        v-model:sort-by="sortBy"
+        v-model:sort-dir="sortDir"
+        :options="SORT_OPTIONS"
+        select-class="max-w-[150px]"
+        @change="currentPage = 1"
+      />
     </div>
 
     <!-- States -->
@@ -227,8 +234,15 @@ const classFilter = ref('')
 const castingTimeFilter = ref('')
 const currentPage = ref(1)
 const PAGE_SIZE = 15
-const sortBy = ref<'name' | 'level' | 'school'>('name')
+type SpellSortKey = 'name' | 'level' | 'school'
+const sortBy = ref<SpellSortKey>('name')
 const sortDir = ref<'asc' | 'desc'>('asc')
+
+const SORT_OPTIONS: { value: SpellSortKey, label: string }[] = [
+  { value: 'name',   label: 'Name' },
+  { value: 'level',  label: 'Level' },
+  { value: 'school', label: 'School' },
+]
 
 const CASTING_TIMES = ['1 action', '1 bonus action', '1 reaction', '1 minute', '10 minutes', '1 hour', '8 hours', '12 hours', '24 hours'] as const
 const CASTING_TIME_LABELS: Record<string, string> = {
