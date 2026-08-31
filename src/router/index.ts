@@ -123,6 +123,11 @@ export const router = createRouter({
           component: () => import('@/auth/pages/ResetPasswordPage.vue'),
         },
         {
+          path: 'auth/callback',
+          name: 'auth-callback',
+          component: () => import('@/auth/pages/AuthCallbackPage.vue'),
+        },
+        {
           path: 'profile',
           name: 'profile',
           component: () => import('@/auth/pages/ProfilePage.vue'),

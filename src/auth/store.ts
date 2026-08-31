@@ -67,13 +67,24 @@ export const useAuthStore = defineStore('auth', () => {
     if (error) throw error
   }
 
+  // Without an explicit emailRedirectTo, Supabase sends the confirmation link to the
+  // project's Site URL, which is localhost by default. Deriving it from the current
+  // origin keeps local dev, Vercel previews and production each pointing at themselves.
+  // Every origin used here must also be allow-listed in Supabase's Redirect URLs.
   async function signUpWithEmail(email: string, password: string) {
-    const { error } = await supabase.auth.signUp({ email: email.trim().toLowerCase(), password })
+    const { error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    })
     if (error) throw error
   }
 
   async function sendMagicLink(email: string) {
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim().toLowerCase() })
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    })
     if (error) throw error
   }
 
