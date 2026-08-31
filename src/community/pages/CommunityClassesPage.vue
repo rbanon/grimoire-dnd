@@ -18,7 +18,7 @@
         <option value="">Any ability</option>
         <option v-for="ab in ABILITY_ORDER" :key="ab" :value="ab">{{ ABILITY_LABELS[ab] }}</option>
       </AppSelect>
-      <AppSelect v-model="hitDie" class="max-w-[120px]">
+      <AppSelect v-model="hitDie" class="max-w-[145px]">
         <option value="">Any hit die</option>
         <option v-for="d in HIT_DICE" :key="d" :value="String(d)">d{{ d }}</option>
       </AppSelect>
@@ -27,12 +27,12 @@
         <option value="yes">Spellcaster</option>
         <option value="no">Non-caster</option>
       </AppSelect>
-      <AppSelect v-model="editionFilter" class="max-w-[130px]">
+      <AppSelect v-model="editionFilter" class="max-w-[155px]">
         <option value="">Any edition</option>
         <option value="2014">2014</option>
         <option value="2024">2024</option>
       </AppSelect>
-      <AppSelect v-model="sortBy" class="max-w-[180px]">
+      <AppSelect v-model="sortBy" class="max-w-[215px]">
         <option value="ability">Sort: primary ability</option>
         <option value="name">Sort: name</option>
         <option value="hitDie">Sort: hit die</option>

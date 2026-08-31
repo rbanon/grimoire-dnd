@@ -24,7 +24,23 @@
         </div>
       </div>
     </div>
-    <p class="text-sm text-mist mb-4">{{ blurb }}</p>
+    <p class="text-sm text-mist mb-3">{{ blurb }}</p>
+
+    <!-- Publishing is open to anyone with an account, but a signed-out visitor had no way
+         to tell: the only hint lived inside the detail modal. Say it on the page itself. -->
+    <div class="flex items-start gap-2.5 mb-4 px-3.5 py-2.5 rounded border border-arcane-base/25 bg-arcane-deep/10">
+      <InfoIcon :size="14" class="shrink-0 mt-0.5 text-arcane-pale/70" />
+      <p class="text-xs font-body text-ash leading-relaxed">
+        <template v-if="auth.isAuthenticated">
+          Everything here is player-made. Your own homebrew stays private until you publish it.
+          <RouterLink to="/profile" class="text-gold-mid hover:text-gold-bright underline underline-offset-2">Manage and publish yours &rarr;</RouterLink>
+        </template>
+        <template v-else>
+          Everything here is player-made, and publishing is open to anyone with an account.
+          <RouterLink to="/login" class="text-gold-mid hover:text-gold-bright underline underline-offset-2">Sign in to share yours &rarr;</RouterLink>
+        </template>
+      </p>
+    </div>
 
     <!-- Section switcher -->
     <div class="mb-6">
@@ -126,7 +142,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { LayoutGridIcon, ListIcon } from 'lucide-vue-next'
+import { LayoutGridIcon, ListIcon, InfoIcon } from 'lucide-vue-next'
+import { useAuthStore } from '@/auth/store'
 import type { CommunityItem } from '@/shared/types/customContent'
 import { statColor, subtitle, itemBadge } from '@/community/communityDisplay'
 import CommunitySectionNav from '@/community/components/CommunitySectionNav.vue'
@@ -140,6 +157,7 @@ const props = defineProps<{
   sectionTotal: number
 }>()
 
+const auth = useAuthStore()
 const viewMode = ref<'grid' | 'list'>('grid')
 const selected = ref<CommunityItem | null>(null)
 const showDetail = ref(false)
@@ -152,7 +170,14 @@ const BLURBS: Record<CommunityItem['kind'], string> = {
 const SECONDARY_HEADERS: Record<CommunityItem['kind'], string> = {
   class: 'Primary ability', subclass: 'Parent class', race: 'Ability boost',
 }
+// "from your profile" only makes sense once you have one; a signed-out visitor reading that
+// has nowhere to go. The CTA above carries the sign-in link, so keep this to the fact.
 const EMPTY_TEXT: Record<CommunityItem['kind'], string> = {
+  class: 'No shared classes yet.',
+  subclass: 'No shared subclasses yet.',
+  race: 'No shared races yet.',
+}
+const EMPTY_TEXT_OWN: Record<CommunityItem['kind'], string> = {
   class: 'No shared classes yet. Publish one from your profile to be the first!',
   subclass: 'No shared subclasses yet. Publish one from your profile to be the first!',
   race: 'No shared races yet. Publish one from your profile to be the first!',
@@ -160,7 +185,9 @@ const EMPTY_TEXT: Record<CommunityItem['kind'], string> = {
 
 const blurb = computed(() => BLURBS[props.kind])
 const secondaryHeader = computed(() => SECONDARY_HEADERS[props.kind])
-const emptyText = computed(() => EMPTY_TEXT[props.kind])
+const emptyText = computed(() =>
+  auth.isAuthenticated ? EMPTY_TEXT_OWN[props.kind] : EMPTY_TEXT[props.kind],
+)
 
 function openDetail(it: CommunityItem) {
   selected.value = it

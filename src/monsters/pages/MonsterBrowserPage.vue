@@ -2,7 +2,7 @@
   <div class="app-container py-8">
 
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
+    <div class="flex items-center justify-between mb-2 gap-4 flex-wrap">
       <h1 class="heading-display text-3xl font-semibold">Bestiary</h1>
       <div class="flex items-center gap-3">
         <p class="text-muted text-sm">{{ filteredMonsters.length }} results</p>
@@ -24,6 +24,9 @@
         </div>
       </div>
     </div>
+    <p class="text-sm text-mist mb-6">
+      Every one of the {{ monsterRefs.length }} creatures in the SRD 5.1, the subset Wizards licenses for reuse.
+    </p>
 
     <!-- Filters -->
     <div class="flex flex-wrap gap-3 mb-6 items-center">
