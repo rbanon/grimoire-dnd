@@ -288,20 +288,23 @@ const abilityDefs = [
 
 // ── Base score helpers ────────────────────────────────────────────────────────
 
+// Read through the store's ruleset-aware source rather than off the draft directly: under
+// 2014 the background increase is not applied, under 2024 the species one is not, and this
+// column has to show the same total the sheet will.
 const racialBonus = (key: keyof AbilityScores) =>
-  (builder.draft.raceAbilityBonuses[key] ?? 0) + (builder.draft.subraceAbilityBonuses[key] ?? 0)
+  (builder.originBonuses.race[key] ?? 0) + (builder.originBonuses.subrace[key] ?? 0)
 
 // 2024 background ability score increase (chosen in Step IV)
 const backgroundBonus = (key: keyof AbilityScores) =>
-  builder.draft.backgroundAbilityBonuses[key] ?? 0
+  builder.originBonuses.background[key] ?? 0
 
 const hasRacialBonuses = computed(() =>
-  Object.values(builder.draft.raceAbilityBonuses).some(v => v !== 0) ||
-  Object.values(builder.draft.subraceAbilityBonuses).some(v => v !== 0),
+  Object.values(builder.originBonuses.race).some(v => (v ?? 0) !== 0) ||
+  Object.values(builder.originBonuses.subrace).some(v => (v ?? 0) !== 0),
 )
 
 const hasBackgroundBonuses = computed(() =>
-  Object.values(builder.draft.backgroundAbilityBonuses).some(v => (v ?? 0) !== 0),
+  Object.values(builder.originBonuses.background).some(v => (v ?? 0) !== 0),
 )
 
 const effectiveScore = (key: keyof AbilityScores) => builder.effectiveScores[key]

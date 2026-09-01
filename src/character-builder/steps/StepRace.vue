@@ -10,16 +10,16 @@
       </div>
       <div v-else-if="racesError" class="text-sm text-blood-bright">Failed to load races.</div>
       <template v-else>
-        <!-- 2014 Races -->
+        <!-- Races/species for the chosen ruleset -->
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <PickerCard
-            v-for="race in races2014"
-            :key="`2014:${race.index}`"
+            v-for="race in races"
+            :key="`${race.edition}:${race.index}`"
             :name="race.name"
             :glyph="getRaceMeta(race.index).glyph"
             :flavor="getRaceMeta(race.index).flavor"
             :tags="getRaceMeta(race.index).traits.slice(0, 2)"
-            :selected="builder.draft.raceIndex === race.index && builder.draft.raceEdition === '2014'"
+            :selected="builder.draft.raceIndex === race.index && !isCustom"
             :edition="race.edition"
             show-info
             @select="selectRace(race.index, race.name, race.edition)"
@@ -27,29 +27,12 @@
           />
         </div>
 
-        <!-- 2014 / 2024 separator -->
-        <div v-if="species2024.length" class="flex items-center gap-3 py-1">
-          <div class="flex-1 h-px bg-shadow/50" />
-          <span class="text-2xs font-heading tracking-widest uppercase text-arcane-pale/50">2024 Species</span>
-          <div class="flex-1 h-px bg-shadow/50" />
-        </div>
-
-        <!-- 2024 Species -->
-        <div v-if="species2024.length" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <PickerCard
-            v-for="race in species2024"
-            :key="`2024:${race.index}`"
-            :name="race.name"
-            :glyph="getRaceMeta(race.index).glyph"
-            :flavor="getRaceMeta(race.index).flavor"
-            :tags="getRaceMeta(race.index).traits.slice(0, 2)"
-            :selected="builder.draft.raceIndex === race.index && builder.draft.raceEdition === '2024'"
-            :edition="race.edition"
-            show-info
-            @select="selectRace(race.index, race.name, race.edition)"
-            @info="infoPanel.open({ kind: 'race', index: race.index, edition: race.edition })"
-          />
-        </div>
+        <!-- 2024 species grant no ability increases; the background does. Say so here, or the
+             picker reads as broken next to 2014 races that show +2/+1 on every card. -->
+        <p v-if="ruleset === '2024'" class="text-2xs font-body text-mist/70">
+          Under 2024 rules your species sets speed, size and traits. Your ability score
+          increases come from your background, in Step IV.
+        </p>
 
         <!-- Homebrew separator + Custom race tile -->
         <div class="flex items-center gap-3 py-1">
@@ -345,12 +328,14 @@ const { data: speciesList2024, isPending: racesLoading2024 } = useQuery({
 })
 
 const racesLoading = computed(() => racesLoading2014.value || racesLoading2024.value)
-const races2014 = computed(() =>
-  (raceList2014.value?.results ?? []).map(r => ({ ...r, edition: '2014' as EditionTag }))
-)
-const species2024 = computed(() =>
-  (speciesList2024.value?.results ?? []).map(r => ({ ...r, edition: '2024' as EditionTag }))
-)
+// The ruleset is chosen in Step I; this step only follows it. 2014 calls them races and
+// 2024 calls them species, and the two lists come from different endpoints.
+const ruleset = computed<EditionTag>(() => builder.draft.ruleset ?? '2014')
+
+const races = computed(() => {
+  const list = ruleset.value === '2024' ? speciesList2024.value : raceList2014.value
+  return (list?.results ?? []).map(r => ({ ...r, edition: ruleset.value }))
+})
 
 // Auto-grant languages for 2024 species (API doesn't provide language data)
 const raceEdition = computed(() => builder.draft.raceEdition ?? '2014')

@@ -4,7 +4,7 @@
 // srd-class-data.json, regenerate with: node scripts/generate-srd-data.mjs
 import srdData from '@/shared/data/srd-class-data.json'
 import type { ResourcePool } from '@/shared/types/character'
-import type { ApiSubclassSpell } from '@/shared/types/api'
+import type { ApiSubclassSpell, EditionTag } from '@/shared/types/api'
 
 export interface ClassMeta {
   glyph: string
@@ -794,8 +794,32 @@ const STARTING_GOLD: Record<string, StartingGoldFormula> = {
   wizard:    { dice: 4, sides: 4, multiplier: 10, label: '4d4 × 10 gp' },
 }
 
-export function getStartingGoldFormula(classIndex: string): StartingGoldFormula | null {
-  return STARTING_GOLD[classIndex] ?? null
+// SRD 5e 2024 replaced the starting-gold roll with a fixed amount per class, quoted as the
+// "or (c) N GP" alternative in each class's starting-equipment options. Modelled as a
+// zero-dice formula so callers keep one shape; rollStartingGold returns the flat value.
+const STARTING_GOLD_2024: Record<string, StartingGoldFormula> = {
+  barbarian: { dice: 0, sides: 0, multiplier: 0, label: '75 gp' },
+  bard:      { dice: 0, sides: 0, multiplier: 0, label: '90 gp' },
+  cleric:    { dice: 0, sides: 0, multiplier: 0, label: '110 gp' },
+  druid:     { dice: 0, sides: 0, multiplier: 0, label: '50 gp' },
+  fighter:   { dice: 0, sides: 0, multiplier: 0, label: '155 gp' },
+  monk:      { dice: 0, sides: 0, multiplier: 0, label: '50 gp' },
+  paladin:   { dice: 0, sides: 0, multiplier: 0, label: '150 gp' },
+  ranger:    { dice: 0, sides: 0, multiplier: 0, label: '150 gp' },
+  rogue:     { dice: 0, sides: 0, multiplier: 0, label: '100 gp' },
+  sorcerer:  { dice: 0, sides: 0, multiplier: 0, label: '50 gp' },
+  warlock:   { dice: 0, sides: 0, multiplier: 0, label: '100 gp' },
+  wizard:    { dice: 0, sides: 0, multiplier: 0, label: '55 gp' },
+}
+
+const FLAT_GOLD_2024: Record<string, number> = {
+  barbarian: 75, bard: 90, cleric: 110, druid: 50, fighter: 155, monk: 50,
+  paladin: 150, ranger: 150, rogue: 100, sorcerer: 50, warlock: 100, wizard: 55,
+}
+
+export function getStartingGoldFormula(classIndex: string, ruleset: EditionTag = '2014'): StartingGoldFormula | null {
+  const table = ruleset === '2024' ? STARTING_GOLD_2024 : STARTING_GOLD
+  return table[classIndex] ?? null
 }
 
 // ─── Race traits ──────────────────────────────────────────────────────────────
@@ -851,7 +875,9 @@ export function getRaceTraits(raceIndex: string, subraceIndex?: string): RaceTra
   return { resistances, immunities, senses }
 }
 
-export function rollStartingGold(classIndex: string): number {
+export function rollStartingGold(classIndex: string, ruleset: EditionTag = '2014'): number {
+  // 2024 has no roll, the amount is fixed.
+  if (ruleset === '2024') return FLAT_GOLD_2024[classIndex] ?? 0
   const formula = STARTING_GOLD[classIndex]
   if (!formula) return 0
   let total = 0

@@ -10,6 +10,7 @@ import { useAuthStore } from '@/auth/store'
 import { uploadPortraitBlob } from '@/shared/lib/uploadPortrait'
 import { getSpellSlots, getSpellProfile, getAsiLevels, getLevelEntry, CLASS_META, getFirstSpellLevel, getClassResources, cantripsGainedAtLevel, spellsGainedAtLevel, resolveChoiceFeature, getInvocationsCount, getRaceTraits, getExpertiseCount, getSubclassSpellMode, selectGrantedSubclassSpells, ELDRITCH_INVOCATIONS, INVOCATION_FEATURE_SOURCE, registerCustomClass, registerCustomAsiLevels, buildCustomSpellProfile } from '@/character-builder/classMeta'
 import type { CustomClass, CustomSubclass } from '@/shared/types/customContent'
+import type { EditionTag as Ruleset } from '@/shared/types/api'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 
 const DRAFT_KEY = 'builder-draft'
@@ -159,13 +160,21 @@ export interface BuilderDraft {
   // Key = class level, value = map of choiceKey → selected option index
   levelChoices: Record<number, Record<string, string>>
 
-  // Edition flags, tracks which SRD edition was used for race/class/background selection
-  raceEdition: '2014' | '2024'
-  classEdition: '2014' | '2024'
-  backgroundEdition: '2014' | '2024'
+  // The rules the whole character is built under, chosen in Step I. 2014 and 2024 are
+  // separate games whose bonuses assume each other's absence: a 2014 race grants ability
+  // increases and its background does not, while a 2024 background grants them and its
+  // species does not. Mixing the two either doubles the increases or grants none, so every
+  // picker filters on this and the math branches on it.
+  ruleset: Ruleset
+  // Per-selection edition flags. Kept because a saved character records what it was built
+  // from, and because customContent carries its own edition. Under a single ruleset these
+  // now always agree with it; they are no longer independently selectable.
+  raceEdition: Ruleset
+  classEdition: Ruleset
+  backgroundEdition: Ruleset
 
   // Step 6, Feats & ASI decisions, keyed by class level granting the improvement
-  featsByLevel: Record<number, { type: 'asi' | 'feat'; featIndex?: string; featName?: string; featEdition?: '2014' | '2024' }>
+  featsByLevel: Record<number, { type: 'asi' | 'feat'; featIndex?: string; featName?: string; featEdition?: Ruleset }>
   // Ability allocations for levels where type === 'asi'
   asiAllocations: Record<number, Partial<Record<keyof AbilityScores, number>>>
 
@@ -193,6 +202,7 @@ const defaultDraft = (): BuilderDraft => ({
   age: '', gender: '', height: '', weight: '', eyes: '', skin: '', hair: '',
   appearanceNotes: '', personalityTraits: '', ideals: '', bonds: '', flaws: '', biography: '',
   raceIndex: '', raceName: '', raceSpeed: 30, raceSizeCategory: 'Medium',
+  ruleset: '2014',
   raceEdition: '2014', classEdition: '2014', backgroundEdition: '2014',
   raceAbilityBonuses: {}, raceLanguageCount: 2, raceLanguageChoices: 0, subraceIndex: '', subraceName: '',
   subraceAbilityBonuses: {}, availableSubraces: [],
@@ -278,13 +288,28 @@ export const useBuilderStore = defineStore('builder', () => {
   const isSpellcaster = computed(() => draft.value.classSpellcastingAbility !== null)
   const totalSteps = computed(() => isSpellcaster.value ? TOTAL_STEPS : TOTAL_STEPS - 1)
 
-  // Effective ability scores, capped at 20:
-  //   base + racial + subrace + 2024 background increase + ASI allocations
+  // Effective ability scores, capped at 20. Exactly ONE source of origin increases applies,
+  // decided by the ruleset: 2014 grants them through race/subrace and its backgrounds grant
+  // none; 2024 moved them to the background and its species grant none. Summing both, as
+  // this did before the ruleset existed, doubled the increase for a 2014 race with a 2024
+  // background and gave zero for a 2024 species with a 2014 background.
+  //
+  // A homebrew race is authored with explicit bonuses, so it keeps them in either ruleset.
+  type AbilityBonusMap = Partial<Record<keyof AbilityScores, number>>
+  const originBonuses = computed<{ race: AbilityBonusMap; subrace: AbilityBonusMap; background: AbilityBonusMap }>(() => {
+    const d = draft.value
+    if (d.ruleset === '2024' && d.raceIndex !== 'custom') {
+      return { race: {}, subrace: {}, background: d.backgroundAbilityBonuses }
+    }
+    if (d.ruleset === '2024') {
+      return { race: d.raceAbilityBonuses, subrace: {}, background: d.backgroundAbilityBonuses }
+    }
+    return { race: d.raceAbilityBonuses, subrace: d.subraceAbilityBonuses, background: {} }
+  })
+
   const effectiveScores = computed<AbilityScores>(() => {
     const b = draft.value.baseScores
-    const rb = draft.value.raceAbilityBonuses
-    const sb = draft.value.subraceAbilityBonuses
-    const bg = draft.value.backgroundAbilityBonuses
+    const { race: rb, subrace: sb, background: bg } = originBonuses.value
     const allAsis = draft.value.asiAllocations
     const keys: (keyof AbilityScores)[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
     return keys.reduce((acc, k) => {
@@ -573,6 +598,7 @@ export const useBuilderStore = defineStore('builder', () => {
     if (!saved) return false
     const merged = { ...defaultDraft(), ...(saved as Partial<BuilderDraft>) }
     if (!merged.classIndex) return false
+    backfillRuleset(merged)
     migrateKnownCasterSpells(merged)
     migrateKnownToPreparedCasterSpells(merged)
     // A restored draft is complete and authoritative, so suppress the class-change watcher so it
@@ -581,6 +607,16 @@ export const useBuilderStore = defineStore('builder', () => {
     draft.value = merged
     nextTick(() => { _loadingWholeDraft = false })
     return true
+  }
+
+  // Drafts saved before the ruleset existed carry three independent edition flags and no
+  // `ruleset`. Infer it from the class, which is the first thing picked and the one the
+  // rest of the build hangs off. A draft that genuinely mixed editions keeps whatever its
+  // own selections said; the pickers simply stop offering the other edition from now on.
+  function backfillRuleset(d: BuilderDraft): void {
+    const saved = (d as Partial<BuilderDraft>).ruleset
+    if (saved === '2014' || saved === '2024') return
+    d.ruleset = d.classEdition ?? d.raceEdition ?? d.backgroundEdition ?? '2014'
   }
 
   // Migrate drafts saved before per-level spell tracking was introduced.
@@ -660,7 +696,11 @@ export const useBuilderStore = defineStore('builder', () => {
   // (spells, level choices, expertise) as classIndex flips from blank to the preset's class.
   function applyDraft(partial: Partial<BuilderDraft>, startStep = 1) {
     _loadingWholeDraft = true
-    draft.value = { ...defaultDraft(), ...partial, currentStep: resolveStep(startStep) }
+    const merged = { ...defaultDraft(), ...partial, currentStep: resolveStep(startStep) }
+    // Presets and the quiz set the per-selection editions but predate `ruleset`; derive it
+    // so the pickers they hand off to are filtered consistently.
+    backfillRuleset(merged)
+    draft.value = merged
     saveDraft()
     nextTick(() => { _loadingWholeDraft = false })
   }
@@ -703,7 +743,8 @@ export const useBuilderStore = defineStore('builder', () => {
     const d = draft.value
     d.raceIndex = 'custom'
     d.raceName = ''
-    d.raceEdition = '2014'
+    // A homebrew race belongs to whatever ruleset the character is being built under.
+    d.raceEdition = d.ruleset ?? '2014'
     d.raceSpeed = 30
     d.raceSizeCategory = 'Medium'
     d.raceAbilityBonuses = {}
@@ -797,6 +838,57 @@ export const useBuilderStore = defineStore('builder', () => {
     if (!draft.value.asiAllocations[asiLevel]) draft.value.asiAllocations[asiLevel] = {}
     if (value <= 0) delete draft.value.asiAllocations[asiLevel][key]
     else draft.value.asiAllocations[asiLevel][key] = value
+  }
+
+  /**
+   * Switch the whole character to the other ruleset.
+   *
+   * Race, class and background are all edition-scoped: a 2014 'elf' and a 2024 'elf' are
+   * different entries fetched from different endpoints, and the SRD ships only 4 backgrounds
+   * in 2024 against 13 in 2014. Rather than guess a counterpart, clear the three selections
+   * and everything derived from them. The caller confirms with the player first.
+   */
+  function setRuleset(next: Ruleset) {
+    const d = draft.value
+    if (d.ruleset === next) return
+    d.ruleset = next
+    d.raceEdition = next
+    d.classEdition = next
+    d.backgroundEdition = next
+
+    // Class and everything keyed off it
+    d.classIndex = ''; d.className = ''; d.classHitDie = 8
+    d.classSpellcastingAbility = null; d.classSkillChoices = 0; d.classSkillOptions = []
+    d.subclassIndex = ''; d.subclassName = ''; d.availableSubclasses = []
+    d.customClassDef = null; d.customSubclassDef = null
+    d.subclassSpells = []; d.druidLandType = ''; d.levelChoices = {}
+
+    // Race, keeping a homebrew race: it is authored by the player, not edition-scoped.
+    if (d.raceIndex !== 'custom') {
+      d.raceIndex = ''; d.raceName = ''; d.raceSpeed = 30; d.raceSizeCategory = 'Medium'
+      d.raceAbilityBonuses = {}; d.raceSkillProficiencies = []
+      d.raceProfChoices = 0; d.raceProfOptions = []; d.selectedRaceProfs = []
+      d.raceAutoLanguages = []; d.raceLanguageChoices = 0; d.raceLanguageCount = 2
+    }
+    d.subraceIndex = ''; d.subraceName = ''; d.subraceAbilityBonuses = {}; d.availableSubraces = []
+
+    // Background, including the 2024-only grants
+    d.backgroundIndex = ''; d.backgroundName = ''; d.backgroundDescription = ''
+    d.backgroundSkillProficiencies = []; d.backgroundToolProficiencies = []
+    d.backgroundLanguageChoices = 0
+    d.backgroundAbilityOptions = []; d.backgroundAbilityBonuses = {}
+    d.backgroundFeatIndex = ''; d.backgroundFeatName = ''
+    d.backgroundProfChoices = []; d.selectedBackgroundProfs = []
+
+    // Derived from the three above
+    d.asiAllocations = {}; d.featsByLevel = {}
+    d.selectedSkills = []; d.expertiseSkills = []; d.selectedLanguages = []
+    d.selectedCantrips = []; d.selectedSpells = []; d.selectedPreparedSpells = []
+    d.spellsByLevel = {}; d.tomeCantrips = []; d.selectedInvocations = []
+    d.startingInventory = []; d.equipmentChoicesDone = false
+    d.equipmentCurrency = { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }
+    d.manualGold = 0; d.useStartingEquipment = true
+    d.rolledHpPerLevel = []
   }
 
   function setFeatDecision(level: number, type: 'asi' | 'feat', feat?: { index: string; name: string; edition?: '2014' | '2024' }) {
@@ -1127,6 +1219,8 @@ export const useBuilderStore = defineStore('builder', () => {
     totalSteps,
     isSpellcaster,
     effectiveScores,
+    originBonuses,
+    setRuleset,
     pointsSpent,
     pointsRemaining,
     computedMaxHp,

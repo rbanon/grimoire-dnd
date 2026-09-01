@@ -3,6 +3,7 @@ import {
   getSpellSlots, getSpellProfile, getAsiLevels, getMaxSpellLevel, getFirstSpellLevel,
   getSubclassSpellMode, parseSubclassSpells, selectGrantedSubclassSpells, getExpertiseCount,
   getClassResources, registerCustomClass, registerCustomAsiLevels, buildCustomSpellProfile,
+  getStartingGoldFormula, rollStartingGold,
 } from './classMeta'
 import type { ApiSubclassSpell } from '@/shared/types/api'
 
@@ -393,5 +394,43 @@ describe('getClassResources, warlock Mystic Arcanum', () => {
     const ids = getClassResources('warlock', 17, noMods).map(r => r.id)
     expect(ids).toContain('pact-slots')
     expect(ids).toHaveLength(5)
+  })
+})
+
+
+// 2024 replaced the starting-gold roll with a flat amount per class. Applying the 2014 dice
+// table to a 2024 character was one of the ways money came out wrong.
+describe('starting gold by ruleset', () => {
+  it('2014 keeps the dice formula', () => {
+    expect(getStartingGoldFormula('fighter', '2014')).toMatchObject({ dice: 5, sides: 4, multiplier: 10 })
+    expect(getStartingGoldFormula('monk', '2014')).toMatchObject({ dice: 5, sides: 4, multiplier: 1 })
+  })
+
+  it('defaults to 2014 when no ruleset is given', () => {
+    expect(getStartingGoldFormula('fighter')).toEqual(getStartingGoldFormula('fighter', '2014'))
+  })
+
+  it('2024 is a flat amount, not a roll', () => {
+    expect(getStartingGoldFormula('fighter', '2024')?.label).toBe('155 gp')
+    expect(getStartingGoldFormula('wizard', '2024')?.label).toBe('55 gp')
+  })
+
+  it('2024 gold is deterministic across calls', () => {
+    const rolls = Array.from({ length: 20 }, () => rollStartingGold('fighter', '2024'))
+    expect(new Set(rolls)).toEqual(new Set([155]))
+  })
+
+  it('2014 gold stays within the formula range', () => {
+    for (let i = 0; i < 50; i++) {
+      const gp = rollStartingGold('fighter', '2014')
+      expect(gp).toBeGreaterThanOrEqual(50)   // 5d4 min 5, x10
+      expect(gp).toBeLessThanOrEqual(200)     // 5d4 max 20, x10
+    }
+  })
+
+  it('an unknown class yields no formula in either ruleset', () => {
+    expect(getStartingGoldFormula('artificer', '2014')).toBeNull()
+    expect(getStartingGoldFormula('artificer', '2024')).toBeNull()
+    expect(rollStartingGold('artificer', '2024')).toBe(0)
   })
 })
