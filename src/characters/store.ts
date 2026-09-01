@@ -10,6 +10,7 @@ import {
 } from '@/shared/types/character'
 import { storageGet, storageSet } from '@/shared/lib/storage'
 import { migrateCharacter } from '@/shared/lib/migrateCharacter'
+import { detectFormat, convertExternal } from '@/characters/importers'
 import { toJsonValue } from '@/shared/lib/toJsonValue'
 import { generateId, now } from '@/shared/lib/uuid'
 import { supabase } from '@/shared/api/supabase.client'
@@ -335,28 +336,48 @@ export const useCharactersStore = defineStore('characters', () => {
     const errors: string[] = []
     const toAdd: Character[] = []
 
-    // Try single character envelope
-    const singleResult = CharacterExportEnvelopeSchema.safeParse(parsed)
-    if (singleResult.success) {
-      try {
-        const c = migrateCharacter({ ...singleResult.data.data, id: generateId(), updatedAt: now() })
-        toAdd.push(c)
-      } catch { errors.push('Character in envelope failed validation.') }
-    } else {
-      // Try collection envelope
-      const collResult = CharacterCollectionExportEnvelopeSchema.safeParse(parsed)
-      if (collResult.success) {
-        for (const raw of collResult.data.data) {
-          try {
-            toAdd.push(migrateCharacter({ ...raw, id: generateId(), updatedAt: now() }))
-          } catch { errors.push(`A character in the collection failed validation.`) }
-        }
-      } else {
-        // Try bare character
+    // Foundry VTT and D&D Beyond files are converted to our shape first, then validated on
+    // the same path as our own. Their adapters report what they could not carry over.
+    const detected = detectFormat(parsed)
+    if (detected.format === 'foundry' || detected.format === 'dndbeyond') {
+      const converted = convertExternal(detected.format, parsed)
+      if (converted) {
         try {
-          toAdd.push(migrateCharacter({ ...(parsed as object), id: generateId(), updatedAt: now() }))
+          toAdd.push(migrateCharacter({
+            ...converted.character,
+            id: generateId(),
+            createdAt: now(),
+            updatedAt: now(),
+          }))
+          for (const w of converted.warnings) errors.push(`${detected.label}: ${w.message}`)
         } catch {
-          errors.push('Unrecognized file format. Please use a .json file exported from The Grimoire (via the Export button on a character card).')
+          errors.push(`This ${detected.label} file could not be read. It may be from an unsupported version.`)
+        }
+      }
+    } else {
+      // Try single character envelope
+      const singleResult = CharacterExportEnvelopeSchema.safeParse(parsed)
+      if (singleResult.success) {
+        try {
+          const c = migrateCharacter({ ...singleResult.data.data, id: generateId(), updatedAt: now() })
+          toAdd.push(c)
+        } catch { errors.push('Character in envelope failed validation.') }
+      } else {
+        // Try collection envelope
+        const collResult = CharacterCollectionExportEnvelopeSchema.safeParse(parsed)
+        if (collResult.success) {
+          for (const raw of collResult.data.data) {
+            try {
+              toAdd.push(migrateCharacter({ ...raw, id: generateId(), updatedAt: now() }))
+            } catch { errors.push(`A character in the collection failed validation.`) }
+          }
+        } else {
+          // Try bare character
+          try {
+            toAdd.push(migrateCharacter({ ...(parsed as object), id: generateId(), updatedAt: now() }))
+          } catch {
+            errors.push('Unrecognized file. This importer reads .json exported from The Grimoire, Foundry VTT (dnd5e) and D&D Beyond.')
+          }
         }
       }
     }

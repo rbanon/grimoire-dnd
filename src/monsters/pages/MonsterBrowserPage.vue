@@ -2,7 +2,7 @@
   <div class="app-container py-8">
 
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
+    <div class="flex items-center justify-between mb-2 gap-4 flex-wrap">
       <h1 class="heading-display text-3xl font-semibold">Bestiary</h1>
       <div class="flex items-center gap-3">
         <p class="text-muted text-sm">{{ filteredMonsters.length }} results</p>
@@ -24,6 +24,9 @@
         </div>
       </div>
     </div>
+    <p class="text-sm text-mist mb-6">
+      Every one of the {{ monsterRefs.length }} creatures in the SRD 5.1, the subset Wizards licenses for reuse.
+    </p>
 
     <!-- Filters -->
     <div class="flex flex-wrap gap-3 mb-6 items-center">
@@ -55,6 +58,13 @@
         <option value="">Any size</option>
         <option v-for="s in MONSTER_SIZES" :key="s" :value="s">{{ s }}</option>
       </AppSelect>
+      <SortControl
+        v-model:sort-by="sortBy"
+        v-model:sort-dir="sortDir"
+        :options="SORT_OPTIONS"
+        select-class="max-w-[175px]"
+        @change="currentPage = 1"
+      />
     </div>
 
     <!-- Loading skeleton -->
@@ -188,8 +198,15 @@ const sizeFilter = ref('')
 const currentPage = ref(1)
 const PAGE_SIZE = 18
 
-const sortBy = ref<'name' | 'cr' | 'type'>('name')
+type MonsterSortKey = 'name' | 'cr' | 'type'
+const sortBy = ref<MonsterSortKey>('name')
 const sortDir = ref<'asc' | 'desc'>('asc')
+
+const SORT_OPTIONS: { value: MonsterSortKey, label: string }[] = [
+  { value: 'name', label: 'Name' },
+  { value: 'cr',   label: 'Challenge' },
+  { value: 'type', label: 'Type' },
+]
 
 const MONSTER_TYPES = [
   'Aberration', 'Beast', 'Celestial', 'Construct', 'Dragon',

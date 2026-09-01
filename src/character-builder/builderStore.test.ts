@@ -199,3 +199,94 @@ describe('custom (homebrew) race', () => {
     expect(built.features.some(f => f.name === 'Stormborn')).toBe(true)
   })
 })
+
+// ─── Ruleset ──────────────────────────────────────────────────────────────────
+// The tester's report: a 2014 race with a 2024 background doubled the ability increase,
+// while a 2024 species with a 2014 background granted none. Exactly one origin source
+// must apply, decided by the ruleset.
+describe('ruleset origin bonuses', () => {
+  beforeEach(() => { setActivePinia(createPinia()) })
+
+  function seed(ruleset: '2014' | '2024') {
+    const store = useBuilderStore()
+    Object.assign(store.draft, {
+      ruleset,
+      raceEdition: ruleset,
+      backgroundEdition: ruleset,
+      baseScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+      raceAbilityBonuses: { str: 2 },
+      subraceAbilityBonuses: { con: 1 },
+      backgroundAbilityBonuses: { str: 2, dex: 1 },
+      asiAllocations: {},
+    })
+    return store
+  }
+
+  it('2014 takes increases from race and subrace, not the background', () => {
+    const store = seed('2014')
+    expect(store.effectiveScores.str).toBe(12)  // race +2 only
+    expect(store.effectiveScores.con).toBe(11)  // subrace +1
+    expect(store.effectiveScores.dex).toBe(10)  // background ignored
+  })
+
+  it('2024 takes increases from the background, not the species', () => {
+    const store = seed('2024')
+    expect(store.effectiveScores.str).toBe(12)  // background +2, species ignored
+    expect(store.effectiveScores.dex).toBe(11)  // background +1
+    expect(store.effectiveScores.con).toBe(10)  // subspecies ignored
+  })
+
+  it('never sums both sources for the same ability', () => {
+    // str is boosted by race (+2) AND background (+2); under either ruleset it lands on 12.
+    expect(seed('2014').effectiveScores.str).toBe(12)
+    expect(seed('2024').effectiveScores.str).toBe(12)
+  })
+
+  it('a homebrew race keeps its authored bonuses under 2024', () => {
+    const store = seed('2024')
+    store.draft.raceIndex = 'custom'
+    // Authored +2 STR plus the background's +2 is intended: the player wrote the race.
+    expect(store.effectiveScores.str).toBe(14)
+  })
+
+  it('setRuleset clears the edition-scoped selections', () => {
+    const store = useBuilderStore()
+    Object.assign(store.draft, {
+      ruleset: '2014',
+      classIndex: 'fighter', className: 'Fighter',
+      raceIndex: 'elf', raceName: 'Elf',
+      backgroundIndex: 'acolyte', backgroundName: 'Acolyte',
+      backgroundAbilityBonuses: { str: 2 },
+      selectedSkills: ['athletics'],
+    })
+    store.setRuleset('2024')
+    expect(store.draft.ruleset).toBe('2024')
+    expect(store.draft.classIndex).toBe('')
+    expect(store.draft.raceIndex).toBe('')
+    expect(store.draft.backgroundIndex).toBe('')
+    expect(store.draft.backgroundAbilityBonuses).toEqual({})
+    expect(store.draft.selectedSkills).toEqual([])
+    // The per-selection flags follow, so nothing is left claiming the old edition.
+    expect(store.draft.raceEdition).toBe('2024')
+    expect(store.draft.classEdition).toBe('2024')
+    expect(store.draft.backgroundEdition).toBe('2024')
+  })
+
+  it('setRuleset keeps a homebrew race, which is not edition-scoped', () => {
+    const store = useBuilderStore()
+    Object.assign(store.draft, {
+      ruleset: '2014', raceIndex: 'custom', raceName: 'Runekin', raceAbilityBonuses: { int: 2 },
+    })
+    store.setRuleset('2024')
+    expect(store.draft.raceIndex).toBe('custom')
+    expect(store.draft.raceName).toBe('Runekin')
+    expect(store.draft.raceAbilityBonuses).toEqual({ int: 2 })
+  })
+
+  it('setRuleset on the same value is a no-op', () => {
+    const store = useBuilderStore()
+    Object.assign(store.draft, { ruleset: '2014', classIndex: 'fighter' })
+    store.setRuleset('2014')
+    expect(store.draft.classIndex).toBe('fighter')
+  })
+})

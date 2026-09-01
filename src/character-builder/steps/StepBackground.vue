@@ -13,20 +13,20 @@
         <!-- 2014 Backgrounds -->
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <div
-            v-for="bg in backgrounds2014"
-            :key="`2014:${bg.index}`"
+            v-for="bg in backgrounds"
+            :key="`${ruleset}:${bg.index}`"
             class="group relative flex items-center rounded border text-sm font-heading tracking-wide transition-all duration-150 cursor-pointer"
-            :class="builder.draft.backgroundIndex === bg.index && builder.draft.backgroundEdition === '2014'
+            :class="builder.draft.backgroundIndex === bg.index && !isCustom
               ? 'border-gold-mid/60 bg-gold-dim/10 text-gold-deep'
               : 'border-shadow bg-abyss text-ash hover:border-gold-dim/25 hover:text-stone hover:bg-depths'"
-            @click="selectBackground(bg.index, bg.name, '2014')"
+            @click="selectBackground(bg.index, bg.name, ruleset)"
           >
             <span class="flex-1 px-4 py-3 text-left">{{ bg.name }}</span>
             <button
               type="button"
               class="shrink-0 px-2.5 py-3 text-mist/60 hover:text-ash opacity-0 group-hover:opacity-100 transition-all"
               aria-label="Background details"
-              @click.stop="infoPanel.open({ kind: 'background', index: bg.index, edition: '2014' })"
+              @click.stop="infoPanel.open({ kind: 'background', index: bg.index, edition: ruleset })"
             >
               <InfoIcon :size="12" />
             </button>
@@ -47,36 +47,12 @@
           </div>
         </div>
 
-        <!-- 2014 / 2024 separator -->
-        <div v-if="backgrounds2024.length" class="flex items-center gap-3 py-1">
-          <div class="flex-1 h-px bg-shadow/50" />
-          <span class="text-2xs font-heading tracking-widest uppercase text-arcane-pale/50">2024 Backgrounds</span>
-          <div class="flex-1 h-px bg-shadow/50" />
-        </div>
-
-        <!-- 2024 Backgrounds -->
-        <div v-if="backgrounds2024.length" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <div
-            v-for="bg in backgrounds2024"
-            :key="`2024:${bg.index}`"
-            class="group relative flex items-center rounded border text-sm font-heading tracking-wide transition-all duration-150 cursor-pointer"
-            :class="builder.draft.backgroundIndex === bg.index && builder.draft.backgroundEdition === '2024'
-              ? 'border-arcane-base/60 bg-arcane-deep/10 text-arcane-pale'
-              : 'border-shadow bg-abyss text-ash hover:border-arcane-base/15 hover:text-stone hover:bg-depths'"
-            @click="selectBackground(bg.index, bg.name, '2024')"
-          >
-            <span class="flex-1 px-4 py-3 text-left">{{ bg.name }}</span>
-            <span class="text-2xs font-heading text-arcane-pale/50 px-1 shrink-0">24</span>
-            <button
-              type="button"
-              class="shrink-0 px-2.5 py-3 text-mist/60 hover:text-ash opacity-0 group-hover:opacity-100 transition-all"
-              aria-label="Background details"
-              @click.stop="infoPanel.open({ kind: 'background', index: bg.index, edition: '2024' })"
-            >
-              <InfoIcon :size="12" />
-            </button>
-          </div>
-        </div>
+        <!-- The SRD ships only 4 backgrounds for 2024 against 13 for 2014. Say why the list
+             is short, otherwise it reads as missing data. -->
+        <p v-if="ruleset === '2024'" class="text-2xs font-body text-mist/70">
+          The 2024 SRD includes four backgrounds. Each grants your ability score increases
+          and an Origin Feat.
+        </p>
       </template>
       <p v-if="fieldErrors.background" class="text-xs font-body text-blood-bright">
         {{ fieldErrors.backgroundMessage }}
@@ -355,8 +331,12 @@ const { data: bgList2024, isPending: backgroundsLoading2024 } = useQuery({
   staleTime: Infinity,
 })
 const backgroundsLoading = computed(() => backgroundsLoading2014.value || backgroundsLoading2024.value)
-const backgrounds2014 = computed(() => bgList2014.value?.results ?? [])
-const backgrounds2024 = computed(() => bgList2024.value?.results ?? [])
+// Follows the ruleset chosen in Step I. A 2014 background grants no ability increases and
+// a 2024 one does, so offering both at once is what let a character double up or get none.
+const ruleset = computed<'2014' | '2024'>(() => builder.draft.ruleset ?? '2014')
+const backgrounds = computed(() =>
+  (ruleset.value === '2024' ? bgList2024.value : bgList2014.value)?.results ?? [],
+)
 
 // ── Background detail (standard only) ────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 <template>
   <div class="app-container py-8">
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center justify-between mb-2">
       <h1 class="heading-display text-3xl font-semibold">Items & Equipment</h1>
       <div class="flex items-center gap-3">
         <p class="text-muted text-sm">{{ filteredItems.length }} results</p>
@@ -22,6 +22,9 @@
         </div>
       </div>
     </div>
+    <p class="text-sm text-mist mb-6">
+      Every one of the {{ allItems.length }} items in the SRD 5.1, the subset Wizards licenses for reuse.
+    </p>
 
     <!-- Filters -->
     <div class="flex flex-wrap gap-3 mb-6">
@@ -50,6 +53,13 @@
         <option value="yes">Requires Attunement</option>
         <option value="no">No Attunement</option>
       </AppSelect>
+      <SortControl
+        v-model:sort-by="filters.sortBy"
+        v-model:sort-dir="filters.sortDir"
+        :options="SORT_OPTIONS"
+        select-class="max-w-[160px]"
+        @change="currentPage = 1"
+      />
     </div>
 
     <!-- States -->
@@ -294,6 +304,16 @@ const filteredItems = computed(() => {
 })
 
 type SortKey = typeof filters.value.sortBy
+
+// Cost and weight were sortable in filteredItems but had no column and no handler, so
+// nothing could reach them. The control exposes every key the sort actually implements.
+const SORT_OPTIONS: { value: SortKey, label: string }[] = [
+  { value: 'name',     label: 'Name' },
+  { value: 'category', label: 'Type' },
+  { value: 'rarity',   label: 'Rarity' },
+  { value: 'cost',     label: 'Cost' },
+  { value: 'weight',   label: 'Weight' },
+]
 
 function toggleSort(key: SortKey) {
   if (filters.value.sortBy === key) {

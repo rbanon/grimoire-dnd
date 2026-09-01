@@ -23,7 +23,7 @@
           <div class="flex items-center gap-2 shrink-0">
             <label
               class="btn-secondary cursor-pointer gap-2 text-sm"
-              title="Import a .json file exported from The Grimoire"
+              title="Import a .json character from The Grimoire, Foundry VTT or D&amp;D Beyond"
             >
               <UploadIcon :size="14" />
               Import
@@ -66,18 +66,24 @@
         <div
           v-if="importResult"
           class="mb-5 flex items-start gap-3 px-4 py-3 rounded border"
-          :class="importResult.errors.length
+          :class="importFailed
             ? 'border-blood-base/40 bg-blood-deep/10 text-blood-mid'
             : 'border-verdant-base/30 bg-verdant-deep/10 text-verdant-base'"
         >
-          <CheckIcon v-if="!importResult.errors.length" :size="15" class="mt-0.5 shrink-0" />
+          <CheckIcon v-if="!importFailed" :size="15" class="mt-0.5 shrink-0" />
           <XCircleIcon v-else :size="15" class="mt-0.5 shrink-0" />
-          <p class="font-body text-sm">
-            <span v-if="importResult.imported > 0">
+          <div class="font-body text-sm space-y-1">
+            <p v-if="importResult.imported > 0">
               {{ importResult.imported }} character{{ importResult.imported === 1 ? '' : 's' }} imported.
-            </span>
-            <span v-if="importResult.errors.length" class="ml-1">{{ importResult.errors.join(' · ') }}</span>
-          </p>
+            </p>
+            <!-- On a successful import these are notes about what the source could not
+                 carry, not failures, so they are listed under the success styling. -->
+            <ul v-if="importResult.errors.length" class="list-none space-y-0.5" :class="importFailed ? '' : 'text-mist'">
+              <li v-for="(msg, i) in importResult.errors" :key="i" class="text-xs leading-relaxed">
+                {{ msg }}
+              </li>
+            </ul>
+          </div>
         </div>
       </Transition>
 
@@ -120,13 +126,13 @@
           </RouterLink>
           <label
             class="btn-secondary cursor-pointer gap-2"
-            title="Import a .json file exported from The Grimoire"
+            title="Import a .json character from The Grimoire, Foundry VTT or D&amp;D Beyond"
           >
             <UploadIcon :size="14" /> Import from File
             <input type="file" accept=".json" class="sr-only" @change="onImport" />
           </label>
           <p class="text-2xs font-body text-mist/60 mt-1 text-center">
-            Accepts .json files exported from The Grimoire
+            Accepts .json from The Grimoire, Foundry VTT (dnd5e) or D&amp;D Beyond
           </p>
         </div>
       </div>
@@ -168,6 +174,9 @@ const store = useCharactersStore()
 const auth = useAuthStore()
 const { confirm } = useConfirm()
 const importResult = ref<{ imported: number; errors: string[] } | null>(null)
+// An import that produced a character succeeded, even when the adapter reported gaps.
+// Only a run that imported nothing is a failure worth colouring red.
+const importFailed = computed(() => !!importResult.value && importResult.value.imported === 0)
 const atLimit = computed(() => store.summaries.length >= MAX_CHARACTERS)
 
 onMounted(() => store.load())
@@ -178,7 +187,9 @@ async function onImport(e: Event) {
   const text = await file.text()
   importResult.value = await store.importFromJson(text)
   ;(e.target as HTMLInputElement).value = ''
-  setTimeout(() => (importResult.value = null), 6000)
+  // Warnings need reading time; a bare success does not.
+  const linger = importResult.value?.errors.length ? 15000 : 6000
+  setTimeout(() => (importResult.value = null), linger)
 }
 
 function downloadExport(id: string) {

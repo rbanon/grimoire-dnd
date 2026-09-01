@@ -56,7 +56,7 @@
           <span class="text-mist/25 text-2xs">·</span>
           <span
             class="text-2xs font-heading px-1.5 py-px rounded-sm border"
-            :class="schoolClass"
+            :style="schoolBadgeStyle(detail.school.name)"
           >{{ detail.school.name }}</span>
         </template>
       </template>
@@ -96,6 +96,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { fiveEApi } from '@/shared/api/fiveE.client'
 import { useInfoPanel } from '@/shared/composables/useInfoPanel'
 import { useRoll } from '@/shared/composables/useRoll'
+import { schoolBadgeStyle } from '@/shared/lib/spellSchools'
 import type { CombatFavorite } from '@/shared/types/character'
 
 const props = defineProps<{
@@ -146,18 +147,4 @@ const hasAttackRoll = computed(() => !!detail.value?.attack_type)
 
 const damageType = computed(() => detail.value?.damage?.damage_type?.name ?? null)
 
-const SCHOOL_CLASSES: Record<string, string> = {
-  abjuration:    'text-blue-500 dark:text-blue-300/90 border-blue-500/40',
-  conjuration:   'text-emerald-600 dark:text-emerald-300/90 border-emerald-500/40',
-  divination:    'text-sky-600 dark:text-sky-300/90 border-sky-500/40',
-  enchantment:   'text-pink-600 dark:text-pink-300/90 border-pink-500/40',
-  evocation:     'text-orange-500 dark:text-orange-300/90 border-orange-500/40',
-  illusion:      'text-violet-500 dark:text-violet-300/90 border-violet-500/40',
-  necromancy:    'text-green-600 dark:text-green-400/80 border-green-600/40',
-  transmutation: 'text-amber-600 dark:text-amber-300/90 border-amber-500/40',
-}
-const schoolClass = computed(() => {
-  const name = detail.value?.school?.name?.toLowerCase() ?? ''
-  return SCHOOL_CLASSES[name] ?? 'text-mist/50 border-shadow'
-})
 </script>

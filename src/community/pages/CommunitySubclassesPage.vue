@@ -18,12 +18,12 @@
         <option value="">Any parent class</option>
         <option v-for="p in parentClasses" :key="p" :value="p">{{ p }}</option>
       </AppSelect>
-      <AppSelect v-model="editionFilter" class="max-w-[130px]">
+      <AppSelect v-model="editionFilter" class="max-w-[155px]">
         <option value="">Any edition</option>
         <option value="2014">2014</option>
         <option value="2024">2024</option>
       </AppSelect>
-      <AppSelect v-model="sortBy" class="max-w-[190px]">
+      <AppSelect v-model="sortBy" class="max-w-[225px]">
         <option value="parent">Sort: parent class</option>
         <option value="name">Sort: name</option>
         <option value="recent">Sort: recently updated</option>
