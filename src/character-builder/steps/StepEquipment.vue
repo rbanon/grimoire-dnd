@@ -65,12 +65,13 @@
             <span class="text-stone font-heading">{{ builder.draft.className || 'Your class' }}</span>
             starts with <span class="text-stone font-heading">{{ goldFormula.label }}</span>.
           </p>
+          <!-- 2024 quotes a flat amount instead of a roll, so "Roll" becomes "Use". -->
           <button
             type="button"
             class="btn-secondary text-xs px-3 py-1.5 shrink-0"
             @click="rollGold"
           >
-            Roll
+            {{ ruleset === '2024' ? 'Use' : 'Roll' }}
           </button>
         </div>
 
@@ -336,10 +337,11 @@ const builder = useBuilderStore()
 
 // ── Starting gold ─────────────────────────────────────────────────────────────
 
-const goldFormula = computed(() => getStartingGoldFormula(builder.draft.classIndex))
+const ruleset = computed(() => builder.draft.ruleset ?? '2014')
+const goldFormula = computed(() => getStartingGoldFormula(builder.draft.classIndex, ruleset.value))
 
 function rollGold() {
-  builder.draft.manualGold = rollStartingGold(builder.draft.classIndex)
+  builder.draft.manualGold = rollStartingGold(builder.draft.classIndex, ruleset.value)
 }
 
 // Each ApiReference carries a `url` like `/api/2024/equipment/arrows`, the edition that

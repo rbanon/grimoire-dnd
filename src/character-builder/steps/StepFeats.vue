@@ -115,7 +115,7 @@
           </div>
           <template v-else>
             <p class="text-xs font-body text-mist">
-              Select a feat. <span class="text-mist/60">Shows feats from both 2014 and 2024 SRD.</span>
+              Select a feat. <span class="text-mist/60">From the {{ ruleset }} SRD.</span>
             </p>
             <div class="relative">
               <input
@@ -260,11 +260,17 @@ const { data: featData2024, isPending: featsLoading2024 } = useQuery({
 
 const featsLoading = computed(() => featsLoading2014.value || featsLoading2024.value)
 
-// Merged list with edition tag. Composite key = `${edition}:${index}`
-const allFeats = computed(() => [
-  ...(featData2014.value?.results ?? []).map(f => ({ ...f, edition: '2014' as EditionTag, key: `2014:${f.index}` })),
-  ...(featData2024.value?.results ?? []).map(f => ({ ...f, edition: '2024' as EditionTag, key: `2024:${f.index}` })),
-])
+// Feats belong to a ruleset like everything else: the two SRDs redefine the same feat
+// names with different text, so a character offered both could take a 2014 Grappler
+// alongside 2024 species traits written against the 2024 version.
+// Composite key = `${edition}:${index}`, kept because the index alone is not unique.
+const ruleset = computed<EditionTag>(() => builder.draft.ruleset ?? '2014')
+const allFeats = computed(() => {
+  const list = ruleset.value === '2024' ? featData2024.value : featData2014.value
+  return (list?.results ?? []).map(f => ({
+    ...f, edition: ruleset.value, key: `${ruleset.value}:${f.index}`,
+  }))
+})
 
 // Static prerequisites for 2014 feats (only Grappler exists in the 2014 SRD free tier).
 const FEAT_PREREQUISITES_2014: Record<string, { ability_score: { index: string; name: string }; minimum_score: number }[]> = {
@@ -410,16 +416,14 @@ function asiPointsUsed(asiLevel: number): number {
 
 function scoreBeforeAsi(asiLevel: number, key: keyof AbilityScores): number {
   const base = builder.draft.baseScores[key]
-  const rb = builder.draft.raceAbilityBonuses[key] ?? 0
-  const sb = builder.draft.subraceAbilityBonuses[key] ?? 0
-  // A 2024 background also grants an increase, and effectiveScores counts it. Leaving it out
-  // here showed a lower "before" score than the sheet and let the player spend points that
-  // the level-20 cap then swallowed.
-  const bg = builder.draft.backgroundAbilityBonuses[key] ?? 0
+  // Read origin increases through the same ruleset-aware source effectiveScores uses, so
+  // this preview can never disagree with the score the sheet ends up with.
+  const { race, subrace, background } = builder.originBonuses
+  const origin = (race[key] ?? 0) + (subrace[key] ?? 0) + (background[key] ?? 0)
   const prevAsiTotal = activeAsiLevels.value
     .filter(l => l < asiLevel)
     .reduce((sum, l) => sum + asiAlloc(l, key), 0)
-  return base + rb + sb + bg + prevAsiTotal
+  return base + origin + prevAsiTotal
 }
 
 function scoreAfterAsi(asiLevel: number, key: keyof AbilityScores): number {
